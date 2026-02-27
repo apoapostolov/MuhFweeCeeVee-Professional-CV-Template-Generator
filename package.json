@@ -1,0 +1,16 @@
+{
+  "name": "myfreeceevee",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @myfreeceevee/web",
+    "build": "npm run build --workspace @myfreeceevee/web",
+    "start": "npm run start --workspace @myfreeceevee/web",
+    "lint": "npm run lint --workspace @myfreeceevee/web",
+    "typecheck": "npm run typecheck --workspace @myfreeceevee/web"
+  }
+}
