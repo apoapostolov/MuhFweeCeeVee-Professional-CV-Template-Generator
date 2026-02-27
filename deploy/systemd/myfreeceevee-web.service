@@ -1,0 +1,14 @@
+[Unit]
+Description=MyFreeCeeVee Web (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/git-public/MyFreeCeeVee-Professional CV Template Generator
+ExecStart=/usr/bin/env npm run dev --workspace @myfreeceevee/web
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=default.target
