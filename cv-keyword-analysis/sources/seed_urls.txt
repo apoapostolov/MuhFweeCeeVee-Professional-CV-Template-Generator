@@ -1,0 +1,7 @@
+# Add career pages / job board search pages here (one URL per line)
+# Example generic sources:
+https://boards.greenhouse.io/
+https://jobs.lever.co/
+https://www.indeed.com/jobs?q=game+producer
+https://www.indeed.com/jobs?q=game+designer
+https://www.indeed.com/jobs?q=game+data+analyst

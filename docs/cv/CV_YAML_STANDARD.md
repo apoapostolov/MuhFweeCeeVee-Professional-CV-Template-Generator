@@ -42,6 +42,11 @@ metadata:
 - `experience.start_date <= experience.end_date` when `end_date` exists.
 - Overlapping roles require explicit `parallel_role: true`.
 - Unknown fields are allowed for forward compatibility.
+- Experience publication links are supported as:
+  `experience[].publication_links[]` with object shape:
+  - `url` (required for rendering link)
+  - `title` (optional; auto-derived from URL when omitted)
+  - any number of links per experience item
 
 ## Naming Convention
 

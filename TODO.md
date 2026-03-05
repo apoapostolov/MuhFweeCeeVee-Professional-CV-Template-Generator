@@ -37,6 +37,9 @@
 - [x] Rebuild `europass-v1` from real sample PDF and remove `professional-v1`.
 - [x] Align `europass-v1` header and field coverage with source PDF + expanded `cv_bg_001`.
 - [x] Enrich seed BG CV (`cv_bg_001_alianz`) with full details from sample PDF.
+- [x] Add CV editor tab with section sub-tabs and OpenRouter-backed section/full CV scoring.
+- [x] Add per-experience publication link support (`url` + optional auto-derived title) in CV YAML/rendering.
+- [x] Extend `edinburgh-v1` education rendering with full detail fields from YAML.
 - [ ] Add import/export UI for YAML packages.
 - [ ] Add template review status workflow (`pending/approved/rejected`).
 - [ ] Add visual diff tests for selected PDF golden outputs.

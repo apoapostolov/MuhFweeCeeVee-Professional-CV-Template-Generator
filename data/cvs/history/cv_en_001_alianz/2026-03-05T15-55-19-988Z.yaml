@@ -89,10 +89,6 @@ experience:
       - War Planet Online (2017-2026)
       - March of Empires (2015-2026)
       - Age of Sparta (2015-2017)
-    publication_links:
-      - url: https://store.steampowered.com/app/1537830/Disney_Speedstorm/
-      - url: https://www.gameloft.com/game/war-planet-online
-        title: War Planet Online - product page
     quantified_results:
       - metric: number of live products
         value: 3+
@@ -132,10 +128,6 @@ experience:
       - GT Racing 2 (2013)
       - Order & Chaos Duels (2013), incl. lead game designer
       - 9mm (2011), incl. game designer
-    publication_links:
-      - url: https://www.gameloft.com/game/order-chaos-duels
-      - url: https://www.youtube.com/results?search_query=GT+Racing+2+Gameloft
-        title: GT Racing 2 public media
     quantified_results:
       - metric: team size
         value: 20-60
@@ -306,7 +298,6 @@ metadata:
     cv_yaml_standard.
   created_at: 2026-03-05
   updated_at: 2026-03-05
-  last_edited_at: 2026-03-05T16:10:00Z
   status: draft
   language: en
   variant:

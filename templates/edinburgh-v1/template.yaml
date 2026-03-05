@@ -56,6 +56,17 @@ labels:
       context: "Context"
     product_labels:
       worked_on: "Worked on:"
+    experience_labels:
+      publication_links: "Publication links:"
+    education_labels:
+      field: "Field of study"
+      subjects: "Main subjects"
+      level: "Qualification level"
+      faculty: "Faculty"
+      location: "Location"
+      completed: "Completed"
+      completed_yes: "Yes"
+      completed_no: "No"
   bg:
     common:
       page: "Страница"
@@ -97,6 +108,17 @@ labels:
       context: "Контекст"
     product_labels:
       worked_on: "Работил по:"
+    experience_labels:
+      publication_links: "Публикации и връзки:"
+    education_labels:
+      field: "Специалност"
+      subjects: "Основни предмети"
+      level: "Квалификационно ниво"
+      faculty: "Факултет"
+      location: "Локация"
+      completed: "Завършено"
+      completed_yes: "Да"
+      completed_no: "Не"
 
 tokens:
   fonts:

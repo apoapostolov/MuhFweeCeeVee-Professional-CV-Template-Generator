@@ -54,7 +54,8 @@ async function ensureCvDir(): Promise<void> {
 }
 
 function withUpdatedMetadata(input: CvDocument): CvDocument {
-  const now = new Date().toISOString().slice(0, 10);
+  const nowIso = new Date().toISOString();
+  const nowDate = nowIso.slice(0, 10);
   const metadataRaw = input.metadata;
   const metadata =
     metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
@@ -81,8 +82,10 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
               language: inferred.language,
             }
           : (metadata.variant as Record<string, unknown> | undefined),
-      created_at: (metadata.created_at as string | undefined) ?? now,
-      updated_at: now,
+      created_at: (metadata.created_at as string | undefined) ?? nowDate,
+      updated_at: nowIso,
+      updated_on: (metadata.updated_on as string | undefined) ?? nowDate,
+      last_edited_at: nowIso,
     },
   };
 }

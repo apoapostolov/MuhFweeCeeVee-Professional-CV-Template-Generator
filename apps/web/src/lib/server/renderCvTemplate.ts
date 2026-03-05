@@ -331,10 +331,12 @@ function renderExperience(
   mode: "exact" | "month-year" | "year",
   presentLabel: string,
   labels: Record<string, unknown>,
-  options?: { includeProducts?: boolean },
+  options?: { includeProducts?: boolean; includePublicationLinks?: boolean },
 ): string {
   const includeProducts = Boolean(options?.includeProducts);
+  const includePublicationLinks = options?.includePublicationLinks !== false;
   const workedOnLabel = label(labels, "product_labels.worked_on", "Worked on:");
+  const publicationLinksLabel = label(labels, "experience_labels.publication_links", "Publication links:");
   const entries = Array.isArray(value) ? value : [];
   const blocks = entries
     .map((entry) => {
@@ -376,6 +378,12 @@ function renderExperience(
           return `<li><span class=\"product-name\">${escapeHtml(name)}</span>${note ? `<span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(note)}</span></span>` : ""}</li>`;
         })
         .join("");
+      const publicationRows = toPublicationLinks(record.publication_links)
+        .map(
+          (item) =>
+            `<li><a href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a></li>`,
+        )
+        .join("");
       return `<article class=\"entry\">
         <div class=\"entry-head\">
           <h4>${escapeHtml(record.role ?? "")}</h4>
@@ -384,6 +392,7 @@ function renderExperience(
         <p class=\"org\">${escapeHtml(record.employer ?? "")}</p>
         ${bullets ? `<ul>${bullets}</ul>` : ""}
         ${includeProducts && productRows ? `<div class=\"product-subsection\"><p class=\"product-title\">${escapeHtml(workedOnLabel)}</p><ul class=\"product-list\">${productRows}</ul></div>` : ""}
+        ${includePublicationLinks && publicationRows ? `<div class=\"publication-links-subsection\"><p class=\"publication-links-title\">${escapeHtml(publicationLinksLabel)}</p><ul class=\"publication-links-list\">${publicationRows}</ul></div>` : ""}
       </article>`;
     })
     .join("");
@@ -396,19 +405,59 @@ function renderEducation(
   value: unknown,
   mode: "exact" | "month-year" | "year",
   presentLabel: string,
+  labels?: Record<string, unknown>,
+  options?: { includeDetails?: boolean },
 ): string {
+  const includeDetails = Boolean(options?.includeDetails);
   const entries = Array.isArray(value) ? value : [];
   const blocks = entries
     .map((entry) => {
       const record = asRecord(entry);
       if (!record) return "";
       const range = formatRange(record.start_date, record.end_date, false, mode, presentLabel);
+      const field = String(record.field_of_study ?? "").trim();
+      const subjects = textList(record.subjects).join(", ");
+      const level = String(record.qualification_level ?? "").trim();
+      const faculty = String(record.faculty ?? "").trim();
+      const location = [record.city, record.country]
+        .filter(Boolean)
+        .map((item) => String(item))
+        .join(", ");
+      const completed =
+        typeof record.completed === "boolean"
+          ? record.completed
+            ? label(labels ?? {}, "education_labels.completed_yes", "Yes")
+            : label(labels ?? {}, "education_labels.completed_no", "No")
+          : "";
+      const detailRows = [
+        field
+          ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.field", "Field"))}:</strong> ${escapeHtml(field)}</p>`
+          : "",
+        subjects
+          ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.subjects", "Subjects"))}:</strong> ${escapeHtml(subjects)}</p>`
+          : "",
+        level
+          ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.level", "Level"))}:</strong> ${escapeHtml(level)}</p>`
+          : "",
+        faculty
+          ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.faculty", "Faculty"))}:</strong> ${escapeHtml(faculty)}</p>`
+          : "",
+        location
+          ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.location", "Location"))}:</strong> ${escapeHtml(location)}</p>`
+          : "",
+        completed
+          ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.completed", "Completed"))}:</strong> ${escapeHtml(completed)}</p>`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("");
       return `<article class=\"entry\">
         <div class=\"entry-head\">
           <h4>${escapeHtml(record.degree ?? "")}</h4>
           <span>${escapeHtml(range)}</span>
         </div>
         <p class=\"org\">${escapeHtml(record.institution ?? "")}</p>
+        ${includeDetails ? `<div class="edu-details">${detailRows}</div>` : ""}
       </article>`;
     })
     .join("");
@@ -494,6 +543,61 @@ function toProductLines(value: unknown): string[] {
     .filter((item) => item.length > 0);
 }
 
+function normalizeUrl(raw: unknown): string {
+  const input = String(raw ?? "").trim();
+  if (!input) return "";
+  try {
+    const parsed = new URL(input);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "";
+    }
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function deriveTitleFromUrl(raw: unknown): string {
+  const href = normalizeUrl(raw);
+  if (!href) return "";
+  try {
+    const parsed = new URL(href);
+    const tail = parsed.pathname.split("/").filter(Boolean).pop();
+    if (tail) {
+      const cleaned = decodeURIComponent(tail)
+        .replace(/\.[a-z0-9]{1,6}$/i, "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (cleaned) {
+        return cleaned;
+      }
+    }
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function toPublicationLinks(value: unknown): Array<{ href: string; title: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((entry) => {
+      if (typeof entry === "string") {
+        const href = normalizeUrl(entry);
+        if (!href) return [];
+        return [{ href, title: deriveTitleFromUrl(href) || href }];
+      }
+      const record = asRecord(entry);
+      if (!record) return [];
+      const href = normalizeUrl(record.url);
+      if (!href) return [];
+      const explicitTitle = String(record.title ?? "").trim();
+      return [{ href, title: explicitTitle || deriveTitleFromUrl(href) || href }];
+    })
+    .filter((item) => item.href.length > 0);
+}
+
 function renderEuropass(
   cv: CvDocument,
   template: TemplateFile,
@@ -503,7 +607,6 @@ function renderEuropass(
   const margins = resolveMargins(template);
   const experienceDateMode = template.date_display?.experience ?? "exact";
   const educationDateMode = template.date_display?.education ?? "exact";
-  const pageLabel = label(labels, "common.page", "Page");
   const presentLabel = label(labels, "common.present", "present");
 
   const person = asRecord(getByPath(cv, "person")) ?? {};
@@ -581,6 +684,9 @@ function renderEuropass(
         .join(", ");
       const responsibilities = renderEuropassSimpleList(textList(record.responsibilities));
       const products = renderEuropassSimpleList(toProductLines(record.products));
+      const publicationLinks = renderEuropassSimpleList(
+        toPublicationLinks(record.publication_links).map((item) => `${item.title} (${item.href})`),
+      );
       const tools = renderEuropassSimpleList(textList(record.tools));
       const roleBase = String(record.role ?? "").trim();
       const parallelRoleSuffix = label(labels, "experience_labels.parallel_role_suffix", "Parallel role");
@@ -590,13 +696,14 @@ function renderEuropass(
           : record.parallel_role
             ? parallelRoleSuffix
             : roleBase;
-      return `<div class=\"entry\">
+      return `<div class=\"entry job-subsection\">
         ${renderEuropassRow(label(labels, "experience_labels.dates", "Dates"), escapeHtml(range))}
         ${renderEuropassRow(label(labels, "experience_labels.employer", "Employer and address"), escapeHtml(employerLine))}
         ${renderEuropassRow(label(labels, "experience_labels.industry", "Type of business"), escapeHtml(String(record.industry ?? "")))}
         ${renderEuropassRow(label(labels, "experience_labels.role", "Occupation or position held"), escapeHtml(roleWithSuffix))}
         ${renderEuropassRow(label(labels, "experience_labels.activities", "Main activities and responsibilities"), responsibilities)}
         ${renderEuropassRow(label(labels, "experience_labels.products", "Published titles / products"), products)}
+        ${renderEuropassRow(label(labels, "experience_labels.publication_links", "Publication links"), publicationLinks)}
         ${renderEuropassRow(label(labels, "experience_labels.tools", "Tools"), tools)}
       </div>`;
     })
@@ -664,6 +771,18 @@ function renderEuropass(
     .elabel { text-align: right; color: #2b2b2b; font-family: "Liberation Sans", "Nimbus Sans", Arial, Helvetica, sans-serif; font-weight: 600; }
     .evalue { color: #111; font-family: "Liberation Sans Narrow", "Nimbus Sans Narrow", "Arial Narrow", "Liberation Sans", "Nimbus Sans", Arial, Helvetica, sans-serif; font-weight: 400; }
     .entry { margin-bottom: 5mm; }
+    .entry.job-subsection {
+      break-inside: auto;
+      page-break-inside: auto;
+      /* Encourage moving subsection to next page if fewer than ~4 lines fit. */
+      min-height: 4.2lh;
+    }
+    .entry.job-subsection .erow,
+    .entry.job-subsection .evalue li,
+    .entry.job-subsection .evalue p {
+      orphans: 4;
+      widows: 4;
+    }
     .block { margin-bottom: 6mm; }
     .block p { margin: 0; font-family: "Liberation Sans Narrow", "Nimbus Sans Narrow", "Arial Narrow", "Liberation Sans", "Nimbus Sans", Arial, Helvetica, sans-serif; }
     .evalue ul { margin: 0; padding-left: 12px; list-style: none; }
@@ -678,8 +797,6 @@ function renderEuropass(
     }
     .lang-block { margin-bottom: 2mm; }
     .ref-item { margin-bottom: 2mm; }
-    .page-footer { position: fixed; right: 0; bottom: 0; left: 0; text-align: right; font-size: 10px; color: #5f6368; padding: 0 1mm 0 0; }
-    .page-footer::after { content: \"${escapeHtml(pageLabel)} \" counter(page); }
   </style>
 </head>
 <body>
@@ -737,7 +854,6 @@ function renderEuropass(
       ${renderEuropassRow(label(labels, "sections.interests", "Interests"), renderEuropassSimpleList(interests))}
     </section>
   </div>
-  <footer class=\"page-footer\"></footer>
 </body>
 </html>`;
 }
@@ -797,7 +913,6 @@ function renderEdinburgh(
     label(labels, "sections.portfolio_links", "Portfolio Links"),
     getByPath(cv, "optional_sections.portfolio_links"),
   );
-  const pageLabel = label(labels, "common.page", "Page");
   const presentLabel = label(labels, "common.present", "present");
 
   const photoValue = slots["profile.photo"];
@@ -930,6 +1045,8 @@ function renderEdinburgh(
     .org { margin: 3px 0 7px; color: #5f6368; font-weight: 500; }
     .entry ul { margin: 5px 0 0 16px; padding: 0; }
     .entry li { margin: 2px 0; line-height: 1.33; }
+    .entry a { color: #2c315b; text-decoration: none; border-bottom: 1px solid #c8cfec; }
+    .entry a:hover { border-bottom-color: #2c315b; }
     .product-subsection { margin-top: 6px; }
     .product-title { margin: 0 0 3px; font-weight: 700; font-size: 11.4px; color: #2f3640; }
     .product-list { list-style: none; margin: 0; padding: 0; }
@@ -939,6 +1056,13 @@ function renderEdinburgh(
     .product-list .product-note-line { display: flex; align-items: flex-start; gap: 6px; margin-top: 1px; }
     .product-list .product-note-tab { color: #666; font-family: \"JetBrains Mono\", monospace; }
     .product-list .product-note-text { display: block; color: #555; font-size: 10.8px; line-height: 1.35; }
+    .publication-links-subsection { margin-top: 7px; }
+    .publication-links-title { margin: 0 0 3px; font-weight: 700; font-size: 11.4px; color: #2f3640; }
+    .publication-links-list { margin: 0; padding-left: 16px; }
+    .publication-links-list li { margin: 2px 0; line-height: 1.32; }
+    .edu-details { margin-top: 6px; }
+    .edu-detail { margin: 2px 0; color: #3f4349; font-size: 11.2px; line-height: 1.33; }
+    .edu-detail strong { color: #262b31; font-weight: 700; }
     .ref { margin-top: 8px; line-height: 1.35; }
     .right .entry,
     .right .ref,
@@ -946,17 +1070,6 @@ function renderEdinburgh(
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .page-footer {
-      position: fixed;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      text-align: right;
-      font-size: 10px;
-      color: #5f6368;
-      padding: 0 1mm 0 0;
-    }
-    .page-footer::after { content: \"${escapeHtml(pageLabel)} \" counter(page); }
   </style>
 </head>
 <body>
@@ -990,13 +1103,15 @@ function renderEdinburgh(
         experienceDateMode,
         presentLabel,
         labels,
-        { includeProducts: true },
+        { includeProducts: true, includePublicationLinks: true },
       )}
       ${renderEducation(
         label(labels, "sections.education", "Education and Qualifications"),
         slots["education.items"] ?? getByPath(cv, "education"),
         educationDateMode,
         presentLabel,
+        labels,
+        { includeDetails: true },
       )}
       ${optionalCourses}
       ${optionalProjects}
@@ -1009,7 +1124,6 @@ function renderEdinburgh(
       ${competenciesSection}
     </main>
   </div>
-  <footer class=\"page-footer\"></footer>
 </body>
 </html>`;
 }
