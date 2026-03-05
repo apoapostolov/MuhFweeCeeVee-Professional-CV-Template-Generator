@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Keyword Studio dataset UX updated: removed in-tab merge action button; dataset dropdown now recognizes `merged.json`, and keyword analysis defaults to `merged.json` when available.
+- Merged all existing JSON datasets in `cv-keyword-analysis/outputs` into `merged.json` so it appears as a selectable snapshot in Keyword Studio.
 - Initial monorepo bootstrap with Next.js web app and FastAPI parser scaffold.
 - Initial deployment scaffolding for `systemd` and `nginx`.
 - Initial project governance docs: `AGENTS.md`, `TODO.md`, and `DEVELOPMENT_LOG.md`.
@@ -221,6 +223,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded `cv-keyword-analysis` native JD discovery by generating role-based
   search seed URLs from configured templates/suffixes (no Firecrawl required),
   improving non-paid crawl coverage for resume runs.
+- Added new `Keyword Studio` tab with English Europass-like CV rendering (no PDF frame), fuzzy keyword tag highlighting, pastel heat bands (`grey` -> `red`), broad role-cluster weighting, and per-keyword CV usage scoring sourced from JD scrape outputs via `/api/analysis/keywords`.
+- Improved `Keyword Studio` CV rendering with explicit field-label rows before each value and upgraded phrase-aware keyword tagging so multi-word terms (for example `game designer`) render as a single weighted tag instead of split token tags.
+- Keyword Studio now supports dataset snapshot selection via dropdown (all detected JD snapshot files in `cv-keyword-analysis/outputs`) and includes merge action to build a unified `prototype dataset 1.0` (`prototype_dataset_1_0.json`).
 - Fixed OpenRouter model pricing reliability when an invalid/expired API key is
   stored: model catalog fetching now retries the public models endpoint without
   auth before falling back to cache, so pricing metadata remains available and

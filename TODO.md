@@ -47,6 +47,11 @@
 - [x] Start `cv-keyword-analysis` JD scraper with role relevance scoring and JSON export.
 - [x] Add JD scraper start/resume cache with no-reprocessing guarantees and optional Firecrawl provider mode.
 - [x] Expand native JD seed/query discovery so resume runs can grow corpus without Firecrawl.
+- [x] Add `Keyword Studio` tab with English keyword heat-tag rendering and usage weighting from JD corpus.
+- [x] Polish Keyword Studio rendering with labeled field rows and phrase-aware multi-word keyword tagging.
+- [x] Add Keyword Studio dataset snapshot dropdown + merge-to-`prototype dataset 1.0` workflow.
 - [ ] Add import/export UI for YAML packages.
 - [ ] Add template review status workflow (`pending/approved/rejected`).
 - [ ] Add visual diff tests for selected PDF golden outputs.
+
+- [x] Remove Keyword Studio merge button and use prebuilt `merged.json` as selectable/default dataset.

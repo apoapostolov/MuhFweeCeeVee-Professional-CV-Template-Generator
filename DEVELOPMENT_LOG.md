@@ -1352,3 +1352,83 @@ References checked:
 
 - `https://openrouter.ai/docs/api-reference/limits` (key endpoint and `limit_remaining`)
 - `https://openrouter.ai/docs/api-reference/credits` (`total_credits` / `total_usage`)
+
+## 2026-03-05 - Added Keyword Studio tab with fuzzy heat-tag keyword analysis
+
+Context/root cause:
+
+- Needed a broader keyword-clustering workflow than section scoring, focused on role families and keyword usage in CV text.
+- Required an English-only writing surface to align with the JD keyword corpus.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Keyword Studio rendering polish: labeled fields + phrase tags
+
+Context/root cause:
+
+- Initial Keyword Studio flattened values into paragraphs, reducing readability and traceability to CV fields.
+- Token-level highlighting split multi-word role keywords into separate tags (for example `game` + `designer`).
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Keyword Studio datasets: snapshot dropdown and unified prototype merge
+
+Context/root cause:
+
+- Needed explicit selection of historical JD snapshot datasets for keyword analysis in Keyword Studio.
+- Needed a deterministic unified prototype dataset built from all available snapshots in the worktree.
+
+Files touched:
+
+- `apps/web/src/app/api/analysis/keywords/datasets/route.ts`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `cv-keyword-analysis/outputs/prototype_dataset_1_0.json`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- dataset merge script -> wrote `prototype_dataset_1_0.json` with 235 unique items from 7 snapshots
+
+## 2026-03-05 - Keyword Studio dataset finalization with merged.json default
+
+Context/root cause:
+
+- Required deterministic dataset selection without a UI merge action, with a single prebuilt merged dataset visible in dropdown.
+- Needed merged artifact name to be `merged.json` from all existing JSON datasets in outputs directory.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/app/api/analysis/keywords/datasets/route.ts`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `cv-keyword-analysis/outputs/merged.json`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- merge script -> wrote `merged.json` with 235 unique items from 8 JSON datasets
+- `npm run check` -> pass
