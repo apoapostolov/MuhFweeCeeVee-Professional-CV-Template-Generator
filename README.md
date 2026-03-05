@@ -77,6 +77,16 @@ npm run dev:parser
 - `GET /api/templates`: list available templates from `templates/catalog.yaml`.
 - `GET /api/preview/html?cvId=...&templateId=...`: render HTML preview payload.
 - `GET /api/export/pdf?cvId=...&templateId=...`: generate and stream real PDF.
+- `GET /api/settings/openrouter`: read OpenRouter UI settings (`hasApiKey`, model, base URL).
+- `GET /api/settings/openrouter` also returns cached OpenRouter model catalog for model dropdown population.
+- `GET /api/settings/openrouter/credit`: read OpenRouter key credit/usage status (derived from OpenRouter `/api/v1/key`).
+- `PUT /api/settings/openrouter`: update OpenRouter API key/model/base URL from UI.
+- `POST /api/analysis/cv`: run AI scoring analysis (section-level or full CV) via OpenRouter.
+- `POST /api/cvs/sync`: sync missing fields from selected language variant to sibling language variant and translate via OpenRouter.
+  Response includes detailed per-field diff metadata (`path`, source value,
+  previous target value, next translated value, and direction `BG > EN` / `BG < EN`).
+- `POST /api/cvs/sync/status`: evaluate SYNC eligibility without mutating files
+  (missing-field count + source/target last-edited timestamp difference + `canSync`).
 - `GET /api/prototype`: get prototype runtime status.
 - `POST /api/prototype`: set prototype runtime (`start`/`stop`).
 - `POST /api/prototype/ingest`: mock AI prep for PDF/Image template ingestion.
@@ -91,16 +101,37 @@ npm run dev:parser
 ## Current UI Slice
 
 - `/` now hosts a prototype control room with:
-  - Launch/stop service controls
-  - Runtime service status cards
   - CV workspace lane with left-pane selectors and live PDF preview
+  - CV editor lane with sub-tabs for YAML section editing (`person`, `positioning`,
+    `experience`, `education`, `skills`, `references`, `optional_sections`, `metadata`)
+  - Editor section modes:
+    `Form View` (default, recursive field forms) and `YAML View` (raw section YAML)
+  - OpenRouter settings panel in UI (API key/model/base URL) for AI scoring
+  - OpenRouter settings panel shows current credit/usage status and refreshes it asynchronously every 60 seconds
+  - OpenRouter model dropdown loaded from server-side cached model catalog
+    (auto refresh on app load when cache is older than 72 hours; forced refresh on settings save)
+  - OpenRouter model options display free status, average mixed price per
+    1M input/output tokens, and estimated full-CV check cost using current
+    CV size with a 20% token overhead
+  - AI CV scoring actions for current section and whole CV, with structured feedback/proposals
+  - Editor-side `SYNC` action next to BG/EN pill to fill missing fields in sibling language variant using OpenRouter translation
+  - SYNC opens a detailed diff-style modal report with per-field change list,
+    direction arrows, source-of-truth value, and previous/new target values
+  - Editor SYNC button stays disabled/gray until `canSync` is true
+    (missing fields and/or last-edited timestamp difference between BG and EN)
+  - Form editor supports nested arrays/objects with add/remove/custom-entry controls and date-picker inputs for ISO date fields
   - BG/EN language pill switch for CV variants
+  - CV variant dropdown (one item per BG/EN pair) with language switching via pill
   - Template-localized BG/EN labels driven by selected CV variant language
   - Template-controlled date display per section (`exact`, `month-year`, `year`)
     from exact YAML dates
   - Print-friendly section transition policy (`break-inside: avoid`) for cleaner page splits
   - Edinburgh profile summary supports single merged paragraph rendering
     from multi-item CV source fields
+  - Edinburgh education section renders expanded education details
+    (field, subjects, level, faculty, location, completion)
+  - Experience entries support `publication_links` (URL + optional title;
+    title auto-derived from URL when omitted)
   - Edinburgh includes extended CV coverage (targeting, transition, role applicability,
     core strengths, social skills, and optional sections)
   - Europass includes the top-left Europass title + EU flag treatment and
@@ -108,7 +139,7 @@ npm run dev:parser
     from the enriched YAML source
   - CV/template selectors labeled by internal name + version
   - Print/save PDF action from rendered preview
-  - Footer page counter in generated PDFs
+  - Global pagination flow (template-local footer counters removed for Europass/Edinburgh)
   - Template gallery lane with first-page previews per implemented template,
     rendered from the most recently updated CV variant
   - Gallery previews are image renders (PNG), avoiding embedded PDF frame controls

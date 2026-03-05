@@ -70,6 +70,7 @@ labels:
       parallel_role_suffix: "parallel role"
       activities: "Main activities and responsibilities"
       products: "Published titles / products"
+      publication_links: "Publication links"
       tools: "Tools"
       results: "Key quantified results"
     education_labels:
@@ -140,6 +141,7 @@ labels:
       parallel_role_suffix: "паралелна заетост"
       activities: "• Основни дейности и отговорности"
       products: "• Продукти/заглавия"
+      publication_links: "• Публикации и връзки"
       tools: "• Инструменти"
       results: "• Измерими резултати"
     education_labels:

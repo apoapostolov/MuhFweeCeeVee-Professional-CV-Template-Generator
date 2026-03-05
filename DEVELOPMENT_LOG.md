@@ -524,6 +524,176 @@ Files touched:
 Validation commands and results:
 
 - `npm run check` -> pass
+
+## 2026-03-05 - CV dropdown grouping by BG/EN pair
+
+Context/root cause:
+
+- Requested `CV Variant` dropdown to show one logical CV entry per BG/EN pair
+  instead of separate entries per language file.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Removed Europass local page footer counter
+
+Context/root cause:
+
+- Requested removal of Europass `Page 0` footer because pagination is handled globally.
+
+Files touched:
+
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Synced EN CV 0001 with expanded BG fields
+
+Context/root cause:
+
+- Requested alignment of EN variant coverage with newly expanded BG `cv_bg_001_alianz`.
+- EN file was missing multiple fields and details introduced from the source PDF enrichment.
+
+Files touched:
+
+- `data/cvs/cv_en_001_alianz.yaml`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `node -e \"const fs=require('fs');const y=require('yaml');const d=y.parse(fs.readFileSync('data/cvs/cv_en_001_alianz.yaml','utf8')); console.log('ok', d.person.full_name, 'exp', d.experience.length, 'subjects', d.education?.[0]?.subjects?.length || 0, 'other_skills', d.optional_sections?.other_skills?.length || 0);\"` -> pass
+- `npm run check` -> pass
+
+## 2026-03-05 - CV Editor tab + OpenRouter scoring integration + Edinburgh footer removal
+
+Context/root cause:
+
+- Requested removal of local Edinburgh page counter (`Page 0`) because pagination is managed globally.
+- Requested a new editor workflow with section sub-tabs for CV YAML editing and AI-powered scoring/proposal analysis for section-level and whole-CV reviews.
+
+Files touched:
+
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `apps/web/src/lib/server/openRouterSettings.ts`
+- `apps/web/src/app/api/settings/openrouter/route.ts`
+- `apps/web/src/app/api/analysis/cv/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- `npm run build` -> pass
+
+## 2026-03-05 - Templates card height polish and header copy cleanup
+
+Context/root cause:
+
+- Requested template card frame height to wrap the image content instead of stretching to panel bottom.
+- Requested removal of `Source CV: Initial Alianz 1.0` and `Prototype Control Room` copy.
+- Requested subtitle text to reflect actual product purpose.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Editor UX upgrade: Form/YAML modes + OpenRouter settings reliability
+
+Context/root cause:
+
+- Requested tab naming cleanup (`Print Room`, `Editor`) and removal of template selector from editing context.
+- Requested rich form-based section editing with fallback YAML view and stronger nested array/object editing support.
+- Reported OpenRouter issues:
+  masked key text overflowing UI and scoring endpoint reporting API as not configured even after key entry.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/lib/server/openRouterSettings.ts`
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- `npm run build` -> pass
+- `curl -sS http://127.0.0.1:3001/api/settings/openrouter | jq -r '.hasApiKey, .apiKeyMasked, .model'` -> pass
+- `curl -sS -X PUT http://127.0.0.1:3001/api/settings/openrouter -H 'content-type: application/json' -d '{\"apiKey\":\"test_key_1234567890\",\"model\":\"openai/gpt-4o-mini\"}' | jq -r '.hasApiKey, .apiKeyMasked'` -> pass
+- `curl -sS -X POST http://127.0.0.1:3001/api/analysis/cv -H 'content-type: application/json' -d '{\"cvId\":\"cv_en_001_alianz\",\"templateId\":\"europass-v1\",\"scope\":\"section\",\"sectionKey\":\"positioning\"}' | jq -r '.error // .ok'` -> pass (`OpenRouter request failed.` confirms key was read and request attempted; no false `API not configured`)
+
+Follow-up refinement:
+
+- Form generator action controls were compacted:
+  remove/custom actions are now icon buttons integrated into section/field header rows and aligned right.
+- Removed one level of per-field wrapper nesting that previously existed only to host action buttons.
+- Validation:
+  - `npm run check` -> pass
+
+Additional follow-up:
+
+- AI scoring output panel now renders structured JSON responses as formatted cards:
+  section/full score header, per-field or per-section score blocks, analysis, proposal copy, and top actions list.
+- Raw text/JSON fallback remains for non-structured model responses.
+- Validation:
+  - `npm run check` -> pass
+
+## 2026-03-05 - Editor language SYNC via OpenRouter translation
+
+Context/root cause:
+
+- Requested a `SYNC` action in Editor next to BG/EN to sync missing fields from one language variant to the other with automatic translation using configured OpenRouter model.
+
+Files touched:
+
+- `apps/web/src/app/api/cvs/sync/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+Follow-up UI adjustment:
+
+- Relocated `Form View | YAML View` switch from left editor controls to the main editor action row,
+  positioned before scoring buttons as requested.
+- Validation:
+  - `npm run check` -> pass
+
+Additional follow-up:
+
+- OpenRouter model selection switched from free-text input to dropdown backed by server-provided model list.
+- Added server model catalog cache (`data/settings/openrouter_models.yaml`) with 72-hour freshness policy.
+  - `GET /api/settings/openrouter` refreshes models only when cache is stale.
+  - `PUT /api/settings/openrouter` forces model refresh after key/settings update.
+- Validation:
+  - `npm run check` -> pass
+  - `npm run build --workspace @myfreeceevee/web` -> pass
 - `apps/web/src/app/api/export/pdf/route.ts`
 - `templates/edinburgh-v1/template.yaml`
 - `templates/europass-v1/template.yaml`
@@ -793,3 +963,250 @@ Template Gallery render mode update:
   - `npm run check` -> pass
   - `npm run build` -> pass
   - `curl -I -sS "http://127.0.0.1:3001/api/export/image?cvId=cv_bg_001_alianz&templateId=edinburgh-v1&v=$(date +%s)"` -> pass (`200`, `image/png`)
+
+## 2026-03-05 - Editor variant naming + priced OpenRouter model labels
+
+Context/root cause:
+
+- Editor language/variant controls needed terminology alignment (`CV Variant`
+  instead of `CV Pair`).
+- OpenRouter model dropdown needed decision-grade pricing context per model:
+  free marker, average mixed token price, and estimated full-CV scoring cost
+  using the currently loaded CV size.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/lib/server/openRouterModels.ts`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - OpenRouter status message clarity + English save notice
+
+Context/root cause:
+
+- Requested clearer visual confirmation that OpenRouter API is configured after key save.
+- Requested English-only save confirmation text (previously could show Bulgarian).
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - OpenRouter model pricing parse/cache fix + 2-decimal display
+
+Context/root cause:
+
+- Model dropdown prices were showing zero values because cached model entries lacked pricing fields.
+- Price display precision needed normalization to `0.00` format.
+
+Files touched:
+
+- `apps/web/src/lib/server/openRouterModels.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - SYNC placement fix + long-text auto-height in Editor
+
+Context/root cause:
+
+- Requested `SYNC` button only in `Editor` (not in `Print Room`).
+- Long text values in form fields were using fixed-height controls and truncating visible content.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Print Room preview uses full panel area
+
+Context/root cause:
+
+- Requested removal of nested PDF preview frame so the right-side Print Room area is used directly for larger PDF display.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Template title suffix cleanup in UI
+
+Context/root cause:
+
+- Requested removal of `(Rebuilt)` and `(Prototype)` from template titles in the Templates view.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - OpenRouter pricing metadata fallback for invalid API key
+
+Context/root cause:
+
+- User reported all model pricing as `N/A` in dropdown.
+- Root cause: when a saved OpenRouter API key is invalid/expired, models fetch with Authorization can fail, and code previously fell back to stale cache entries missing pricing.
+
+Files touched:
+
+- `apps/web/src/lib/server/openRouterModels.ts`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- `node -e "(async()=>{const base='http://127.0.0.1:3001/api/settings/openrouter'; await fetch(base,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({apiKey:'invalid_key_for_test',model:'openai/gpt-4o-mini'})}); const r=await fetch(base); const j=await r.json(); const priced=(j.models||[]).filter(m=>m.promptPricePer1M!==null||m.completionPricePer1M!==null||m.mixedPricePer1M!==null).length; console.log(JSON.stringify({models:j.models?.length||0, priced},null,2));})().catch(e=>{console.error(e);process.exit(1);});"` -> pass (`priced` equals total model count)
+
+References checked:
+
+- `https://openrouter.ai/api/v1/models` -> returns model objects with `pricing.prompt` and `pricing.completion`.
+
+## 2026-03-05 - CV metadata rename + scoring prompt overhaul + credit polling
+
+Context/root cause:
+
+- Requested CV variant title rename to `Initial March 2026 1.0`.
+- Requested major upgrade of scoring payload quality using local `cv-ranking` skill and broader online scoring/ranking practices.
+- Requested OpenRouter box to show remaining credit in muted text and refresh asynchronously every minute.
+
+Files touched:
+
+- `data/cvs/cv_bg_001_alianz.yaml`
+- `data/cvs/cv_en_001_alianz.yaml`
+- `apps/web/src/app/api/analysis/cv/route.ts`
+- `apps/web/src/lib/server/openRouterCredit.ts`
+- `apps/web/src/app/api/settings/openrouter/credit/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `/home/apoapostolov/git/lifestyle/skills/cv-ranking/SKILL.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- `node -e '(async()=>{const fs=require("fs"); const y=require("yaml"); const s=y.parse(fs.readFileSync("data/settings/openrouter.yaml","utf8")); const key=s.apiKey; const r=await fetch("https://openrouter.ai/api/v1/key",{headers:{Authorization:"Bearer "+key}}); console.log("status",r.status); const t=await r.text(); console.log(t.slice(0,120));})().catch(e=>{console.error(e);process.exit(1);});'` -> pass (`200`)
+
+Research references checked:
+
+- `https://openrouter.ai/api/v1/models`
+- `https://openrouter.ai/api/v1/key`
+- `https://openrouter.ai/docs/api-reference/overview`
+- `https://www.theladders.com/wp-content/uploads/TheLadders-EyeTracking-StudyC2.pdf`
+- `https://capd.mit.edu/resources/the-star-method-for-behavioral-interviews/`
+- `https://arxiv.org/search/?query=resume+job+matching&searchtype=all`
+
+## 2026-03-05 - SYNC diff modal (Epic UX) with per-field direction and before/after values
+
+Context/root cause:
+
+- Requested SYNC to provide a detailed review dialog listing every modified field,
+  explicit BG/EN direction, and what changed from previous target values.
+
+Files touched:
+
+- `apps/web/src/app/api/cvs/sync/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Edinburgh education completeness + per-job publication links
+
+Context/root cause:
+
+- Requested Edinburgh template to include all missing education fields from CV YAML.
+- Requested CV YAML support for publication links per job position, with optional title and auto-title extraction from URL when missing.
+
+Files touched:
+
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `templates/edinburgh-v1/template.yaml`
+- `templates/europass-v1/template.yaml`
+- `data/cvs/cv_bg_001_alianz.yaml`
+- `data/cvs/cv_en_001_alianz.yaml`
+- `docs/cv/CV_YAML_STANDARD.md`
+- `README.md`
+- `CHANGELOG.md`
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- `node -e '(async()=>{const u="http://127.0.0.1:3001/api/preview/html?cvId=cv_en_001_alianz&templateId=edinburgh-v1&v="+Date.now();const r=await fetch(u);const h=await r.text();console.log(JSON.stringify({ok:r.ok,hasPub:h.includes("publication-links-subsection"),hasEduDetails:h.includes("edu-detail"),hasCompleted:h.includes("Completed:")},null,2));})().catch(e=>{console.error(e);process.exit(1);});'` -> pass
+- `node -e '(async()=>{const u="http://127.0.0.1:3001/api/preview/html?cvId=cv_bg_001_alianz&templateId=europass-v1&v="+Date.now();const r=await fetch(u);const h=await r.text();console.log(JSON.stringify({ok:r.ok,hasEuropassPubLinks:h.includes("Публикации и връзки"),hasSteam:h.includes("store.steampowered.com")},null,2));})().catch(e=>{console.error(e);process.exit(1);});'` -> pass
+
+## 2026-03-05 - OpenRouter configured status color adjustment
+
+Context/root cause:
+
+- Requested `OpenRouter API configured (...)` status to remain bold but not green.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+
+## 2026-03-05 - Template gallery cleanup + SYNC eligibility gating
+
+Context/root cause:
+
+- Requested removal of technical template id strings under gallery card titles.
+- Requested Editor SYNC button to remain disabled/gray until there is a confirmed missing-field difference or BG/EN edit timestamp difference.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/app/api/cvs/sync/status/route.ts`
+- `apps/web/src/lib/server/cvStore.ts`
+- `data/cvs/cv_bg_001_alianz.yaml`
+- `data/cvs/cv_en_001_alianz.yaml`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run check` -> pass
+- `node -e '(async()=>{const r=await fetch("http://127.0.0.1:3001/api/cvs/sync/status",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({cvId:"cv_bg_001_alianz",sourceLanguage:"bg"})}); const j=await r.json(); console.log(JSON.stringify({status:r.status,canSync:j.canSync,hasMissing:j.hasMissingFields,missing:j.missingFieldCount,timestampsDiffer:j.timestampsDiffer},null,2));})().catch(e=>{console.error(e);process.exit(1);});'` -> pass

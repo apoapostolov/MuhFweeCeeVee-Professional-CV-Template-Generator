@@ -151,3 +151,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   improved vertical centering.
 - Temporarily hid Europass `Key quantified results` rows in experience output
   pending final presentation design.
+- Updated CV selector UX: the `CV Variant` dropdown now shows one entry per
+  BG/EN pair (same iteration+target), while language selection remains controlled
+  via the BG/EN pill.
+- Removed Europass template-local footer counter (`Page N`) to avoid duplicate
+  pagination and suppress `Page 0` output.
+- Synced `cv_en_001_alianz` with all newly expanded fields from BG `0001`
+  and translated the added content to English (experience details, addresses,
+  products, education subjects/level, and optional sections).
+- Added OpenRouter settings API and persistence:
+  `GET/PUT /api/settings/openrouter` backed by `data/settings/openrouter.yaml`.
+- Added AI CV scoring endpoint `POST /api/analysis/cv` for section-level and
+  full-CV analysis/proposals via OpenRouter.
+- Added new `CV Editor` tab with section sub-tabs, JSON section editing, save-to-YAML flow,
+  and AI scoring actions (section + whole CV).
+- Removed Edinburgh template-local footer counter (`Page N`) to rely on global pagination.
+- Refined templates gallery card sizing so each card wraps its A4 image content
+  (no stretched card to panel bottom), with balanced top/bottom padding around preview image.
+- Removed `Source CV: ...` helper line from Templates tab.
+- Updated main header copy by removing `Prototype Control Room` and replacing
+  the subtitle with product-purpose text.
+- Renamed top navigation labels:
+  `CV Workspace` -> `Print Room`, `CV Editor` -> `Editor`.
+- Editor controls now remove template selector from edit flow and support dual section modes:
+  `Form View` (default) + optional `YAML View`.
+- Added recursive form editing with bilingual field metadata/copy, plus extensive
+  nested array/object controls (add/remove/custom fields and custom entries) and
+  date picker support for date fields.
+- OpenRouter settings UX improved:
+  compact masked API key display (no overflow) and persistence logic that no
+  longer clears stored keys when saving model/base URL updates.
+- Verified scoring path after key save no longer returns `API not configured`;
+  failures now reflect provider/API response errors when key/provider are invalid.
+- Refined Editor Form Generator controls:
+  replaced text action buttons (`+ Custom Field`, `Remove Field`) with compact icon buttons,
+  right-aligned them in header rows, and removed extra per-field wrapper nesting used only for action controls.
+- Upgraded AI scoring panel rendering:
+  structured section/full analysis JSON now displays as score cards with per-field/per-section scores,
+  analysis text, proposals, and top actions (raw JSON fallback kept for non-structured responses).
+- Added Editor `SYNC` button next to BG/EN pill:
+  syncs missing fields from selected language to sibling language variant and
+  translates content using configured OpenRouter model.
+- Added backend endpoint `POST /api/cvs/sync` to perform missing-field detection,
+  OpenRouter translation of missing fragments, and snapshot-backed target variant update.
+- Moved `Form View | YAML View` toggle into the editor action row (left of scoring buttons)
+  and removed it from the left-side controls section.
+- OpenRouter settings now populate model selection from fetched model catalog
+  (dropdown instead of free-text model field).
+- Added 72-hour server-side OpenRouter model cache with automatic refresh on app load when stale
+  and forced refresh after API key/settings save.
+- Updated Editor terminology from `CV Pair` to `CV Variant` and enhanced
+  OpenRouter model dropdown labels with model free status, average mixed
+  $/1M token pricing, and estimated full-CV scoring cost based on current CV
+  size plus 20% token overhead.
+- OpenRouter settings panel now shows a clear configured-state message for
+  saved API keys (with emphasized styling), uses a configured-aware API key
+  input placeholder, and always displays `Settings saved.` in English.
+- Fixed OpenRouter model price pipeline:
+  robustly parses pricing values from API/cache, invalidates fresh-but-incomplete
+  cached model lists with missing pricing, and normalizes dropdown price display
+  to two decimals (`0.00`) with `N/A` fallback when pricing is unavailable.
+- Moved `SYNC` action out of `Print Room` and into `Editor` language controls.
+- Improved Editor form UX for long text fields by auto-switching to dynamic-height
+  textareas sized to content length (including primitive array items).
+- Print Room PDF preview now uses the full right-panel space directly (removed the
+  nested inner preview frame) for a larger on-screen PDF view.
+- Template display names now strip `(Rebuilt)` and `(Prototype)` suffixes in
+  the Templates tab titles (and template selector labels).
+- Fixed OpenRouter model pricing reliability when an invalid/expired API key is
+  stored: model catalog fetching now retries the public models endpoint without
+  auth before falling back to cache, so pricing metadata remains available and
+  dropdown entries no longer degrade to `N/A` from stale incomplete cache.
+- Renamed seed CV variant display metadata from `Initial Alianz 1.0` to
+  `Initial March 2026 1.0`.
+- Upgraded AI CV scoring prompt payload with stricter weighted rubric,
+  confidence + severity findings, and interview-safe ATS-focused rewrite constraints.
+- Added OpenRouter credit status endpoint `GET /api/settings/openrouter/credit`
+  and UI polling every 60 seconds to show remaining credit/usage in the
+  OpenRouter settings box.
+- Implemented an Epic-level SYNC diff experience in Editor:
+  sync now returns per-field change details and opens a comprehensive modal
+  listing every modified field with direction (`BG > EN` / `BG < EN`), source-of-truth,
+  previous target value, and new translated target value.
+- Extended `edinburgh-v1` education rendering to include full education details
+  from YAML (field of study, subjects, qualification level, faculty, location,
+  and completion status).
+- Added per-job publication link support in CV YAML and renderers via
+  `experience[].publication_links[]` with:
+  - `url` (required for rendering),
+  - `title` (optional),
+  - automatic title extraction from URL when title is not provided.
+- Added publication link rendering in both Edinburgh and Europass experience
+  sections, including localized labels.
+- OpenRouter configured-key status text is now bold neutral body text
+  (non-green), per UI preference.
+- Templates gallery cards no longer show the technical template id string
+  below the human-readable template title.
+- Added SYNC status endpoint `POST /api/cvs/sync/status` and Editor gating:
+  SYNC is now gray/disabled until a missing-field diff or BG/EN last-edited
+  timestamp difference is confirmed.
+- Added metadata timestamp support for edits:
+  CV writes now set `metadata.last_edited_at` (ISO timestamp).
