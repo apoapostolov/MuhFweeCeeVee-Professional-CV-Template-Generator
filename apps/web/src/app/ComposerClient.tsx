@@ -93,7 +93,7 @@ type SyncStatusResponse = {
   canSync: boolean;
 };
 
-type ActivePanel = "workspace" | "templates" | "editor";
+type ActivePanel = "workspace" | "templates" | "editor" | "keywords";
 type EditorViewMode = "form" | "yaml";
 
 type EditorTabKey =
@@ -158,6 +158,52 @@ type FullAnalysis = {
   summary?: string;
   section_scores?: FullSectionScore[];
   top_actions?: string[];
+};
+
+type KeywordBand = "grey" | "green" | "yellow" | "orange" | "red";
+
+type KeywordStudioResponse = {
+  ok?: boolean;
+  error?: string;
+  englishCvId?: string;
+  datasetId?: string;
+  sourceFile?: string;
+  generatedAt?: string;
+  jdRelevantCount?: number;
+  clusterCount?: number;
+  clusters?: Array<{
+    cluster: string;
+    totalWeight: number;
+    normalized: number;
+    keywordCount: number;
+    cvCoverage: number;
+  }>;
+  keywords?: Array<{
+    keyword: string;
+    docFreq: number;
+    idf: number;
+    avgSignal: number;
+    weight: number;
+    normalized: number;
+    band: KeywordBand;
+    cvHits: number;
+    cvCoverage: number;
+  }>;
+  cv?: Record<string, unknown>;
+};
+
+type KeywordDatasetListResponse = {
+  ok?: boolean;
+  defaultDatasetId?: string | null;
+  datasets?: Array<{
+    id: string;
+    label: string;
+    fileName: string;
+    generatedAt: string | null;
+    itemCount: number;
+    provider: string | null;
+    isPrototype: boolean;
+  }>;
 };
 
 const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string }> = [
@@ -448,6 +494,12 @@ export function ComposerClient() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
   const [analysisData, setAnalysisData] = useState<SectionAnalysis | FullAnalysis | null>(null);
+  const [keywordDatasets, setKeywordDatasets] = useState<KeywordDatasetListResponse["datasets"]>([]);
+  const [selectedKeywordDataset, setSelectedKeywordDataset] = useState("");
+  const [keywordDatasetLoading, setKeywordDatasetLoading] = useState(false);
+  const [keywordStudioLoading, setKeywordStudioLoading] = useState(false);
+  const [keywordStudioError, setKeywordStudioError] = useState("");
+  const [keywordStudioData, setKeywordStudioData] = useState<KeywordStudioResponse | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
   const [syncReport, setSyncReport] = useState<{
@@ -485,6 +537,54 @@ export function ComposerClient() {
     () => Math.max(900, Math.min(2600, Math.round(cvSizeTokenEstimate * 0.35))),
     [cvSizeTokenEstimate],
   );
+
+  const keywordMatcher = useMemo(() => {
+    const tokenIndex = new Map<string, { keyword: string; normalized: number; band: KeywordBand; weight: number }>();
+    const phraseIndex = new Map<string, { keyword: string; normalized: number; band: KeywordBand; weight: number }>();
+    let maxPhraseWords = 1;
+
+    for (const item of keywordStudioData?.keywords ?? []) {
+      const normalizedTokens = item.keyword
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 3);
+      if (normalizedTokens.length === 0) {
+        continue;
+      }
+
+      const phrase = normalizedTokens.join(" ");
+      const existingPhrase = phraseIndex.get(phrase);
+      if (!existingPhrase || item.weight > existingPhrase.weight) {
+        phraseIndex.set(phrase, {
+          keyword: item.keyword,
+          normalized: item.normalized,
+          band: item.band,
+          weight: item.weight,
+        });
+      }
+
+      maxPhraseWords = Math.max(maxPhraseWords, normalizedTokens.length);
+
+      for (const token of normalizedTokens) {
+        const existing = tokenIndex.get(token);
+        if (!existing || item.weight > existing.weight) {
+          tokenIndex.set(token, {
+            keyword: item.keyword,
+            normalized: item.normalized,
+            band: item.band,
+            weight: item.weight,
+          });
+        }
+      }
+    }
+
+    return {
+      tokenIndex,
+      phraseIndex,
+      maxPhraseWords: Math.max(1, Math.min(maxPhraseWords, 5)),
+    };
+  }, [keywordStudioData?.keywords]);
 
   function formatUsd(value: number): string {
     return `$${value.toFixed(2)}`;
@@ -750,6 +850,87 @@ export function ComposerClient() {
   }, [selectedCvId]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadKeywordDatasets() {
+      setKeywordDatasetLoading(true);
+      try {
+        const response = await fetch("/api/analysis/keywords/datasets");
+        const payload = (await response.json()) as KeywordDatasetListResponse;
+        if (cancelled) return;
+        const datasets = payload.datasets ?? [];
+        setKeywordDatasets(datasets);
+        setSelectedKeywordDataset((current) => {
+          if (current && datasets.some((item) => item.id === current)) {
+            return current;
+          }
+          return payload.defaultDatasetId ?? datasets[0]?.id ?? "";
+        });
+      } catch {
+        if (!cancelled) {
+          setKeywordDatasets([]);
+          setSelectedKeywordDataset("");
+        }
+      } finally {
+        if (!cancelled) {
+          setKeywordDatasetLoading(false);
+        }
+      }
+    }
+
+    void loadKeywordDatasets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadKeywordStudio() {
+      const englishId = variantPair?.en?.id ?? (selectedCvMeta?.language === "en" ? selectedCvId : "");
+      if (!englishId) {
+        setKeywordStudioData(null);
+        setKeywordStudioError("English CV variant is required for Keyword Studio.");
+        return;
+      }
+
+      setKeywordStudioLoading(true);
+      setKeywordStudioError("");
+      try {
+        const params = new URLSearchParams({ cvId: englishId });
+        if (selectedKeywordDataset) {
+          params.set("dataset", selectedKeywordDataset);
+        }
+        const response = await fetch(`/api/analysis/keywords?${params.toString()}`);
+        const payload = (await response.json()) as KeywordStudioResponse;
+        if (cancelled) return;
+        if (!response.ok || payload.error) {
+          setKeywordStudioData(null);
+          setKeywordStudioError(payload.error ?? "Failed to load keyword analysis.");
+          return;
+        }
+        setKeywordStudioData(payload);
+      } catch {
+        if (!cancelled) {
+          setKeywordStudioData(null);
+          setKeywordStudioError("Failed to load keyword analysis.");
+        }
+      } finally {
+        if (!cancelled) {
+          setKeywordStudioLoading(false);
+        }
+      }
+    }
+
+    void loadKeywordStudio();
+    return () => {
+      cancelled = true;
+    };
+  }, [previewNonce, selectedCvId, selectedCvMeta?.language, selectedKeywordDataset, variantPair?.en?.id]);
+
+  useEffect(() => {
     if (!editorCv) {
       setSectionDraft(null);
       setYamlDraft("");
@@ -1009,6 +1190,216 @@ export function ComposerClient() {
     return "text-rose-700";
   }
 
+  function keywordBandClass(band: KeywordBand): string {
+    if (band === "red") return "border-red-300 bg-red-50 text-red-900";
+    if (band === "orange") return "border-orange-300 bg-orange-50 text-orange-900";
+    if (band === "yellow") return "border-yellow-300 bg-yellow-50 text-yellow-900";
+    if (band === "green") return "border-emerald-300 bg-emerald-50 text-emerald-900";
+    return "border-slate-300 bg-slate-100 text-slate-700";
+  }
+
+  function normalizeToken(token: string): string {
+    return token.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "");
+  }
+
+  function diceSimilarity(a: string, b: string): number {
+    if (a === b) return 1;
+    if (a.length < 2 || b.length < 2) return 0;
+    const gramsA = new Map<string, number>();
+    for (let i = 0; i < a.length - 1; i += 1) {
+      const gram = a.slice(i, i + 2);
+      gramsA.set(gram, (gramsA.get(gram) ?? 0) + 1);
+    }
+    let overlap = 0;
+    for (let i = 0; i < b.length - 1; i += 1) {
+      const gram = b.slice(i, i + 2);
+      const count = gramsA.get(gram) ?? 0;
+      if (count > 0) {
+        overlap += 1;
+        gramsA.set(gram, count - 1);
+      }
+    }
+    return (2 * overlap) / (a.length - 1 + (b.length - 1));
+  }
+
+  function fuzzyKeywordForToken(token: string): { keyword: string; normalized: number; band: KeywordBand } | null {
+    const normalized = normalizeToken(token);
+    if (normalized.length < 3) return null;
+
+    const exact = keywordMatcher.tokenIndex.get(normalized);
+    if (exact) {
+      return exact;
+    }
+
+    let best: { keyword: string; normalized: number; band: KeywordBand; score: number } | null = null;
+    for (const [candidate, metric] of keywordMatcher.tokenIndex.entries()) {
+      if (Math.abs(candidate.length - normalized.length) > 2) continue;
+      const similarity = diceSimilarity(normalized, candidate);
+      if (similarity < 0.86) continue;
+      if (!best || similarity > best.score) {
+        best = { ...metric, score: similarity };
+      }
+    }
+    if (!best) return null;
+    return { keyword: best.keyword, normalized: best.normalized, band: best.band };
+  }
+
+  function keywordForPhrase(tokens: string[]): { keyword: string; normalized: number; band: KeywordBand } | null {
+    const phrase = tokens.map((item) => normalizeToken(item)).filter(Boolean).join(" ");
+    if (!phrase) return null;
+    const exact = keywordMatcher.phraseIndex.get(phrase);
+    if (exact) {
+      return exact;
+    }
+    return null;
+  }
+
+  function renderKeywordAwareText(text: string): JSX.Element {
+    const tokens = text.split(/(\s+)/);
+    const nodes: JSX.Element[] = [];
+    let i = 0;
+
+    while (i < tokens.length) {
+      const raw = tokens[i];
+      if (raw.trim().length === 0) {
+        nodes.push(<span key={`ws-${i}`}>{raw}</span>);
+        i += 1;
+        continue;
+      }
+
+      let matched:
+        | {
+            endIndex: number;
+            rawText: string;
+            metric: { keyword: string; normalized: number; band: KeywordBand };
+          }
+        | null = null;
+
+      for (let phraseLen = keywordMatcher.maxPhraseWords; phraseLen >= 2; phraseLen -= 1) {
+        let wordCount = 0;
+        let cursor = i;
+        const parts: string[] = [];
+        const phraseWordTokens: string[] = [];
+
+        while (cursor < tokens.length && wordCount < phraseLen) {
+          const part = tokens[cursor];
+          parts.push(part);
+          if (part.trim().length > 0) {
+            phraseWordTokens.push(part);
+            wordCount += 1;
+          }
+          cursor += 1;
+        }
+
+        if (wordCount !== phraseLen) {
+          continue;
+        }
+
+        const metric = keywordForPhrase(phraseWordTokens);
+        if (!metric) {
+          continue;
+        }
+
+        matched = {
+          endIndex: cursor - 1,
+          rawText: parts.join(""),
+          metric,
+        };
+        break;
+      }
+
+      if (matched) {
+        nodes.push(
+          <span
+            key={`phrase-${i}-${matched.endIndex}`}
+            className={`inline-flex rounded-md border px-1.5 py-[1px] ${keywordBandClass(matched.metric.band)}`}
+            title={`${matched.metric.keyword} • ${(matched.metric.normalized * 100).toFixed(0)} importance`}
+          >
+            {matched.rawText}
+          </span>,
+        );
+        i = matched.endIndex + 1;
+        continue;
+      }
+
+      const hit = fuzzyKeywordForToken(raw);
+      if (!hit) {
+        nodes.push(<span key={`txt-${i}`}>{raw}</span>);
+        i += 1;
+        continue;
+      }
+
+      nodes.push(
+        <span
+          key={`tag-${i}`}
+          className={`inline-flex rounded-md border px-1 py-[1px] ${keywordBandClass(hit.band)}`}
+          title={`${hit.keyword} • ${(hit.normalized * 100).toFixed(0)} importance`}
+        >
+          {raw}
+        </span>,
+      );
+      i += 1;
+    }
+
+    return (
+      <>{nodes}</>
+    );
+  }
+
+  type KeywordFieldRow = { label: string; value: string };
+
+  function formatKeywordPathLabel(path: PathSegment[]): string {
+    const labels: string[] = [];
+    for (const segment of path) {
+      if (typeof segment === "number") {
+        if (labels.length > 0) {
+          labels[labels.length - 1] = `${labels[labels.length - 1]} ${segment + 1}`;
+        } else {
+          labels.push(`Entry ${segment + 1}`);
+        }
+        continue;
+      }
+      labels.push(prettyKey(segment));
+    }
+    if (labels.length === 0) return "Field";
+    if (labels.length === 1) return labels[0];
+    return `${labels[labels.length - 2]} - ${labels[labels.length - 1]}`;
+  }
+
+  function collectKeywordRows(value: unknown, path: PathSegment[] = [], rows: KeywordFieldRow[] = []): KeywordFieldRow[] {
+    if (value === null || value === undefined) {
+      return rows;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) {
+        rows.push({ label: formatKeywordPathLabel(path), value: trimmed });
+      }
+      return rows;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean") {
+      rows.push({ label: formatKeywordPathLabel(path), value: String(value) });
+      return rows;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((entry, index) => {
+        collectKeywordRows(entry, [...path, index], rows);
+      });
+      return rows;
+    }
+
+    if (typeof value === "object") {
+      Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+        collectKeywordRows(entry, [...path, key], rows);
+      });
+    }
+
+    return rows;
+  }
+
   function refreshPreview() {
     setPreviewNonce(Date.now());
   }
@@ -1236,6 +1627,168 @@ export function ComposerClient() {
     );
   }
 
+  function renderKeywordSection(title: string, value: unknown): JSX.Element | null {
+    const rows = collectKeywordRows(value, [title.toLowerCase().replace(/[^a-z0-9]+/g, "_")]);
+    if (rows.length === 0) return null;
+    return (
+      <section className="rounded-md border border-[var(--line)] bg-white p-4 shadow-[0_1px_0_rgba(15,23,42,0.04)]">
+        <h4 className="border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-[0.08em] text-slate-800">{title}</h4>
+        <div className="mt-2 divide-y divide-slate-100">
+          {rows.map((row, index) => (
+            <div key={`${title}-${index}`} className="grid gap-1 py-2 md:grid-cols-[220px_1fr] md:gap-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{row.label}</p>
+              <p className="text-sm leading-6 text-slate-800">{renderKeywordAwareText(row.value)}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderKeywordStudio(): JSX.Element {
+    if (keywordStudioLoading) {
+      return <p className="text-sm text-[var(--ink-muted)]">Loading keyword analysis and CV render...</p>;
+    }
+    if (keywordStudioError) {
+      return <p className="text-sm text-rose-700">{keywordStudioError}</p>;
+    }
+
+    const cvRoot = asRecord(keywordStudioData?.cv);
+    if (!cvRoot) {
+      return <p className="text-sm text-[var(--ink-muted)]">Keyword Studio requires an English CV variant.</p>;
+    }
+
+    const person = asRecord(cvRoot.person);
+    const contact = asRecord(person?.contact);
+    const positioning = asRecord(cvRoot.positioning);
+    const clusters = keywordStudioData?.clusters ?? [];
+    const keywords = (keywordStudioData?.keywords ?? []).slice(0, 24);
+
+    const experiences = Array.isArray(cvRoot.experience) ? cvRoot.experience : [];
+    const education = Array.isArray(cvRoot.education) ? cvRoot.education : [];
+    const optional = asRecord(cvRoot.optional_sections);
+    const skills = asRecord(cvRoot.skills);
+
+    return (
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[340px_1fr]">
+        <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-white p-4">
+          <h2 className="text-xl font-bold text-slate-900">Keyword Studio</h2>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">
+            English Europass-like analysis view with fuzzy keyword tagging and weighted relevance heat.
+          </p>
+
+          <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Dataset</p>
+            <label className="mt-2 block text-xs font-medium text-slate-700">
+              Snapshot
+              <select
+                className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
+                disabled={keywordDatasetLoading || (keywordDatasets?.length ?? 0) === 0}
+                onChange={(event) => setSelectedKeywordDataset(event.target.value)}
+                value={selectedKeywordDataset}
+              >
+                {(keywordDatasets ?? []).map((dataset) => (
+                  <option key={dataset.id} value={dataset.id}>
+                    {dataset.label} ({dataset.itemCount})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Dataset Snapshot</p>
+            <p className="mt-1 text-xs text-slate-700">Dataset ID: {keywordStudioData?.datasetId ?? "n/a"}</p>
+            <p className="mt-1 text-xs text-slate-700">Relevant JDs: {keywordStudioData?.jdRelevantCount ?? 0}</p>
+            <p className="mt-1 text-xs text-slate-700">Source: {keywordStudioData?.sourceFile ?? "n/a"}</p>
+          </div>
+
+          <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Role Clusters</p>
+            <div className="mt-2 space-y-2">
+              {clusters.map((cluster) => (
+                <div key={cluster.cluster} className="rounded-md border border-[var(--line)] bg-white p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-slate-900">{cluster.cluster}</p>
+                    <p className="text-xs font-bold text-slate-700">{(cluster.normalized * 100).toFixed(0)}%</p>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    Weight {cluster.totalWeight.toFixed(1)} • CV coverage {(cluster.cvCoverage * 100).toFixed(0)}%
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Top Keyword Weights</p>
+            <div className="mt-2 space-y-2">
+              {keywords.map((item) => (
+                <div key={item.keyword} className="rounded-md border border-[var(--line)] bg-white p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-semibold ${keywordBandClass(item.band)}`}>
+                      {item.keyword}
+                    </span>
+                    <span className="text-xs font-bold text-slate-700">{item.weight.toFixed(1)}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    CV hits {item.cvHits} • JD freq {item.docFreq} • usage score {(item.cvCoverage * 100).toFixed(0)}%
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
+
+        <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-[#fcfcfd] p-5">
+          <div className="mx-auto w-full max-w-[920px] rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="grid border-b border-slate-200 md:grid-cols-[250px_1fr]">
+              <div className="border-r border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Personal Information</p>
+                <h3 className="mt-2 text-2xl font-bold leading-tight text-slate-900">
+                  {String(person?.full_name ?? "Unnamed Candidate")}
+                </h3>
+                <div className="mt-3 divide-y divide-slate-200 text-sm text-slate-700">
+                  {collectKeywordRows(
+                    {
+                      email: contact?.email,
+                      phone: contact?.phone_e164,
+                      residence: person?.residence,
+                    },
+                    ["person"],
+                  ).map((row, index) => (
+                    <div key={`personal-row-${index}`} className="grid gap-1 py-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-500">{row.label}</p>
+                      <p>{renderKeywordAwareText(row.value)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Profile</p>
+                <div className="mt-2 divide-y divide-slate-100">
+                  {collectKeywordRows(positioning?.profile_summary, ["positioning", "profile_summary"]).map((row, index) => (
+                    <div key={`sum-${index}`} className="grid gap-1 py-2 md:grid-cols-[180px_1fr] md:gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{row.label}</p>
+                      <p className="text-sm leading-6 text-slate-800">{renderKeywordAwareText(row.value)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4">
+              {renderKeywordSection("Professional Experience", experiences)}
+              {renderKeywordSection("Education and Training", education)}
+              {renderKeywordSection("Skills", skills)}
+              {renderKeywordSection("Additional Information", optional)}
+            </div>
+          </div>
+        </article>
+      </div>
+    );
+  }
+
   return (
     <main className="paper-grid grain-overlay h-screen overflow-hidden px-4 py-4 md:px-8 md:py-6">
       <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-4">
@@ -1276,6 +1829,15 @@ export function ComposerClient() {
               type="button"
             >
               Templates
+            </button>
+            <button
+              className={`rounded-md px-4 py-2 text-sm font-semibold ${
+                activePanel === "keywords" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+              }`}
+              onClick={() => setActivePanel("keywords")}
+              type="button"
+            >
+              Keyword Studio
             </button>
           </div>
 
@@ -1773,6 +2335,8 @@ export function ComposerClient() {
               </div>
             </div>
           )}
+
+          {activePanel === "keywords" && renderKeywordStudio()}
 
           {syncReport?.open ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4">
