@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const REPO_SENTINELS = ["data", "templates", "TODO.md"];
+const REPO_SENTINELS = ["data", "templates"];
 
 function looksLikeRepoRoot(candidate: string): boolean {
   return REPO_SENTINELS.every((entry) =>
@@ -20,7 +20,7 @@ export function resolveRepoRoot(): string {
   }
 
   throw new Error(
-    `Could not resolve repository root from cwd=${cwd}. Expected to find data/, templates/, TODO.md.`,
+    `Could not resolve repository root from cwd=${cwd}. Expected to find data/ and templates/ directories.`,
   );
 }
 
