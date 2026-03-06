@@ -94,8 +94,16 @@ JD scraping pipeline and CV keyword scoring engine are implemented.
 Implemented:
 
 - `analysis_engine.py` - deterministic CV-vs-JD analysis pipeline.
+- taxonomy-aware classification with categories:
+  `hard_skill`, `soft_skill`, `seniority`, `action_verb`, `domain_term`.
+- seniority-intent detection across JD corpus.
+- category-aware weighting multipliers and role-cluster weighting profiles.
+- source-quality + recency + near-duplicate penalties in JD weighting.
+- contextual negation handling for CV hit counting (`no/not/without/...`).
+- per-category analytics in JSON/markdown outputs.
 - `schemas/analysis_input.schema.json` - input payload contract.
 - `schemas/analysis_output.schema.json` - output report contract.
+- `config/keyword_taxonomy.json` - taxonomy aliases, category term sets, and role-cluster profiles.
 - `tests/fixtures/analysis_input.json` - deterministic fixture input.
 - `tests/test_analysis_engine.py` - regression/unit checks.
 
@@ -127,6 +135,8 @@ cd cv-keyword-analysis
 - confidence (`scores.confidence`)
 - severity-ranked gaps (`gap_severity`)
 - actionable suggestions (`actions`)
+- seniority signal summary (`seniority_intent`)
+- category performance breakdown (`category_analytics`)
 - editor integration hook (`integration_hooks.editor_panel`)
 
 ### Validation

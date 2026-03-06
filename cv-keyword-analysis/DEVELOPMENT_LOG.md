@@ -132,3 +132,49 @@ Validation commands and results:
 - `/usr/bin/python3 -m py_compile jd_scraper.py analysis_engine.py` -> pass
 - `/usr/bin/python3 -m unittest tests/test_analysis_engine.py` -> pass (5 tests)
 - `/usr/bin/python3 analysis_engine.py --input tests/fixtures/analysis_input.json --output outputs/analysis_report_fixture.json --markdown-output outputs/analysis_report_fixture.md --editor-hook-output outputs/editor_hook_fixture.json` -> pass
+
+## 2026-03-06 - Extended TODO with taxonomy and weighting improvement ideas
+
+Context/root cause:
+
+- Needed a forward execution backlog focused on better keyword recognition and weighting quality.
+- Required explicit roadmap coverage for hard-skill, soft-skill, and seniority-tag extraction from JD/Indeed profiles.
+
+Files touched:
+
+- `TODO.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- Documentation update only; no runtime commands executed.
+
+## 2026-03-06 - Continued PX implementation: taxonomy, weighting quality, and category analytics
+
+Context/root cause:
+
+- Needed to continue implementation of new P0/P1/P2 priorities beyond planning.
+- Required concrete extraction and weighting upgrades for hard skills, soft skills, seniority, and action verbs from JD/Indeed-style profiles.
+
+Files touched:
+
+- `analysis_engine.py`
+- `config/keyword_taxonomy.json`
+- `schemas/analysis_input.schema.json`
+- `schemas/analysis_output.schema.json`
+- `tests/fixtures/analysis_input.json`
+- `tests/test_analysis_engine.py`
+- `README.md`
+- `CHANGELOG.md`
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+- `outputs/analysis_report_fixture.json`
+- `outputs/analysis_report_fixture.md`
+- `outputs/editor_hook_fixture.json`
+
+Validation commands and results:
+
+- `/usr/bin/python3 -m py_compile analysis_engine.py jd_scraper.py` -> pass
+- `/usr/bin/python3 -m unittest tests/test_analysis_engine.py` -> pass (6 tests)
+- `/usr/bin/python3 analysis_engine.py --input tests/fixtures/analysis_input.json --output outputs/analysis_report_fixture.json --markdown-output outputs/analysis_report_fixture.md --editor-hook-output outputs/editor_hook_fixture.json` -> pass

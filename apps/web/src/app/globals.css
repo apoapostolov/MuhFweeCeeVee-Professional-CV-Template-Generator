@@ -15,6 +15,21 @@
   --danger: #b42318;
 }
 
+:root[data-theme="dark"] {
+  --background: #22272e;
+  --foreground: #cdd9e5;
+  --ink-muted: #9aa6b2;
+  --surface-1: #2d333b;
+  --surface-2: #373e47;
+  --surface-3: #444c56;
+  --line: #545d68;
+  --accent: #539bf5;
+  --accent-soft: #223a57;
+  --ok: #57ab5a;
+  --warn: #c69026;
+  --danger: #e5534b;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -41,6 +56,12 @@ h4 {
   background-size: 28px 28px;
 }
 
+:root[data-theme="dark"] .app-shell.paper-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--line) 55%, black) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--line) 55%, black) 1px, transparent 1px);
+}
+
 .grain-overlay {
   position: relative;
 }
@@ -53,4 +74,124 @@ h4 {
   opacity: 0.08;
   background-image: radial-gradient(#000 0.55px, transparent 0.55px);
   background-size: 3px 3px;
+}
+
+:root[data-theme="dark"] .app-shell.grain-overlay::after {
+  opacity: 0.05;
+  background-image: radial-gradient(#fff 0.5px, transparent 0.5px);
+}
+
+/* Dark-mode compatibility pass for existing hardcoded light utility classes. */
+:root[data-theme="dark"] .app-shell .bg-white {
+  background-color: #2d333b !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-\[\#fcfcfd\] {
+  background-color: #262d36 !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-slate-50 {
+  background-color: #303844 !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-slate-100 {
+  background-color: #363f4a !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-slate-900 {
+  color: #e6edf3 !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-slate-800 {
+  color: #d6dee8 !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-slate-700 {
+  color: #bec8d5 !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-slate-600,
+:root[data-theme="dark"] .app-shell .text-slate-500,
+:root[data-theme="dark"] .app-shell .text-slate-400 {
+  color: #98a7b8 !important;
+}
+
+:root[data-theme="dark"] .app-shell .border-slate-200,
+:root[data-theme="dark"] .app-shell .border-slate-300 {
+  border-color: #4a5561 !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-red-50 {
+  background-color: #3b2528 !important;
+}
+
+:root[data-theme="dark"] .app-shell .border-red-200,
+:root[data-theme="dark"] .app-shell .border-red-300 {
+  border-color: #8b5258 !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-red-900,
+:root[data-theme="dark"] .app-shell .text-red-800,
+:root[data-theme="dark"] .app-shell .text-red-700 {
+  color: #ffb3bc !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-amber-50 {
+  background-color: #3a2f21 !important;
+}
+
+:root[data-theme="dark"] .app-shell .border-amber-200,
+:root[data-theme="dark"] .app-shell .border-amber-300 {
+  border-color: #8d6a3f !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-amber-900,
+:root[data-theme="dark"] .app-shell .text-amber-800,
+:root[data-theme="dark"] .app-shell .text-amber-700 {
+  color: #ffd8a0 !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-emerald-50 {
+  background-color: #21362c !important;
+}
+
+:root[data-theme="dark"] .app-shell .border-emerald-200,
+:root[data-theme="dark"] .app-shell .border-emerald-300 {
+  border-color: #4f8b6a !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-emerald-900,
+:root[data-theme="dark"] .app-shell .text-emerald-800,
+:root[data-theme="dark"] .app-shell .text-emerald-700 {
+  color: #a7ebc3 !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-cyan-50 {
+  background-color: #21343a !important;
+}
+
+:root[data-theme="dark"] .app-shell .border-cyan-200,
+:root[data-theme="dark"] .app-shell .border-cyan-300 {
+  border-color: #4e8796 !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-cyan-900,
+:root[data-theme="dark"] .app-shell .text-cyan-800,
+:root[data-theme="dark"] .app-shell .text-cyan-700 {
+  color: #b6edf9 !important;
+}
+
+:root[data-theme="dark"] .app-shell .bg-indigo-50 {
+  background-color: #262d43 !important;
+}
+
+:root[data-theme="dark"] .app-shell .border-indigo-200,
+:root[data-theme="dark"] .app-shell .border-indigo-300 {
+  border-color: #6072a8 !important;
+}
+
+:root[data-theme="dark"] .app-shell .text-indigo-900,
+:root[data-theme="dark"] .app-shell .text-indigo-800,
+:root[data-theme="dark"] .app-shell .text-indigo-700 {
+  color: #c9d2ff !important;
 }

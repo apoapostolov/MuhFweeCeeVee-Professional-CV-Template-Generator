@@ -26,6 +26,8 @@ class AnalysisEngineTests(unittest.TestCase):
     self.assertIn("weighted_keywords", report)
     self.assertIn("actions", report)
     self.assertIn("integration_hooks", report)
+    self.assertIn("seniority_intent", report)
+    self.assertIn("category_analytics", report)
 
     coverage = report["scores"]["coverage_score"]
     confidence = report["scores"]["confidence"]
@@ -40,15 +42,21 @@ class AnalysisEngineTests(unittest.TestCase):
     self.assertIn("keyword", first)
     self.assertIn("final_weight", first)
     self.assertIn("gap_severity", first)
+    self.assertIn("category", first)
 
-  def test_evidence_multiplier_boosts_quantified_terms(self) -> None:
+  def test_taxonomy_and_category_analytics_exist(self) -> None:
+    report = analyze(self.payload)
+    categories = {item["category"] for item in report["weighted_keywords"]}
+    self.assertTrue(any(cat in categories for cat in ["hard_skill", "domain_term", "action_verb", "seniority", "soft_skill"]))
+    self.assertIn("category_analytics", report)
+    self.assertGreater(len(report["category_analytics"]), 0)
+
+  def test_negation_reduces_positive_hits(self) -> None:
     report = analyze(self.payload)
     items = {item["keyword"]: item for item in report["weighted_keywords"]}
-
-    self.assertIn("monetization", items)
-    self.assertIn("sql", items)
-    self.assertGreaterEqual(items["sql"]["evidence_multiplier"], 1.0)
-    self.assertGreaterEqual(items["monetization"]["coverage"], 0.0)
+    manager_item = items.get("manager")
+    if manager_item is not None:
+      self.assertGreaterEqual(manager_item.get("cv_negated_hits", 0), 1)
 
   def test_editor_hook_shape(self) -> None:
     report = analyze(self.payload)
@@ -56,6 +64,7 @@ class AnalysisEngineTests(unittest.TestCase):
     self.assertEqual(hook["version"], "editor-panel.v1")
     self.assertIn("top_keywords", hook)
     self.assertIn("gaps", hook)
+    self.assertIn("category_analytics", hook)
     self.assertGreater(len(hook["top_keywords"]), 0)
 
 

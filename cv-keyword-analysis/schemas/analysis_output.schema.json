@@ -11,11 +11,10 @@
       "properties": {
         "jd_documents": { "type": "integer" },
         "avg_jd_term_count": { "type": "number" },
-        "cv_sections": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "config_weighted_keywords": { "type": "integer" }
+        "cv_sections": { "type": "array", "items": { "type": "string" } },
+        "config_weighted_keywords": { "type": "integer" },
+        "duplicate_docs_detected": { "type": "integer" },
+        "role_cluster": { "type": "string" }
       },
       "additionalProperties": true
     },
@@ -36,29 +35,28 @@
         "properties": {
           "keyword": { "type": "string" },
           "normalized_keyword": { "type": "string" },
+          "category": { "type": "string" },
+          "category_confidence": { "type": "number" },
           "jd_doc_freq": { "type": "integer" },
           "jd_term_freq": { "type": "integer" },
           "tfidf_weight": { "type": "number" },
           "role_prior": { "type": "number" },
           "final_weight": { "type": "number" },
           "cv_hits_total": { "type": "integer" },
-          "cv_section_hits": {
-            "type": "object",
-            "additionalProperties": { "type": "integer" }
-          },
+          "cv_negated_hits": { "type": "integer" },
+          "cv_section_hits": { "type": "object", "additionalProperties": { "type": "integer" } },
           "cv_weighted_hits": { "type": "number" },
           "evidence_hits": { "type": "integer" },
           "evidence_multiplier": { "type": "number" },
           "coverage": { "type": "number" },
           "confidence": { "type": "number" },
-          "gap_severity": {
-            "type": "string",
-            "enum": ["critical", "high", "medium", "low", "none"]
-          }
+          "gap_severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "none"] }
         },
         "additionalProperties": false
       }
     },
+    "seniority_intent": { "type": "object", "additionalProperties": true },
+    "category_analytics": { "type": "object", "additionalProperties": true },
     "actions": {
       "type": "array",
       "items": { "type": "string" }
@@ -74,13 +72,15 @@
             "coverage_score": { "type": "number" },
             "confidence": { "type": "number" },
             "top_keywords": { "type": "array" },
-            "gaps": { "type": "array" }
+            "gaps": { "type": "array" },
+            "category_analytics": { "type": "object" }
           },
           "additionalProperties": true
         }
       },
       "additionalProperties": true
     },
+    "scoring_model": { "type": "object", "additionalProperties": true },
     "schemas": {
       "type": "object",
       "properties": {

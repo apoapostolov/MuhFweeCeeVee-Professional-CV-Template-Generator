@@ -101,11 +101,14 @@ npm run dev:parser
 ## Current UI Slice
 
 - `/` now hosts a prototype control room with:
+  - Top navigation order: `Print Room` -> `Editor` -> `Keywords` -> `Templates`
   - CV workspace lane with left-pane selectors and live PDF preview
   - CV editor lane with sub-tabs for YAML section editing (`person`, `positioning`,
     `experience`, `education`, `skills`, `references`, `optional_sections`, `metadata`)
   - Editor section modes:
     `Form View` (default, recursive field forms) and `YAML View` (raw section YAML)
+  - YAML View now includes tab-friendly indentation editing (`Tab` inserts spaces)
+    and a live syntax-colored preview (keys, list markers, values, comments)
   - OpenRouter settings panel in UI (API key/model/base URL) for AI scoring
   - OpenRouter settings panel shows current remaining-credit status and refreshes it asynchronously every 60 seconds
   - OpenRouter model dropdown loaded from server-side cached model catalog
@@ -123,6 +126,21 @@ npm run dev:parser
   - Keyword Studio now augments JD-driven scoring with two additional keyword DB types:
     `Senior Leadership Universal` (activated on seniority signals) and
     `Game Industry Generic` (activated on game-industry signals)
+  - Keyword Studio keyword tags now use source-aware colors:
+    seniority keywords are indigo, game-generic keywords are cyan
+  - Keyword Studio left column always shows a dedicated
+    `Seniority Priority Keywords` block with full seniority keyword coverage
+    (not sliced) to emphasize leadership language targets
+  - Keyword Studio now also shows `Hard Skills Priority` and `Soft Skills Priority`
+    sections below seniority, following the same weighted status-card pattern
+  - `Seniority Priority Keywords` includes a show/hide toggle that controls
+    whether seniority-tag highlights are rendered in the right content area
+  - Keyword tag hover in right content now uses a structured tooltip card
+    (source/status/category badges + weight/importance/hits/usage + recommendation)
+  - App-wide theme mode switch is available in top-right with subtle icon controls:
+    light (sun), dark (moon), and system (computer)
+  - Theme controls are fixed outside the main tool frame (upper-right browser area)
+    and dark mode uses a dimmed palette tuned for better panel compatibility
   - Legacy snapshot JSON datasets (`jd_relevant_*.json`, `prototype_dataset_*.json`)
     are removed from the flow and automatically cleaned up
   - Keyword Studio weighted usage score and keyword-weight share metrics
@@ -173,3 +191,7 @@ npm run dev:parser
   - `cv-keyword-analysis/sources/seed_urls.txt`
   - resume-safe SQLite cache (`outputs/jd_scrape_cache.sqlite`) for stop/resume runs
   - optional Firecrawl provider mode (`--provider firecrawl`, `FIRECRAWL_API_KEY`)
+  - taxonomy-aware CV analysis engine upgrades:
+    category tagging (`hard_skill`, `soft_skill`, `seniority`, `action_verb`, `domain_term`),
+    seniority intent detection, category-aware weighting, source-quality/recency/duplicate penalties,
+    negation-aware CV hit logic, and per-category analytics output

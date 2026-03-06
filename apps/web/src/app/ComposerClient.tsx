@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import type { JSX } from "react";
+import type { JSX, KeyboardEvent } from "react";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 type CvListResponse = {
@@ -95,6 +95,23 @@ type SyncStatusResponse = {
 
 type ActivePanel = "workspace" | "templates" | "editor" | "keywords";
 type EditorViewMode = "form" | "yaml";
+type ThemeMode = "light" | "dark" | "system";
+
+type KeywordSource = "jd" | "senior_leadership" | "game_generic" | "combined";
+
+type KeywordTagMetric = {
+  keyword: string;
+  normalized: number;
+  band: KeywordBand;
+  weight: number;
+  status: "missing" | "underused" | "used";
+  cvHits: number;
+  targetHits: number;
+  recommendation: string;
+  usageRatio: number;
+  source?: KeywordSource;
+  category?: string;
+};
 
 type EditorTabKey =
   | "person"
@@ -211,6 +228,21 @@ type KeywordStudioResponse = {
     usageRatio: number;
     status: "missing" | "underused" | "used";
     recommendation: string;
+    source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+    category?: string;
+  }>;
+  seniorityKeywords?: Array<{
+    keyword: string;
+    weight: number;
+    normalized: number;
+    band: KeywordBand;
+    cvHits: number;
+    targetHits: number;
+    usageRatio: number;
+    status: "missing" | "underused" | "used";
+    recommendation: string;
+    source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+    category?: string;
   }>;
   missingKeywords?: Array<{
     keyword: string;
@@ -237,6 +269,11 @@ type KeywordStudioResponse = {
     seniorityAspect: boolean;
     gameIndustryAspect: boolean;
     active: string[];
+  };
+  supplementalKeywordSummary?: {
+    seniorityTotal: number;
+    seniorityPresentInRanking: number;
+    gameGenericTotal: number;
   };
   cv?: Record<string, unknown>;
 };
@@ -546,6 +583,7 @@ function setByPath(input: Record<string, unknown>, dotPath: string, value: unkno
 
 export function ComposerClient() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("workspace");
+  const [themeMode, setThemeMode] = useState<ThemeMode>("system");
 
   const [cvItems, setCvItems] = useState<CvListResponse["items"]>([]);
   const [templateItems, setTemplateItems] = useState<TemplateListResponse["items"]>([]);
@@ -601,6 +639,15 @@ export function ComposerClient() {
   const [keywordManageNotice, setKeywordManageNotice] = useState("");
   const [keywordRunStatus, setKeywordRunStatus] = useState<KeywordManageStatsResponse["run"] | null>(null);
   const [keywordRunModalOpen, setKeywordRunModalOpen] = useState(false);
+  const [showSeniorityPriorityTags, setShowSeniorityPriorityTags] = useState(true);
+  const [showHardPriorityTags, setShowHardPriorityTags] = useState(true);
+  const [showSoftPriorityTags, setShowSoftPriorityTags] = useState(true);
+  const [keywordHover, setKeywordHover] = useState<{
+    label: string;
+    metric: KeywordTagMetric;
+    left: number;
+    top: number;
+  } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
   const [syncReport, setSyncReport] = useState<{
@@ -612,6 +659,16 @@ export function ComposerClient() {
     changes: SyncChangeItem[];
     message: string;
   } | null>(null);
+
+  const resolvedTheme = useMemo<"light" | "dark">(() => {
+    if (themeMode === "light" || themeMode === "dark") {
+      return themeMode;
+    }
+    if (typeof window === "undefined") {
+      return "light";
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }, [themeMode]);
 
   const editorPath = useMemo(
     () => EDITOR_TABS.find((item) => item.key === editorTab)?.path ?? "person",
@@ -650,6 +707,8 @@ export function ComposerClient() {
       targetHits: number;
       recommendation: string;
       usageRatio: number;
+      source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+      category?: string;
     };
     const tokenIndex = new Map<string, KeywordMapEntry>();
     const phraseIndex = new Map<string, KeywordMapEntry>();
@@ -678,6 +737,8 @@ export function ComposerClient() {
           targetHits: item.targetHits,
           recommendation: item.recommendation,
           usageRatio: item.usageRatio,
+          source: item.source,
+          category: item.category,
         });
       }
 
@@ -696,6 +757,8 @@ export function ComposerClient() {
             targetHits: item.targetHits,
             recommendation: item.recommendation,
             usageRatio: item.usageRatio,
+            source: item.source,
+            category: item.category,
           });
         }
       }
@@ -710,6 +773,33 @@ export function ComposerClient() {
 
   function formatUsd(value: number): string {
     return `$${value.toFixed(2)}`;
+  }
+
+  function ThemeSunIcon(): JSX.Element {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" fill="currentColor" />
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+
+  function ThemeMoonIcon(): JSX.Element {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M12 4a8 8 0 1 0 0 16a6 8 0 1 1 0-16z" fill="currentColor" opacity="0.85" />
+      </svg>
+    );
+  }
+
+  function ThemeSystemIcon(): JSX.Element {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+        <rect x="3.5" y="4.5" width="17" height="12" rx="1.8" fill="none" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M9 19h6M11 16.5v2.5M13 16.5v2.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+      </svg>
+    );
   }
 
   function modelOptionLabel(model: {
@@ -798,6 +888,41 @@ export function ComposerClient() {
     }
     return `/api/export/pdf?${params.toString()}`;
   }, [previewNonce, selectedCvId, selectedTemplateId, selectedTemplateTheme]);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("mfcv_theme_mode");
+      if (saved === "light" || saved === "dark" || saved === "system") {
+        setThemeMode(saved);
+      }
+    } catch {
+      // no-op
+    }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const applyTheme = () => {
+      const mode = themeMode === "system"
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : themeMode;
+      root.setAttribute("data-theme", mode);
+    };
+    applyTheme();
+    try {
+      window.localStorage.setItem("mfcv_theme_mode", themeMode);
+    } catch {
+      // no-op
+    }
+
+    if (themeMode !== "system") {
+      return;
+    }
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyTheme();
+    media.addEventListener("change", handler);
+    return () => media.removeEventListener("change", handler);
+  }, [themeMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1426,7 +1551,35 @@ export function ComposerClient() {
     return "text-rose-700";
   }
 
-  function keywordBandClass(band: KeywordBand): string {
+  function keywordBandClass(
+    band: KeywordBand,
+    source?: "jd" | "senior_leadership" | "game_generic" | "combined",
+    category?: string,
+  ): string {
+    const seniorityCategories = new Set([
+      "leadership_management",
+      "achievement_growth",
+      "innovation",
+      "optimization",
+      "analysis",
+      "collaboration",
+    ]);
+    const gameGenericCategories = new Set([
+      "design_specializations",
+      "engines_scripting",
+      "design_frameworks",
+      "prototyping_documentation",
+      "data_design",
+      "kpis",
+      "live_ops",
+      "soft_skills",
+    ]);
+    if (source === "senior_leadership" || (source === "combined" && seniorityCategories.has(String(category ?? "")))) {
+      return "border-indigo-300 bg-indigo-50 text-indigo-900";
+    }
+    if (source === "game_generic" || (source === "combined" && gameGenericCategories.has(String(category ?? "")))) {
+      return "border-cyan-300 bg-cyan-50 text-cyan-900";
+    }
     if (band === "red") return "border-red-300 bg-red-50 text-red-900";
     if (band === "orange") return "border-orange-300 bg-orange-50 text-orange-900";
     if (band === "yellow") return "border-yellow-300 bg-yellow-50 text-yellow-900";
@@ -1434,36 +1587,107 @@ export function ComposerClient() {
     return "border-slate-300 bg-slate-100 text-slate-700";
   }
 
-  function keywordTagTitle(metric: {
-    keyword: string;
-    normalized: number;
-    weight?: number;
-    status?: "missing" | "underused" | "used";
-    cvHits?: number;
-    targetHits?: number;
-    recommendation?: string;
-    usageRatio?: number;
-  }): string {
-    const parts = [
-      `${metric.keyword}`,
-      `importance ${(metric.normalized * 100).toFixed(0)}%`,
-    ];
-    if (typeof metric.weight === "number") {
-      parts.push(`weight ${metric.weight.toFixed(1)}`);
+  function keywordSourceLabel(source?: "jd" | "senior_leadership" | "game_generic" | "combined"): string {
+    if (source === "senior_leadership") return "Seniority";
+    if (source === "game_generic") return "Game Generic";
+    if (source === "combined") return "Combined";
+    return "JD";
+  }
+
+  function keywordSourceBadgeClass(source?: "jd" | "senior_leadership" | "game_generic" | "combined"): string {
+    if (source === "senior_leadership") return "border-indigo-300 bg-indigo-100 text-indigo-900";
+    if (source === "game_generic") return "border-cyan-300 bg-cyan-100 text-cyan-900";
+    if (source === "combined") return "border-violet-300 bg-violet-100 text-violet-900";
+    return "border-slate-300 bg-slate-100 text-slate-700";
+  }
+
+  function keywordStatusBadgeClass(status?: "missing" | "underused" | "used"): string {
+    if (status === "missing") return "border-red-300 bg-red-100 text-red-900";
+    if (status === "underused") return "border-amber-300 bg-amber-100 text-amber-900";
+    if (status === "used") return "border-emerald-300 bg-emerald-100 text-emerald-900";
+    return "border-slate-300 bg-slate-100 text-slate-700";
+  }
+
+  function renderKeywordTagChip(
+    key: string,
+    label: string,
+    metric: KeywordTagMetric,
+  ): JSX.Element {
+    const handleMouseEnter = (event: React.MouseEvent<HTMLSpanElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const tooltipWidth = 320;
+      const tooltipHeight = 210;
+      const margin = 10;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+      left = Math.max(margin, Math.min(left, viewportWidth - tooltipWidth - margin));
+      let top = rect.bottom + 10;
+      if (top + tooltipHeight > viewportHeight - margin) {
+        top = rect.top - tooltipHeight - 10;
+      }
+      top = Math.max(margin, top);
+      setKeywordHover({ label, metric, left, top });
+    };
+
+    const handleMouseLeave = () => {
+      setKeywordHover((current) => (current?.label === label && current?.metric.keyword === metric.keyword ? null : current));
+    };
+
+    return (
+      <span key={key} className="inline-flex">
+        <span
+          className={`inline-flex rounded-md border px-1.5 py-[1px] ${keywordBandClass(metric.band, metric.source, metric.category)}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {label}
+        </span>
+      </span>
+    );
+  }
+
+  function isSeniorityMetricSource(
+    source?: "jd" | "senior_leadership" | "game_generic" | "combined",
+    category?: string,
+  ): boolean {
+    if (source === "senior_leadership") return true;
+    if (source !== "combined") return false;
+    return new Set([
+      "leadership_management",
+      "achievement_growth",
+      "innovation",
+      "optimization",
+      "analysis",
+      "collaboration",
+    ]).has(String(category ?? ""));
+  }
+
+  function isSoftMetricSource(
+    source?: KeywordSource,
+    category?: string,
+  ): boolean {
+    return category === "soft_skills" || category === "soft_skill";
+  }
+
+  function isHardMetricSource(
+    source?: KeywordSource,
+    category?: string,
+  ): boolean {
+    const hardCategories = new Set([
+      "hard_skill",
+      "design_specializations",
+      "engines_scripting",
+      "design_frameworks",
+      "prototyping_documentation",
+      "data_design",
+      "kpis",
+      "live_ops",
+    ]);
+    if (hardCategories.has(String(category ?? ""))) {
+      return true;
     }
-    if (metric.status) {
-      parts.push(`status ${metric.status}`);
-    }
-    if (typeof metric.cvHits === "number" && typeof metric.targetHits === "number") {
-      parts.push(`hits ${metric.cvHits}/${metric.targetHits}`);
-    }
-    if (typeof metric.usageRatio === "number") {
-      parts.push(`usage ${(metric.usageRatio * 100).toFixed(0)}%`);
-    }
-    if (metric.recommendation) {
-      parts.push(metric.recommendation);
-    }
-    return parts.join(" | ");
+    return source === "game_generic" && !isSoftMetricSource(source, category) && !isSeniorityMetricSource(source, category);
   }
 
   function normalizeToken(token: string): string {
@@ -1500,6 +1724,8 @@ export function ComposerClient() {
     targetHits: number;
     recommendation: string;
     usageRatio: number;
+    source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+    category?: string;
   } | null {
     const normalized = normalizeToken(token);
     if (normalized.length < 3) return null;
@@ -1519,6 +1745,8 @@ export function ComposerClient() {
       targetHits: number;
       recommendation: string;
       usageRatio: number;
+      source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+      category?: string;
       score: number;
     } | null = null;
     for (const [candidate, metric] of keywordMatcher.tokenIndex.entries()) {
@@ -1540,6 +1768,8 @@ export function ComposerClient() {
       targetHits: best.targetHits,
       recommendation: best.recommendation,
       usageRatio: best.usageRatio,
+      source: best.source,
+      category: best.category,
     };
   }
 
@@ -1553,6 +1783,8 @@ export function ComposerClient() {
     targetHits: number;
     recommendation: string;
     usageRatio: number;
+    source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+    category?: string;
   } | null {
     const phrase = tokens.map((item) => normalizeToken(item)).filter(Boolean).join(" ");
     if (!phrase) return null;
@@ -1590,6 +1822,8 @@ export function ComposerClient() {
               targetHits: number;
               recommendation: string;
               usageRatio: number;
+              source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+              category?: string;
             };
           }
         | null = null;
@@ -1628,15 +1862,22 @@ export function ComposerClient() {
       }
 
       if (matched) {
-        nodes.push(
-          <span
-            key={`phrase-${i}-${matched.endIndex}`}
-            className={`inline-flex rounded-md border px-1.5 py-[1px] ${keywordBandClass(matched.metric.band)}`}
-            title={keywordTagTitle(matched.metric)}
-          >
-            {matched.rawText}
-          </span>,
-        );
+        if (isSeniorityMetricSource(matched.metric.source, matched.metric.category) && !showSeniorityPriorityTags) {
+          nodes.push(<span key={`phrase-plain-${i}-${matched.endIndex}`}>{matched.rawText}</span>);
+          i = matched.endIndex + 1;
+          continue;
+        }
+        if (isHardMetricSource(matched.metric.source, matched.metric.category) && !showHardPriorityTags) {
+          nodes.push(<span key={`phrase-plain-${i}-${matched.endIndex}`}>{matched.rawText}</span>);
+          i = matched.endIndex + 1;
+          continue;
+        }
+        if (isSoftMetricSource(matched.metric.source, matched.metric.category) && !showSoftPriorityTags) {
+          nodes.push(<span key={`phrase-plain-${i}-${matched.endIndex}`}>{matched.rawText}</span>);
+          i = matched.endIndex + 1;
+          continue;
+        }
+        nodes.push(renderKeywordTagChip(`phrase-${i}-${matched.endIndex}`, matched.rawText, matched.metric));
         i = matched.endIndex + 1;
         continue;
       }
@@ -1648,15 +1889,23 @@ export function ComposerClient() {
         continue;
       }
 
-      nodes.push(
-        <span
-          key={`tag-${i}`}
-          className={`inline-flex rounded-md border px-1 py-[1px] ${keywordBandClass(hit.band)}`}
-          title={keywordTagTitle(hit)}
-        >
-          {raw}
-        </span>,
-      );
+      if (isSeniorityMetricSource(hit.source, hit.category) && !showSeniorityPriorityTags) {
+        nodes.push(<span key={`plain-${i}`}>{raw}</span>);
+        i += 1;
+        continue;
+      }
+      if (isHardMetricSource(hit.source, hit.category) && !showHardPriorityTags) {
+        nodes.push(<span key={`plain-${i}`}>{raw}</span>);
+        i += 1;
+        continue;
+      }
+      if (isSoftMetricSource(hit.source, hit.category) && !showSoftPriorityTags) {
+        nodes.push(<span key={`plain-${i}`}>{raw}</span>);
+        i += 1;
+        continue;
+      }
+
+      nodes.push(renderKeywordTagChip(`tag-${i}`, raw, hit));
       i += 1;
     }
 
@@ -1717,6 +1966,96 @@ export function ComposerClient() {
     }
 
     return rows;
+  }
+
+  function renderYamlLine(line: string, index: number): JSX.Element {
+    const keyValueMatch = /^(\s*)(-\s+)?([A-Za-z0-9_.-]+):(.*)$/.exec(line);
+    const lineNumber = String(index + 1).padStart(3, " ");
+
+    if (line.trim().length === 0) {
+      return (
+        <div key={`yaml-line-${index}`} className="grid grid-cols-[36px_1fr] gap-2">
+          <span className="select-none text-[10px] text-slate-400">{lineNumber}</span>
+          <span className="text-xs leading-5 text-slate-500">&nbsp;</span>
+        </div>
+      );
+    }
+
+    if (/^\s*#/.test(line)) {
+      return (
+        <div key={`yaml-line-${index}`} className="grid grid-cols-[36px_1fr] gap-2">
+          <span className="select-none text-[10px] text-slate-400">{lineNumber}</span>
+          <span className="whitespace-pre text-xs italic leading-5 text-slate-500">{line}</span>
+        </div>
+      );
+    }
+
+    if (keyValueMatch) {
+      const [, leading, listPrefix = "", key, rawValue] = keyValueMatch;
+      const value = rawValue ?? "";
+      const valueTrim = value.trim();
+      let valueClass = "text-emerald-700";
+      if (/^(true|false|null)$/i.test(valueTrim)) {
+        valueClass = "text-violet-700";
+      } else if (/^-?\d+(\.\d+)?$/.test(valueTrim)) {
+        valueClass = "text-amber-700";
+      } else if (valueTrim.length === 0) {
+        valueClass = "text-slate-400";
+      }
+      return (
+        <div key={`yaml-line-${index}`} className="grid grid-cols-[36px_1fr] gap-2">
+          <span className="select-none text-[10px] text-slate-400">{lineNumber}</span>
+          <span className="whitespace-pre text-xs leading-5">
+            <span className="text-slate-500">{leading}</span>
+            {listPrefix ? <span className="font-semibold text-fuchsia-700">{listPrefix}</span> : null}
+            <span className="font-semibold text-sky-700">{key}</span>
+            <span className="text-slate-600">:</span>
+            <span className={` ${valueClass}`}>{value}</span>
+          </span>
+        </div>
+      );
+    }
+
+    if (/^\s*-\s+/.test(line)) {
+      const listMatch = /^(\s*)(-\s+)(.*)$/.exec(line);
+      if (listMatch) {
+        return (
+          <div key={`yaml-line-${index}`} className="grid grid-cols-[36px_1fr] gap-2">
+            <span className="select-none text-[10px] text-slate-400">{lineNumber}</span>
+            <span className="whitespace-pre text-xs leading-5">
+              <span className="text-slate-500">{listMatch[1]}</span>
+              <span className="font-semibold text-fuchsia-700">{listMatch[2]}</span>
+              <span className="text-emerald-700">{listMatch[3]}</span>
+            </span>
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div key={`yaml-line-${index}`} className="grid grid-cols-[36px_1fr] gap-2">
+        <span className="select-none text-[10px] text-slate-400">{lineNumber}</span>
+        <span className="whitespace-pre text-xs leading-5 text-slate-700">{line}</span>
+      </div>
+    );
+  }
+
+  function handleYamlEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>): void {
+    if (event.key !== "Tab") {
+      return;
+    }
+    event.preventDefault();
+    const target = event.currentTarget;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    const before = yamlDraft.slice(0, start);
+    const after = yamlDraft.slice(end);
+    const next = `${before}  ${after}`;
+    setYamlDraft(next);
+    requestAnimationFrame(() => {
+      target.selectionStart = start + 2;
+      target.selectionEnd = start + 2;
+    });
   }
 
   function refreshPreview() {
@@ -2327,6 +2666,32 @@ export function ComposerClient() {
     const missingKeywords = keywordStudioData?.missingKeywords ?? [];
     const underusedKeywords = keywordStudioData?.underusedKeywords ?? [];
     const usedKeywords = keywordStudioData?.usedKeywords ?? [];
+    const seniorityKeywords = keywordStudioData?.seniorityKeywords ?? [];
+    const fallbackSeniorityKeywords = (keywordStudioData?.keywords ?? [])
+      .filter((item) => isSeniorityMetricSource(item.source, item.category))
+      .sort((a, b) => b.weight - a.weight || a.keyword.localeCompare(b.keyword));
+    const seniorityPriorityKeywords = seniorityKeywords.length > 0 ? seniorityKeywords : fallbackSeniorityKeywords;
+    const hardSkillCategories = new Set([
+      "design_specializations",
+      "engines_scripting",
+      "design_frameworks",
+      "prototyping_documentation",
+      "data_design",
+      "kpis",
+      "live_ops",
+    ]);
+    const hardSkillRegex = /\b(sql|python|c\+\+|c#|unity|unreal|blueprints|lua|looker|snowflake|bigquery|a\/b testing|retention|arpu|arppu|ltv|monetization|live ops|systems design|economy balancing)\b/i;
+    const softSkillRegex = /\b(communication|collaboration|stakeholder|mentored|facilitated|liaised|partnered|feedback|listening|adaptability|problem solving|critical thinking|cross-functional|team)\b/i;
+    const allSkillCandidates = keywordStudioData?.keywords ?? [];
+    const softPriorityKeywords = allSkillCandidates
+      .filter((item) => item.category === "soft_skills" || softSkillRegex.test(item.keyword))
+      .sort((a, b) => b.weight - a.weight || a.keyword.localeCompare(b.keyword));
+    const hardPriorityKeywords = allSkillCandidates
+      .filter((item) =>
+        !softPriorityKeywords.some((soft) => soft.keyword === item.keyword) &&
+        (hardSkillCategories.has(String(item.category ?? "")) || hardSkillRegex.test(item.keyword))
+      )
+      .sort((a, b) => b.weight - a.weight || a.keyword.localeCompare(b.keyword));
     const roles = keywordStudioData?.roles ?? [];
     const keywordRunActive =
       keywordRunStatus?.state === "queued" ||
@@ -2457,6 +2822,87 @@ export function ComposerClient() {
             </div>
           </div>
 
+          <div className="mt-3 rounded-md border border-indigo-200 bg-indigo-50/50 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-indigo-900">Seniority Priority Keywords</p>
+              <button
+                className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${
+                  showSeniorityPriorityTags
+                    ? "border-indigo-300 bg-indigo-100 text-indigo-900"
+                    : "border-slate-300 bg-white text-slate-700"
+                }`}
+                onClick={() => setShowSeniorityPriorityTags((current) => !current)}
+                type="button"
+              >
+                {showSeniorityPriorityTags ? "Hide" : "Show"}
+              </button>
+            </div>
+            <p className="mt-1 text-[11px] text-indigo-800">
+              Always shown to enforce senior-impact language in CV content. Seniority tags are currently {showSeniorityPriorityTags ? "visible" : "hidden"} in the right panel.
+            </p>
+            <div className="mt-2 space-y-2">
+              {seniorityPriorityKeywords.map((item) => (
+                <div key={`seniority-${item.keyword}`} className="rounded-md border border-indigo-200 bg-white p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex rounded-md border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-900">
+                      {item.keyword}
+                    </span>
+                    <span className="text-xs font-bold text-indigo-900">{item.status === "used" ? "Used" : item.status === "underused" ? "Underused" : "Missing"}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-indigo-800">
+                    Hits {item.cvHits}/{item.targetHits} • Weight {item.weight.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-indigo-700">{item.recommendation}</p>
+                </div>
+              ))}
+              {seniorityPriorityKeywords.length === 0 ? (
+                <p className="text-xs text-indigo-700">No seniority keywords available in current analysis response.</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-md border border-cyan-200 bg-cyan-50/50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-cyan-900">Hard Skills Priority</p>
+            <div className="mt-2 space-y-2">
+              {hardPriorityKeywords.map((item) => (
+                <div key={`hard-${item.keyword}`} className="rounded-md border border-cyan-200 bg-white p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex rounded-md border border-cyan-300 bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-900">
+                      {item.keyword}
+                    </span>
+                    <span className="text-xs font-bold text-cyan-900">{item.status === "used" ? "Used" : item.status === "underused" ? "Underused" : "Missing"}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-cyan-800">
+                    Hits {item.cvHits}/{item.targetHits} • Weight {item.weight.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-cyan-700">{item.recommendation}</p>
+                </div>
+              ))}
+              {hardPriorityKeywords.length === 0 ? <p className="text-xs text-cyan-700">No hard-skill keywords available in current analysis response.</p> : null}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50/50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-900">Soft Skills Priority</p>
+            <div className="mt-2 space-y-2">
+              {softPriorityKeywords.map((item) => (
+                <div key={`soft-${item.keyword}`} className="rounded-md border border-emerald-200 bg-white p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-900">
+                      {item.keyword}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-900">{item.status === "used" ? "Used" : item.status === "underused" ? "Underused" : "Missing"}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-emerald-800">
+                    Hits {item.cvHits}/{item.targetHits} • Weight {item.weight.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-emerald-700">{item.recommendation}</p>
+                </div>
+              ))}
+              {softPriorityKeywords.length === 0 ? <p className="text-xs text-emerald-700">No soft-skill keywords available in current analysis response.</p> : null}
+            </div>
+          </div>
+
           <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Data Ops</p>
             <p className="mt-1 text-[11px] text-slate-600">
@@ -2496,7 +2942,33 @@ export function ComposerClient() {
   }
 
   return (
-    <main className="paper-grid grain-overlay h-screen overflow-hidden px-4 py-4 md:px-8 md:py-6">
+    <main className="app-shell paper-grid grain-overlay h-screen overflow-hidden px-4 py-4 md:px-8 md:py-6">
+      <div className="fixed right-4 top-4 z-50 flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface-1)]/85 px-1 py-1 shadow-sm backdrop-blur-sm">
+        <button
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "light" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
+          onClick={() => setThemeMode("light")}
+          title={`Light mode${resolvedTheme === "light" ? " (active)" : ""}`}
+          type="button"
+        >
+          <ThemeSunIcon />
+        </button>
+        <button
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "dark" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
+          onClick={() => setThemeMode("dark")}
+          title={`Dark mode${resolvedTheme === "dark" ? " (active)" : ""}`}
+          type="button"
+        >
+          <ThemeMoonIcon />
+        </button>
+        <button
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "system" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
+          onClick={() => setThemeMode("system")}
+          title={`System mode${themeMode === "system" ? ` (${resolvedTheme})` : ""}`}
+          type="button"
+        >
+          <ThemeSystemIcon />
+        </button>
+      </div>
       <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-4">
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-1)] p-4 shadow-[0_10px_40px_rgba(31,41,55,0.12)] md:p-6">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -2529,21 +3001,21 @@ export function ComposerClient() {
             </button>
             <button
               className={`rounded-md px-4 py-2 text-sm font-semibold ${
+                activePanel === "keywords" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+              }`}
+              onClick={() => setActivePanel("keywords")}
+              type="button"
+            >
+              Keywords
+            </button>
+            <button
+              className={`rounded-md px-4 py-2 text-sm font-semibold ${
                 activePanel === "templates" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
               }`}
               onClick={() => setActivePanel("templates")}
               type="button"
             >
               Templates
-            </button>
-            <button
-              className={`rounded-md px-4 py-2 text-sm font-semibold ${
-                activePanel === "keywords" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
-              }`}
-              onClick={() => setActivePanel("keywords")}
-              type="button"
-            >
-              Keyword Studio
             </button>
           </div>
 
@@ -2911,11 +3383,25 @@ export function ComposerClient() {
                     {editorLoading ? (
                       <p className="text-xs text-[var(--ink-muted)]">Loading CV...</p>
                     ) : editorView === "yaml" ? (
-                      <textarea
-                        className="h-full min-h-[400px] w-full resize-none bg-transparent font-mono text-xs leading-5 outline-none"
-                        onChange={(event) => setYamlDraft(event.target.value)}
-                        value={yamlDraft}
-                      />
+                      <div className="grid h-full min-h-[400px] gap-3 md:grid-cols-2">
+                        <div className="rounded-md border border-[var(--line)] bg-white p-2">
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">YAML Input</p>
+                          <textarea
+                            className="h-[calc(100%-22px)] min-h-[340px] w-full resize-none bg-transparent font-mono text-xs leading-5 outline-none"
+                            onChange={(event) => setYamlDraft(event.target.value.replace(/\t/g, "  "))}
+                            onKeyDown={handleYamlEditorKeyDown}
+                            spellCheck={false}
+                            style={{ tabSize: 2 }}
+                            value={yamlDraft}
+                          />
+                        </div>
+                        <div className="rounded-md border border-[var(--line)] bg-white p-2">
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Syntax Preview</p>
+                          <div className="max-h-[520px] overflow-auto rounded-md border border-slate-200 bg-slate-50 p-2 font-mono">
+                            {yamlDraft.split("\n").map((line, index) => renderYamlLine(line, index))}
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       renderFormNode(
                         sectionDraft ?? {},

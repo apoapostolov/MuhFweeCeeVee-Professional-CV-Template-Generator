@@ -398,11 +398,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     readSupplementalDb("keyword_db_senior_leadership.json"),
     readSupplementalDb("keyword_db_game_generic.json"),
   ]);
+  const seniorEntries = normalizedSupplementalEntries(seniorDb);
+  const gameEntries = normalizedSupplementalEntries(gameDb);
+  const seniorKeywordSet = new Set(seniorEntries.map((entry) => entry.keyword));
   const activeDatabases: string[] = [];
 
   if (seniorityAspect) {
-    const entries = normalizedSupplementalEntries(seniorDb);
-    for (const entry of entries) {
+    for (const entry of seniorEntries) {
       const existing = keywordLookup.get(entry.keyword);
       const targetHits = Math.max(1, Number(entry.target_hits ?? 1));
       const docsFactor = Math.max(1, Math.log(1 + docs));
@@ -436,12 +438,11 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
       if (supplementalWeight > maxWeight) maxWeight = supplementalWeight;
     }
-    if (entries.length > 0) activeDatabases.push(seniorDb?.label ?? "Senior Leadership Universal");
+    if (seniorEntries.length > 0) activeDatabases.push(seniorDb?.label ?? "Senior Leadership Universal");
   }
 
   if (gameIndustryAspect) {
-    const entries = normalizedSupplementalEntries(gameDb);
-    for (const entry of entries) {
+    for (const entry of gameEntries) {
       const existing = keywordLookup.get(entry.keyword);
       const targetHits = Math.max(1, Number(entry.target_hits ?? 1));
       const docsFactor = Math.max(1, Math.log(1 + docs));
@@ -475,7 +476,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
       if (supplementalWeight > maxWeight) maxWeight = supplementalWeight;
     }
-    if (entries.length > 0) activeDatabases.push(gameDb?.label ?? "Game Industry Generic");
+    if (gameEntries.length > 0) activeDatabases.push(gameDb?.label ?? "Game Industry Generic");
   }
 
   for (const metric of keywords) {
@@ -538,6 +539,38 @@ export async function GET(request: Request): Promise<NextResponse> {
     }))
     .sort((a, b) => b.totalWeight - a.totalWeight);
 
+  const seniorityKeywords = seniorEntries
+    .map((entry): KeywordMetric => {
+      const fromMain = keywordLookup.get(entry.keyword);
+      if (fromMain) {
+        return fromMain;
+      }
+      const targetHits = Math.max(1, Number(entry.target_hits ?? 1));
+      const cvHits = countOccurrences(cvText, entry.keyword);
+      const usageRatio = Math.min(1, cvHits / targetHits);
+      const status: KeywordMetric["status"] = cvHits === 0 ? "missing" : usageRatio < 1 ? "underused" : "used";
+      const weight = Number(entry.weight ?? 1);
+      const normalized = maxWeight > 0 ? weight / maxWeight : 0;
+      return {
+        keyword: entry.keyword,
+        docFreq: 1,
+        idf: 1,
+        avgSignal: 0,
+        weight,
+        normalized,
+        band: slugBand(normalized),
+        cvHits,
+        cvCoverage: usageRatio,
+        targetHits,
+        usageRatio,
+        status,
+        recommendation: recommendForStatus(entry.keyword, status),
+        source: "senior_leadership",
+        category: entry.category,
+      };
+    })
+    .sort((a, b) => b.weight - a.weight || a.keyword.localeCompare(b.keyword));
+
   return NextResponse.json({
     ok: true,
     cvId: cvIdRaw,
@@ -564,6 +597,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     clusterCount: clusters.length,
     clusters,
     keywords: sortedKeywords,
+    seniorityKeywords,
     keywordSummary: {
       total: sortedKeywords.length,
       missing: missingKeywords.length,
@@ -579,6 +613,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     missingKeywords: missingKeywords.slice(0, 30),
     underusedKeywords: underusedKeywords.slice(0, 30),
     usedKeywords: usedKeywords.slice(0, 30),
+    supplementalKeywordSummary: {
+      seniorityTotal: seniorEntries.length,
+      seniorityPresentInRanking: sortedKeywords.filter((item) => seniorKeywordSet.has(item.keyword)).length,
+      gameGenericTotal: gameEntries.length,
+    },
     cv: englishCv,
   });
 }

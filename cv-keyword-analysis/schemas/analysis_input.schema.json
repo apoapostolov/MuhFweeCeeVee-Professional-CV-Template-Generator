@@ -12,9 +12,7 @@
         "sections": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": {
-            "type": "string"
-          }
+          "additionalProperties": { "type": "string" }
         }
       },
       "additionalProperties": true
@@ -30,7 +28,9 @@
           "title": { "type": "string" },
           "text": { "type": "string", "minLength": 1 },
           "score": { "type": "number" },
-          "source_url": { "type": "string" }
+          "source": { "type": "string" },
+          "source_url": { "type": "string" },
+          "published_at": { "type": "string" }
         },
         "additionalProperties": true
       }
@@ -46,6 +46,19 @@
           "type": "object",
           "additionalProperties": { "type": "number" }
         },
+        "category_multipliers": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "coverage_thresholds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { "type": "number" }
+          }
+        },
+        "role_cluster": { "type": "string" },
+        "taxonomy_file": { "type": "string" },
         "top_n_keywords": { "type": "integer", "minimum": 1 }
       },
       "additionalProperties": true
