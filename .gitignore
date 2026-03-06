@@ -44,3 +44,4 @@ keywords/outputs/*
 
 # Runtime caches
 data/settings/openrouter_models.yaml
+data/settings/openrouter.yaml

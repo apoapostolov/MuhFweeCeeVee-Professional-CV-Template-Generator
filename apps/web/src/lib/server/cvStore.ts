@@ -7,9 +7,11 @@ import { parse, stringify } from "yaml";
 import { repoPath } from "./repoPaths";
 import {
   buildCvVariantId,
+  isSupportedLanguage,
   parseCvVariantId,
   type CvLanguage,
 } from "./cvVariants";
+import { readOpenRouterSettings } from "./openRouterSettings";
 
 export type CvDocument = Record<string, unknown>;
 export type CvGitVersionInfo = {
@@ -245,6 +247,94 @@ function cloneCvDocument(input: CvDocument): CvDocument {
   return JSON.parse(JSON.stringify(input)) as CvDocument;
 }
 
+function buildTranslationPrompt(
+  sourceCv: CvDocument,
+  sourceLanguage: string,
+  targetLanguage: string,
+): string {
+  return [
+    "Translate user-facing string values in this CV JSON object from source language to target language.",
+    "Keep all keys, structure, ids, dates, numbers, booleans, urls and emails unchanged.",
+    "Do not translate technical keys or enum-like values.",
+    "Return JSON only.",
+    `Source language code: ${sourceLanguage}`,
+    `Target language code: ${targetLanguage}`,
+    `JSON:\n${JSON.stringify(sourceCv, null, 2)}`,
+  ].join("\n");
+}
+
+function extractFirstJsonBlock(input: string): unknown {
+  const trimmed = input.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // no-op
+  }
+
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    } catch {
+      // no-op
+    }
+  }
+  return null;
+}
+
+async function maybeTranslateCvDocument(args: {
+  sourceCv: CvDocument;
+  sourceLanguage: string;
+  targetLanguage: string;
+}): Promise<{ cv: CvDocument; status: string; mode: string }> {
+  const settings = await readOpenRouterSettings();
+  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
+  if (!apiKey.trim()) {
+    return {
+      cv: cloneCvDocument(args.sourceCv),
+      status: "auto-generated-pending-review",
+      mode: "fallback-copy-no-api-key",
+    };
+  }
+
+  const response = await fetch(settings.baseUrl, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: settings.model || "openai/gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a strict JSON translator." },
+        { role: "user", content: buildTranslationPrompt(args.sourceCv, args.sourceLanguage, args.targetLanguage) },
+      ],
+      temperature: 0.1,
+    }),
+  });
+
+  if (!response.ok) {
+    const raw = await response.text();
+    throw new Error(`OpenRouter request failed (${response.status}): ${raw}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const content = data.choices?.[0]?.message?.content ?? "";
+  const translated = extractFirstJsonBlock(content);
+  if (!translated || typeof translated !== "object" || Array.isArray(translated)) {
+    throw new Error("Could not parse translated CV JSON from OpenRouter response.");
+  }
+
+  return {
+    cv: translated as CvDocument,
+    status: "auto-generated-pending-review",
+    mode: "openrouter-json-translation",
+  };
+}
+
 export async function ensureLanguageVariant(
   sourceCvId: string,
   targetLanguage: CvLanguage,
@@ -253,12 +343,16 @@ export async function ensureLanguageVariant(
   const parsed = parseCvVariantId(sourceCvId);
   if (!parsed) {
     throw new Error(
-      "Language variant auto-resolution requires cvId format cv_<bg|en>_<iteration>_<target>.",
+      "Language variant auto-resolution requires cvId format cv_<language>_<iteration>_<target>.",
     );
+  }
+  const normalizedTargetLanguage = targetLanguage.trim().toLowerCase();
+  if (!isSupportedLanguage(normalizedTargetLanguage)) {
+    throw new Error("Target language code is invalid. Use 2-8 alphabetic characters.");
   }
 
   const requestedCvId = buildCvVariantId({
-    language: targetLanguage,
+    language: normalizedTargetLanguage,
     iteration: parsed.iteration,
     target: parsed.target,
   });
@@ -277,7 +371,35 @@ export async function ensureLanguageVariant(
     throw new Error(`Source CV '${sourceCvId}' does not exist.`);
   }
 
-  const cloned = cloneCvDocument(source);
+  let cloned = cloneCvDocument(source);
+  let translationMode = "fallback-copy";
+  let translationStatus = "auto-generated-pending-review";
+  if (parsed.language !== normalizedTargetLanguage) {
+    try {
+      const translated = await maybeTranslateCvDocument({
+        sourceCv: source,
+        sourceLanguage: parsed.language,
+        targetLanguage: normalizedTargetLanguage,
+      });
+      cloned = translated.cv;
+      translationMode = translated.mode;
+      translationStatus = translated.status;
+    } catch (error) {
+      cloned = cloneCvDocument(source);
+      translationMode = "fallback-copy-translation-error";
+      translationStatus = "auto-generated-pending-review";
+      const metadataRaw = cloned.metadata;
+      const metadata =
+        metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
+          ? (metadataRaw as Record<string, unknown>)
+          : {};
+      cloned.metadata = {
+        ...metadata,
+        translation_error: error instanceof Error ? error.message : "Unknown translation error.",
+      };
+    }
+  }
+
   const metadataRaw = cloned.metadata;
   const metadata =
     metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
@@ -286,13 +408,13 @@ export async function ensureLanguageVariant(
 
   cloned.metadata = {
     ...metadata,
-    language: targetLanguage,
+    language: normalizedTargetLanguage,
     translation: {
-      status: "auto-generated-pending-review",
-      mode: "fallback-copy",
+      status: translationStatus,
+      mode: translationMode,
       source_cv_id: sourceCvId,
       source_language: parsed.language,
-      target_language: targetLanguage,
+      target_language: normalizedTargetLanguage,
       generated_at: new Date().toISOString(),
     },
   };

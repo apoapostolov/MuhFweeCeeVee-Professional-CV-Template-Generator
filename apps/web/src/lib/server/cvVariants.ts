@@ -1,4 +1,5 @@
-export type CvLanguage = "bg" | "en";
+export type CvLanguage = string;
+export type SyncLanguage = "bg" | "en";
 
 export type CvVariantParts = {
   language: CvLanguage;
@@ -6,10 +7,15 @@ export type CvVariantParts = {
   target: string;
 };
 
-const CV_ID_PATTERN = /^cv_(bg|en)_(\d{3,4})_([a-z0-9][a-z0-9_-]{1,79})$/i;
+const CV_ID_PATTERN = /^cv_([a-z]{2,8})_(\d{3,4})_([a-z0-9][a-z0-9_-]{1,79})$/i;
+const SYNC_LANGUAGES = new Set<SyncLanguage>(["bg", "en"]);
 
 export function isSupportedLanguage(value: string): value is CvLanguage {
-  return value === "bg" || value === "en";
+  return /^[a-z]{2,8}$/i.test(value.trim());
+}
+
+export function isSyncLanguage(value: string): value is SyncLanguage {
+  return SYNC_LANGUAGES.has(value as SyncLanguage);
 }
 
 export function parseCvVariantId(cvId: string): CvVariantParts | null {
@@ -31,9 +37,9 @@ export function parseCvVariantId(cvId: string): CvVariantParts | null {
 }
 
 export function buildCvVariantId(parts: CvVariantParts): string {
-  return `cv_${parts.language}_${parts.iteration}_${parts.target}`;
+  return `cv_${parts.language.toLowerCase()}_${parts.iteration}_${parts.target}`;
 }
 
-export function siblingLanguage(language: CvLanguage): CvLanguage {
+export function siblingLanguage(language: SyncLanguage): SyncLanguage {
   return language === "bg" ? "en" : "bg";
 }

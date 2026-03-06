@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { readCv, writeCv } from "@/lib/server/cvStore";
-import { parseCvVariantId, siblingLanguage, type CvLanguage } from "@/lib/server/cvVariants";
+import {
+  isSupportedLanguage,
+  parseCvVariantId,
+  type CvLanguage,
+} from "@/lib/server/cvVariants";
 import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
 export const runtime = "nodejs";
@@ -9,11 +13,12 @@ export const runtime = "nodejs";
 type SyncRequest = {
   cvId?: unknown;
   sourceLanguage?: unknown;
+  targetLanguage?: unknown;
 };
 
 type SyncChangeItem = {
   path: string;
-  direction: "BG > EN" | "BG < EN";
+  direction: string;
   sourceLanguage: CvLanguage;
   targetLanguage: CvLanguage;
   sourceValue: unknown;
@@ -22,7 +27,7 @@ type SyncChangeItem = {
 };
 
 function languageName(language: CvLanguage): string {
-  return language === "bg" ? "Bulgarian" : "English";
+  return language.toUpperCase();
 }
 
 function isMissing(value: unknown): boolean {
@@ -156,7 +161,7 @@ function buildSyncChanges(args: {
   targetLanguage: CvLanguage;
 }): SyncChangeItem[] {
   const direction: SyncChangeItem["direction"] =
-    args.sourceLanguage === "bg" ? "BG > EN" : "BG < EN";
+    `${args.sourceLanguage.toUpperCase()} -> ${args.targetLanguage.toUpperCase()}`;
   const paths = collectChangedLeafPaths(args.translatedFragment);
   const uniquePaths = [...new Set(paths)].sort((a, b) => a.localeCompare(b));
 
@@ -265,16 +270,29 @@ export async function POST(request: Request): Promise<NextResponse> {
   const parsed = parseCvVariantId(cvId);
   if (!parsed) {
     return NextResponse.json(
-      { error: "cvId must be a language variant id: cv_<bg|en>_<iter>_<target>." },
+      { error: "cvId must be a language variant id: cv_<language>_<iter>_<target>." },
       { status: 400 },
     );
   }
 
-  const sourceLanguage =
-    payload.sourceLanguage === "bg" || payload.sourceLanguage === "en"
-      ? payload.sourceLanguage
-      : parsed.language;
-  const targetLanguage = siblingLanguage(sourceLanguage);
+  const sourceLanguageRaw =
+    typeof payload.sourceLanguage === "string" ? payload.sourceLanguage.trim().toLowerCase() : parsed.language;
+  const targetLanguageRaw =
+    typeof payload.targetLanguage === "string" ? payload.targetLanguage.trim().toLowerCase() : "";
+  if (!isSupportedLanguage(sourceLanguageRaw)) {
+    return NextResponse.json({ error: "sourceLanguage is invalid." }, { status: 400 });
+  }
+  if (!isSupportedLanguage(targetLanguageRaw)) {
+    return NextResponse.json({ error: "targetLanguage is invalid." }, { status: 400 });
+  }
+  if (sourceLanguageRaw === targetLanguageRaw) {
+    return NextResponse.json(
+      { error: "sourceLanguage and targetLanguage must be different." },
+      { status: 400 },
+    );
+  }
+  const sourceLanguage = sourceLanguageRaw;
+  const targetLanguage = targetLanguageRaw;
 
   const sourceCvId = `cv_${sourceLanguage}_${parsed.iteration}_${parsed.target}`;
   const targetCvId = `cv_${targetLanguage}_${parsed.iteration}_${parsed.target}`;
@@ -328,7 +346,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     targetCvId,
     changed: true,
     message: "Missing fields synced and translated.",
-    direction: sourceLanguage === "bg" ? "BG > EN" : "BG < EN",
+    direction: `${sourceLanguage.toUpperCase()} -> ${targetLanguage.toUpperCase()}`,
     changes,
     changedFields: changes.length,
   });

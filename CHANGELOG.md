@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Editor language management now supports creating additional CV language variants from a modal picker.
+- New variant creation flow can optionally run AI translation when OpenRouter is configured, then automatically switches to the new language.
+- Editor sync now includes a dedicated modal to select source/target languages with per-language last update timestamps.
+
+### Changed
+
+- Language pill behavior is now dynamic per CV target and lists all detected variants (with English first when available).
+- Variant/sync backend now supports explicit language-pair sync (`source -> target`) across all available variant languages.
+- OpenRouter API key save flow now writes/updates `OPENROUTER_API_KEY` in local `.env`.
+
+### Fixed
+
+- Theme mode toggle titles are now hydration-safe (removed SSR/CSR mismatch in mode tooltip attributes).
+- OpenRouter credit status now includes API error detail in the label for unauthorized key scenarios.
+- OpenRouter credit panel now uses prepaid balance from `/credits` as the primary remaining amount instead of key limit-based values.
+
 ## [1.0.0] - 2026-03-06
 
 ### Added

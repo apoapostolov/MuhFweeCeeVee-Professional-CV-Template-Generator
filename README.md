@@ -11,6 +11,8 @@ MuhFweeCeeVee is a self-hosted CV authoring and export platform with:
 Version `1.0.0` is the first public release with a stable user-facing workflow:
 - Print Room (preview + export)
 - Editor (Form/YAML)
+- Dynamic language variants in Editor (add language + optional AI translation)
+- Language sync modal in Editor (pick source/target language pair with timestamp visibility)
 - Keywords workspace (gap analysis and prioritization)
 - Theme support (light/dark/system + template themes)
 - Public fictional sample profile (`John Doe`)
@@ -124,6 +126,7 @@ Steps:
 - Public repo includes only fictional sample CV data.
 - Personal/local CV history and planning artifacts are intentionally untracked.
 - Keep real CV content in local/private files outside version control.
+- OpenRouter key is stored in local `.env` as `OPENROUTER_API_KEY` when saved via UI.
 
 ## Release and Changelog
 
