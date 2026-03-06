@@ -63,6 +63,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     verbs, KPIs, and data-driven design tags applied when game-industry
     signals are detected
   - scoring now merges JD-derived keywords with these DBs and reports active DBs in API/UI.
+- Keyword Studio source-visibility enhancement:
+  - added source-aware keyword tag colors in content rendering:
+    seniority (indigo) and game-generic (cyan)
+  - left sidebar now always renders all seniority keywords in a dedicated
+    `Seniority Priority Keywords` block to keep leadership wording targets visible.
+- Keyword Studio seniority block usability update:
+  - added a toggle button to show/hide seniority-based tags in right-panel content
+  - added fallback rendering for seniority list from analyzed keyword sources to avoid empty-state regressions.
+- Keyword Studio hover/seniority UX polish:
+  - replaced terse browser-title tag hover with structured tooltip cards that show source/status/category badges and key metrics
+  - simplified seniority toggle button text to `Hide` / `Show`
+  - removed constrained scrolling from seniority keyword list so all priority tags render in normal flow.
+- Composer navigation polish:
+  - renamed tab label from `Keyword Studio` to `Keywords`
+  - moved `Keywords` tab order to appear after `Editor` and before `Templates`.
+- Keyword Studio interaction and theming upgrade:
+  - removed native browser tooltip overlap on keyword tags; only custom tooltip is shown
+  - redesigned custom tag tooltip as a darker structured card over light UI
+  - added `Hard Skills Priority` and `Soft Skills Priority` sections below seniority
+  - simplified seniority toggle labels to `Hide` / `Show` and removed constrained list scrolling
+  - added app-wide light/dark/system theme toggle (sun/moon/computer icons) in top-right controls.
+- `cv-keyword-analysis` advanced backlog implementation:
+  - taxonomy/category-aware keyword scoring foundation
+  - seniority intent detection, source-quality/recency/duplicate weighting,
+    negation-aware CV hit counting, and per-category analytics outputs.
+- Editor YAML mode UX upgrade:
+  - added syntax-colored live preview for YAML keys/list items/values/comments
+  - improved tabulation ergonomics by mapping `Tab` to spaces in YAML input.
+- Theme and dark-mode refinements:
+  - moved theme mode controls outside the tool frame to fixed top-right browser area
+  - replaced moon glyph with circular gibbous moon icon
+  - reworked dark palette to a dimmed scheme and added compatibility overrides
+    for previously hardcoded light panels/utilities.
 - Edinburgh theme and field fixes:
   - updated Edinburgh theme behavior so left sidebar remains neutral grey across all themes
   - removed `Location` and `Completed` rows from Edinburgh education details.

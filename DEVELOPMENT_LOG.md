@@ -1726,3 +1726,177 @@ Validation commands and results:
 - `npm run lint` -> pass
 - `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz" | jq ...` -> pass (returns `keywordDatabases.active` with both new DBs)
 - `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz" | jq '.keywords | map(select(.source=="senior_leadership" or .source=="game_generic" or .source=="combined"))'` -> pass (supplemental keywords present in scoring output)
+
+## 2026-03-06 - Keyword Studio source colors + always-visible seniority list
+
+Context/root cause:
+
+- After adding senior leadership and game-generic keyword DBs, tag visuals did not distinguish keyword source.
+- Seniority priorities needed persistent visibility in the left sidebar instead of only appearing in sliced status buckets.
+
+Files touched:
+
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+- `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz" | jq ...` -> pass (`seniorityKeywords` returned with full list)
+
+## 2026-03-06 - Seniority priority toggle and list fallback in Keyword Studio
+
+Context/root cause:
+
+- Needed an explicit control to toggle seniority-tag emphasis in right-panel content.
+- Seniority block could show an empty-state message in some responses; required fallback population from analyzed keyword sources.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Keyword Studio structured tag tooltip and seniority list flow polish
+
+Context/root cause:
+
+- Tag hover in right content relied on terse native title text and lacked structured visual hierarchy.
+- Seniority controls needed shorter button labels and unconstrained list rendering.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Top nav tab rename and reorder for Keywords
+
+Context/root cause:
+
+- Requested clearer naming and placement of the keyword-analysis panel in top navigation.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Keyword tooltip cleanup, skills priority panels, and global theme mode switch
+
+Context/root cause:
+
+- Keyword tag hover showed both browser-native title tooltip and custom tooltip simultaneously.
+- Needed darker custom tooltip treatment while retaining light overall UI.
+- Requested hard/soft skills priority sections analogous to seniority panel.
+- Required global light/dark/system theme switching with subtle icon controls.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/app/globals.css`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Continued cv-keyword-analysis PX implementation tranche
+
+Context/root cause:
+
+- Requested continuation of `cv-keyword-analysis` P0/P1/P2 priorities beyond planning and TODO curation.
+
+Files touched:
+
+- `cv-keyword-analysis/analysis_engine.py`
+- `cv-keyword-analysis/config/keyword_taxonomy.json`
+- `cv-keyword-analysis/schemas/analysis_input.schema.json`
+- `cv-keyword-analysis/schemas/analysis_output.schema.json`
+- `cv-keyword-analysis/tests/fixtures/analysis_input.json`
+- `cv-keyword-analysis/tests/test_analysis_engine.py`
+- `cv-keyword-analysis/README.md`
+- `cv-keyword-analysis/CHANGELOG.md`
+- `cv-keyword-analysis/TODO.md`
+- `cv-keyword-analysis/DEVELOPMENT_LOG.md`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `cd cv-keyword-analysis && /usr/bin/python3 -m py_compile analysis_engine.py jd_scraper.py` -> pass
+- `cd cv-keyword-analysis && /usr/bin/python3 -m unittest tests/test_analysis_engine.py` -> pass (6 tests)
+- `cd cv-keyword-analysis && /usr/bin/python3 analysis_engine.py --input tests/fixtures/analysis_input.json --output outputs/analysis_report_fixture.json --markdown-output outputs/analysis_report_fixture.md --editor-hook-output outputs/editor_hook_fixture.json` -> pass
+
+## 2026-03-06 - Editor YAML View syntax coloring and tabulation improvements
+
+Context/root cause:
+
+- YAML View in Editor was plain-text only and harder to scan for structure.
+- Needed improved indentation ergonomics for YAML editing.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Theme control placement and dark-mode palette redesign
+
+Context/root cause:
+
+- Theme controls needed to sit outside the main tool frame in top-right browser area.
+- Existing dark mode palette was too black and visually incompatible with many light utility panels.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/app/globals.css`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass

@@ -1,0 +1,100 @@
+{
+  "aliases": {
+    "live-ops": "live ops",
+    "live operations": "live ops",
+    "lifetime value": "ltv",
+    "a b testing": "a/b testing",
+    "ab testing": "a/b testing",
+    "data analytics": "analytics"
+  },
+  "categories": {
+    "hard_skill": [
+      "sql",
+      "python",
+      "unity",
+      "unreal engine",
+      "looker",
+      "snowflake",
+      "bigquery",
+      "a/b testing",
+      "predictive modeling",
+      "machine learning",
+      "systems design",
+      "economy balancing",
+      "telemetry",
+      "ltv",
+      "arpu",
+      "arppu"
+    ],
+    "soft_skill": [
+      "communication",
+      "collaboration",
+      "stakeholder communication",
+      "active listening",
+      "constructive feedback",
+      "problem solving",
+      "critical thinking",
+      "mentoring"
+    ],
+    "seniority": [
+      "senior",
+      "lead",
+      "principal",
+      "director",
+      "head",
+      "manager",
+      "executive",
+      "ownership",
+      "strategic"
+    ],
+    "action_verb": [
+      "achieved",
+      "developed",
+      "managed",
+      "analyzed",
+      "optimized",
+      "directed",
+      "mentored",
+      "supervised",
+      "executed",
+      "spearheaded",
+      "accelerated",
+      "streamlined",
+      "delivered"
+    ],
+    "domain_term": [
+      "live ops",
+      "monetization",
+      "retention",
+      "churn",
+      "session length",
+      "game design",
+      "game producer",
+      "game data",
+      "player behavior"
+    ]
+  },
+  "role_cluster_profiles": {
+    "producer": {
+      "hard_skill": 1.15,
+      "soft_skill": 1.1,
+      "seniority": 1.2,
+      "action_verb": 1.1,
+      "domain_term": 1.15
+    },
+    "designer": {
+      "hard_skill": 1.2,
+      "soft_skill": 1.05,
+      "seniority": 1.05,
+      "action_verb": 1.0,
+      "domain_term": 1.2
+    },
+    "analytics": {
+      "hard_skill": 1.25,
+      "soft_skill": 1.0,
+      "seniority": 1.0,
+      "action_verb": 1.0,
+      "domain_term": 1.1
+    }
+  }
+}

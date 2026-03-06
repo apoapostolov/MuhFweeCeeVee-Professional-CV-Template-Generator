@@ -68,3 +68,12 @@
 - [x] Align Keyword Studio Positioning block framing with Professional Experience card styling.
 - [x] Expand Keyword Studio Professional Experience cards to include role-title fallback and missing high-value fields (tools/results/publication links/state flags).
 - [x] Add supplemental keyword DB types for senior leadership and generic game-industry tags, merged into Keyword Studio scoring.
+- [x] Add source-specific keyword colors (seniority/game-generic) and always-visible full seniority keyword list in Keyword Studio left column.
+- [x] Add Seniority Priority toggle to show/hide seniority tag highlights and harden seniority list fallback rendering.
+- [x] Upgrade Keyword Studio tag hover UI to structured tooltip cards and simplify/unconstrain Seniority Priority controls/list.
+- [x] Rename top tab `Keyword Studio` to `Keywords` and move it between `Editor` and `Templates`.
+- [x] Remove native tag tooltip overlap, darken structured hover cards, and add hard/soft skill priority sections under seniority.
+- [x] Add global light/dark/system theme mode toggle with subtle icon controls in top-right header.
+- [x] Continue `cv-keyword-analysis` PX backlog implementation with taxonomy-aware scoring, quality-weighting penalties, negation handling, and per-category analytics.
+- [x] Improve Editor YAML View readability with syntax-colored preview and tab-friendly indentation behavior.
+- [x] Move theme controls to fixed upper-right browser area and rework dark mode to a dimmed, panel-compatible scheme.
