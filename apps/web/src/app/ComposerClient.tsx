@@ -60,8 +60,8 @@ type OpenRouterCreditResponse = {
 type SyncChangeItem = {
   path: string;
   direction: "BG > EN" | "BG < EN";
-  sourceLanguage: "bg" | "en";
-  targetLanguage: "bg" | "en";
+  sourceLanguage: string;
+  targetLanguage: string;
   sourceValue: unknown;
   previousTargetValue: unknown;
   nextTargetValue: unknown;
@@ -73,24 +73,22 @@ type SyncResponse = {
   message?: string;
   sourceCvId?: string;
   targetCvId?: string;
-  direction?: "BG > EN" | "BG < EN";
+  direction?: string;
   changes?: SyncChangeItem[];
   changedFields?: number;
 };
 
 type SyncStatusResponse = {
-  ok: boolean;
-  sourceCvId: string;
-  targetCvId: string;
-  sourceLanguage: "bg" | "en";
-  targetLanguage: "bg" | "en";
-  sourceLastEditedAt: string;
-  targetLastEditedAt: string;
-  timestampsDiffer: boolean;
-  hasMissingFields: boolean;
-  missingFieldCount: number;
-  missingFieldPaths: string[];
-  canSync: boolean;
+  ok?: boolean;
+  error?: string;
+  iteration?: string;
+  target?: string;
+  currentLanguage?: string;
+  languages?: Array<{
+    language: string;
+    cvId: string;
+    lastEditedAt: string;
+  }>;
 };
 
 type ActivePanel = "workspace" | "templates" | "editor" | "keywords";
@@ -129,8 +127,8 @@ type CvPair = {
   key: string;
   displayName: string;
   displayVersion: string;
-  bg: CvListResponse["items"][number] | null;
-  en: CvListResponse["items"][number] | null;
+  variants: Record<string, CvListResponse["items"][number]>;
+  preferredCvId: string;
   latestTs: number;
 };
 
@@ -337,6 +335,40 @@ const EDINBURGH_THEME_OPTIONS: TemplateThemeOption[] = [
   { id: "amber_gold", label: "Amber Gold", color: "#ffc209" },
 ];
 
+const LANGUAGE_OPTIONS: Array<{ code: string; label: string }> = [
+  { code: "en", label: "English" },
+  { code: "bg", label: "Bulgarian" },
+  { code: "de", label: "German" },
+  { code: "fr", label: "French" },
+  { code: "es", label: "Spanish" },
+  { code: "it", label: "Italian" },
+  { code: "pt", label: "Portuguese" },
+  { code: "nl", label: "Dutch" },
+  { code: "sv", label: "Swedish" },
+  { code: "no", label: "Norwegian" },
+  { code: "da", label: "Danish" },
+  { code: "fi", label: "Finnish" },
+  { code: "pl", label: "Polish" },
+  { code: "cs", label: "Czech" },
+  { code: "ro", label: "Romanian" },
+  { code: "el", label: "Greek" },
+  { code: "tr", label: "Turkish" },
+  { code: "uk", label: "Ukrainian" },
+  { code: "ru", label: "Russian" },
+  { code: "ja", label: "Japanese" },
+  { code: "ko", label: "Korean" },
+  { code: "zh", label: "Chinese" },
+  { code: "ar", label: "Arabic" },
+];
+
+const STORAGE_KEYS = {
+  themeMode: "mfcv_theme_mode",
+  selectedCvId: "mfcv_selected_cv_id",
+  selectedLanguage: "mfcv_selected_language",
+  selectedTemplateId: "mfcv_selected_template_id",
+  selectedTemplateTheme: "mfcv_selected_template_theme",
+} as const;
+
 const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string }> = [
   { key: "person", label: "Person", path: "person" },
   { key: "positioning", label: "Positioning", path: "positioning" },
@@ -457,11 +489,11 @@ function prettyKey(raw: string): string {
     .replace(/^./, (value) => value.toUpperCase());
 }
 
-function resolveFieldCopy(path: string, key: string, language: "bg" | "en"): FieldCopy {
+function resolveFieldCopy(path: string, key: string, language: string): FieldCopy {
   const normalized = normalizeMetaPath(path);
   const meta = FIELD_META[normalized];
   if (meta) {
-    return meta[language];
+    return language === "bg" ? meta.bg : meta.en;
   }
   const label = prettyKey(key);
   return {
@@ -592,7 +624,10 @@ export function ComposerClient() {
   const [selectedTemplateTheme, setSelectedTemplateTheme] = useState("default");
   const [previewNonce, setPreviewNonce] = useState(Date.now());
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<"bg" | "en">("bg");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [languageModalOpen, setLanguageModalOpen] = useState(false);
+  const [languageModalSelection, setLanguageModalSelection] = useState("en");
+  const [creatingLanguage, setCreatingLanguage] = useState(false);
 
   const [editorTab, setEditorTab] = useState<EditorTabKey>("person");
   const [editorView, setEditorView] = useState<EditorViewMode>("form");
@@ -653,9 +688,13 @@ export function ComposerClient() {
   } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [syncModalLoading, setSyncModalLoading] = useState(false);
+  const [syncSourceSelection, setSyncSourceSelection] = useState("");
+  const [syncTargetSelection, setSyncTargetSelection] = useState("");
   const [syncReport, setSyncReport] = useState<{
     open: boolean;
-    direction: "BG > EN" | "BG < EN";
+    direction: string;
     sourceCvId: string;
     targetCvId: string;
     changed: boolean;
@@ -850,24 +889,30 @@ export function ComposerClient() {
       const existing = pairs.get(key);
 
       if (!existing) {
+        const languageKey = (item.language ?? "").toLowerCase() || "unknown";
         pairs.set(key, {
           key,
           displayName: item.displayName,
           displayVersion: item.displayVersion,
-          bg: item.language === "bg" ? item : null,
-          en: item.language === "en" ? item : null,
+          variants: {
+            [languageKey]: item,
+          },
+          preferredCvId: item.id,
           latestTs: ts,
         });
         continue;
       }
 
-      if (item.language === "bg") {
-        existing.bg = item;
-        existing.displayName = item.displayName;
-        existing.displayVersion = item.displayVersion;
-      } else if (item.language === "en") {
-        existing.en = item;
+      const languageKey = (item.language ?? "").toLowerCase() || "unknown";
+      existing.variants[languageKey] = item;
+      if (languageKey === "en") {
+        existing.preferredCvId = item.id;
       }
+      if (!existing.variants.en && languageKey === "bg") {
+        existing.preferredCvId = item.id;
+      }
+      existing.displayName = item.displayName;
+      existing.displayVersion = item.displayVersion;
       existing.latestTs = Math.max(existing.latestTs, ts);
     }
 
@@ -894,7 +939,7 @@ export function ComposerClient() {
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("mfcv_theme_mode");
+      const saved = window.localStorage.getItem(STORAGE_KEYS.themeMode);
       if (saved === "light" || saved === "dark" || saved === "system") {
         setThemeMode(saved);
       }
@@ -913,7 +958,7 @@ export function ComposerClient() {
     };
     applyTheme();
     try {
-      window.localStorage.setItem("mfcv_theme_mode", themeMode);
+      window.localStorage.setItem(STORAGE_KEYS.themeMode, themeMode);
     } catch {
       // no-op
     }
@@ -928,6 +973,41 @@ export function ComposerClient() {
   }, [themeMode]);
 
   useEffect(() => {
+    if (!selectedCvId) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.selectedCvId, selectedCvId);
+    } catch {
+      // no-op
+    }
+  }, [selectedCvId]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.selectedLanguage, selectedLanguage);
+    } catch {
+      // no-op
+    }
+  }, [selectedLanguage]);
+
+  useEffect(() => {
+    if (!selectedTemplateId) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.selectedTemplateId, selectedTemplateId);
+    } catch {
+      // no-op
+    }
+  }, [selectedTemplateId]);
+
+  useEffect(() => {
+    if (!selectedTemplateTheme) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.selectedTemplateTheme, selectedTemplateTheme);
+    } catch {
+      // no-op
+    }
+  }, [selectedTemplateTheme]);
+
+  useEffect(() => {
     let cancelled = false;
     async function loadWorkspaceData() {
       setLoadingWorkspace(true);
@@ -940,19 +1020,55 @@ export function ComposerClient() {
         }
         setCvItems(cvs.items ?? []);
         setTemplateItems(templates.items ?? []);
+        const items = cvs.items ?? [];
+        const templateItemsLocal = templates.items ?? [];
 
-        if ((!selectedCvId || !cvs.items?.some((item) => item.id === selectedCvId)) && cvs.items?.length) {
-          const first = cvs.items[0];
-          setSelectedCvId(first.id);
-          setSelectedLanguage(first.language === "en" ? "en" : "bg");
+        if (items.length > 0) {
+          let persistedCvId = "";
+          let persistedLanguage = "";
+          try {
+            persistedCvId = window.localStorage.getItem(STORAGE_KEYS.selectedCvId) ?? "";
+            const rawLanguage = (window.localStorage.getItem(STORAGE_KEYS.selectedLanguage) ?? "").toLowerCase();
+            if (/^[a-z]{2,8}$/.test(rawLanguage)) {
+              persistedLanguage = rawLanguage;
+            }
+          } catch {
+            // no-op
+          }
+
+          let selected = items.find((item) => item.id === persistedCvId) ?? items[0];
+          if (persistedLanguage && selected.iteration && selected.target) {
+            const siblingId = `cv_${persistedLanguage}_${selected.iteration}_${selected.target}`;
+            const sibling = items.find((item) => item.id === siblingId);
+            if (sibling) {
+              selected = sibling;
+            }
+          }
+
+          setSelectedCvId(selected.id);
+          setSelectedLanguage((selected.language ?? "en").toLowerCase());
         }
 
-        if (
-          (!selectedTemplateId || !templates.items?.some((item) => item.id === selectedTemplateId)) &&
-          templates.items?.length
-        ) {
-          const preferred = templates.items.find((entry) => entry.id === "europass-v1");
-          setSelectedTemplateId(preferred?.id ?? templates.items[0].id);
+        if (templateItemsLocal.length > 0) {
+          let persistedTemplateId = "";
+          let persistedTemplateTheme = "";
+          try {
+            persistedTemplateId = window.localStorage.getItem(STORAGE_KEYS.selectedTemplateId) ?? "";
+            persistedTemplateTheme = window.localStorage.getItem(STORAGE_KEYS.selectedTemplateTheme) ?? "";
+          } catch {
+            // no-op
+          }
+
+          const templateId =
+            templateItemsLocal.find((item) => item.id === persistedTemplateId)?.id
+              ?? templateItemsLocal.find((entry) => entry.id === "europass-v1")?.id
+              ?? templateItemsLocal[0].id;
+          setSelectedTemplateId(templateId);
+
+          const themeId = EDINBURGH_THEME_OPTIONS.some((option) => option.id === persistedTemplateTheme)
+            ? persistedTemplateTheme
+            : "default";
+          setSelectedTemplateTheme(themeId);
         }
       } finally {
         if (!cancelled) {
@@ -964,8 +1080,6 @@ export function ComposerClient() {
     return () => {
       cancelled = true;
     };
-    // Initial load only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -1078,57 +1192,42 @@ export function ComposerClient() {
     [cvItems, selectedCvId],
   );
 
-  const variantPair = useMemo(() => {
+  const variantGroup = useMemo(() => {
     if (!selectedCvMeta?.target || !selectedCvMeta?.iteration) {
       return null;
     }
-    const bgId = `cv_bg_${selectedCvMeta.iteration}_${selectedCvMeta.target}`;
-    const enId = `cv_en_${selectedCvMeta.iteration}_${selectedCvMeta.target}`;
-    return {
-      bg: cvItems.find((item) => item.id === bgId) ?? null,
-      en: cvItems.find((item) => item.id === enId) ?? null,
-    };
-  }, [cvItems, selectedCvMeta?.iteration, selectedCvMeta?.target]);
-  const bgVariantId = variantPair?.bg?.id ?? "";
-  const enVariantId = variantPair?.en?.id ?? "";
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSyncStatus() {
-      if (!selectedCvId || !bgVariantId || !enVariantId) {
-        setSyncStatus(null);
-        return;
+    const variants: Record<string, CvListResponse["items"][number]> = {};
+    for (const item of cvItems) {
+      if (item.iteration !== selectedCvMeta.iteration || item.target !== selectedCvMeta.target) {
+        continue;
       }
-      try {
-        const response = await fetch("/api/cvs/sync/status", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            cvId: selectedCvId,
-            sourceLanguage: selectedLanguage,
-          }),
-        });
-        const payload = (await response.json()) as SyncStatusResponse & { error?: string };
-        if (!cancelled) {
-          if (!response.ok || payload.error) {
-            setSyncStatus(null);
-            return;
-          }
-          setSyncStatus(payload);
-        }
-      } catch {
-        if (!cancelled) {
-          setSyncStatus(null);
-        }
+      const language = (item.language ?? "").toLowerCase();
+      if (!language) continue;
+      variants[language] = item;
+    }
+    return variants;
+  }, [cvItems, selectedCvMeta?.iteration, selectedCvMeta?.target]);
+  const availableLanguages = useMemo<string[]>(() => {
+    const languages = Object.keys(variantGroup ?? {});
+    if (languages.length === 0) {
+      const fallback = (selectedCvMeta?.language ?? "").toLowerCase();
+      return fallback ? [fallback] : [];
+    }
+    return languages.sort((a, b) => {
+      if (a === "en") return -1;
+      if (b === "en") return 1;
+      return a.localeCompare(b);
+    });
+  }, [selectedCvMeta?.language, variantGroup]);
+  const languageOptionChoices = useMemo(() => {
+    const base = [...LANGUAGE_OPTIONS];
+    for (const code of availableLanguages) {
+      if (!base.some((entry) => entry.code === code)) {
+        base.push({ code, label: code.toUpperCase() });
       }
     }
-
-    void loadSyncStatus();
-    return () => {
-      cancelled = true;
-    };
-  }, [bgVariantId, enVariantId, previewNonce, selectedCvId, selectedLanguage]);
+    return base;
+  }, [availableLanguages]);
 
   const selectedPairKey = useMemo(() => {
     if (!selectedCvMeta) return "";
@@ -1139,9 +1238,20 @@ export function ComposerClient() {
   }, [selectedCvMeta]);
 
   useEffect(() => {
-    const lang = selectedCvMeta?.language === "en" ? "en" : "bg";
+    const lang = (selectedCvMeta?.language ?? "en").toLowerCase();
     setSelectedLanguage(lang);
   }, [selectedCvMeta?.id, selectedCvMeta?.language]);
+
+  useEffect(() => {
+    if (availableLanguages.length === 0) return;
+    if (availableLanguages.includes(selectedLanguage)) return;
+    const nextLang = availableLanguages[0];
+    setSelectedLanguage(nextLang);
+    const nextVariant = variantGroup?.[nextLang];
+    if (nextVariant?.id && nextVariant.id !== selectedCvId) {
+      setSelectedCvId(nextVariant.id);
+    }
+  }, [availableLanguages, selectedLanguage, selectedCvId, variantGroup]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1211,7 +1321,7 @@ export function ComposerClient() {
     let cancelled = false;
 
     async function loadKeywordStudio() {
-      const englishId = variantPair?.en?.id ?? (selectedCvMeta?.language === "en" ? selectedCvId : "");
+      const englishId = variantGroup?.en?.id ?? ((selectedCvMeta?.language ?? "").toLowerCase() === "en" ? selectedCvId : "");
       if (!englishId) {
         setKeywordStudioData(null);
         setKeywordStudioError("English CV variant is required for Keyword Studio.");
@@ -1260,7 +1370,7 @@ export function ComposerClient() {
     return () => {
       cancelled = true;
     };
-  }, [previewNonce, selectedCvId, selectedCvMeta?.language, selectedKeywordDataset, selectedKeywordRole, variantPair?.en?.id]);
+  }, [previewNonce, selectedCvId, selectedCvMeta?.language, selectedKeywordDataset, selectedKeywordRole, variantGroup?.en?.id]);
 
   useEffect(() => {
     if (!editorCv) {
@@ -1297,12 +1407,9 @@ export function ComposerClient() {
     };
   }, []);
 
-  function switchLanguage(language: "bg" | "en") {
+  function switchLanguage(language: string) {
     setSelectedLanguage(language);
-    if (!variantPair) {
-      return;
-    }
-    const next = language === "bg" ? variantPair.bg : variantPair.en;
+    const next = variantGroup?.[language];
     if (next?.id) {
       setSelectedCvId(next.id);
       setPreviewNonce(Date.now());
@@ -1314,10 +1421,78 @@ export function ComposerClient() {
     if (!pair) {
       return;
     }
-    const next = selectedLanguage === "bg" ? (pair.bg ?? pair.en) : (pair.en ?? pair.bg);
+    const next = pair.variants[selectedLanguage]
+      ?? pair.variants.en
+      ?? cvItems.find((item) => item.id === pair.preferredCvId)
+      ?? Object.values(pair.variants)[0]
+      ?? null;
     if (next?.id) {
       setSelectedCvId(next.id);
       setPreviewNonce(Date.now());
+    }
+  }
+
+  function openLanguageModal() {
+    const firstOption = languageOptionChoices.find((option) => !availableLanguages.includes(option.code))
+      ?? languageOptionChoices[0];
+    setLanguageModalSelection(firstOption.code);
+    setLanguageModalOpen(true);
+  }
+
+  async function createLanguageVariant() {
+    if (!selectedCvId || !languageModalSelection || creatingLanguage) {
+      return;
+    }
+    if (availableLanguages.includes(languageModalSelection)) {
+      setEditorNotice(`Language ${languageModalSelection.toUpperCase()} already exists for this CV.`);
+      setLanguageModalOpen(false);
+      return;
+    }
+
+    const wantsAiTranslation = window.confirm(
+      `Create ${languageModalSelection.toUpperCase()} with AI translation (if OpenRouter is configured)?`,
+    );
+
+    setCreatingLanguage(true);
+    setEditorNotice("");
+    try {
+      const response = await fetch("/api/cvs/variant", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sourceCvId: selectedCvId,
+          targetLanguage: languageModalSelection,
+          aiTranslate: wantsAiTranslation,
+        }),
+      });
+      const payload = (await response.json()) as { error?: string; cvId?: string; created?: boolean };
+      if (!response.ok || payload.error) {
+        setEditorNotice(payload.error ?? "Failed to create language variant.");
+        return;
+      }
+
+      const cvsRes = await fetch("/api/cvs");
+      const cvsPayload = (await cvsRes.json()) as CvListResponse;
+      const nextItems = cvsPayload.items ?? [];
+      setCvItems(nextItems);
+
+      const nextCvId = payload.cvId ?? "";
+      const nextMeta = nextItems.find((item) => item.id === nextCvId);
+      if (nextCvId) {
+        setSelectedCvId(nextCvId);
+      }
+      if (nextMeta?.language) {
+        setSelectedLanguage(nextMeta.language.toLowerCase());
+      } else if (languageModalSelection) {
+        setSelectedLanguage(languageModalSelection);
+      }
+      setPreviewNonce(Date.now());
+      setLanguageModalOpen(false);
+      setEditorNotice(payload.created ? "Language variant created." : "Language variant already existed.");
+    } catch {
+      setEditorNotice("Failed to create language variant.");
+    } finally {
+      setCreatingLanguage(false);
     }
   }
 
@@ -1502,8 +1677,51 @@ export function ComposerClient() {
     }
   }
 
+  async function openSyncModal() {
+    if (!selectedCvId || availableLanguages.length < 2) {
+      setEditorNotice("At least two language variants are required to sync.");
+      return;
+    }
+    setSyncModalLoading(true);
+    setEditorNotice("");
+    try {
+      const response = await fetch("/api/cvs/sync/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cvId: selectedCvId }),
+      });
+      const payload = (await response.json()) as SyncStatusResponse;
+      if (!response.ok || payload.error) {
+        setEditorNotice(payload.error ?? "Failed to load sync language status.");
+        return;
+      }
+      const languageRows = payload.languages ?? [];
+      if (languageRows.length < 2) {
+        setEditorNotice("At least two language variants are required to sync.");
+        return;
+      }
+      setSyncStatus(payload);
+      const defaultSource = languageRows.find((item) => item.language === selectedLanguage)?.language
+        ?? languageRows[0].language;
+      const defaultTarget = languageRows.find((item) => item.language !== defaultSource)?.language
+        ?? "";
+      setSyncSourceSelection(defaultSource);
+      setSyncTargetSelection(defaultTarget);
+      setSyncModalOpen(true);
+    } catch {
+      setEditorNotice("Failed to load sync language status.");
+    } finally {
+      setSyncModalLoading(false);
+    }
+  }
+
   async function syncLanguagePair() {
-    if (!selectedCvId) {
+    if (!selectedCvId || !syncSourceSelection || !syncTargetSelection) {
+      setEditorNotice("Select source and target languages to run sync.");
+      return;
+    }
+    if (syncSourceSelection === syncTargetSelection) {
+      setEditorNotice("Source and target languages must be different.");
       return;
     }
     setSyncing(true);
@@ -1514,7 +1732,8 @@ export function ComposerClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           cvId: selectedCvId,
-          sourceLanguage: selectedLanguage,
+          sourceLanguage: syncSourceSelection,
+          targetLanguage: syncTargetSelection,
         }),
       });
       const payload = (await response.json()) as SyncResponse;
@@ -1526,7 +1745,7 @@ export function ComposerClient() {
       setEditorNotice(payload.message ?? (payload.changed ? "SYNC completed." : "No missing fields to sync."));
       setSyncReport({
         open: true,
-        direction: payload.direction ?? (selectedLanguage === "bg" ? "BG > EN" : "BG < EN"),
+        direction: payload.direction ?? `${syncSourceSelection.toUpperCase()} -> ${syncTargetSelection.toUpperCase()}`,
         sourceCvId: payload.sourceCvId ?? selectedCvId,
         targetCvId: payload.targetCvId ?? "",
         changed: Boolean(payload.changed),
@@ -1535,13 +1754,14 @@ export function ComposerClient() {
       });
 
       if (payload.changed) {
-        const targetLang = selectedLanguage === "bg" ? "en" : "bg";
-        const targetVariant = targetLang === "bg" ? variantPair?.bg : variantPair?.en;
+        const targetLang = syncTargetSelection;
+        const targetVariant = variantGroup?.[targetLang];
         if (targetVariant) {
           setSelectedCvId(targetVariant.id);
           setSelectedLanguage(targetLang);
         }
       }
+      setSyncModalOpen(false);
       setPreviewNonce(Date.now());
     } finally {
       setSyncing(false);
@@ -3056,7 +3276,7 @@ export function ComposerClient() {
         <button
           className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "light" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
           onClick={() => setThemeMode("light")}
-          title={`Light mode${resolvedTheme === "light" ? " (active)" : ""}`}
+          title="Light mode"
           type="button"
         >
           <ThemeSunIcon />
@@ -3064,7 +3284,7 @@ export function ComposerClient() {
         <button
           className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "dark" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
           onClick={() => setThemeMode("dark")}
-          title={`Dark mode${resolvedTheme === "dark" ? " (active)" : ""}`}
+          title="Dark mode"
           type="button"
         >
           <ThemeMoonIcon />
@@ -3072,7 +3292,7 @@ export function ComposerClient() {
         <button
           className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "system" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
           onClick={() => setThemeMode("system")}
-          title={`System mode${themeMode === "system" ? ` (${resolvedTheme})` : ""}`}
+          title="System mode"
           type="button"
         >
           <ThemeSystemIcon />
@@ -3141,26 +3361,18 @@ export function ComposerClient() {
                     <p className="mb-1 text-sm font-medium text-slate-800">Language</p>
                     <div className="flex items-center justify-center">
                       <div className="inline-flex w-[90%] overflow-hidden rounded-full border border-[var(--line)]">
-                        <button
-                          className={`flex-1 px-4 py-2 text-sm font-semibold ${
-                            selectedLanguage === "bg" ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800"
-                          }`}
-                          disabled={!variantPair?.bg}
-                          onClick={() => switchLanguage("bg")}
-                          type="button"
-                        >
-                          BG
-                        </button>
-                        <button
-                          className={`flex-1 border-l border-[var(--line)] px-4 py-2 text-sm font-semibold ${
-                            selectedLanguage === "en" ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800"
-                          }`}
-                          disabled={!variantPair?.en}
-                          onClick={() => switchLanguage("en")}
-                          type="button"
-                        >
-                          EN
-                        </button>
+                        {availableLanguages.map((language, index) => (
+                          <button
+                            key={`workspace-lang-${language}`}
+                            className={`flex-1 px-4 py-2 text-sm font-semibold ${
+                              index > 0 ? "border-l border-[var(--line)] " : ""
+                            }${selectedLanguage === language ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800"}`}
+                            onClick={() => switchLanguage(language)}
+                            type="button"
+                          >
+                            {language.toUpperCase()}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -3266,55 +3478,53 @@ export function ComposerClient() {
                     <p className="mb-1 text-sm font-medium text-slate-800">Language</p>
                     <div className="flex w-full items-center justify-center gap-2">
                       <div className="inline-flex w-[90%] overflow-hidden rounded-full border border-[var(--line)]">
-                        <button
-                          className={`flex-1 px-4 py-2 text-sm font-semibold ${
-                            selectedLanguage === "bg" ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800"
-                          }`}
-                          disabled={!variantPair?.bg}
-                          onClick={() => switchLanguage("bg")}
-                          type="button"
-                        >
-                          BG
-                        </button>
-                        <button
-                          className={`flex-1 border-l border-[var(--line)] px-4 py-2 text-sm font-semibold ${
-                            selectedLanguage === "en" ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800"
-                          }`}
-                          disabled={!variantPair?.en}
-                          onClick={() => switchLanguage("en")}
-                          type="button"
-                        >
-                          EN
-                        </button>
+                        {availableLanguages.map((language, index) => (
+                          <button
+                            key={`editor-lang-${language}`}
+                            className={`flex-1 px-4 py-2 text-sm font-semibold ${
+                              index > 0 ? "border-l border-[var(--line)] " : ""
+                            }${selectedLanguage === language ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800"}`}
+                            onClick={() => switchLanguage(language)}
+                            type="button"
+                          >
+                            {language.toUpperCase()}
+                          </button>
+                        ))}
                       </div>
                       <button
-                        className={`rounded-md border px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed ${
-                          syncStatus?.canSync
-                            ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                            : "border-[var(--line)] bg-[var(--surface-2)] text-slate-500"
-                        }`}
-                        disabled={syncing || !selectedCvId || !syncStatus?.canSync}
-                        onClick={syncLanguagePair}
-                        title={
-                          syncStatus?.canSync
-                            ? `SYNC ${syncStatus.sourceLanguage.toUpperCase()} -> ${syncStatus.targetLanguage.toUpperCase()}`
-                            : "SYNC is enabled only when missing fields or last-edited timestamp difference is detected."
-                        }
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--line)] bg-white text-slate-700 hover:bg-slate-50"
+                        onClick={openLanguageModal}
+                        title="Add language"
                         type="button"
                       >
-                        {syncing ? "SYNC..." : "SYNC"}
+                        <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                          <path d="M12 4v16M4 12h16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                        </svg>
+                      </button>
+                      <button
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--line)] bg-white text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={syncing || syncModalLoading || !selectedCvId || availableLanguages.length < 2}
+                        onClick={openSyncModal}
+                        title="Open language sync"
+                        type="button"
+                      >
+                        <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                          <path
+                            d="M7 7h9l-2.5-2.5M17 17H8l2.5 2.5M17 7l-3 3M7 17l3-3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.8"
+                          />
+                        </svg>
                       </button>
                     </div>
-                    {!syncStatus?.canSync ? (
+                    {availableLanguages.length < 2 ? (
                       <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                        SYNC disabled: BG and EN are currently in sync (no missing fields and no edit timestamp difference).
+                        Sync requires at least two language variants.
                       </p>
-                    ) : (
-                      <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                        SYNC ready: {syncStatus.hasMissingFields ? `${syncStatus.missingFieldCount} missing fields` : "no missing fields"}
-                        {syncStatus.timestampsDiffer ? " + edit timestamp difference detected." : "."}
-                      </p>
-                    )}
+                    ) : null}
                   </div>
 
                   <label className="block text-sm font-medium text-slate-800">
@@ -3735,6 +3945,158 @@ export function ComposerClient() {
                   : "border-slate-700 bg-slate-800 text-slate-200"
               }`}>
                 {keywordHover.metric.recommendation}
+              </div>
+            </div>
+          ) : null}
+          {syncModalOpen ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-3xl rounded-xl border border-[var(--line)] bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+                  <h3 className="text-base font-semibold text-slate-900">Language Sync</h3>
+                  <button
+                    className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                    disabled={syncing}
+                    onClick={() => setSyncModalOpen(false)}
+                    type="button"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="space-y-3 px-4 py-4">
+                  <p className="text-xs text-[var(--ink-muted)]">
+                    Choose one source of truth and one target language. Missing fields from source are translated into target.
+                  </p>
+                  <div className="overflow-hidden rounded-md border border-[var(--line)]">
+                    <div className="grid grid-cols-[1fr_110px_110px] gap-0 border-b border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                      <span>Language / Last Updated</span>
+                      <span className="text-center">Source</span>
+                      <span className="text-center">Target</span>
+                    </div>
+                    {(syncStatus?.languages ?? []).map((row) => (
+                      <label
+                        className="grid grid-cols-[1fr_110px_110px] items-center gap-0 border-t border-[var(--line)] px-3 py-2 text-xs text-slate-800 first:border-t-0"
+                        key={`sync-language-${row.language}`}
+                      >
+                        <span className="flex flex-col">
+                          <span className="font-semibold">{row.language.toUpperCase()}</span>
+                          <span className="text-[11px] text-[var(--ink-muted)]">
+                            {row.lastEditedAt ? new Date(row.lastEditedAt).toLocaleString() : "No timestamp"}
+                          </span>
+                        </span>
+                        <span className="flex justify-center">
+                          <input
+                            checked={syncSourceSelection === row.language}
+                            onChange={(event) => {
+                              if (event.target.checked) {
+                                setSyncSourceSelection(row.language);
+                              } else if (syncSourceSelection === row.language) {
+                                setSyncSourceSelection("");
+                              }
+                            }}
+                            type="checkbox"
+                          />
+                        </span>
+                        <span className="flex justify-center">
+                          <input
+                            checked={syncTargetSelection === row.language}
+                            onChange={(event) => {
+                              if (event.target.checked) {
+                                setSyncTargetSelection(row.language);
+                              } else if (syncTargetSelection === row.language) {
+                                setSyncTargetSelection("");
+                              }
+                            }}
+                            type="checkbox"
+                          />
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {syncSourceSelection && syncTargetSelection && syncSourceSelection === syncTargetSelection ? (
+                    <p className="text-xs text-rose-600">Source and target must be different languages.</p>
+                  ) : null}
+                </div>
+                <div className="flex justify-end gap-2 border-t border-[var(--line)] px-4 py-3">
+                  <button
+                    className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    disabled={syncing}
+                    onClick={() => setSyncModalOpen(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                    disabled={
+                      syncing
+                      || !syncSourceSelection
+                      || !syncTargetSelection
+                      || syncSourceSelection === syncTargetSelection
+                    }
+                    onClick={syncLanguagePair}
+                    type="button"
+                  >
+                    {syncing ? "Syncing..." : "Run Sync"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {languageModalOpen ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-md rounded-xl border border-[var(--line)] bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+                  <h3 className="text-base font-semibold text-slate-900">Add Language</h3>
+                  <button
+                    className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                    disabled={creatingLanguage}
+                    onClick={() => setLanguageModalOpen(false)}
+                    type="button"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="space-y-3 px-4 py-4">
+                  <p className="text-xs text-[var(--ink-muted)]">
+                    Select a language variant to create for this CV. Existing variants are skipped automatically.
+                  </p>
+                  <label className="block text-sm font-medium text-slate-800">
+                    Language
+                    <select
+                      className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                      onChange={(event) => setLanguageModalSelection(event.target.value)}
+                      value={languageModalSelection}
+                    >
+                      {languageOptionChoices.map((option) => (
+                        <option
+                          disabled={availableLanguages.includes(option.code)}
+                          key={`language-option-${option.code}`}
+                          value={option.code}
+                        >
+                          {option.label} ({option.code.toUpperCase()}){availableLanguages.includes(option.code) ? " - already exists" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="flex justify-end gap-2 border-t border-[var(--line)] px-4 py-3">
+                  <button
+                    className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    disabled={creatingLanguage}
+                    onClick={() => setLanguageModalOpen(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                    disabled={creatingLanguage}
+                    onClick={createLanguageVariant}
+                    type="button"
+                  >
+                    {creatingLanguage ? "Creating..." : "Create"}
+                  </button>
+                </div>
               </div>
             </div>
           ) : null}
