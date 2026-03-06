@@ -178,6 +178,25 @@ type KeywordStudioResponse = {
     keywordCount: number;
     cvCoverage: number;
   }>;
+  roles?: Array<{
+    role: string;
+    label: string;
+    docCount: number;
+    avgSignal: number;
+  }>;
+  role?: string;
+  keywordSummary?: {
+    total: number;
+    missing: number;
+    underused: number;
+    used: number;
+  };
+  analysisStats?: {
+    weightedUsageScore: number;
+    missingWeightShare: number;
+    underusedWeightShare: number;
+    totalKeywordWeight: number;
+  };
   keywords?: Array<{
     keyword: string;
     docFreq: number;
@@ -188,8 +207,69 @@ type KeywordStudioResponse = {
     band: KeywordBand;
     cvHits: number;
     cvCoverage: number;
+    targetHits: number;
+    usageRatio: number;
+    status: "missing" | "underused" | "used";
+    recommendation: string;
   }>;
+  missingKeywords?: Array<{
+    keyword: string;
+    weight: number;
+    cvHits: number;
+    targetHits: number;
+    recommendation: string;
+  }>;
+  underusedKeywords?: Array<{
+    keyword: string;
+    weight: number;
+    cvHits: number;
+    targetHits: number;
+    recommendation: string;
+  }>;
+  usedKeywords?: Array<{
+    keyword: string;
+    weight: number;
+    cvHits: number;
+    targetHits: number;
+    recommendation: string;
+  }>;
+  keywordDatabases?: {
+    seniorityAspect: boolean;
+    gameIndustryAspect: boolean;
+    active: string[];
+  };
   cv?: Record<string, unknown>;
+};
+
+type KeywordManageStatsResponse = {
+  ok?: boolean;
+  stats?: {
+    profilesScanned: {
+      today: number;
+      week: number;
+      total: number;
+    };
+    coreDatasetProfiles: number;
+    keywordsIdentified: number;
+    cacheDbPath: string;
+  };
+  run?: {
+    runId: string;
+    state: "queued" | "scraping" | "merging" | "completed" | "failed";
+    phase: string;
+    startedAt: string;
+    updatedAt: string;
+    completedAt: string | null;
+    error: string | null;
+    mergedItems: number | null;
+    sourceFiles: number | null;
+    logs: string[];
+  } | null;
+  activeRunId?: string | null;
+  started?: boolean;
+  alreadyRunning?: boolean;
+  note?: string;
+  error?: string;
 };
 
 type KeywordDatasetListResponse = {
@@ -202,9 +282,23 @@ type KeywordDatasetListResponse = {
     generatedAt: string | null;
     itemCount: number;
     provider: string | null;
-    isPrototype: boolean;
+    kind?: "core";
   }>;
 };
+
+type TemplateThemeOption = {
+  id: string;
+  label: string;
+  color: string;
+};
+
+const EDINBURGH_THEME_OPTIONS: TemplateThemeOption[] = [
+  { id: "default", label: "Default Purple", color: "#4E557B" },
+  { id: "ocean_teal", label: "Ocean Teal", color: "#068799" },
+  { id: "forest_green", label: "Forest Green", color: "#316834" },
+  { id: "ruby_red", label: "Ruby Red", color: "#b0292a" },
+  { id: "amber_gold", label: "Amber Gold", color: "#ffc209" },
+];
 
 const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string }> = [
   { key: "person", label: "Person", path: "person" },
@@ -457,6 +551,7 @@ export function ComposerClient() {
   const [templateItems, setTemplateItems] = useState<TemplateListResponse["items"]>([]);
   const [selectedCvId, setSelectedCvId] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedTemplateTheme, setSelectedTemplateTheme] = useState("default");
   const [previewNonce, setPreviewNonce] = useState(Date.now());
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<"bg" | "en">("bg");
@@ -496,10 +591,16 @@ export function ComposerClient() {
   const [analysisData, setAnalysisData] = useState<SectionAnalysis | FullAnalysis | null>(null);
   const [keywordDatasets, setKeywordDatasets] = useState<KeywordDatasetListResponse["datasets"]>([]);
   const [selectedKeywordDataset, setSelectedKeywordDataset] = useState("");
+  const [selectedKeywordRole, setSelectedKeywordRole] = useState("all");
   const [keywordDatasetLoading, setKeywordDatasetLoading] = useState(false);
   const [keywordStudioLoading, setKeywordStudioLoading] = useState(false);
   const [keywordStudioError, setKeywordStudioError] = useState("");
   const [keywordStudioData, setKeywordStudioData] = useState<KeywordStudioResponse | null>(null);
+  const [keywordManageStats, setKeywordManageStats] = useState<KeywordManageStatsResponse["stats"] | null>(null);
+  const [keywordManageBusy, setKeywordManageBusy] = useState(false);
+  const [keywordManageNotice, setKeywordManageNotice] = useState("");
+  const [keywordRunStatus, setKeywordRunStatus] = useState<KeywordManageStatsResponse["run"] | null>(null);
+  const [keywordRunModalOpen, setKeywordRunModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
   const [syncReport, setSyncReport] = useState<{
@@ -539,8 +640,19 @@ export function ComposerClient() {
   );
 
   const keywordMatcher = useMemo(() => {
-    const tokenIndex = new Map<string, { keyword: string; normalized: number; band: KeywordBand; weight: number }>();
-    const phraseIndex = new Map<string, { keyword: string; normalized: number; band: KeywordBand; weight: number }>();
+    type KeywordMapEntry = {
+      keyword: string;
+      normalized: number;
+      band: KeywordBand;
+      weight: number;
+      status: "missing" | "underused" | "used";
+      cvHits: number;
+      targetHits: number;
+      recommendation: string;
+      usageRatio: number;
+    };
+    const tokenIndex = new Map<string, KeywordMapEntry>();
+    const phraseIndex = new Map<string, KeywordMapEntry>();
     let maxPhraseWords = 1;
 
     for (const item of keywordStudioData?.keywords ?? []) {
@@ -561,6 +673,11 @@ export function ComposerClient() {
           normalized: item.normalized,
           band: item.band,
           weight: item.weight,
+          status: item.status,
+          cvHits: item.cvHits,
+          targetHits: item.targetHits,
+          recommendation: item.recommendation,
+          usageRatio: item.usageRatio,
         });
       }
 
@@ -574,6 +691,11 @@ export function ComposerClient() {
             normalized: item.normalized,
             band: item.band,
             weight: item.weight,
+            status: item.status,
+            cvHits: item.cvHits,
+            targetHits: item.targetHits,
+            recommendation: item.recommendation,
+            usageRatio: item.usageRatio,
           });
         }
       }
@@ -671,8 +793,11 @@ export function ComposerClient() {
       templateId: selectedTemplateId,
       v: String(previewNonce),
     });
+    if (selectedTemplateId === "edinburgh-v1") {
+      params.set("theme", selectedTemplateTheme);
+    }
     return `/api/export/pdf?${params.toString()}`;
-  }, [previewNonce, selectedCvId, selectedTemplateId]);
+  }, [previewNonce, selectedCvId, selectedTemplateId, selectedTemplateTheme]);
 
   useEffect(() => {
     let cancelled = false;
@@ -713,6 +838,75 @@ export function ComposerClient() {
     };
     // Initial load only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!keywordRunModalOpen || !keywordRunStatus?.runId) {
+      return;
+    }
+    if (keywordRunStatus.state === "completed" || keywordRunStatus.state === "failed") {
+      return;
+    }
+
+    let cancelled = false;
+    const runId = keywordRunStatus.runId;
+    const intervalId = window.setInterval(() => {
+      void (async () => {
+        try {
+          const response = await fetch(`/api/analysis/keywords/manage?runId=${encodeURIComponent(runId)}`);
+          const payload = (await response.json()) as KeywordManageStatsResponse;
+          if (cancelled) return;
+          if (!response.ok || payload.error) {
+            return;
+          }
+          setKeywordManageStats(payload.stats ?? null);
+          setKeywordRunStatus(payload.run ?? null);
+          if (payload.run?.state === "completed" || payload.run?.state === "failed") {
+            setPreviewNonce(Date.now());
+          }
+        } catch {
+          // keep polling; transient failures should not close modal
+        }
+      })();
+    }, 2000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [keywordRunModalOpen, keywordRunStatus?.runId, keywordRunStatus?.state]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadKeywordManageStats() {
+      try {
+        const response = await fetch("/api/analysis/keywords/manage");
+        const payload = (await response.json()) as KeywordManageStatsResponse;
+        if (cancelled) return;
+        if (!response.ok || !payload.ok) {
+          setKeywordManageStats(null);
+          return;
+        }
+        setKeywordManageStats(payload.stats ?? null);
+        setKeywordRunStatus(payload.run ?? null);
+      } catch {
+        if (!cancelled) {
+          setKeywordManageStats(null);
+          setKeywordRunStatus(null);
+        }
+      }
+    }
+
+    void loadKeywordManageStats();
+    const intervalId = window.setInterval(() => {
+      void loadKeywordManageStats();
+    }, 30_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   useEffect(() => {
@@ -903,6 +1097,9 @@ export function ComposerClient() {
         if (selectedKeywordDataset) {
           params.set("dataset", selectedKeywordDataset);
         }
+        if (selectedKeywordRole && selectedKeywordRole !== "all") {
+          params.set("role", selectedKeywordRole);
+        }
         const response = await fetch(`/api/analysis/keywords?${params.toString()}`);
         const payload = (await response.json()) as KeywordStudioResponse;
         if (cancelled) return;
@@ -912,6 +1109,13 @@ export function ComposerClient() {
           return;
         }
         setKeywordStudioData(payload);
+        setSelectedKeywordRole((current) => {
+          const roles = payload.roles ?? [];
+          if (current && roles.some((entry) => entry.role === current)) {
+            return current;
+          }
+          return payload.role ?? roles[0]?.role ?? "all";
+        });
       } catch {
         if (!cancelled) {
           setKeywordStudioData(null);
@@ -928,7 +1132,7 @@ export function ComposerClient() {
     return () => {
       cancelled = true;
     };
-  }, [previewNonce, selectedCvId, selectedCvMeta?.language, selectedKeywordDataset, variantPair?.en?.id]);
+  }, [previewNonce, selectedCvId, selectedCvMeta?.language, selectedKeywordDataset, selectedKeywordRole, variantPair?.en?.id]);
 
   useEffect(() => {
     if (!editorCv) {
@@ -1138,6 +1342,38 @@ export function ComposerClient() {
     }
   }
 
+  async function runKeywordManageAction(action: "run_collection") {
+    setKeywordManageBusy(true);
+    setKeywordManageNotice("");
+    try {
+      const response = await fetch("/api/analysis/keywords/manage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const payload = (await response.json()) as KeywordManageStatsResponse;
+      if (!response.ok || payload.error) {
+        setKeywordManageNotice(payload.error ?? "Keyword data operation failed.");
+        return;
+      }
+      setKeywordManageStats(payload.stats ?? null);
+      setKeywordRunStatus(payload.run ?? null);
+      if (action === "run_collection" && payload.run?.runId) {
+        setKeywordRunModalOpen(true);
+      }
+      setKeywordManageNotice(
+        action === "run_collection"
+          ? (payload.alreadyRunning ? "Collection run already in progress." : "Collection run started.")
+          : "Collection run started.",
+      );
+      setPreviewNonce(Date.now());
+    } catch {
+      setKeywordManageNotice("Keyword data operation failed.");
+    } finally {
+      setKeywordManageBusy(false);
+    }
+  }
+
   async function syncLanguagePair() {
     if (!selectedCvId) {
       return;
@@ -1198,6 +1434,38 @@ export function ComposerClient() {
     return "border-slate-300 bg-slate-100 text-slate-700";
   }
 
+  function keywordTagTitle(metric: {
+    keyword: string;
+    normalized: number;
+    weight?: number;
+    status?: "missing" | "underused" | "used";
+    cvHits?: number;
+    targetHits?: number;
+    recommendation?: string;
+    usageRatio?: number;
+  }): string {
+    const parts = [
+      `${metric.keyword}`,
+      `importance ${(metric.normalized * 100).toFixed(0)}%`,
+    ];
+    if (typeof metric.weight === "number") {
+      parts.push(`weight ${metric.weight.toFixed(1)}`);
+    }
+    if (metric.status) {
+      parts.push(`status ${metric.status}`);
+    }
+    if (typeof metric.cvHits === "number" && typeof metric.targetHits === "number") {
+      parts.push(`hits ${metric.cvHits}/${metric.targetHits}`);
+    }
+    if (typeof metric.usageRatio === "number") {
+      parts.push(`usage ${(metric.usageRatio * 100).toFixed(0)}%`);
+    }
+    if (metric.recommendation) {
+      parts.push(metric.recommendation);
+    }
+    return parts.join(" | ");
+  }
+
   function normalizeToken(token: string): string {
     return token.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "");
   }
@@ -1222,7 +1490,17 @@ export function ComposerClient() {
     return (2 * overlap) / (a.length - 1 + (b.length - 1));
   }
 
-  function fuzzyKeywordForToken(token: string): { keyword: string; normalized: number; band: KeywordBand } | null {
+  function fuzzyKeywordForToken(token: string): {
+    keyword: string;
+    normalized: number;
+    band: KeywordBand;
+    weight: number;
+    status: "missing" | "underused" | "used";
+    cvHits: number;
+    targetHits: number;
+    recommendation: string;
+    usageRatio: number;
+  } | null {
     const normalized = normalizeToken(token);
     if (normalized.length < 3) return null;
 
@@ -1231,7 +1509,18 @@ export function ComposerClient() {
       return exact;
     }
 
-    let best: { keyword: string; normalized: number; band: KeywordBand; score: number } | null = null;
+    let best: {
+      keyword: string;
+      normalized: number;
+      band: KeywordBand;
+      weight: number;
+      status: "missing" | "underused" | "used";
+      cvHits: number;
+      targetHits: number;
+      recommendation: string;
+      usageRatio: number;
+      score: number;
+    } | null = null;
     for (const [candidate, metric] of keywordMatcher.tokenIndex.entries()) {
       if (Math.abs(candidate.length - normalized.length) > 2) continue;
       const similarity = diceSimilarity(normalized, candidate);
@@ -1241,10 +1530,30 @@ export function ComposerClient() {
       }
     }
     if (!best) return null;
-    return { keyword: best.keyword, normalized: best.normalized, band: best.band };
+    return {
+      keyword: best.keyword,
+      normalized: best.normalized,
+      band: best.band,
+      weight: best.weight,
+      status: best.status,
+      cvHits: best.cvHits,
+      targetHits: best.targetHits,
+      recommendation: best.recommendation,
+      usageRatio: best.usageRatio,
+    };
   }
 
-  function keywordForPhrase(tokens: string[]): { keyword: string; normalized: number; band: KeywordBand } | null {
+  function keywordForPhrase(tokens: string[]): {
+    keyword: string;
+    normalized: number;
+    band: KeywordBand;
+    weight: number;
+    status: "missing" | "underused" | "used";
+    cvHits: number;
+    targetHits: number;
+    recommendation: string;
+    usageRatio: number;
+  } | null {
     const phrase = tokens.map((item) => normalizeToken(item)).filter(Boolean).join(" ");
     if (!phrase) return null;
     const exact = keywordMatcher.phraseIndex.get(phrase);
@@ -1271,7 +1580,17 @@ export function ComposerClient() {
         | {
             endIndex: number;
             rawText: string;
-            metric: { keyword: string; normalized: number; band: KeywordBand };
+            metric: {
+              keyword: string;
+              normalized: number;
+              band: KeywordBand;
+              weight: number;
+              status: "missing" | "underused" | "used";
+              cvHits: number;
+              targetHits: number;
+              recommendation: string;
+              usageRatio: number;
+            };
           }
         | null = null;
 
@@ -1313,7 +1632,7 @@ export function ComposerClient() {
           <span
             key={`phrase-${i}-${matched.endIndex}`}
             className={`inline-flex rounded-md border px-1.5 py-[1px] ${keywordBandClass(matched.metric.band)}`}
-            title={`${matched.metric.keyword} • ${(matched.metric.normalized * 100).toFixed(0)} importance`}
+            title={keywordTagTitle(matched.metric)}
           >
             {matched.rawText}
           </span>,
@@ -1333,7 +1652,7 @@ export function ComposerClient() {
         <span
           key={`tag-${i}`}
           className={`inline-flex rounded-md border px-1 py-[1px] ${keywordBandClass(hit.band)}`}
-          title={`${hit.keyword} • ${(hit.normalized * 100).toFixed(0)} importance`}
+          title={keywordTagTitle(hit)}
         >
           {raw}
         </span>,
@@ -1421,6 +1740,9 @@ export function ComposerClient() {
       download: "1",
       v: String(Date.now()),
     });
+    if (selectedTemplateId === "edinburgh-v1") {
+      params.set("theme", selectedTemplateTheme);
+    }
     window.open(`/api/export/pdf?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
@@ -1663,6 +1985,30 @@ export function ComposerClient() {
     );
   }
 
+  function renderKeywordPositioning(positioning: unknown): JSX.Element | null {
+    const rows = collectKeywordRows(positioning, ["positioning"]);
+    if (rows.length === 0) {
+      return null;
+    }
+    return (
+      <section className="rounded-md border border-[var(--line)] bg-white p-4 shadow-[0_1px_0_rgba(15,23,42,0.04)]">
+        <h4 className="border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-[0.08em] text-slate-800">
+          Positioning
+        </h4>
+        <article className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+          <div className="divide-y divide-slate-200">
+            {rows.map((row, index) => (
+              <div key={`positioning-${index}`} className="grid gap-1 py-1.5 md:grid-cols-[180px_1fr] md:gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{row.label}</p>
+                <p className="text-sm leading-6 text-slate-800">{renderKeywordAwareText(row.value)}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+    );
+  }
+
   function renderKeywordExperience(experience: unknown): JSX.Element | null {
     const items = Array.isArray(experience) ? experience : [];
     if (items.length === 0) {
@@ -1681,18 +2027,31 @@ export function ComposerClient() {
             const start = String(role.start_date ?? "").trim();
             const end = String(role.end_date ?? "").trim();
             const range = [start, end].filter(Boolean).join(" - ") || "Date not specified";
+            const roleTitle = String(
+              role.role ?? role.occupation ?? role.title ?? role.job_title ?? role.position ?? "Role",
+            ).trim();
+            const employerName = String(role.employer ?? role.company ?? role.organization ?? "Employer").trim();
+            const durationText = String(role.duration_text ?? "").trim();
+            const isCurrent = role.is_current === true;
+            const parallelRole = role.parallel_role === true;
+            const tools = Array.isArray(role.tools) ? role.tools : [];
+            const quantifiedResults = Array.isArray(role.quantified_results) ? role.quantified_results : [];
+            const publicationLinks = Array.isArray(role.publication_links) ? role.publication_links : [];
 
             return (
               <article key={`exp-${index}`} className="rounded-md border border-slate-200 bg-slate-50 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-base font-semibold text-slate-900">{renderKeywordAwareText(String(role.occupation ?? "Role"))}</p>
-                    <p className="text-sm text-slate-700">{renderKeywordAwareText(String(role.employer ?? "Employer"))}</p>
+                    <p className="text-base font-semibold text-slate-900">{renderKeywordAwareText(roleTitle)}</p>
+                    <p className="text-sm text-slate-700">{renderKeywordAwareText(employerName)}</p>
                   </div>
                   <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">{range}</span>
                 </div>
 
                 <div className="mt-2 divide-y divide-slate-200">
+                  {renderKeywordFieldRow("Duration", durationText, `exp-${index}-duration`)}
+                  {renderKeywordFieldRow("Current", isCurrent ? "Yes" : "No", `exp-${index}-current`)}
+                  {renderKeywordFieldRow("Parallel Role", parallelRole ? "Yes" : "No", `exp-${index}-parallel`)}
                   {renderKeywordFieldRow("Location", role.location, `exp-${index}-location`)}
                   {renderKeywordFieldRow("Industry", role.industry, `exp-${index}-industry`)}
                   {renderKeywordFieldRow("Employment Type", role.employment_type, `exp-${index}-employment-type`)}
@@ -1726,6 +2085,77 @@ export function ComposerClient() {
                             <div>
                               <p>{renderKeywordAwareText(String(record.name ?? ""))}</p>
                               {record.note ? <p className="pl-4 text-xs text-slate-600">{renderKeywordAwareText(String(record.note))}</p> : null}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {quantifiedResults.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">Quantified Results</p>
+                    <ul className="space-y-1 text-sm leading-6 text-slate-800">
+                      {quantifiedResults.map((result, rIndex) => {
+                        const record = asRecord(result);
+                        if (!record) return null;
+                        const metric = String(record.metric ?? "").trim();
+                        const value = String(record.value ?? "").trim();
+                        const note = String(record.note ?? "").trim();
+                        const line = [metric, value].filter(Boolean).join(": ");
+                        if (!line && !note) return null;
+                        return (
+                          <li key={`exp-${index}-result-${rIndex}`} className="grid grid-cols-[10px_1fr] gap-2">
+                            <span className="mt-[9px] h-1.5 w-1.5 rounded-full bg-slate-400" />
+                            <div>
+                              {line ? <p>{renderKeywordAwareText(line)}</p> : null}
+                              {note ? <p className="pl-4 text-xs text-slate-600">{renderKeywordAwareText(note)}</p> : null}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {tools.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">Tools</p>
+                    <div className="flex flex-wrap gap-2">
+                      {tools.map((entry, tIndex) => (
+                        <span key={`exp-${index}-tool-${tIndex}`} className="rounded-full border border-slate-300 bg-white px-2 py-1 text-xs text-slate-800">
+                          {renderKeywordAwareText(String(entry))}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {publicationLinks.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">Publication Links</p>
+                    <ul className="space-y-1 text-sm leading-6 text-slate-800">
+                      {publicationLinks.map((link, lIndex) => {
+                        if (typeof link === "string") {
+                          return (
+                            <li key={`exp-${index}-pub-${lIndex}`} className="grid grid-cols-[10px_1fr] gap-2">
+                              <span className="mt-[9px] h-1.5 w-1.5 rounded-full bg-slate-400" />
+                              <span>{renderKeywordAwareText(link)}</span>
+                            </li>
+                          );
+                        }
+                        const record = asRecord(link);
+                        if (!record) return null;
+                        const label = String(record.title ?? record.url ?? "").trim();
+                        const url = String(record.url ?? "").trim();
+                        if (!label && !url) return null;
+                        return (
+                          <li key={`exp-${index}-pub-${lIndex}`} className="grid grid-cols-[10px_1fr] gap-2">
+                            <span className="mt-[9px] h-1.5 w-1.5 rounded-full bg-slate-400" />
+                            <div>
+                              {label ? <p>{renderKeywordAwareText(label)}</p> : null}
+                              {url && url !== label ? <p className="pl-4 text-xs text-slate-600">{renderKeywordAwareText(url)}</p> : null}
                             </div>
                           </li>
                         );
@@ -1891,11 +2321,17 @@ export function ComposerClient() {
       return <p className="text-sm text-[var(--ink-muted)]">Keyword Studio requires an English CV variant.</p>;
     }
 
-    const person = asRecord(cvRoot.person);
-    const contact = asRecord(person?.contact);
     const positioning = asRecord(cvRoot.positioning);
     const clusters = keywordStudioData?.clusters ?? [];
-    const keywords = (keywordStudioData?.keywords ?? []).slice(0, 24);
+    const keywordSummary = keywordStudioData?.keywordSummary;
+    const missingKeywords = keywordStudioData?.missingKeywords ?? [];
+    const underusedKeywords = keywordStudioData?.underusedKeywords ?? [];
+    const usedKeywords = keywordStudioData?.usedKeywords ?? [];
+    const roles = keywordStudioData?.roles ?? [];
+    const keywordRunActive =
+      keywordRunStatus?.state === "queued" ||
+      keywordRunStatus?.state === "scraping" ||
+      keywordRunStatus?.state === "merging";
 
     const experiences = Array.isArray(cvRoot.experience) ? cvRoot.experience : [];
     const education = Array.isArray(cvRoot.education) ? cvRoot.education : [];
@@ -1927,13 +2363,28 @@ export function ComposerClient() {
                 ))}
               </select>
             </label>
-          </div>
-
-          <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Dataset Snapshot</p>
-            <p className="mt-1 text-xs text-slate-700">Dataset ID: {keywordStudioData?.datasetId ?? "n/a"}</p>
-            <p className="mt-1 text-xs text-slate-700">Relevant JDs: {keywordStudioData?.jdRelevantCount ?? 0}</p>
-            <p className="mt-1 text-xs text-slate-700">Source: {keywordStudioData?.sourceFile ?? "n/a"}</p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              Core database is the single live dataset refreshed from every run.
+            </p>
+            {keywordStudioData?.keywordDatabases?.active?.length ? (
+              <p className="mt-1 text-[11px] text-slate-600">
+                Active keyword DBs: {keywordStudioData.keywordDatabases.active.join(" • ")}
+              </p>
+            ) : null}
+            <label className="mt-2 block text-xs font-medium text-slate-700">
+              Profession Focus
+              <select
+                className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
+                onChange={(event) => setSelectedKeywordRole(event.target.value)}
+                value={selectedKeywordRole}
+              >
+                {roles.map((item) => (
+                  <option key={item.role} value={item.role}>
+                    {item.label} ({item.docCount})
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
@@ -1954,63 +2405,85 @@ export function ComposerClient() {
           </div>
 
           <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Top Keyword Weights</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Keyword Status</p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              Missing {keywordSummary?.missing ?? 0} • Underused {keywordSummary?.underused ?? 0} • Used {keywordSummary?.used ?? 0}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              Usage score {(keywordStudioData?.analysisStats?.weightedUsageScore ?? 0).toFixed(1)}% • Missing weight {(keywordStudioData?.analysisStats?.missingWeightShare ?? 0).toFixed(1)}%
+            </p>
             <div className="mt-2 space-y-2">
-              {keywords.map((item) => (
-                <div key={item.keyword} className="rounded-md border border-[var(--line)] bg-white p-2">
+              {(missingKeywords.slice(0, 8)).map((item) => (
+                <div key={`missing-${item.keyword}`} className="rounded-md border border-red-200 bg-red-50 p-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-semibold ${keywordBandClass(item.band)}`}>
+                    <span className="inline-flex rounded-md border border-red-300 bg-white px-2 py-0.5 text-xs font-semibold text-red-900">
                       {item.keyword}
                     </span>
-                    <span className="text-xs font-bold text-slate-700">{item.weight.toFixed(1)}</span>
+                    <span className="text-xs font-bold text-red-900">Missing</span>
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-600">
-                    CV hits {item.cvHits} • JD freq {item.docFreq} • usage score {(item.cvCoverage * 100).toFixed(0)}%
+                  <p className="mt-1 text-[11px] text-red-800">
+                    Hits {item.cvHits}/{item.targetHits} • Weight {item.weight.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-red-700">{item.recommendation}</p>
+                </div>
+              ))}
+              {(underusedKeywords.slice(0, 8)).map((item) => (
+                <div key={`underused-${item.keyword}`} className="rounded-md border border-amber-200 bg-amber-50 p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex rounded-md border border-amber-300 bg-white px-2 py-0.5 text-xs font-semibold text-amber-900">
+                      {item.keyword}
+                    </span>
+                    <span className="text-xs font-bold text-amber-900">Underused</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-amber-800">
+                    Hits {item.cvHits}/{item.targetHits} • Weight {item.weight.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-amber-700">{item.recommendation}</p>
+                </div>
+              ))}
+              {(usedKeywords.slice(0, 6)).map((item) => (
+                <div key={`used-${item.keyword}`} className="rounded-md border border-emerald-200 bg-emerald-50 p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex rounded-md border border-emerald-300 bg-white px-2 py-0.5 text-xs font-semibold text-emerald-900">
+                      {item.keyword}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-900">Used</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-emerald-800">
+                    Hits {item.cvHits}/{item.targetHits} • Weight {item.weight.toFixed(1)}
                   </p>
                 </div>
               ))}
             </div>
           </div>
+
+          <div className="mt-3 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Data Ops</p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              Core DB profiles: today {keywordManageStats?.profilesScanned.today ?? 0} • total {keywordManageStats?.profilesScanned.total ?? 0}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              Core dataset size {keywordManageStats?.coreDatasetProfiles ?? 0} • keywords identified {keywordManageStats?.keywordsIdentified ?? 0}
+            </p>
+            <div className="mt-2 grid grid-cols-1 gap-1.5">
+              <button
+                className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                disabled={keywordManageBusy || keywordRunActive}
+                onClick={() => void runKeywordManageAction("run_collection")}
+                title="Run new JD collection and auto-merge into core database"
+                type="button"
+              >
+                Run
+              </button>
+            </div>
+            {keywordManageNotice ? <p className="mt-2 text-[11px] text-slate-700">{keywordManageNotice}</p> : null}
+          </div>
         </article>
 
         <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-[#fcfcfd] p-5">
           <div className="mx-auto w-full max-w-[920px] rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="grid border-b border-slate-200 md:grid-cols-[250px_1fr]">
-              <div className="border-r border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Personal Information</p>
-                <h3 className="mt-2 text-2xl font-bold leading-tight text-slate-900">
-                  {String(person?.full_name ?? "Unnamed Candidate")}
-                </h3>
-                <div className="mt-3 divide-y divide-slate-200 text-sm text-slate-700">
-                  {collectKeywordRows(
-                    {
-                      email: contact?.email,
-                      phone: contact?.phone_e164,
-                      residence: person?.residence,
-                    },
-                    ["person"],
-                  ).map((row, index) => (
-                    <div key={`personal-row-${index}`} className="grid gap-1 py-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-500">{row.label}</p>
-                      <p>{renderKeywordAwareText(row.value)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Profile</p>
-                <div className="mt-2 divide-y divide-slate-100">
-                  {collectKeywordRows(positioning?.profile_summary, ["positioning", "profile_summary"]).map((row, index) => (
-                    <div key={`sum-${index}`} className="grid gap-1 py-2 md:grid-cols-[180px_1fr] md:gap-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{row.label}</p>
-                      <p className="text-sm leading-6 text-slate-800">{renderKeywordAwareText(row.value)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-3 p-4">
+              {renderKeywordPositioning(positioning)}
               {renderKeywordExperience(experiences)}
               {renderKeywordEducation(education)}
               {renderKeywordSkills(skills)}
@@ -2136,6 +2609,25 @@ export function ComposerClient() {
                       {orderedTemplateItems.map((item) => (
                         <option key={item.id} value={item.id}>
                           {templateDisplayName(item.name)} {item.version}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-800">
+                    Theme
+                    <select
+                      className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 disabled:opacity-60"
+                      disabled={selectedTemplateId !== "edinburgh-v1"}
+                      onChange={(event) => {
+                        setSelectedTemplateTheme(event.target.value);
+                        setPreviewNonce(Date.now());
+                      }}
+                      value={selectedTemplateTheme}
+                    >
+                      {EDINBURGH_THEME_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label} ({option.color})
                         </option>
                       ))}
                     </select>
@@ -2647,6 +3139,57 @@ export function ComposerClient() {
                   >
                     Done
                   </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {keywordRunModalOpen && keywordRunStatus ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-2xl rounded-xl border border-[var(--line)] bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">JD Collection Run</p>
+                    <p className="text-xs text-slate-600">Run ID: {keywordRunStatus.runId}</p>
+                  </div>
+                  <button
+                    className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    onClick={() => setKeywordRunModalOpen(false)}
+                    type="button"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="space-y-3 px-4 py-3">
+                  <p className="text-xs text-slate-700">
+                    Status: <span className="font-semibold">{keywordRunStatus.phase}</span> ({keywordRunStatus.state})
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    This run uses role-expanded seeds and URL/content-hash dedupe, so repeated profiles are skipped and new unique profiles are prioritized.
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    Scrape scope per run is expanded (up to 2400 pages, depth 2, up to 50000 profiles before ranking).
+                  </p>
+                  <div className="h-56 overflow-auto rounded-md border border-[var(--line)] bg-slate-50 p-2">
+                    {(keywordRunStatus.logs ?? []).length > 0 ? (
+                      (keywordRunStatus.logs ?? []).map((line, index) => (
+                        <p key={`run-log-${index}`} className="font-mono text-[11px] leading-5 text-slate-700">
+                          {line}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-600">Waiting for logs...</p>
+                    )}
+                  </div>
+                  {keywordRunStatus.state === "completed" ? (
+                    <p className="text-xs font-semibold text-emerald-700">
+                      Completed. Core database refreshed to {keywordRunStatus.mergedItems ?? 0} profiles.
+                    </p>
+                  ) : null}
+                  {keywordRunStatus.state === "failed" ? (
+                    <p className="text-xs font-semibold text-rose-700">
+                      Failed: {keywordRunStatus.error ?? "Unknown error"}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>

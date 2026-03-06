@@ -1,0 +1,45 @@
+{
+  "id": "senior_leadership_universal",
+  "label": "Senior Leadership Universal",
+  "apply_when": "seniority",
+  "description": "Leadership and high-impact execution keywords that should be present for senior-level CV positioning across roles.",
+  "keywords": [
+    { "keyword": "directed", "weight": 8.0, "target_hits": 2, "category": "leadership_management" },
+    { "keyword": "mentored", "weight": 8.0, "target_hits": 2, "category": "leadership_management" },
+    { "keyword": "supervised", "weight": 7.0, "target_hits": 2, "category": "leadership_management" },
+    { "keyword": "chaired", "weight": 6.0, "target_hits": 1, "category": "leadership_management" },
+    { "keyword": "executed", "weight": 8.0, "target_hits": 2, "category": "leadership_management" },
+    { "keyword": "spearheaded", "weight": 9.0, "target_hits": 2, "category": "leadership_management" },
+
+    { "keyword": "accelerated", "weight": 7.0, "target_hits": 1, "category": "achievement_growth" },
+    { "keyword": "boosted", "weight": 7.0, "target_hits": 1, "category": "achievement_growth" },
+    { "keyword": "delivered", "weight": 8.0, "target_hits": 2, "category": "achievement_growth" },
+    { "keyword": "expanded", "weight": 7.0, "target_hits": 1, "category": "achievement_growth" },
+    { "keyword": "generated", "weight": 7.0, "target_hits": 1, "category": "achievement_growth" },
+    { "keyword": "maximized", "weight": 7.0, "target_hits": 1, "category": "achievement_growth" },
+
+    { "keyword": "conceptualized", "weight": 7.0, "target_hits": 1, "category": "innovation" },
+    { "keyword": "pioneered", "weight": 8.0, "target_hits": 1, "category": "innovation" },
+    { "keyword": "devised", "weight": 6.0, "target_hits": 1, "category": "innovation" },
+    { "keyword": "innovated", "weight": 7.0, "target_hits": 1, "category": "innovation" },
+
+    { "keyword": "streamlined", "weight": 8.0, "target_hits": 2, "category": "optimization" },
+    { "keyword": "optimized", "weight": 9.0, "target_hits": 2, "category": "optimization" },
+    { "keyword": "overhauled", "weight": 7.0, "target_hits": 1, "category": "optimization" },
+    { "keyword": "restructured", "weight": 7.0, "target_hits": 1, "category": "optimization" },
+    { "keyword": "reduced", "weight": 7.0, "target_hits": 1, "category": "optimization" },
+    { "keyword": "saved", "weight": 6.0, "target_hits": 1, "category": "optimization" },
+
+    { "keyword": "assessed", "weight": 6.0, "target_hits": 1, "category": "analysis" },
+    { "keyword": "evaluated", "weight": 7.0, "target_hits": 2, "category": "analysis" },
+    { "keyword": "modeled", "weight": 6.0, "target_hits": 1, "category": "analysis" },
+    { "keyword": "quantified", "weight": 7.0, "target_hits": 1, "category": "analysis" },
+    { "keyword": "forecasted", "weight": 7.0, "target_hits": 1, "category": "analysis" },
+    { "keyword": "benchmarked", "weight": 6.0, "target_hits": 1, "category": "analysis" },
+
+    { "keyword": "partnered", "weight": 7.0, "target_hits": 2, "category": "collaboration" },
+    { "keyword": "facilitated", "weight": 7.0, "target_hits": 1, "category": "collaboration" },
+    { "keyword": "liaised", "weight": 6.0, "target_hits": 1, "category": "collaboration" },
+    { "keyword": "co-authored", "weight": 6.0, "target_hits": 1, "category": "collaboration" }
+  ]
+}

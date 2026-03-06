@@ -1450,3 +1450,279 @@ Files touched:
 Validation commands and results:
 
 - `npm run check` -> pass
+
+## 2026-03-06 - Keyword Studio role-focused gap analysis
+
+Context/root cause:
+
+- Current keyword experience did not clearly answer role-specific optimization questions.
+- Needed profession focus with actionable split between missing, underused, and already used keywords.
+
+Files touched:
+
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz&dataset=merged.json"` -> pass (`roles`, `missingKeywords`, `underusedKeywords`, `usedKeywords` present)
+- `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz&dataset=merged.json&role=producer"` -> pass (role-filtered response)
+
+## 2026-03-06 - Keyword Studio positioning-first layout and data operations panel
+
+Context/root cause:
+
+- Needed right content area to focus on keyword-relevant sections, not personal information.
+- Needed richer in-context tag diagnostics and aggregate usage score clarity.
+- Needed in-app operational controls for daily JD collection and dataset hygiene.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/api/analysis/keywords/manage/route.ts`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS http://127.0.0.1:3001/api/analysis/keywords/manage` -> pass (today/week/total scan counts + keyword count)
+- `curl -sS -X POST http://127.0.0.1:3001/api/analysis/keywords/manage -H 'content-type: application/json' -d '{"action":"merge_default"}'` -> pass
+
+## 2026-03-06 - Edinburgh theme presets and Print Room theme dropdown
+
+Context/root cause:
+
+- Edinburgh visual style needed selectable theme support beyond default purple.
+- Required user-facing theme selector in Print Room under Template and render-time theme propagation.
+
+Files touched:
+
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `apps/web/src/app/api/preview/html/route.ts`
+- `apps/web/src/app/api/export/pdf/route.ts`
+- `apps/web/src/app/api/export/image/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS "http://127.0.0.1:3001/api/preview/html?cvId=cv_en_001_alianz&templateId=edinburgh-v1&theme=ocean_teal"` -> pass (theme colors present in HTML/CSS)
+- `curl -sS "http://127.0.0.1:3001/api/preview/html?cvId=cv_en_001_alianz&templateId=edinburgh-v1&theme=ruby_red"` -> pass (theme colors present in HTML/CSS)
+
+## 2026-03-06 - Keyword Studio snapshot selector: core database first
+
+Context/root cause:
+
+- Snapshot selection needed clearer hierarchy: merged corpus as primary source, old run snapshots as secondary.
+- Existing selector exposed mixed dataset labels and ordering.
+
+Files touched:
+
+- `apps/web/src/app/api/analysis/keywords/datasets/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS http://127.0.0.1:3001/api/analysis/keywords/datasets` -> pass (`merged.json` first with `kind: core`, snapshots follow with `kind: snapshot`)
+
+## 2026-03-06 - Edinburgh theme sidebar tint + education field cleanup
+
+Context/root cause:
+
+- Theme accents changed correctly, but sidebar backgrounds were still perceived as grey.
+- Edinburgh education output included `Location` and `Completed` rows that should be hidden.
+
+Files touched:
+
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS "http://127.0.0.1:3001/api/preview/html?cvId=cv_en_001_alianz&templateId=edinburgh-v1&theme=forest_green"` -> pass (sidebar tint now themed, no `Location`/`Completed` education rows)
+
+## 2026-03-06 - Keyword Studio run modal with live progress and expanded scrape scope
+
+Context/root cause:
+
+- Snapshot source model was finalized around merged core dataset, so prototype fallback needed removal.
+- Collection runs needed observable real-time progress, dedupe/seed transparency, and broader scrape coverage per run.
+
+Files touched:
+
+- `apps/web/src/app/api/analysis/keywords/manage/route.ts`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS -X POST http://127.0.0.1:3001/api/analysis/keywords/manage -H 'content-type: application/json' -d '{"action":"run_collection"}'` -> pass (`alreadyRunning=false`, run started)
+- `curl -sS http://127.0.0.1:3001/api/analysis/keywords/manage` after 3s -> pass (run logs include live `Progress: scanned=... relevant=...`)
+- `curl -sS http://127.0.0.1:3001/api/analysis/keywords/datasets` -> pass (`merged.json` remains default first option)
+
+## 2026-03-06 - Edinburgh themes: neutral grey sidebar across all variants
+
+Context/root cause:
+
+- Theme behavior needed to keep left sidebar neutral grey regardless of selected Edinburgh accent palette.
+
+Files touched:
+
+- `apps/web/src/lib/server/renderCvTemplate.ts`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- `curl -sS "http://127.0.0.1:3001/api/preview/html?cvId=cv_en_001_alianz&templateId=edinburgh-v1&theme=ocean_teal"` -> pass (sidebar `#F2F3F5`, accent `#068799`)
+- `curl -sS "http://127.0.0.1:3001/api/preview/html?cvId=cv_en_001_alianz&templateId=edinburgh-v1&theme=ruby_red"` -> pass (sidebar `#F2F3F5`, accent `#B0292A`)
+
+## 2026-03-06 - Keyword Studio Data Ops simplification (Run-only)
+
+Context/root cause:
+
+- `Merge`, `180d`, and `Sync` controls in Keyword Studio were not aligned with intended workflow and caused confusion.
+- Desired workflow is run-driven growth where each run auto-merges new profiles into core DB.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck:web` -> pass
+- `npm run lint:web` -> pass
+- UI check on `http://127.0.0.1:3001` -> Keyword Studio Data Ops now shows only `Run` button and growth-focused DB counters
+
+## 2026-03-06 - Keyword Studio core database refresh flow (no snapshots)
+
+Context/root cause:
+
+- Keyword Studio still depended on legacy snapshot JSON files and did not reliably reflect the latest run totals from cache DB.
+- UI still exposed snapshot-specific controls/blocks that no longer provided value.
+- Collection runs needed stronger seed diversification so repeated runs can discover more unique profiles.
+
+Files touched:
+
+- `apps/web/src/lib/server/keywordCoreDataset.ts`
+- `apps/web/src/app/api/analysis/keywords/manage/route.ts`
+- `apps/web/src/app/api/analysis/keywords/datasets/route.ts`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+- `curl -sS http://127.0.0.1:3001/api/analysis/keywords/datasets | jq ...` -> pass (single dataset: `merged.json` labeled `Core Database`)
+- `curl -sS http://127.0.0.1:3001/api/analysis/keywords/manage | jq ...` -> pass (`coreDatasetProfiles` matches cache totals)
+- `sqlite3 cv-keyword-analysis/outputs/jd_scrape_cache.sqlite "SELECT COUNT(*) FROM scraped_pages WHERE scraped=1;"` -> pass (`883` after run growth)
+- `node -e "...merged.json item count..."` -> pass (`merged.json` count `883`, provider `core-database`)
+- `find cv-keyword-analysis/outputs -name 'jd_relevant_*.json' -o -name 'prototype_dataset_*.json'` -> pass (no legacy snapshot/prototype dataset files)
+
+## 2026-03-06 - Keyword Studio positioning card framing alignment
+
+Context/root cause:
+
+- Positioning content in Keyword Studio was rendered in a thinner top strip while Professional Experience used framed cards.
+- Needed visual and structural consistency so positioning reads as a first-class section in the same style.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Keyword Studio experience card field completeness
+
+Context/root cause:
+
+- Professional Experience cards in Keyword Studio were missing role titles for CVs using `experience[].role` because rendering preferred `occupation` only.
+- Additional structured experience fields (tools, quantified results, publication links, role state flags) were present in YAML but not rendered in cards.
+
+Files touched:
+
+- `apps/web/src/app/ComposerClient.tsx`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+
+## 2026-03-06 - Supplemental keyword DBs (senior leadership + game generic)
+
+Context/root cause:
+
+- JD-derived keywords alone did not cover universal seniority wording and generic game-industry taxonomy needed for stronger ATS alignment.
+- Needed reusable DB types that can be conditionally applied across roles.
+
+Files touched:
+
+- `cv-keyword-analysis/config/keyword_db_senior_leadership.json`
+- `cv-keyword-analysis/config/keyword_db_game_generic.json`
+- `apps/web/src/app/api/analysis/keywords/route.ts`
+- `apps/web/src/app/ComposerClient.tsx`
+- `README.md`
+- `CHANGELOG.md`
+- `DEVELOPMENT_LOG.md`
+- `TODO.md`
+
+Validation commands and results:
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+- `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz" | jq ...` -> pass (returns `keywordDatabases.active` with both new DBs)
+- `curl -sS "http://127.0.0.1:3001/api/analysis/keywords?cvId=cv_en_001_alianz" | jq '.keywords | map(select(.source=="senior_leadership" or .source=="game_generic" or .source=="combined"))'` -> pass (supplemental keywords present in scoring output)

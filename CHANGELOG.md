@@ -12,6 +12,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refined Keyword Studio section rendering by section type: professional experience and education now render as structured cards, skills as grouped chips/lists, and optional sections as typed blocks with labeled rows.
 - Keyword Studio dataset UX updated: removed in-tab merge action button; dataset dropdown now recognizes `merged.json`, and keyword analysis defaults to `merged.json` when available.
 - Merged all existing JSON datasets in `cv-keyword-analysis/outputs` into `merged.json` so it appears as a selectable snapshot in Keyword Studio.
+- Refocused Keyword Studio analysis output around actionability:
+  - added profession focus dropdown sourced from JD role hits
+  - added role-filtered keyword analysis (`role` query param)
+  - added explicit keyword status buckets (`missing`, `underused`, `used`)
+  - added per-keyword target usage + recommendation messaging.
+- Keyword Studio UX/data-ops enhancements:
+  - removed right-panel Personal Information block; content now starts with a wide Positioning block
+  - enriched keyword tag hover tooltips with status, hits/target, usage %, weight, and recommendation
+  - added weighted total keyword usage score and weight-share stats
+  - added `/api/analysis/keywords/manage` for stats + maintenance + collection actions
+  - added left-sidebar data-ops block with scan counters (today/week/total), keyword count,
+    and compact action buttons for run/merge/prune/refresh.
+- Added Edinburgh template theme system:
+  - Print Room now has a Theme dropdown under Template selection
+  - four new compatible palettes based on requested core colors:
+    `#068799`, `#316834`, `#b0292a`, `#ffc209`
+  - preview/export APIs now accept optional `theme` query param and apply theme-aware colors in Edinburgh rendering.
+- Improved Keyword Studio dataset selector presentation/usability:
+  - `merged.json` is now first-class and labeled as `Core Database (merged)`
+  - legacy `jd_relevant_*.json` files are labeled as `Old Snapshot ...`
+  - selector groups are split into `Core Database` and `Old Snapshots`
+  - datasets API now returns explicit dataset kind metadata (`core` / `snapshot`).
+- Keyword Studio collection/run UX upgrade:
+  - removed prototype dataset support/fallbacks from keyword analysis dataset selection
+  - `run_collection` is now asynchronous with persisted run status/logs
+  - added real-time run progress modal in UI, refreshed every 2 seconds
+  - progress includes scrape phase, merge phase, live log stream, and dedupe/seed messaging
+  - expanded per-run scrape scope (`max-pages 1200`, `max-depth 2`, `max-results 20000`)
+    to improve new-profile discovery while cache dedupe prevents repeated profile processing.
+- Keyword Studio Data Ops simplified:
+  - removed `Merge`, `180d`, and `Sync` controls from sidebar
+  - `Run` is now the single collection action and auto-merges into core DB
+  - metrics copy now emphasizes core DB profile growth (`today`/`total`) and keyword count.
+- Keyword Studio core-data pipeline redesign:
+  - `merged.json` is now the only dataset surfaced in UI (`Core Database`)
+  - core dataset is rebuilt directly from `jd_scrape_cache.sqlite` so latest runs are always included
+  - old snapshot/prototype JSON files are auto-pruned from `cv-keyword-analysis/outputs`
+  - run flow now rotates runtime seed packs and refreshes the core dataset on completion.
+- Keyword Studio presentation polish:
+  - Positioning block in the right content area now uses the same framed card style as Professional Experience for visual consistency.
+- Keyword Studio Professional Experience completeness fix:
+  - role title now resolves from CV fields used in dataset (`role`, with fallbacks)
+  - experience cards now also render duration/current/parallel flags, tools,
+    quantified results, and publication links when present.
+- Keyword Studio keyword taxonomy expansion:
+  - added `Senior Leadership Universal` keyword DB for seniority-oriented
+    leadership/action terms applied when seniority signals are detected
+  - added `Game Industry Generic` keyword DB for generic game-domain skills,
+    verbs, KPIs, and data-driven design tags applied when game-industry
+    signals are detected
+  - scoring now merges JD-derived keywords with these DBs and reports active DBs in API/UI.
+- Edinburgh theme and field fixes:
+  - updated Edinburgh theme behavior so left sidebar remains neutral grey across all themes
+  - removed `Location` and `Completed` rows from Edinburgh education details.
 - Initial monorepo bootstrap with Next.js web app and FastAPI parser scaffold.
 - Initial deployment scaffolding for `systemd` and `nginx`.
 - Initial project governance docs: `AGENTS.md`, `TODO.md`, and `DEVELOPMENT_LOG.md`.

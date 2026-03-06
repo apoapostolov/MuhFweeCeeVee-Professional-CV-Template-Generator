@@ -1,0 +1,64 @@
+{
+  "id": "game_industry_generic",
+  "label": "Game Industry Generic",
+  "apply_when": "game_industry",
+  "description": "Generic game-industry hard skills, data-driven design terms, and action verbs that improve role fit across game domains.",
+  "keywords": [
+    { "keyword": "systems design", "weight": 9.0, "target_hits": 2, "category": "design_specializations" },
+    { "keyword": "economy balancing", "weight": 8.0, "target_hits": 1, "category": "design_specializations" },
+    { "keyword": "level design", "weight": 7.0, "target_hits": 1, "category": "design_specializations" },
+    { "keyword": "narrative design", "weight": 6.0, "target_hits": 1, "category": "design_specializations" },
+    { "keyword": "ux/ui design", "weight": 6.0, "target_hits": 1, "category": "design_specializations" },
+    { "keyword": "combat balancing", "weight": 7.0, "target_hits": 1, "category": "design_specializations" },
+
+    { "keyword": "unity", "weight": 8.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "c#", "weight": 6.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "unreal engine", "weight": 8.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "c++", "weight": 6.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "blueprints", "weight": 6.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "lua", "weight": 5.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "python", "weight": 6.0, "target_hits": 1, "category": "engines_scripting" },
+    { "keyword": "visual scripting", "weight": 5.0, "target_hits": 1, "category": "engines_scripting" },
+
+    { "keyword": "mda framework", "weight": 7.0, "target_hits": 1, "category": "design_frameworks" },
+    { "keyword": "game loops", "weight": 7.0, "target_hits": 1, "category": "design_frameworks" },
+    { "keyword": "progression arcs", "weight": 6.0, "target_hits": 1, "category": "design_frameworks" },
+    { "keyword": "difficulty pacing", "weight": 6.0, "target_hits": 1, "category": "design_frameworks" },
+
+    { "keyword": "whiteboxing", "weight": 5.0, "target_hits": 1, "category": "prototyping_documentation" },
+    { "keyword": "game design documents", "weight": 8.0, "target_hits": 1, "category": "prototyping_documentation" },
+    { "keyword": "gdd", "weight": 7.0, "target_hits": 1, "category": "prototyping_documentation" },
+    { "keyword": "figma", "weight": 5.0, "target_hits": 1, "category": "prototyping_documentation" },
+    { "keyword": "miro", "weight": 5.0, "target_hits": 1, "category": "prototyping_documentation" },
+    { "keyword": "storyboarding", "weight": 5.0, "target_hits": 1, "category": "prototyping_documentation" },
+    { "keyword": "flowcharting", "weight": 5.0, "target_hits": 1, "category": "prototyping_documentation" },
+
+    { "keyword": "a/b testing", "weight": 9.0, "target_hits": 2, "category": "data_design" },
+    { "keyword": "exploratory data analysis", "weight": 8.0, "target_hits": 1, "category": "data_design" },
+    { "keyword": "predictive modeling", "weight": 7.0, "target_hits": 1, "category": "data_design" },
+    { "keyword": "machine learning", "weight": 7.0, "target_hits": 1, "category": "data_design" },
+    { "keyword": "statistical significance", "weight": 8.0, "target_hits": 1, "category": "data_design" },
+
+    { "keyword": "retention", "weight": 8.0, "target_hits": 2, "category": "kpis" },
+    { "keyword": "d1", "weight": 6.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "d7", "weight": 6.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "d30", "weight": 6.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "arpu", "weight": 7.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "arppu", "weight": 7.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "ltv", "weight": 8.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "churn rate", "weight": 7.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "session length", "weight": 6.0, "target_hits": 1, "category": "kpis" },
+    { "keyword": "monetization conversion", "weight": 8.0, "target_hits": 1, "category": "kpis" },
+
+    { "keyword": "event planning", "weight": 6.0, "target_hits": 1, "category": "live_ops" },
+    { "keyword": "live-ops strategy", "weight": 8.0, "target_hits": 1, "category": "live_ops" },
+    { "keyword": "real-time data processing", "weight": 7.0, "target_hits": 1, "category": "live_ops" },
+    { "keyword": "runtime loading", "weight": 5.0, "target_hits": 1, "category": "live_ops" },
+
+    { "keyword": "player psychology", "weight": 7.0, "target_hits": 1, "category": "soft_skills" },
+    { "keyword": "constructive feedback", "weight": 6.0, "target_hits": 1, "category": "soft_skills" },
+    { "keyword": "active listening", "weight": 5.0, "target_hits": 1, "category": "soft_skills" },
+    { "keyword": "cross-functional collaboration", "weight": 7.0, "target_hits": 2, "category": "soft_skills" },
+    { "keyword": "agile", "weight": 6.0, "target_hits": 1, "category": "soft_skills" }
+  ]
+}
