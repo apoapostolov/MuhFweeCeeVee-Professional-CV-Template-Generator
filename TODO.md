@@ -57,3 +57,14 @@
 - [x] Remove Keyword Studio merge button and use prebuilt `merged.json` as selectable/default dataset.
 
 - [x] Improve Keyword Studio section/subsection rendering with type-specific layouts for experience, education, skills, and optional blocks.
+- [x] Refocus Keyword Studio on profession-targeted keyword gaps with role dropdown and explicit missing/underused/used buckets.
+- [x] Upgrade Keyword Studio with positioning-first layout, rich keyword hover diagnostics, weighted usage score, and data-ops controls.
+- [x] Add Edinburgh template theme presets and Print Room theme dropdown support.
+- [x] Replace Keyword Studio snapshot selector flow with single live `merged.json` core database and remove legacy snapshot JSON datasets.
+- [x] Add real-time (2s) run-progress modal for Keyword Studio collection runs and remove prototype dataset fallbacks.
+- [x] Keep Edinburgh left sidebar neutral grey across all theme variants.
+- [x] Simplify Keyword Studio Data Ops to single Run action with automatic core DB merge and growth-focused counters.
+- [x] Refresh core keyword database directly from SQLite cache after each run so profile totals/keywords always include latest collection output.
+- [x] Align Keyword Studio Positioning block framing with Professional Experience card styling.
+- [x] Expand Keyword Studio Professional Experience cards to include role-title fallback and missing high-value fields (tools/results/publication links/state flags).
+- [x] Add supplemental keyword DB types for senior leadership and generic game-industry tags, merged into Keyword Studio scoring.

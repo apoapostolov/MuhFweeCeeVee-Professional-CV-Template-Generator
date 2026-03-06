@@ -1,0 +1,1044 @@
+{
+  "generated_at": "2026-03-06T08:25:10.397283+00:00",
+  "input_summary": {
+    "jd_documents": 3,
+    "avg_jd_term_count": 32.0,
+    "cv_sections": [
+      "summary",
+      "experience",
+      "skills",
+      "education"
+    ],
+    "config_weighted_keywords": 7
+  },
+  "scores": {
+    "coverage_score": 47.8,
+    "confidence": 0.1652
+  },
+  "weighted_keywords": [
+    {
+      "keyword": "monetization",
+      "normalized_keyword": "monetization",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 5.0,
+      "final_weight": 0.038671,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 2.8,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "looker",
+      "normalized_keyword": "looker",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 4.0,
+      "final_weight": 0.03658,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 1,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.9,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.95,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "live",
+      "normalized_keyword": "live",
+      "jd_doc_freq": 2,
+      "jd_term_freq": 2,
+      "tfidf_weight": 0.02493,
+      "role_prior": 0.0,
+      "final_weight": 0.034653,
+      "cv_hits_total": 2,
+      "cv_section_hits": {
+        "summary": 1,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 4.644,
+      "evidence_hits": 1,
+      "evidence_multiplier": 1.08,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "live ops",
+      "normalized_keyword": "live ops",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 7.0,
+      "final_weight": 0.032766,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 1,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.5,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.75,
+      "confidence": 0.1652,
+      "gap_severity": "low"
+    },
+    {
+      "keyword": "analytic",
+      "normalized_keyword": "analytic",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 6.0,
+      "final_weight": 0.031198,
+      "cv_hits_total": 2,
+      "cv_section_hits": {
+        "summary": 1,
+        "experience": 0,
+        "skills": 1,
+        "education": 0
+      },
+      "cv_weighted_hits": 3.4,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "sql",
+      "normalized_keyword": "sql",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 5.0,
+      "final_weight": 0.02963,
+      "cv_hits_total": 2,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 1,
+        "skills": 1,
+        "education": 0
+      },
+      "cv_weighted_hits": 5.076,
+      "evidence_hits": 1,
+      "evidence_multiplier": 1.08,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "telemetry",
+      "normalized_keyword": "telemetry",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 5.0,
+      "final_weight": 0.02963,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 1,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.9,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.95,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "analyze",
+      "normalized_keyword": "analyze",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "build",
+      "normalized_keyword": "build",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "dashboard",
+      "normalized_keyword": "dashboard",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 3.024,
+      "evidence_hits": 1,
+      "evidence_multiplier": 1.08,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "experiment",
+      "normalized_keyword": "experiment",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 2.8,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "partner",
+      "normalized_keyword": "partner",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "performance",
+      "normalized_keyword": "performance",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "producer",
+      "normalized_keyword": "producer",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 1,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.5,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.75,
+      "confidence": 0.1652,
+      "gap_severity": "low"
+    },
+    {
+      "keyword": "product",
+      "normalized_keyword": "product",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.020903,
+      "role_prior": 0.0,
+      "final_weight": 0.028219,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 1,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.9,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.95,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "communicate",
+      "normalized_keyword": "communicate",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "drive",
+      "normalized_keyword": "drive",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "event",
+      "normalized_keyword": "event",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "game",
+      "normalized_keyword": "game",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 2,
+      "cv_section_hits": {
+        "summary": 1,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 4.644,
+      "evidence_hits": 1,
+      "evidence_multiplier": 1.08,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "impact",
+      "normalized_keyword": "impact",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "kpi",
+      "normalized_keyword": "kpi",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "mobile",
+      "normalized_keyword": "mobile",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 3.024,
+      "evidence_hits": 1,
+      "evidence_multiplier": 1.08,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "movement",
+      "normalized_keyword": "movement",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "service",
+      "normalized_keyword": "service",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "stakeholder",
+      "normalized_keyword": "stakeholder",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 1,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.9,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.95,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "track",
+      "normalized_keyword": "track",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.017102,
+      "role_prior": 0.0,
+      "final_weight": 0.022404,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 1,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 2.8,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 1.0,
+      "confidence": 0.1652,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "cross-functional",
+      "normalized_keyword": "cross-functional",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "experience",
+      "normalized_keyword": "experience",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "instrumentation",
+      "normalized_keyword": "instrumentation",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "ops",
+      "normalized_keyword": "ops",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 1,
+      "cv_section_hits": {
+        "summary": 1,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 1.5,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.75,
+      "confidence": 0.1652,
+      "gap_severity": "low"
+    },
+    {
+      "keyword": "own",
+      "normalized_keyword": "own",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "production",
+      "normalized_keyword": "production",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "requir",
+      "normalized_keyword": "requir",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "roadmap",
+      "normalized_keyword": "roadmap",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "strong",
+      "normalized_keyword": "strong",
+      "jd_doc_freq": 1,
+      "jd_term_freq": 1,
+      "tfidf_weight": 0.015677,
+      "role_prior": 0.0,
+      "final_weight": 0.021791,
+      "cv_hits_total": 0,
+      "cv_section_hits": {
+        "summary": 0,
+        "experience": 0,
+        "skills": 0,
+        "education": 0
+      },
+      "cv_weighted_hits": 0.0,
+      "evidence_hits": 0,
+      "evidence_multiplier": 1.0,
+      "coverage": 0.0,
+      "confidence": 0.1652,
+      "gap_severity": "high"
+    }
+  ],
+  "actions": [
+    "Add `analyze` in an experience bullet with a quantified outcome to close a high-impact gap.",
+    "Add `build` in an experience bullet with a quantified outcome to close a high-impact gap.",
+    "Add `partner` in an experience bullet with a quantified outcome to close a high-impact gap.",
+    "Add `performance` in an experience bullet with a quantified outcome to close a high-impact gap.",
+    "Introduce `communicate` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `drive` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `event` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `impact` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `kpi` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `movement` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `service` in summary and one experience bullet. Reference concrete scope, ownership, or outcome.",
+    "Introduce `cross-functional` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+  ],
+  "integration_hooks": {
+    "editor_panel": {
+      "version": "editor-panel.v1",
+      "coverage_score": 47.8,
+      "confidence": 0.1652,
+      "top_keywords": [
+        {
+          "keyword": "monetization",
+          "weight": 0.038671,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "looker",
+          "weight": 0.03658,
+          "coverage": 0.95,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "live",
+          "weight": 0.034653,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "live ops",
+          "weight": 0.032766,
+          "coverage": 0.75,
+          "gap_severity": "low"
+        },
+        {
+          "keyword": "analytic",
+          "weight": 0.031198,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "sql",
+          "weight": 0.02963,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "telemetry",
+          "weight": 0.02963,
+          "coverage": 0.95,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "analyze",
+          "weight": 0.028219,
+          "coverage": 0.0,
+          "gap_severity": "critical"
+        },
+        {
+          "keyword": "build",
+          "weight": 0.028219,
+          "coverage": 0.0,
+          "gap_severity": "critical"
+        },
+        {
+          "keyword": "dashboard",
+          "weight": 0.028219,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "experiment",
+          "weight": 0.028219,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "partner",
+          "weight": 0.028219,
+          "coverage": 0.0,
+          "gap_severity": "critical"
+        },
+        {
+          "keyword": "performance",
+          "weight": 0.028219,
+          "coverage": 0.0,
+          "gap_severity": "critical"
+        },
+        {
+          "keyword": "producer",
+          "weight": 0.028219,
+          "coverage": 0.75,
+          "gap_severity": "low"
+        },
+        {
+          "keyword": "product",
+          "weight": 0.028219,
+          "coverage": 0.95,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "communicate",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "drive",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "event",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "game",
+          "weight": 0.022404,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "impact",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "kpi",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "mobile",
+          "weight": 0.022404,
+          "coverage": 1.0,
+          "gap_severity": "none"
+        },
+        {
+          "keyword": "movement",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "service",
+          "weight": 0.022404,
+          "coverage": 0.0,
+          "gap_severity": "high"
+        },
+        {
+          "keyword": "stakeholder",
+          "weight": 0.022404,
+          "coverage": 0.95,
+          "gap_severity": "none"
+        }
+      ],
+      "gaps": [
+        {
+          "keyword": "analyze",
+          "severity": "critical",
+          "suggested_action": "Add `analyze` in an experience bullet with a quantified outcome to close a high-impact gap."
+        },
+        {
+          "keyword": "build",
+          "severity": "critical",
+          "suggested_action": "Add `build` in an experience bullet with a quantified outcome to close a high-impact gap."
+        },
+        {
+          "keyword": "partner",
+          "severity": "critical",
+          "suggested_action": "Add `partner` in an experience bullet with a quantified outcome to close a high-impact gap."
+        },
+        {
+          "keyword": "performance",
+          "severity": "critical",
+          "suggested_action": "Add `performance` in an experience bullet with a quantified outcome to close a high-impact gap."
+        },
+        {
+          "keyword": "communicate",
+          "severity": "high",
+          "suggested_action": "Introduce `communicate` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "drive",
+          "severity": "high",
+          "suggested_action": "Introduce `drive` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "event",
+          "severity": "high",
+          "suggested_action": "Introduce `event` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "impact",
+          "severity": "high",
+          "suggested_action": "Introduce `impact` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "kpi",
+          "severity": "high",
+          "suggested_action": "Introduce `kpi` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "movement",
+          "severity": "high",
+          "suggested_action": "Introduce `movement` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "service",
+          "severity": "high",
+          "suggested_action": "Introduce `service` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "cross-functional",
+          "severity": "high",
+          "suggested_action": "Introduce `cross-functional` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "experience",
+          "severity": "high",
+          "suggested_action": "Introduce `experience` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "instrumentation",
+          "severity": "high",
+          "suggested_action": "Introduce `instrumentation` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        },
+        {
+          "keyword": "own",
+          "severity": "high",
+          "suggested_action": "Introduce `own` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+        }
+      ]
+    }
+  },
+  "schemas": {
+    "input": "schemas/analysis_input.schema.json",
+    "output": "schemas/analysis_output.schema.json"
+  }
+}

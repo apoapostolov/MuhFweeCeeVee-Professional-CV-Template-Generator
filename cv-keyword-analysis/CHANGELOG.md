@@ -29,3 +29,17 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
   - URL/content-hash dedupe
   - per-page persisted keyword/score records
   - stop/resume without reprocessing the same information.
+- CV analysis engine CLI (`analysis_engine.py`) with:
+  - deterministic input validation for CV sections + JD corpus
+  - normalization pipeline (lowercase, lemmatization, dedupe-ready tokenization)
+  - TF-IDF keyword weighting over JD corpus
+  - section-aware CV keyword weighting
+  - quantified evidence multiplier
+  - confidence and gap-severity scoring
+  - actionable rewrite suggestions.
+- Formal JSON schemas:
+  - `schemas/analysis_input.schema.json`
+  - `schemas/analysis_output.schema.json`
+- Optional markdown summary report output (`--markdown-output`).
+- Editor integration hook payload output (`--editor-hook-output`, `editor-panel.v1`).
+- Deterministic regression fixtures and unit tests under `tests/`.

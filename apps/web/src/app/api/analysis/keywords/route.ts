@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 
 import { readCv } from "@/lib/server/cvStore";
 import { buildCvVariantId, parseCvVariantId } from "@/lib/server/cvVariants";
+import { CORE_DATASET_FILE, ensureCoreDatasetFresh } from "@/lib/server/keywordCoreDataset";
 import { repoPath } from "@/lib/server/repoPaths";
 
 export const runtime = "nodejs";
@@ -38,6 +39,12 @@ type KeywordMetric = {
   band: "grey" | "green" | "yellow" | "orange" | "red";
   cvHits: number;
   cvCoverage: number;
+  targetHits: number;
+  usageRatio: number;
+  status: "missing" | "underused" | "used";
+  recommendation: string;
+  source?: "jd" | "senior_leadership" | "game_generic" | "combined";
+  category?: string;
 };
 
 type ClusterMetric = {
@@ -46,6 +53,27 @@ type ClusterMetric = {
   normalized: number;
   keywordCount: number;
   cvCoverage: number;
+};
+
+type RoleMetric = {
+  role: string;
+  docCount: number;
+  avgSignal: number;
+};
+
+type SupplementalKeywordEntry = {
+  keyword: string;
+  weight?: number;
+  target_hits?: number;
+  category?: string;
+};
+
+type SupplementalKeywordDb = {
+  id?: string;
+  label?: string;
+  apply_when?: "seniority" | "game_industry";
+  description?: string;
+  keywords?: SupplementalKeywordEntry[];
 };
 
 const CLUSTER_RULES: Array<{ name: string; patterns: RegExp[] }> = [
@@ -121,29 +149,94 @@ function clusterForKeyword(keyword: string): string {
   return "General Role Fit";
 }
 
-async function readLatestRelevantPayload(): Promise<{ payload: RelevantPayload; filePath: string }> {
-  const outputsDir = repoPath("cv-keyword-analysis", "outputs");
-  const files = await fs.readdir(outputsDir);
-  const relevantFiles = files.filter((name) => /^jd_relevant_\d{8}T\d{6}Z\.json$/.test(name)).sort();
-  if (relevantFiles.length === 0) {
-    throw new Error("No JD relevant output files found in cv-keyword-analysis/outputs.");
+function normalizeToken(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function titleCase(value: string): string {
+  return value
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => (part.length <= 2 ? part.toUpperCase() : `${part[0].toUpperCase()}${part.slice(1)}`))
+    .join(" ");
+}
+
+function calcTargetHits(docFreq: number): number {
+  if (docFreq >= 20) return 4;
+  if (docFreq >= 10) return 3;
+  if (docFreq >= 4) return 2;
+  return 1;
+}
+
+function recommendForStatus(keyword: string, status: "missing" | "underused" | "used"): string {
+  if (status === "missing") {
+    return `Add "${keyword}" in summary and at least one outcome-driven experience bullet.`;
   }
-  const latest = relevantFiles[relevantFiles.length - 1];
-  const filePath = path.join(outputsDir, latest);
+  if (status === "underused") {
+    return `Use "${keyword}" more consistently across experience and skills with concrete impact context.`;
+  }
+  return `Keep "${keyword}" coverage consistent and specific.`;
+}
+
+function inferSeniorityAspect(roleEntries: RoleMetric[], cvText: string): boolean {
+  const seniorityPattern = /\b(senior|lead|manager|director|head|principal|executive|vp|cxo|chief|studio manager)\b/i;
+  if (seniorityPattern.test(cvText)) {
+    return true;
+  }
+  return roleEntries.some((entry) => seniorityPattern.test(entry.role));
+}
+
+function inferGameIndustryAspect(items: RelevantItem[], roleEntries: RoleMetric[], cvText: string): boolean {
+  const gamePattern = /\b(game|gaming|live ops|live[- ]service|economy balancing|level design|narrative design|monetization|retention|arpu|arppu|ltv)\b/i;
+  if (gamePattern.test(cvText)) {
+    return true;
+  }
+  const roleText = roleEntries.map((entry) => entry.role).join(" ");
+  if (gamePattern.test(roleText)) {
+    return true;
+  }
+  const itemText = items
+    .flatMap((item) => [...(item.matched_keywords ?? []), ...(item.role_hits ?? [])])
+    .join(" ");
+  return gamePattern.test(itemText);
+}
+
+async function readSupplementalDb(fileName: string): Promise<SupplementalKeywordDb | null> {
+  try {
+    const filePath = repoPath("cv-keyword-analysis", "config", fileName);
+    const raw = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(raw) as SupplementalKeywordDb;
+  } catch {
+    return null;
+  }
+}
+
+function normalizedSupplementalEntries(db: SupplementalKeywordDb | null): SupplementalKeywordEntry[] {
+  if (!db || !Array.isArray(db.keywords)) return [];
+  return db.keywords
+    .map((entry) => ({
+      keyword: normalizeToken(String(entry.keyword ?? "")),
+      weight: Number(entry.weight ?? 0),
+      target_hits: Number(entry.target_hits ?? 0),
+      category: String(entry.category ?? "").trim() || undefined,
+    }))
+    .filter((entry) => entry.keyword.length > 0 && Number(entry.weight ?? 0) > 0);
+}
+
+async function readLatestRelevantPayload(): Promise<{ payload: RelevantPayload; filePath: string }> {
+  await ensureCoreDatasetFresh({ removeLegacySnapshots: true });
+  const filePath = repoPath("cv-keyword-analysis", "outputs", CORE_DATASET_FILE);
   const raw = await fs.readFile(filePath, "utf-8");
   const parsed = JSON.parse(raw) as RelevantPayload;
   return { payload: parsed, filePath };
 }
 
 function isSafeDatasetName(name: string): boolean {
-  return (
-    /^jd_relevant_\d{8}T\d{6}Z\.json$/.test(name) ||
-    /^prototype_dataset_[a-z0-9_.-]+\.json$/i.test(name) ||
-    name === "merged.json"
-  );
+  return name === CORE_DATASET_FILE;
 }
 
 async function readRelevantPayloadByDataset(datasetIdRaw: string | null): Promise<{ payload: RelevantPayload; filePath: string }> {
+  await ensureCoreDatasetFresh({ removeLegacySnapshots: true });
   const outputsDir = repoPath("cv-keyword-analysis", "outputs");
   const datasetId = (datasetIdRaw ?? "").trim();
 
@@ -156,18 +249,12 @@ async function readRelevantPayloadByDataset(datasetIdRaw: string | null): Promis
     return { payload: JSON.parse(raw) as RelevantPayload, filePath };
   }
 
-  const mergedPath = path.join(outputsDir, "merged.json");
+  const mergedPath = path.join(outputsDir, CORE_DATASET_FILE);
   try {
     const raw = await fs.readFile(mergedPath, "utf-8");
     return { payload: JSON.parse(raw) as RelevantPayload, filePath: mergedPath };
   } catch {
-    const prototypePath = path.join(outputsDir, "prototype_dataset_1_0.json");
-    try {
-      const raw = await fs.readFile(prototypePath, "utf-8");
-      return { payload: JSON.parse(raw) as RelevantPayload, filePath: prototypePath };
-    } catch {
-      return readLatestRelevantPayload();
-    }
+    return readLatestRelevantPayload();
   }
 }
 
@@ -182,6 +269,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
   const cvIdRaw = (url.searchParams.get("cvId") ?? "").trim();
   const datasetId = (url.searchParams.get("dataset") ?? "").trim() || null;
+  const roleFilterRaw = normalizeToken(url.searchParams.get("role") ?? "");
   if (!cvIdRaw) {
     return NextResponse.json({ error: "cvId is required." }, { status: 400 });
   }
@@ -199,12 +287,61 @@ export async function GET(request: Request): Promise<NextResponse> {
     );
   }
 
-  const { payload, filePath } = await readRelevantPayloadByDataset(datasetId);
-  const items = Array.isArray(payload.items) ? payload.items : [];
+  let payload: RelevantPayload;
+  let filePath: string;
+  try {
+    const resolved = await readRelevantPayloadByDataset(datasetId);
+    payload = resolved.payload;
+    filePath = resolved.filePath;
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load keyword dataset." },
+      { status: 400 },
+    );
+  }
+  const allItems = Array.isArray(payload.items) ? payload.items : [];
+  const docsTotal = allItems.length;
+  const roleBuckets = new Map<string, { count: number; scoreSum: number }>();
+
+  for (const item of allItems) {
+    const roles = new Set(
+      (Array.isArray(item.role_hits) ? item.role_hits : [])
+        .map((value) => normalizeToken(String(value || "")))
+        .filter(Boolean),
+    );
+    const signal = Number(item.score ?? 0);
+    for (const role of roles) {
+      const bucket = roleBuckets.get(role) ?? { count: 0, scoreSum: 0 };
+      bucket.count += 1;
+      bucket.scoreSum += signal;
+      roleBuckets.set(role, bucket);
+    }
+  }
+
+  const availableRoles: RoleMetric[] = [...roleBuckets.entries()]
+    .map(([role, bucket]) => ({
+      role,
+      docCount: bucket.count,
+      avgSignal: bucket.count > 0 ? bucket.scoreSum / bucket.count : 0,
+    }))
+    .sort((a, b) => b.docCount - a.docCount || b.avgSignal - a.avgSignal);
+
+  const selectedRole = roleFilterRaw && availableRoles.some((entry) => entry.role === roleFilterRaw)
+    ? roleFilterRaw
+    : "all";
+
+  const items = selectedRole === "all"
+    ? allItems
+    : allItems.filter((item) =>
+      (Array.isArray(item.role_hits) ? item.role_hits : [])
+        .map((value) => normalizeToken(String(value || "")))
+        .includes(selectedRole),
+    );
+
   const docs = items.length;
   if (docs === 0) {
     return NextResponse.json(
-      { error: "No relevant JD items available in latest output file." },
+      { error: selectedRole === "all" ? "No relevant JD items available in latest output file." : `No JD items found for role: ${selectedRole}` },
       { status: 400 },
     );
   }
@@ -227,6 +364,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const cvText = flattenCvText(englishCv).join("\n").toLowerCase();
   const keywords: KeywordMetric[] = [];
+  const keywordLookup = new Map<string, KeywordMetric>();
+  const seniorityAspect = inferSeniorityAspect(availableRoles, cvText);
+  const gameIndustryAspect = inferGameIndustryAspect(items, availableRoles, cvText);
   let maxWeight = 0;
 
   for (const [keyword, df] of docFreq.entries()) {
@@ -234,7 +374,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     const avgSignal = (scoreSums.get(keyword) ?? 0) / Math.max(1, df);
     const weight = df * idf * (1 + avgSignal / 50);
     if (weight > maxWeight) maxWeight = weight;
-    keywords.push({
+    const metric: KeywordMetric = {
       keyword,
       docFreq: df,
       idf,
@@ -244,17 +384,132 @@ export async function GET(request: Request): Promise<NextResponse> {
       band: "grey",
       cvHits: countOccurrences(cvText, keyword),
       cvCoverage: 0,
-    });
+      targetHits: 1,
+      usageRatio: 0,
+      status: "missing",
+      recommendation: "",
+      source: "jd",
+    };
+    keywords.push(metric);
+    keywordLookup.set(keyword, metric);
+  }
+
+  const [seniorDb, gameDb] = await Promise.all([
+    readSupplementalDb("keyword_db_senior_leadership.json"),
+    readSupplementalDb("keyword_db_game_generic.json"),
+  ]);
+  const activeDatabases: string[] = [];
+
+  if (seniorityAspect) {
+    const entries = normalizedSupplementalEntries(seniorDb);
+    for (const entry of entries) {
+      const existing = keywordLookup.get(entry.keyword);
+      const targetHits = Math.max(1, Number(entry.target_hits ?? 1));
+      const docsFactor = Math.max(1, Math.log(1 + docs));
+      const supplementalWeight = (Number(entry.weight ?? 1) * (1 + (docsFactor / 2)));
+      if (existing) {
+        existing.weight = Math.max(existing.weight, supplementalWeight);
+        existing.docFreq = Math.max(existing.docFreq, 2);
+        existing.targetHits = Math.max(existing.targetHits, targetHits);
+        existing.source = existing.source === "jd" ? "combined" : existing.source;
+        if (entry.category && !existing.category) existing.category = entry.category;
+      } else {
+        const metric: KeywordMetric = {
+          keyword: entry.keyword,
+          docFreq: 2,
+          idf: 1,
+          avgSignal: 0,
+          weight: supplementalWeight,
+          normalized: 0,
+          band: "grey",
+          cvHits: countOccurrences(cvText, entry.keyword),
+          cvCoverage: 0,
+          targetHits,
+          usageRatio: 0,
+          status: "missing",
+          recommendation: "",
+          source: "senior_leadership",
+          category: entry.category,
+        };
+        keywords.push(metric);
+        keywordLookup.set(entry.keyword, metric);
+      }
+      if (supplementalWeight > maxWeight) maxWeight = supplementalWeight;
+    }
+    if (entries.length > 0) activeDatabases.push(seniorDb?.label ?? "Senior Leadership Universal");
+  }
+
+  if (gameIndustryAspect) {
+    const entries = normalizedSupplementalEntries(gameDb);
+    for (const entry of entries) {
+      const existing = keywordLookup.get(entry.keyword);
+      const targetHits = Math.max(1, Number(entry.target_hits ?? 1));
+      const docsFactor = Math.max(1, Math.log(1 + docs));
+      const supplementalWeight = (Number(entry.weight ?? 1) * (1 + (docsFactor / 2)));
+      if (existing) {
+        existing.weight = Math.max(existing.weight, supplementalWeight);
+        existing.docFreq = Math.max(existing.docFreq, 2);
+        existing.targetHits = Math.max(existing.targetHits, targetHits);
+        existing.source = existing.source === "jd" || existing.source === "senior_leadership" ? "combined" : existing.source;
+        if (entry.category && !existing.category) existing.category = entry.category;
+      } else {
+        const metric: KeywordMetric = {
+          keyword: entry.keyword,
+          docFreq: 2,
+          idf: 1,
+          avgSignal: 0,
+          weight: supplementalWeight,
+          normalized: 0,
+          band: "grey",
+          cvHits: countOccurrences(cvText, entry.keyword),
+          cvCoverage: 0,
+          targetHits,
+          usageRatio: 0,
+          status: "missing",
+          recommendation: "",
+          source: "game_generic",
+          category: entry.category,
+        };
+        keywords.push(metric);
+        keywordLookup.set(entry.keyword, metric);
+      }
+      if (supplementalWeight > maxWeight) maxWeight = supplementalWeight;
+    }
+    if (entries.length > 0) activeDatabases.push(gameDb?.label ?? "Game Industry Generic");
   }
 
   for (const metric of keywords) {
     const normalized = maxWeight > 0 ? metric.weight / maxWeight : 0;
     metric.normalized = normalized;
     metric.band = slugBand(normalized);
-    metric.cvCoverage = metric.docFreq > 0 ? Math.min(1, metric.cvHits / metric.docFreq) : 0;
+    const targetHits = Math.max(calcTargetHits(metric.docFreq), Number(metric.targetHits ?? 1));
+    const usageRatio = Math.min(1, metric.cvHits / targetHits);
+    let status: KeywordMetric["status"] = "used";
+    if (metric.cvHits === 0) {
+      status = "missing";
+    } else if (usageRatio < 1) {
+      status = "underused";
+    }
+    metric.targetHits = targetHits;
+    metric.usageRatio = usageRatio;
+    metric.status = status;
+    metric.recommendation = recommendForStatus(metric.keyword, status);
+    metric.cvCoverage = usageRatio;
   }
 
   const sortedKeywords = keywords.sort((a, b) => b.weight - a.weight).slice(0, 180);
+  const missingKeywords = sortedKeywords.filter((item) => item.status === "missing");
+  const underusedKeywords = sortedKeywords.filter((item) => item.status === "underused");
+  const usedKeywords = sortedKeywords.filter((item) => item.status === "used");
+  const totalWeight = sortedKeywords.reduce((sum, item) => sum + item.weight, 0);
+  const usedWeight = sortedKeywords.reduce((sum, item) => sum + (item.weight * item.usageRatio), 0);
+  const weightedUsageScore = totalWeight > 0 ? (usedWeight / totalWeight) * 100 : 0;
+  const missingWeightShare = totalWeight > 0
+    ? (missingKeywords.reduce((sum, item) => sum + item.weight, 0) / totalWeight) * 100
+    : 0;
+  const underusedWeightShare = totalWeight > 0
+    ? (underusedKeywords.reduce((sum, item) => sum + item.weight, 0) / totalWeight) * 100
+    : 0;
 
   const clusterBuckets = new Map<string, { totalWeight: number; weightedCoverage: number; count: number }>();
   for (const metric of sortedKeywords) {
@@ -289,11 +544,41 @@ export async function GET(request: Request): Promise<NextResponse> {
     englishCvId,
     sourceFile: filePath,
     datasetId: path.basename(filePath),
+    role: selectedRole,
+    roles: [
+      { role: "all", label: "All Professions", docCount: docsTotal, avgSignal: 0 },
+      ...availableRoles.map((entry) => ({
+        role: entry.role,
+        label: titleCase(entry.role),
+        docCount: entry.docCount,
+        avgSignal: Number(entry.avgSignal.toFixed(2)),
+      })),
+    ],
+    keywordDatabases: {
+      seniorityAspect,
+      gameIndustryAspect,
+      active: activeDatabases,
+    },
     generatedAt: payload.generated_at ?? new Date().toISOString(),
     jdRelevantCount: docs,
     clusterCount: clusters.length,
     clusters,
     keywords: sortedKeywords,
+    keywordSummary: {
+      total: sortedKeywords.length,
+      missing: missingKeywords.length,
+      underused: underusedKeywords.length,
+      used: usedKeywords.length,
+    },
+    analysisStats: {
+      weightedUsageScore: Number(weightedUsageScore.toFixed(2)),
+      missingWeightShare: Number(missingWeightShare.toFixed(2)),
+      underusedWeightShare: Number(underusedWeightShare.toFixed(2)),
+      totalKeywordWeight: Number(totalWeight.toFixed(2)),
+    },
+    missingKeywords: missingKeywords.slice(0, 30),
+    underusedKeywords: underusedKeywords.slice(0, 30),
+    usedKeywords: usedKeywords.slice(0, 30),
     cv: englishCv,
   });
 }

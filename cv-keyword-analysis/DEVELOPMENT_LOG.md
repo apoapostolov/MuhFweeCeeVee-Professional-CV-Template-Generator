@@ -103,3 +103,32 @@ Validation commands and results:
 - `/usr/bin/python3 jd_scraper.py --provider native --mode resume --max-pages 400 --max-depth 1 --max-results 10000 --min-score 8 --timeout 4 --sleep-ms 0` -> pass
 - Output: `outputs/jd_relevant_20260305T170300Z.json`
 - Cache totals: `pages_total=330`, `pages_relevant=235`, `native_pages=229`
+
+## 2026-03-06 - Implemented P0/P1/P2 keyword analysis engine backlog
+
+Context/root cause:
+
+- Subproject had JD scraping but lacked complete CV-vs-JD scoring pipeline tasks
+  in TODO (schemas, normalization, weighting quality, markdown reporting, tests,
+  and editor integration hooks).
+
+Files touched:
+
+- `analysis_engine.py`
+- `schemas/analysis_input.schema.json`
+- `schemas/analysis_output.schema.json`
+- `tests/fixtures/analysis_input.json`
+- `tests/test_analysis_engine.py`
+- `README.md`
+- `CHANGELOG.md`
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+- `outputs/analysis_report_fixture.json`
+- `outputs/analysis_report_fixture.md`
+- `outputs/editor_hook_fixture.json`
+
+Validation commands and results:
+
+- `/usr/bin/python3 -m py_compile jd_scraper.py analysis_engine.py` -> pass
+- `/usr/bin/python3 -m unittest tests/test_analysis_engine.py` -> pass (5 tests)
+- `/usr/bin/python3 analysis_engine.py --input tests/fixtures/analysis_input.json --output outputs/analysis_report_fixture.json --markdown-output outputs/analysis_report_fixture.md --editor-hook-output outputs/editor_hook_fixture.json` -> pass

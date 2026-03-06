@@ -87,4 +87,52 @@ Start fresh (reset cache):
 
 ## Status
 
-Bootstrap + first JD scraping pipeline with resume cache implemented.
+JD scraping pipeline and CV keyword scoring engine are implemented.
+
+## CV Analysis Engine
+
+Implemented:
+
+- `analysis_engine.py` - deterministic CV-vs-JD analysis pipeline.
+- `schemas/analysis_input.schema.json` - input payload contract.
+- `schemas/analysis_output.schema.json` - output report contract.
+- `tests/fixtures/analysis_input.json` - deterministic fixture input.
+- `tests/test_analysis_engine.py` - regression/unit checks.
+
+### Input payload
+
+Minimal required shape:
+
+- `cv.sections` object with section name -> text.
+- `jd_corpus[]` array with JD `text` (optional `score`).
+- optional `config` for section weights, weighted keywords, top N.
+
+### Analysis run
+
+```bash
+cd cv-keyword-analysis
+/usr/bin/python3 analysis_engine.py \
+  --input tests/fixtures/analysis_input.json \
+  --output outputs/analysis_report_fixture.json \
+  --markdown-output outputs/analysis_report_fixture.md \
+  --editor-hook-output outputs/editor_hook_fixture.json
+```
+
+### Output report
+
+`analysis_engine.py` outputs:
+
+- weighted keyword table (`weighted_keywords`)
+- overall score (`scores.coverage_score`)
+- confidence (`scores.confidence`)
+- severity-ranked gaps (`gap_severity`)
+- actionable suggestions (`actions`)
+- editor integration hook (`integration_hooks.editor_panel`)
+
+### Validation
+
+```bash
+cd cv-keyword-analysis
+/usr/bin/python3 -m py_compile jd_scraper.py analysis_engine.py
+/usr/bin/python3 -m unittest tests/test_analysis_engine.py
+```

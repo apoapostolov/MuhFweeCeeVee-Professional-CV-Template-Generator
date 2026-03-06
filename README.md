@@ -114,6 +114,21 @@ npm run dev:parser
     1M input/output tokens, and estimated full-CV check cost using current
     CV size with a 20% token overhead
   - AI CV scoring actions for current section and whole CV, with structured feedback/proposals
+  - Keyword Studio profession focus selector (derived from JD analysis role hits)
+  - Keyword Studio role-scoped keyword status buckets:
+    `missing`, `underused`, and `used` with usage targets and rewrite guidance
+  - Keyword Studio right-side Positioning section now uses the same framed card style as Professional Experience
+  - Keyword Studio uses a single live `Core Database` dataset (`merged.json`)
+    that is auto-refreshed from `jd_scrape_cache.sqlite`
+  - Keyword Studio now augments JD-driven scoring with two additional keyword DB types:
+    `Senior Leadership Universal` (activated on seniority signals) and
+    `Game Industry Generic` (activated on game-industry signals)
+  - Legacy snapshot JSON datasets (`jd_relevant_*.json`, `prototype_dataset_*.json`)
+    are removed from the flow and automatically cleaned up
+  - Keyword Studio weighted usage score and keyword-weight share metrics
+  - Keyword Studio data-ops controls:
+    run collection with rotating seed packs, cache dedupe, and live core-DB growth counters
+  - Keyword Studio run modal with 2-second progress refresh (scrape + merge logs)
   - Editor-side `SYNC` action next to BG/EN pill to fill missing fields in sibling language variant using OpenRouter translation
   - SYNC opens a detailed diff-style modal report with per-field change list,
     direction arrows, source-of-truth value, and previous/new target values
@@ -123,6 +138,10 @@ npm run dev:parser
   - BG/EN language pill switch for CV variants
   - CV variant dropdown (one item per BG/EN pair) with language switching via pill
   - Template-localized BG/EN labels driven by selected CV variant language
+  - Print Room theme selector under Template for Edinburgh visual variants
+    (Default Purple, Ocean Teal, Forest Green, Ruby Red, Amber Gold)
+  - Edinburgh themes keep a neutral grey left sidebar; theme color is applied
+    to accents (header, links, bullets, dots)
   - Template-controlled date display per section (`exact`, `month-year`, `year`)
     from exact YAML dates
   - Print-friendly section transition policy (`break-inside: avoid`) for cleaner page splits

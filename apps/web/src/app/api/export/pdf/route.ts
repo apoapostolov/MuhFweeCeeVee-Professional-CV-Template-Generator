@@ -8,6 +8,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
   const cvId = url.searchParams.get("cvId");
   const templateId = url.searchParams.get("templateId");
+  const theme = url.searchParams.get("theme") ?? undefined;
   const download = url.searchParams.get("download") === "1";
 
   if (!cvId || !templateId) {
@@ -20,7 +21,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   let browser: Awaited<ReturnType<(typeof import("playwright"))["chromium"]["launch"]>> | null =
     null;
   try {
-    const { html } = await buildCvTemplateHtml({ cvId, templateId });
+    const { html } = await buildCvTemplateHtml({ cvId, templateId, theme });
     const { chromium } = await import("playwright");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();

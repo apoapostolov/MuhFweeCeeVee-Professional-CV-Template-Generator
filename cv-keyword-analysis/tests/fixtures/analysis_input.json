@@ -1,0 +1,48 @@
+{
+  "cv": {
+    "sections": {
+      "summary": "Game producer with live ops and data analytics focus.",
+      "experience": "Led live operations for a mobile game and improved D30 retention by 18 percent using SQL dashboards. Built monetization experiments and tracking for feature rollouts.",
+      "skills": "SQL, Looker, product analytics, telemetry design, stakeholder communication.",
+      "education": "BA in Economics."
+    }
+  },
+  "jd_corpus": [
+    {
+      "id": "jd-001",
+      "title": "Senior Game Producer",
+      "text": "Own live ops roadmap, analytics instrumentation, and cross-functional production. Strong SQL and telemetry experience required.",
+      "score": 39
+    },
+    {
+      "id": "jd-002",
+      "title": "Game Data Analyst",
+      "text": "Analyze product and monetization performance. Build dashboards in Looker and partner with producers on experiments.",
+      "score": 35
+    },
+    {
+      "id": "jd-003",
+      "title": "Live Service Producer",
+      "text": "Drive mobile game live service events, track KPI movement, and communicate impact to stakeholders.",
+      "score": 31
+    }
+  ],
+  "config": {
+    "weighted_keywords": {
+      "game producer": 8,
+      "live ops": 7,
+      "analytics": 6,
+      "sql": 5,
+      "telemetry": 5,
+      "monetization": 5,
+      "looker": 4
+    },
+    "section_weights": {
+      "experience": 2.8,
+      "skills": 1.9,
+      "summary": 1.5,
+      "education": 1.0
+    },
+    "top_n_keywords": 40
+  }
+}

@@ -43,12 +43,65 @@ type MappingFile = {
 type RenderInput = {
   cvId: string;
   templateId: string;
+  theme?: string;
 };
 
 type RenderResult = {
   html: string;
   cvId: string;
   templateId: string;
+};
+
+type EdinburghThemePalette = {
+  accent: string;
+  sidebarBackground: string;
+  arcStroke: string;
+  link: string;
+  linkBorder: string;
+  dotOff: string;
+};
+
+const EDINBURGH_THEME_PRESETS: Record<string, EdinburghThemePalette> = {
+  default: {
+    accent: "#4E557B",
+    sidebarBackground: "#F2F3F5",
+    arcStroke: "#2C315B",
+    link: "#2C315B",
+    linkBorder: "#C8CFEC",
+    dotOff: "#C9CED8",
+  },
+  ocean_teal: {
+    accent: "#068799",
+    sidebarBackground: "#F2F3F5",
+    arcStroke: "#0A6471",
+    link: "#0A6471",
+    linkBorder: "#A8DCE3",
+    dotOff: "#B8D7DC",
+  },
+  forest_green: {
+    accent: "#316834",
+    sidebarBackground: "#F2F3F5",
+    arcStroke: "#244E27",
+    link: "#244E27",
+    linkBorder: "#B5D0B8",
+    dotOff: "#C1D4C3",
+  },
+  ruby_red: {
+    accent: "#B0292A",
+    sidebarBackground: "#F2F3F5",
+    arcStroke: "#892324",
+    link: "#892324",
+    linkBorder: "#E5B4B5",
+    dotOff: "#D9C4C4",
+  },
+  amber_gold: {
+    accent: "#FFC209",
+    sidebarBackground: "#F2F3F5",
+    arcStroke: "#B78400",
+    link: "#8D6700",
+    linkBorder: "#E7CF81",
+    dotOff: "#DCCFA6",
+  },
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -151,6 +204,35 @@ function splitName(fullName: string): { top: string; bottom: string } {
   if (parts.length <= 1) return { top: fullName, bottom: "" };
   if (parts.length === 2) return { top: parts[0], bottom: parts[1] };
   return { top: `${parts[0]} ${parts[1]}`, bottom: parts.slice(2).join(" ") };
+}
+
+function normalizeThemeKey(value: unknown): string {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return raw || "default";
+}
+
+function resolveEdinburghTheme(
+  template: TemplateFile,
+  themeInput: string | undefined,
+): EdinburghThemePalette {
+  const colors = template.tokens?.colors ?? {};
+  const templateDefault: EdinburghThemePalette = {
+    accent: colors.accent ?? EDINBURGH_THEME_PRESETS.default.accent,
+    sidebarBackground: colors.sidebar_background ?? EDINBURGH_THEME_PRESETS.default.sidebarBackground,
+    arcStroke: colors.accent_dark ?? EDINBURGH_THEME_PRESETS.default.arcStroke,
+    link: colors.accent_dark ?? EDINBURGH_THEME_PRESETS.default.link,
+    linkBorder: colors.accent_light ?? EDINBURGH_THEME_PRESETS.default.linkBorder,
+    dotOff: colors.muted ?? EDINBURGH_THEME_PRESETS.default.dotOff,
+  };
+  const key = normalizeThemeKey(themeInput);
+  if (key === "default") {
+    return templateDefault;
+  }
+  return EDINBURGH_THEME_PRESETS[key] ?? templateDefault;
 }
 
 function nameSizeMm(value: string, max: number, min: number): number {
@@ -406,9 +488,11 @@ function renderEducation(
   mode: "exact" | "month-year" | "year",
   presentLabel: string,
   labels?: Record<string, unknown>,
-  options?: { includeDetails?: boolean },
+  options?: { includeDetails?: boolean; includeLocation?: boolean; includeCompleted?: boolean },
 ): string {
   const includeDetails = Boolean(options?.includeDetails);
+  const includeLocation = options?.includeLocation ?? true;
+  const includeCompleted = options?.includeCompleted ?? true;
   const entries = Array.isArray(value) ? value : [];
   const blocks = entries
     .map((entry) => {
@@ -442,10 +526,10 @@ function renderEducation(
         faculty
           ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.faculty", "Faculty"))}:</strong> ${escapeHtml(faculty)}</p>`
           : "",
-        location
+        includeLocation && location
           ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.location", "Location"))}:</strong> ${escapeHtml(location)}</p>`
           : "",
-        completed
+        includeCompleted && completed
           ? `<p class="edu-detail"><strong>${escapeHtml(label(labels ?? {}, "education_labels.completed", "Completed"))}:</strong> ${escapeHtml(completed)}</p>`
           : "",
       ]
@@ -863,10 +947,10 @@ function renderEdinburgh(
   template: TemplateFile,
   slots: Record<string, unknown>,
   labels: Record<string, unknown>,
+  theme: EdinburghThemePalette,
 ): string {
-  const colors = template.tokens?.colors ?? {};
-  const accent = colors.accent ?? "#4E557B";
-  const sidebar = colors.sidebar_background ?? "#F2F3F5";
+  const accent = theme.accent;
+  const sidebar = theme.sidebarBackground;
   const margins = resolveMargins(template);
   const experienceDateMode = template.date_display?.experience ?? "exact";
   const educationDateMode = template.date_display?.education ?? "exact";
@@ -949,7 +1033,7 @@ function renderEdinburgh(
       right: 0;
       bottom: -0.1mm;
       height: 24mm;
-      background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 240' preserveAspectRatio='none'%3E%3Cpath d='M0 54 Q500 174 1000 54 L1000 240 L0 240 Z' fill='%23f2f3f5'/%3E%3Cpath d='M0 54 Q500 174 1000 54' fill='none' stroke='%232c315b' stroke-width='14' stroke-linecap='round'/%3E%3C/svg%3E\");
+      background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 240' preserveAspectRatio='none'%3E%3Cpath d='M0 54 Q500 174 1000 54 L1000 240 L0 240 Z' fill='${encodeURIComponent(sidebar)}'/%3E%3Cpath d='M0 54 Q500 174 1000 54' fill='none' stroke='${encodeURIComponent(theme.arcStroke)}' stroke-width='14' stroke-linecap='round'/%3E%3C/svg%3E\");
       background-size: 100% 100%;
       background-repeat: no-repeat;
       z-index: 3;
@@ -1032,7 +1116,7 @@ function renderEdinburgh(
     .edinburgh-languages .dots,
     .edinburgh-skills .dots { display: inline-flex; gap: 4px; }
     .edinburgh-languages .dot,
-    .edinburgh-skills .dot { width: 8px; height: 8px; border-radius: 999px; background: #c9ced8; display: inline-block; }
+    .edinburgh-skills .dot { width: 8px; height: 8px; border-radius: 999px; background: ${theme.dotOff}; display: inline-block; }
 
     .right { padding: 6mm 7mm 10mm; background: #fff; }
     .headline { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #202124; }
@@ -1045,8 +1129,8 @@ function renderEdinburgh(
     .org { margin: 3px 0 7px; color: #5f6368; font-weight: 500; }
     .entry ul { margin: 5px 0 0 16px; padding: 0; }
     .entry li { margin: 2px 0; line-height: 1.33; }
-    .entry a { color: #2c315b; text-decoration: none; border-bottom: 1px solid #c8cfec; }
-    .entry a:hover { border-bottom-color: #2c315b; }
+    .entry a { color: ${theme.link}; text-decoration: none; border-bottom: 1px solid ${theme.linkBorder}; }
+    .entry a:hover { border-bottom-color: ${theme.link}; }
     .product-subsection { margin-top: 6px; }
     .product-title { margin: 0 0 3px; font-weight: 700; font-size: 11.4px; color: #2f3640; }
     .product-list { list-style: none; margin: 0; padding: 0; }
@@ -1111,7 +1195,7 @@ function renderEdinburgh(
         educationDateMode,
         presentLabel,
         labels,
-        { includeDetails: true },
+        { includeDetails: true, includeLocation: false, includeCompleted: false },
       )}
       ${optionalCourses}
       ${optionalProjects}
@@ -1260,9 +1344,10 @@ export async function buildCvTemplateHtml(input: RenderInput): Promise<RenderRes
   const labels = template.labels?.[lang] ?? template.labels?.en ?? {};
 
   const slots = bindSlots(cv, mapping);
+  const edinburghTheme = resolveEdinburghTheme(template, input.theme);
   const html =
     input.templateId === "edinburgh-v1"
-      ? renderEdinburgh(cv, template, slots, labels)
+      ? renderEdinburgh(cv, template, slots, labels, edinburghTheme)
       : input.templateId === "europass-v1"
         ? renderEuropass(cv, template, slots, labels)
       : renderGeneric(cv, template, slots, labels);

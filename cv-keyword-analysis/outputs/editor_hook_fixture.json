@@ -1,0 +1,234 @@
+{
+  "version": "editor-panel.v1",
+  "coverage_score": 47.8,
+  "confidence": 0.1652,
+  "top_keywords": [
+    {
+      "keyword": "monetization",
+      "weight": 0.038671,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "looker",
+      "weight": 0.03658,
+      "coverage": 0.95,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "live",
+      "weight": 0.034653,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "live ops",
+      "weight": 0.032766,
+      "coverage": 0.75,
+      "gap_severity": "low"
+    },
+    {
+      "keyword": "analytic",
+      "weight": 0.031198,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "sql",
+      "weight": 0.02963,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "telemetry",
+      "weight": 0.02963,
+      "coverage": 0.95,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "analyze",
+      "weight": 0.028219,
+      "coverage": 0.0,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "build",
+      "weight": 0.028219,
+      "coverage": 0.0,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "dashboard",
+      "weight": 0.028219,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "experiment",
+      "weight": 0.028219,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "partner",
+      "weight": 0.028219,
+      "coverage": 0.0,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "performance",
+      "weight": 0.028219,
+      "coverage": 0.0,
+      "gap_severity": "critical"
+    },
+    {
+      "keyword": "producer",
+      "weight": 0.028219,
+      "coverage": 0.75,
+      "gap_severity": "low"
+    },
+    {
+      "keyword": "product",
+      "weight": 0.028219,
+      "coverage": 0.95,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "communicate",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "drive",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "event",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "game",
+      "weight": 0.022404,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "impact",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "kpi",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "mobile",
+      "weight": 0.022404,
+      "coverage": 1.0,
+      "gap_severity": "none"
+    },
+    {
+      "keyword": "movement",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "service",
+      "weight": 0.022404,
+      "coverage": 0.0,
+      "gap_severity": "high"
+    },
+    {
+      "keyword": "stakeholder",
+      "weight": 0.022404,
+      "coverage": 0.95,
+      "gap_severity": "none"
+    }
+  ],
+  "gaps": [
+    {
+      "keyword": "analyze",
+      "severity": "critical",
+      "suggested_action": "Add `analyze` in an experience bullet with a quantified outcome to close a high-impact gap."
+    },
+    {
+      "keyword": "build",
+      "severity": "critical",
+      "suggested_action": "Add `build` in an experience bullet with a quantified outcome to close a high-impact gap."
+    },
+    {
+      "keyword": "partner",
+      "severity": "critical",
+      "suggested_action": "Add `partner` in an experience bullet with a quantified outcome to close a high-impact gap."
+    },
+    {
+      "keyword": "performance",
+      "severity": "critical",
+      "suggested_action": "Add `performance` in an experience bullet with a quantified outcome to close a high-impact gap."
+    },
+    {
+      "keyword": "communicate",
+      "severity": "high",
+      "suggested_action": "Introduce `communicate` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "drive",
+      "severity": "high",
+      "suggested_action": "Introduce `drive` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "event",
+      "severity": "high",
+      "suggested_action": "Introduce `event` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "impact",
+      "severity": "high",
+      "suggested_action": "Introduce `impact` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "kpi",
+      "severity": "high",
+      "suggested_action": "Introduce `kpi` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "movement",
+      "severity": "high",
+      "suggested_action": "Introduce `movement` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "service",
+      "severity": "high",
+      "suggested_action": "Introduce `service` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "cross-functional",
+      "severity": "high",
+      "suggested_action": "Introduce `cross-functional` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "experience",
+      "severity": "high",
+      "suggested_action": "Introduce `experience` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "instrumentation",
+      "severity": "high",
+      "suggested_action": "Introduce `instrumentation` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    },
+    {
+      "keyword": "own",
+      "severity": "high",
+      "suggested_action": "Introduce `own` in summary and one experience bullet. Reference concrete scope, ownership, or outcome."
+    }
+  ]
+}
