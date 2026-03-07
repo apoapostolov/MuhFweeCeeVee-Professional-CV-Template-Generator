@@ -9,6 +9,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const cvId = url.searchParams.get("cvId");
   const templateId = url.searchParams.get("templateId");
   const theme = url.searchParams.get("theme") ?? undefined;
+  const photoMode = url.searchParams.get("photo") ?? undefined;
 
   if (!cvId || !templateId) {
     return NextResponse.json(
@@ -20,7 +21,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   let browser: Awaited<ReturnType<(typeof import("playwright"))["chromium"]["launch"]>> | null =
     null;
   try {
-    const { html } = await buildCvTemplateHtml({ cvId, templateId, theme });
+    const { html } = await buildCvTemplateHtml({
+      cvId,
+      templateId,
+      theme,
+      photoMode,
+    });
     const { chromium } = await import("playwright");
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({

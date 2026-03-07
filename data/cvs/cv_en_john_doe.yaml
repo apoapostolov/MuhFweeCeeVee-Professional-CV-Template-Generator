@@ -38,6 +38,9 @@ positioning:
     - Builds reliable systems and clear delivery workflows across cross-functional teams.
 targeting:
   target_company: Example Tech
+  company_details:
+    industry: software
+    website: https://exampletech.com
   target_sector: software
   target_functions:
     - engineering
@@ -173,8 +176,8 @@ metadata:
   status: published_sample
   language: en
   variant:
-    cv_id: cv_en_0001_john_doe
-    iteration: "001"
-    target: public_sample
+    cv_id: cv_en_john_doe
+    iteration: sample
+    target: john_doe
     language: en
-id: cv_en_0001_john_doe
+id: cv_en_john_doe

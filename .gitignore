@@ -31,6 +31,8 @@ keywords/DEVELOPMENT_LOG.md
 data/cvs/history/
 data/cvs/cv_*_private.yaml
 data/template_mappings/cv_*_private__*.yaml
+data/cvs/*alianz*.yaml
+data/cvs/*allianz*.yaml
 
 # Local editor and private examples
 .vscode/

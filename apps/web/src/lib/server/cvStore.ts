@@ -152,13 +152,15 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
         doc?.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata)
           ? (doc.metadata as Record<string, unknown>)
           : null;
+      const metadataLanguage =
+        typeof metadata?.language === "string" ? metadata.language.trim().toLowerCase() : "";
       const internalName =
         (typeof metadata?.internal_name === "string" && metadata.internal_name) || id;
       const internalVersion =
         (typeof metadata?.internal_version === "string" && metadata.internal_version) || "1.0";
       return {
         id,
-        language: parsed?.language ?? null,
+        language: parsed?.language ?? (isSupportedLanguage(metadataLanguage) ? metadataLanguage : null),
         iteration: parsed?.iteration ?? null,
         target: parsed?.target ?? null,
         displayName: internalName,
