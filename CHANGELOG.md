@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New **Photo Booth** tab (last in navigation order) with drag-and-drop image upload, polished gallery cards, and per-image approval controls for CV use.
+- Photo Booth approval is now persisted in browser storage, so the selected photo stays active across reloads.
+- New dedicated **Analyze Photo** action in the right analysis pane, with quality scoring and actionable headshot recommendations for the currently selected image.
+- Photo Booth now stores per-image AI analysis history on the server (`/photos/metadata.json`) and restores the latest analysis across reloads.
+- New multi-image AI comparison workflow in Photo Booth (2+ selected images) with ranked results and detailed cross-image scoring feedback.
+- New MCP wrapper package (`@muhfweeceevee/mcp-wrapper`) exposing key CV/template/keywords/photo/OpenRouter API operations as MCP tools over stdio, with setup guide in `mcp.md`.
+
+### Changed
+
+- Preview/export pipeline now accepts approved Photo Booth image overrides and injects them into the `profile.photo` render slot without editing CV YAML.
+- Sidebar-to-content width ratio is now standardized across major two-column tabs for a more consistent workspace feel.
+- Templates tab preview cards now render using the CV currently selected in Print Room (with fallback to latest CV when no selection is active).
+- Photo Booth drop zone copy now explicitly advertises clipboard paste support.
+- Photo Booth gallery now uses compact 2-up cards with action buttons overlaid on the image bottom edge.
+- Photo Booth right column is now a dedicated AI analysis pane with a small thumbnail and expanded feedback content.
+- Photo Booth AI analysis now uses a multimodal OpenRouter model request; UI warns when the currently selected model is likely non-multimodal.
+- Photo Booth storage is now filesystem-backed in `/photos`; removing an image confirms deletion and then removes it from disk.
+- Photo Booth action controls now use icon-only buttons, and approval toggles on/off when clicked again.
+- Template gallery previews now apply the currently approved Photo Booth selection (if present) instead of showing empty placeholder photo regions.
+- Legacy stale uploads are now auto-migrated into `/photos`, and legacy browser-cached photo galleries are imported into `/photos` on load.
+- CV photo AI analysis guidance was upgraded with a stricter professional rubric (framing, lighting, expression, background, and print/export fitness).
+
 ## [1.0.1] - 2026-03-07
 
 ### Added

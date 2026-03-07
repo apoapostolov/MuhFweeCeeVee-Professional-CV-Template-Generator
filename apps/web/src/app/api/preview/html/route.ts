@@ -10,6 +10,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const templateId = url.searchParams.get("templateId");
   const theme = url.searchParams.get("theme") ?? undefined;
   const photoMode = url.searchParams.get("photo") ?? undefined;
+  const profilePhotoId = url.searchParams.get("photoId") ?? undefined;
 
   if (!cvId || !templateId) {
     return NextResponse.json(
@@ -24,6 +25,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       templateId,
       theme,
       photoMode,
+      profilePhotoId,
     });
     return new NextResponse(html, {
       headers: {

@@ -17,6 +17,7 @@
     "lint:web": "npm run lint --workspace @muhfweeceevee/web",
     "typecheck": "npm run typecheck --workspace @muhfweeceevee/web",
     "typecheck:web": "npm run typecheck --workspace @muhfweeceevee/web",
-    "check": "npm run lint && npm run typecheck"
+    "check": "npm run lint && npm run typecheck",
+    "mcp:api": "npm run start --workspace @muhfweeceevee/mcp-wrapper"
   }
 }
