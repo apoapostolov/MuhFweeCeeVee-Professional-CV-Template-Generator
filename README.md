@@ -134,6 +134,10 @@ Steps:
 
 - Changelog is the source of truth for release notes:
   - [`CHANGELOG.md`](CHANGELOG.md)
+- API reference (including post-1.0.0 additions):
+  - [`docs/API.md`](docs/API.md)
+- MCP wrapper guide:
+  - [`mcp.md`](mcp.md)
 
 ## License
 

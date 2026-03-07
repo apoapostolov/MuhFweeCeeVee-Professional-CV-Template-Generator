@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { JSX, KeyboardEvent, UIEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent, JSX, KeyboardEvent, UIEvent } from "react";
 import { parse as parseYaml, parseDocument, stringify as stringifyYaml } from "yaml";
 
 type CvListResponse = {
@@ -91,7 +91,7 @@ type SyncStatusResponse = {
   }>;
 };
 
-type ActivePanel = "workspace" | "templates" | "editor" | "keywords";
+type ActivePanel = "workspace" | "templates" | "editor" | "keywords" | "photo_booth";
 type EditorViewMode = "form" | "yaml";
 type ThemeMode = "light" | "dark" | "system";
 
@@ -333,6 +333,71 @@ type PhotoModeOption = {
   label: string;
 };
 
+type PhotoBoothAnalysis = {
+  score: number;
+  verdict: "excellent" | "good" | "usable" | "weak";
+  notes: string[];
+  clothingProposals?: string[];
+  analyzedAt: string;
+  model?: string;
+};
+
+type PhotoComparisonAnalysis = {
+  criteria: Array<{
+    name: string;
+    summary: string;
+  }>;
+  ranked: Array<{
+    name: string;
+    score: number;
+    verdict: "excellent" | "good" | "usable" | "weak";
+    strengths: string[];
+    risks: string[];
+    improvements: string[];
+  }>;
+  winnerName: string;
+  recommendation: string;
+  recommendationDetails: string[];
+  analyzedAt: string;
+  model: string;
+};
+
+type PhotoBoothItem = {
+  id: string;
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+  createdAt: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
+  analysis?: PhotoBoothAnalysis;
+  analysisHistory?: PhotoBoothAnalysis[];
+};
+
+type PhotoBoothAnalysisResponse = {
+  ok?: boolean;
+  error?: string;
+  status?: number;
+  raw?: string;
+  analysis?: PhotoBoothAnalysis;
+  history?: PhotoBoothAnalysis[];
+};
+
+type PhotoBoothCompareResponse = {
+  ok?: boolean;
+  error?: string;
+  status?: number;
+  raw?: string;
+  comparison?: PhotoComparisonAnalysis;
+};
+
+type PhotoBoothListResponse = {
+  ok?: boolean;
+  error?: string;
+  items?: PhotoBoothItem[];
+};
+
 const EDINBURGH_THEME_OPTIONS: TemplateThemeOption[] = [
   { id: "default", label: "Default Purple", color: "#4E557B" },
   { id: "ocean_teal", label: "Ocean Teal", color: "#068799" },
@@ -414,7 +479,13 @@ const STORAGE_KEYS = {
   selectedTemplateId: "mfcv_selected_template_id",
   selectedTemplateTheme: "mfcv_selected_template_theme",
   selectedPhotoMode: "mfcv_selected_photo_mode",
+  approvedPhotoId: "mfcv_photo_booth_approved_id",
 } as const;
+const LEGACY_PHOTO_STORAGE_KEYS = [
+  "mfcv_photo_booth_gallery_v1",
+  "mfcv_photo_booth_items_v1",
+  "mfcv_photo_booth_items",
+] as const;
 
 const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string }> = [
   { key: "person", label: "Person", path: "person" },
@@ -683,6 +754,24 @@ function setByPath(input: Record<string, unknown>, dotPath: string, value: unkno
   return setAtPath(input, segments, value) as Record<string, unknown>;
 }
 
+function classifyVerdict(score: number): PhotoBoothAnalysis["verdict"] {
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "good";
+  if (score >= 55) return "usable";
+  return "weak";
+}
+
+async function dataUrlToFile(
+  dataUrl: string,
+  name: string,
+  fallbackMimeType = "image/jpeg",
+): Promise<File> {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const mimeType = blob.type || fallbackMimeType;
+  return new File([blob], name, { type: mimeType });
+}
+
 export function ComposerClient() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("workspace");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
@@ -695,6 +784,17 @@ export function ComposerClient() {
   const [selectedPhotoMode, setSelectedPhotoMode] = useState<
     PhotoModeOption["id"]
   >("default");
+  const [photoBoothItems, setPhotoBoothItems] = useState<PhotoBoothItem[]>([]);
+  const [approvedPhotoId, setApprovedPhotoId] = useState("");
+  const [photoBoothNotice, setPhotoBoothNotice] = useState("");
+  const [photoBoothDragging, setPhotoBoothDragging] = useState(false);
+  const [photoBoothAnalyzingId, setPhotoBoothAnalyzingId] = useState("");
+  const [photoBoothAnalysisFocusId, setPhotoBoothAnalysisFocusId] = useState("");
+  const [photoBoothCompareIds, setPhotoBoothCompareIds] = useState<string[]>([]);
+  const [photoBoothCompareLoading, setPhotoBoothCompareLoading] = useState(false);
+  const [photoBoothComparison, setPhotoBoothComparison] = useState<PhotoComparisonAnalysis | null>(null);
+  const [photoBoothDeleteConfirmId, setPhotoBoothDeleteConfirmId] = useState("");
+  const photoBoothInputRef = useRef<HTMLInputElement | null>(null);
   const [previewNonce, setPreviewNonce] = useState(Date.now());
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
@@ -1007,6 +1107,7 @@ export function ComposerClient() {
     if (!selectedCvId || !selectedTemplateId) {
       return "";
     }
+    const approvedPhoto = photoBoothItems.find((item) => item.id === approvedPhotoId) ?? null;
     const params = new URLSearchParams({
       cvId: selectedCvId,
       templateId: selectedTemplateId,
@@ -1016,6 +1117,9 @@ export function ComposerClient() {
       params.set("theme", selectedTemplateTheme);
     }
     params.set("photo", selectedPhotoMode);
+    if (approvedPhoto) {
+      params.set("photoId", approvedPhoto.id);
+    }
     return `/api/export/pdf?${params.toString()}`;
   }, [
     previewNonce,
@@ -1024,7 +1128,24 @@ export function ComposerClient() {
     selectedTemplateTheme,
     selectedTemplateThemeOptions.length,
     selectedPhotoMode,
+    approvedPhotoId,
+    photoBoothItems,
   ]);
+
+  const loadPhotoBoothGallery = useCallback(async (): Promise<void> => {
+    try {
+      const response = await fetch("/api/photos");
+      const payload = (await response.json()) as PhotoBoothListResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Could not load photos.");
+      }
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      setPhotoBoothItems(items);
+    } catch (error) {
+      setPhotoBoothNotice(error instanceof Error ? error.message : "Could not load photos.");
+      setPhotoBoothItems([]);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -1103,6 +1224,46 @@ export function ComposerClient() {
       // no-op
     }
   }, [selectedPhotoMode]);
+
+  useEffect(() => {
+    try {
+      const storedApprovedId = window.localStorage.getItem(STORAGE_KEYS.approvedPhotoId) ?? "";
+      if (storedApprovedId) {
+        setApprovedPhotoId(storedApprovedId);
+      }
+    } catch {
+      // no-op
+    }
+    void loadPhotoBoothGallery();
+  }, [loadPhotoBoothGallery]);
+
+  useEffect(() => {
+    try {
+      if (approvedPhotoId) {
+        window.localStorage.setItem(STORAGE_KEYS.approvedPhotoId, approvedPhotoId);
+      } else {
+        window.localStorage.removeItem(STORAGE_KEYS.approvedPhotoId);
+      }
+    } catch {
+      // no-op
+    }
+  }, [approvedPhotoId]);
+
+  useEffect(() => {
+    if (!approvedPhotoId) return;
+    if (photoBoothItems.some((item) => item.id === approvedPhotoId)) return;
+    setApprovedPhotoId("");
+  }, [approvedPhotoId, photoBoothItems]);
+
+  useEffect(() => {
+    if (!photoBoothAnalysisFocusId) return;
+    if (photoBoothItems.some((item) => item.id === photoBoothAnalysisFocusId)) return;
+    setPhotoBoothAnalysisFocusId("");
+  }, [photoBoothAnalysisFocusId, photoBoothItems]);
+
+  useEffect(() => {
+    setPhotoBoothCompareIds((current) => current.filter((id) => photoBoothItems.some((item) => item.id === id)));
+  }, [photoBoothItems]);
 
   useEffect(() => {
     if (selectedTemplateThemeOptions.length === 0) {
@@ -2493,6 +2654,7 @@ export function ComposerClient() {
     if (!selectedCvId || !selectedTemplateId) {
       return;
     }
+    const approvedPhoto = photoBoothItems.find((item) => item.id === approvedPhotoId) ?? null;
     const params = new URLSearchParams({
       cvId: selectedCvId,
       templateId: selectedTemplateId,
@@ -2503,7 +2665,300 @@ export function ComposerClient() {
       params.set("theme", selectedTemplateTheme);
     }
     params.set("photo", selectedPhotoMode);
+    if (approvedPhoto) {
+      params.set("photoId", approvedPhoto.id);
+    }
     window.open(`/api/export/pdf?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
+  const addPhotoBoothFiles = useCallback(async (files: FileList | File[]): Promise<void> => {
+    const accepted = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    if (accepted.length === 0) {
+      setPhotoBoothNotice("No image files detected.");
+      return;
+    }
+    const form = new FormData();
+    for (const file of accepted) {
+      form.append("files", file);
+    }
+    const response = await fetch("/api/photos", {
+      method: "POST",
+      body: form,
+    });
+    const payload = (await response.json()) as PhotoBoothListResponse;
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error ?? "Could not upload images.");
+    }
+    await loadPhotoBoothGallery();
+    setPhotoBoothNotice(`Added ${accepted.length} image${accepted.length > 1 ? "s" : ""} to Photo Booth.`);
+    setPreviewNonce(Date.now());
+  }, [loadPhotoBoothGallery]);
+
+  async function handlePhotoBoothInput(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      await addPhotoBoothFiles(files);
+    } catch (error) {
+      setPhotoBoothNotice(error instanceof Error ? error.message : "Could not import image.");
+    } finally {
+      event.currentTarget.value = "";
+    }
+  }
+
+  const addPhotoBoothFromClipboard = useCallback(async (clipboardData: DataTransfer | null): Promise<void> => {
+    if (!clipboardData) return;
+    const files = Array.from(clipboardData.items ?? [])
+      .filter((item) => item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file instanceof File);
+    if (files.length === 0) {
+      return;
+    }
+    try {
+      await addPhotoBoothFiles(files);
+      setPhotoBoothNotice(`Pasted ${files.length} image${files.length > 1 ? "s" : ""} from clipboard.`);
+    } catch (error) {
+      setPhotoBoothNotice(error instanceof Error ? error.message : "Could not paste image from clipboard.");
+    }
+  }, [addPhotoBoothFiles]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function migrateLegacyPhotoBoothStorage(): Promise<void> {
+      const filesToUpload: File[] = [];
+      let migratedCount = 0;
+      try {
+        for (const key of LEGACY_PHOTO_STORAGE_KEYS) {
+          const raw = window.localStorage.getItem(key);
+          if (!raw) continue;
+          const parsed: unknown = JSON.parse(raw);
+          if (!Array.isArray(parsed)) {
+            window.localStorage.removeItem(key);
+            continue;
+          }
+          for (const [index, entry] of parsed.entries()) {
+            const record = asRecord(entry);
+            const dataUrl =
+              typeof record?.dataUrl === "string" ? record.dataUrl.trim() : "";
+            if (!dataUrl.startsWith("data:image/")) continue;
+            const legacyName =
+              typeof record?.name === "string" && record.name.trim().length > 0
+                ? record.name.trim()
+                : `legacy-photo-${Date.now()}-${index}.jpg`;
+            filesToUpload.push(await dataUrlToFile(dataUrl, legacyName));
+            migratedCount += 1;
+          }
+          window.localStorage.removeItem(key);
+        }
+      } catch {
+        return;
+      }
+      if (cancelled || filesToUpload.length === 0) return;
+      try {
+        await addPhotoBoothFiles(filesToUpload);
+        setPhotoBoothNotice(`Migrated ${migratedCount} legacy photo${migratedCount > 1 ? "s" : ""} into /photos.`);
+      } catch {
+        // keep silent to avoid noisy startup failures
+      }
+    }
+    void migrateLegacyPhotoBoothStorage();
+    return () => {
+      cancelled = true;
+    };
+  }, [addPhotoBoothFiles]);
+
+  useEffect(() => {
+    if (activePanel !== "photo_booth") {
+      return;
+    }
+    const onPaste = (event: ClipboardEvent) => {
+      void addPhotoBoothFromClipboard(event.clipboardData);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("paste", onPaste);
+    };
+  }, [activePanel, addPhotoBoothFromClipboard]);
+
+  function handlePhotoBoothDrop(event: DragEvent<HTMLDivElement>): void {
+    event.preventDefault();
+    setPhotoBoothDragging(false);
+    const files = event.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    void addPhotoBoothFiles(files);
+  }
+
+  function approvePhotoBoothItem(id: string): void {
+    const nextId = approvedPhotoId === id ? "" : id;
+    setApprovedPhotoId(nextId);
+    setPhotoBoothNotice(
+      nextId
+        ? "Approved image will be used in CV preview/export."
+        : "Photo approval removed.",
+    );
+    setPreviewNonce(Date.now());
+  }
+
+  async function removePhotoBoothItem(id: string): Promise<void> {
+    const response = await fetch(`/api/photos?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error ?? "Could not delete photo.");
+    }
+    await loadPhotoBoothGallery();
+    if (approvedPhotoId === id) {
+      setApprovedPhotoId("");
+      setPreviewNonce(Date.now());
+    }
+    if (photoBoothAnalysisFocusId === id) {
+      setPhotoBoothAnalysisFocusId("");
+    }
+    setPhotoBoothCompareIds((current) => current.filter((entry) => entry !== id));
+    setPhotoBoothComparison(null);
+    setPhotoBoothNotice("Photo deleted from /photos.");
+  }
+
+  function togglePhotoCompareSelection(id: string): void {
+    setPhotoBoothCompareIds((current) => {
+      if (current.includes(id)) {
+        return current.filter((entry) => entry !== id);
+      }
+      return [...current, id];
+    });
+    setPhotoBoothComparison(null);
+  }
+
+  async function analyzePhotoBoothItem(id: string): Promise<void> {
+    if (!id) return;
+    setPhotoBoothAnalyzingId(id);
+    setPhotoBoothAnalysisFocusId(id);
+    try {
+      const freshGalleryResponse = await fetch("/api/photos");
+      const freshGalleryPayload = (await freshGalleryResponse.json()) as PhotoBoothListResponse;
+      if (!freshGalleryResponse.ok || !freshGalleryPayload.ok) {
+        throw new Error(freshGalleryPayload.error ?? "Could not load latest photo data.");
+      }
+      const freshItems = Array.isArray(freshGalleryPayload.items) ? freshGalleryPayload.items : [];
+      const item = freshItems.find((entry) => entry.id === id);
+      if (!item) {
+        throw new Error("Selected photo no longer exists. Please reselect an image.");
+      }
+      const response = await fetch("/api/analysis/photo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          photoId: id,
+          imageDataUrl: item.dataUrl,
+          fileName: item.name,
+        }),
+      });
+      const payload = (await response.json()) as PhotoBoothAnalysisResponse;
+      if (!response.ok || !payload.ok || !payload.analysis) {
+        const message =
+          payload.error ??
+          (payload.status === 400
+            ? "Configure OpenRouter API key before AI image analysis."
+            : "AI image analysis failed.");
+        throw new Error(message);
+      }
+      const nextAnalysis: PhotoBoothAnalysis = {
+        score: Number.isFinite(Number(payload.analysis.score))
+          ? Math.max(0, Math.min(100, Math.round(Number(payload.analysis.score))))
+          : 60,
+        verdict:
+          payload.analysis.verdict ??
+          classifyVerdict(Number(payload.analysis.score ?? 0)),
+        notes:
+          Array.isArray(payload.analysis.notes) && payload.analysis.notes.length > 0
+            ? payload.analysis.notes
+            : ["Image analyzed with multimodal model."],
+        clothingProposals:
+          Array.isArray(payload.analysis.clothingProposals) && payload.analysis.clothingProposals.length > 0
+            ? payload.analysis.clothingProposals
+            : [],
+        analyzedAt: payload.analysis.analyzedAt ?? new Date().toISOString(),
+        model: payload.analysis.model,
+      };
+      const nextHistory = Array.isArray(payload.history)
+        ? payload.history
+            .map((entry) => ({
+              score: Number.isFinite(Number(entry.score))
+                ? Math.max(0, Math.min(100, Math.round(Number(entry.score))))
+                : 60,
+              verdict: entry.verdict ?? classifyVerdict(Number(entry.score ?? 0)),
+              notes: Array.isArray(entry.notes) ? entry.notes.map((note) => String(note ?? "").trim()).filter(Boolean) : [],
+              clothingProposals: Array.isArray(entry.clothingProposals)
+                ? entry.clothingProposals.map((note) => String(note ?? "").trim()).filter(Boolean)
+                : [],
+              analyzedAt: typeof entry.analyzedAt === "string" ? entry.analyzedAt : new Date().toISOString(),
+              model: entry.model,
+            }))
+            .slice(0, 50)
+        : [nextAnalysis];
+      setPhotoBoothItems((current) =>
+        current.map((entry) =>
+          entry.id === id
+            ? {
+                ...entry,
+                analysis: nextAnalysis,
+                analysisHistory: nextHistory,
+              }
+            : entry,
+        ),
+      );
+      setPhotoBoothNotice("AI photo analysis completed.");
+    } catch (error) {
+      setPhotoBoothNotice(error instanceof Error ? error.message : "Photo analysis failed.");
+    } finally {
+      setPhotoBoothAnalyzingId("");
+    }
+  }
+
+  async function comparePhotoBoothPair(): Promise<void> {
+    if (photoBoothCompareIds.length < 2) return;
+    setPhotoBoothCompareLoading(true);
+    try {
+      const freshGalleryResponse = await fetch("/api/photos");
+      const freshGalleryPayload = (await freshGalleryResponse.json()) as PhotoBoothListResponse;
+      if (!freshGalleryResponse.ok || !freshGalleryPayload.ok) {
+        throw new Error(freshGalleryPayload.error ?? "Could not load latest photo data.");
+      }
+      const freshItems = Array.isArray(freshGalleryPayload.items) ? freshGalleryPayload.items : [];
+      const selectedItems = photoBoothCompareIds
+        .map((id) => freshItems.find((item) => item.id === id) ?? null)
+        .filter((entry): entry is PhotoBoothItem => entry !== null);
+      if (selectedItems.length < 2) {
+        throw new Error("At least 2 selected photos are required for comparison.");
+      }
+      const response = await fetch("/api/analysis/photo/compare", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          images: selectedItems.map((item) => ({
+            name: item.name,
+            imageDataUrl: item.dataUrl,
+          })),
+        }),
+      });
+      const payload = (await response.json()) as PhotoBoothCompareResponse;
+      if (!response.ok || !payload.ok || !payload.comparison) {
+        const message =
+          payload.error ??
+          (payload.status === 400
+            ? "Configure OpenRouter API key before AI image comparison."
+            : "AI image comparison failed.");
+        throw new Error(message);
+      }
+      setPhotoBoothComparison(payload.comparison);
+      setPhotoBoothNotice("AI comparison completed.");
+    } catch (error) {
+      setPhotoBoothNotice(error instanceof Error ? error.message : "Photo comparison failed.");
+    } finally {
+      setPhotoBoothCompareLoading(false);
+    }
   }
 
   function renderFormNode(
@@ -3395,6 +3850,353 @@ export function ComposerClient() {
     );
   }
 
+  function renderPhotoBooth(): JSX.Element {
+    const analysisFocus =
+      photoBoothItems.find((item) => item.id === photoBoothAnalysisFocusId) ?? null;
+    const analyzeTargetId = analysisFocus?.id || approvedPhotoId || "";
+    const selectedModelId = modelInput || settings?.model || "";
+    return (
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[340px_1fr]">
+        <article className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-white p-4">
+          <h2 className="text-xl font-bold text-slate-900">Photo Booth</h2>
+          <div
+            className={`mt-3 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed px-5 py-4 text-center transition ${
+              photoBoothDragging
+                ? "border-[var(--accent)] bg-sky-50"
+                : "border-slate-300 bg-[var(--surface-1)] hover:border-[var(--accent)]"
+            }`}
+            onClick={() => photoBoothInputRef.current?.click()}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setPhotoBoothDragging(true);
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault();
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setPhotoBoothDragging(false);
+              }
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setPhotoBoothDragging(true);
+            }}
+            onDrop={handlePhotoBoothDrop}
+            onPaste={(event) => {
+              event.preventDefault();
+              void addPhotoBoothFromClipboard(event.clipboardData);
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                photoBoothInputRef.current?.click();
+              }
+            }}
+          >
+            <div>
+              <p className="text-lg font-semibold text-slate-800">DROP IMAGE HERE or COPY/PASTE FROM CLIPBOARD</p>
+              <p className="mt-1 text-xs text-slate-600">PNG, JPG, WEBP, AVIF supported</p>
+              <p className="mt-1 text-xs text-slate-500">or click to browse files</p>
+            </div>
+          </div>
+          <input
+            ref={photoBoothInputRef}
+            accept="image/*"
+            className="hidden"
+            multiple
+            onChange={(event) => {
+              void handlePhotoBoothInput(event);
+            }}
+            type="file"
+          />
+          {photoBoothNotice ? <p className="mt-3 text-xs text-[var(--ink-muted)]">{photoBoothNotice}</p> : null}
+
+          <div className="mt-4 min-h-0 flex-1 overflow-auto pr-1">
+            {photoBoothItems.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No images uploaded yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {photoBoothItems.map((item) => {
+                  const isApproved = item.id === approvedPhotoId;
+                  const isFocused = analysisFocus?.id === item.id;
+                  const isCompareSelected = photoBoothCompareIds.includes(item.id);
+                  return (
+                    <article
+                      key={item.id}
+                      className={`rounded-lg border bg-white p-1.5 shadow-sm ${
+                        isApproved
+                          ? "border-emerald-400 ring-2 ring-emerald-200"
+                          : isCompareSelected
+                            ? "border-amber-400 ring-2 ring-amber-200"
+                          : isFocused
+                            ? "border-sky-400 ring-2 ring-sky-200"
+                            : "border-slate-200"
+                      }`}
+                      onClick={() => setPhotoBoothAnalysisFocusId(item.id)}
+                    >
+                      <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-slate-100">
+                        <Image alt={item.name} className="h-full w-full object-cover" fill src={item.dataUrl} unoptimized />
+                        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-1 bg-gradient-to-t from-black/75 to-black/0 p-1.5">
+                          <button
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                              isApproved
+                                ? "border-emerald-300 bg-emerald-100 text-emerald-900"
+                                : "border-white/70 bg-white/90 text-slate-800"
+                            }`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              approvePhotoBoothItem(item.id);
+                            }}
+                            title={isApproved ? "Unapprove" : "Approve for CV rendering"}
+                            type="button"
+                          >
+                            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                              <path d="M5 12.5 9.3 17 19 7.8" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                            </svg>
+                          </button>
+                          <button
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-rose-200 bg-rose-100 text-rose-800"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setPhotoBoothDeleteConfirmId(item.id);
+                            }}
+                            title="Remove image"
+                            type="button"
+                          >
+                            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                              <path d="M5 7h14M10 11v6M14 11v6M8 7l1-2h6l1 2M8 7l.8 11.2a1 1 0 0 0 1 .8h4.4a1 1 0 0 0 1-.8L16 7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                            </svg>
+                          </button>
+                          <button
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                              isCompareSelected
+                                ? "border-amber-300 bg-amber-100 text-amber-900"
+                                : "border-white/70 bg-white/90 text-slate-800"
+                            }`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              togglePhotoCompareSelection(item.id);
+                            }}
+                            title={isCompareSelected ? "Remove from compare" : "Select for compare"}
+                            type="button"
+                          >
+                            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                              <path d="M4 7h8v10H4zM12 7h8v10h-8z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-1 truncate text-[10px] font-semibold text-slate-800">{item.name}</p>
+                      <p className="mt-0.5 text-[10px] text-slate-600">
+                        {item.width}x{item.height}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-white p-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">AI Analysis</h3>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
+              Multimodal photo assessment using your configured OpenRouter model.
+            </p>
+            <button
+              className="mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+              disabled={!analyzeTargetId || photoBoothAnalyzingId.length > 0}
+              onClick={() => {
+                if (!analyzeTargetId) return;
+                if (!analysisFocus) {
+                  setPhotoBoothAnalysisFocusId(analyzeTargetId);
+                }
+                void analyzePhotoBoothItem(analyzeTargetId);
+              }}
+              type="button"
+            >
+              {photoBoothAnalyzingId ? (
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-500 border-t-transparent" />
+              ) : (
+                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                  <path d="M12 3 14.4 8.1 20 10l-5.6 1.9L12 17l-2.4-5.1L4 10l5.6-1.9Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                </svg>
+              )}
+              Analyze Photo
+            </button>
+            <button
+              className="ml-2 mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+              disabled={photoBoothCompareIds.length < 2 || photoBoothCompareLoading}
+              onClick={() => {
+                void comparePhotoBoothPair();
+              }}
+              type="button"
+            >
+              {photoBoothCompareLoading ? (
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-500 border-t-transparent" />
+              ) : (
+                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+                  <path d="M4 7h8v10H4zM12 7h8v10h-8z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                </svg>
+              )}
+              Compare Selected Photos
+            </button>
+          </div>
+
+          <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            {!analysisFocus ? (
+              <p className="text-sm text-[var(--ink-muted)]">
+                Choose an image from the gallery and run <span className="font-semibold">Analyze Photo</span>.
+              </p>
+            ) : analysisFocus.analysis ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                    Result • {analysisFocus.analysis.model || selectedModelId}
+                  </p>
+                  <p className={`text-sm font-bold ${scoreTone(Number(analysisFocus.analysis.score ?? 0))}`}>
+                    {analysisFocus.analysis.score}/100 ({analysisFocus.analysis.verdict})
+                  </p>
+                </div>
+                <ul className="list-disc space-y-1 pl-4 text-sm text-slate-800">
+                  {analysisFocus.analysis.notes.map((note, index) => (
+                    <li key={`${analysisFocus.id}-analysis-${index}`}>{note}</li>
+                  ))}
+                </ul>
+                {(analysisFocus.analysis.clothingProposals ?? []).length > 0 ? (
+                  <>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                      Clothing Proposals
+                    </p>
+                    <ul className="list-disc space-y-1 pl-4 text-sm text-slate-800">
+                      {(analysisFocus.analysis.clothingProposals ?? []).map((entry, index) => (
+                        <li key={`${analysisFocus.id}-clothing-${index}`}>{entry}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+                <p className="text-[11px] text-[var(--ink-muted)]">
+                  Last analyzed: {new Date(analysisFocus.analysis.analyzedAt).toLocaleString()}
+                </p>
+                {(analysisFocus.analysisHistory ?? []).length > 1 ? (
+                  <div className="mt-2 border-t border-[var(--line)] pt-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                      Analysis History
+                    </p>
+                    <ul className="mt-1 space-y-1 text-xs text-slate-700">
+                      {(analysisFocus.analysisHistory ?? []).slice(0, 8).map((entry, index) => (
+                        <li key={`${analysisFocus.id}-history-${index}`} className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1">
+                          <span>{new Date(entry.analyzedAt).toLocaleString()}</span>
+                          <span className={`font-semibold ${scoreTone(Number(entry.score ?? 0))}`}>{entry.score}/100</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--ink-muted)]">
+                No AI result yet for <span className="font-semibold">{analysisFocus.name}</span>.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            {photoBoothCompareIds.length < 2 ? (
+              <p className="text-sm text-[var(--ink-muted)]">
+                Select at least 2 photos in the gallery and run <span className="font-semibold">Compare Selected Photos</span>.
+              </p>
+            ) : photoBoothComparison ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                    Comparison • {photoBoothComparison.model || selectedModelId}
+                  </p>
+                  <p className="text-xs font-semibold text-slate-900">
+                    Winner: {photoBoothComparison.winnerName || "N/A"}
+                  </p>
+                </div>
+                {photoBoothComparison.ranked.length > 0 ? (
+                  <div className="space-y-2">
+                    {photoBoothComparison.ranked.map((item, index) => (
+                      <div key={`ranked-${index}-${item.name}`} className="rounded-md bg-white p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-slate-900">
+                            #{index + 1} {item.name}
+                          </p>
+                          <p className={`text-xs font-bold ${scoreTone(item.score)}`}>{item.score}/100 ({item.verdict})</p>
+                        </div>
+                        {item.strengths.length > 0 ? (
+                          <div className="mt-1">
+                            <p className="text-[11px] font-semibold text-slate-700">Strengths</p>
+                            <ul className="list-disc pl-4 text-[11px] text-slate-700">
+                              {item.strengths.map((entry, itemIndex) => (
+                                <li key={`ranked-strength-${index}-${itemIndex}`}>{entry}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {item.risks.length > 0 ? (
+                          <div className="mt-1">
+                            <p className="text-[11px] font-semibold text-slate-700">Risks</p>
+                            <ul className="list-disc pl-4 text-[11px] text-slate-700">
+                              {item.risks.map((entry, itemIndex) => (
+                                <li key={`ranked-risk-${index}-${itemIndex}`}>{entry}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {item.improvements.length > 0 ? (
+                          <div className="mt-1">
+                            <p className="text-[11px] font-semibold text-slate-700">Improvements</p>
+                            <ul className="list-disc pl-4 text-[11px] text-slate-700">
+                              {item.improvements.map((entry, itemIndex) => (
+                                <li key={`ranked-improve-${index}-${itemIndex}`}>{entry}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {photoBoothComparison.criteria.length > 0 ? (
+                  <div className="rounded-md bg-white p-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                      Criterion Comparison
+                    </p>
+                    <div className="mt-1 space-y-2">
+                      {photoBoothComparison.criteria.map((criterion, index) => (
+                        <div key={`criterion-${index}`} className="rounded-md border border-[var(--line)] p-2">
+                          <p className="text-xs font-semibold text-slate-900">{criterion.name}</p>
+                          <p className="mt-1 text-[11px] text-slate-700">{criterion.summary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <p className="text-[11px] text-slate-700">{photoBoothComparison.recommendation}</p>
+                {photoBoothComparison.recommendationDetails.length > 0 ? (
+                  <ul className="list-disc pl-4 text-[11px] text-slate-700">
+                    {photoBoothComparison.recommendationDetails.map((entry, index) => (
+                      <li key={`compare-recommend-${index}`}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--ink-muted)]">
+                Ready to compare <span className="font-semibold">{photoBoothCompareIds.length}</span> selected images.
+              </p>
+            )}
+          </div>
+        </article>
+      </div>
+    );
+  }
+
   return (
     <main className="app-shell paper-grid grain-overlay h-screen overflow-hidden px-4 py-4 md:px-8 md:py-6">
       <div className="fixed right-4 top-4 z-50 flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface-1)]/85 px-1 py-1 shadow-sm backdrop-blur-sm">
@@ -3470,6 +4272,15 @@ export function ComposerClient() {
               type="button"
             >
               Templates
+            </button>
+            <button
+              className={`rounded-md px-4 py-2 text-sm font-semibold ${
+                activePanel === "photo_booth" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+              }`}
+              onClick={() => setActivePanel("photo_booth")}
+              type="button"
+            >
+              Photo Booth
             </button>
           </div>
 
@@ -3612,7 +4423,7 @@ export function ComposerClient() {
           )}
 
           {activePanel === "editor" && (
-            <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[360px_1fr]">
+            <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[340px_1fr]">
               <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-white p-4 pb-6">
                 <h2 className="text-xl font-bold text-slate-900">Editor Controls</h2>
                 <p className="mt-2 text-sm text-[var(--ink-muted)]">
@@ -4045,8 +4856,20 @@ export function ComposerClient() {
             <div className="flex h-full min-h-0 flex-col">
               <div className="grid min-h-0 flex-1 gap-4 overflow-auto md:grid-cols-2 xl:grid-cols-3">
                 {orderedTemplateItems.map((item) => {
-                  const galleryUrl = mostRecentCv
-                    ? `/api/export/image?cvId=${encodeURIComponent(mostRecentCv.id)}&templateId=${encodeURIComponent(item.id)}&v=${previewNonce}`
+                  const galleryCvId = selectedCvId || mostRecentCv?.id || "";
+                  const galleryUrl = galleryCvId
+                    ? (() => {
+                        const params = new URLSearchParams({
+                          cvId: galleryCvId,
+                          templateId: item.id,
+                          photo: "default",
+                          v: String(previewNonce),
+                        });
+                        if (approvedPhotoId) {
+                          params.set("photoId", approvedPhotoId);
+                        }
+                        return `/api/export/image?${params.toString()}`;
+                      })()
                     : "";
                   return (
                     <article key={item.id} className="flex h-fit self-start flex-col rounded-xl border border-[var(--line)] bg-white p-3">
@@ -4075,6 +4898,46 @@ export function ComposerClient() {
           )}
 
           {activePanel === "keywords" && renderKeywordStudio()}
+          {activePanel === "photo_booth" && renderPhotoBooth()}
+
+          {photoBoothDeleteConfirmId ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+              <div className="w-full max-w-md rounded-xl border border-[var(--line)] bg-white shadow-xl">
+                <div className="border-b border-[var(--line)] px-4 py-3">
+                  <h3 className="text-base font-semibold text-slate-900">Delete Photo</h3>
+                </div>
+                <div className="space-y-3 px-4 py-4">
+                  <p className="text-sm text-slate-700">
+                    This image will be permanently deleted from the <code>/photos</code> folder. Continue?
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      onClick={() => setPhotoBoothDeleteConfirmId("")}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="rounded-md border border-rose-300 bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700"
+                      onClick={() => {
+                        const id = photoBoothDeleteConfirmId;
+                        setPhotoBoothDeleteConfirmId("");
+                        void removePhotoBoothItem(id).catch((error) => {
+                          setPhotoBoothNotice(
+                            error instanceof Error ? error.message : "Could not delete photo.",
+                          );
+                        });
+                      }}
+                      type="button"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {keywordHover ? (
             <div

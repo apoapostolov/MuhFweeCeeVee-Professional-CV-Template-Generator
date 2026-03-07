@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 
 import { parse } from "yaml";
 
@@ -48,6 +49,7 @@ type RenderInput = {
   templateId: string;
   theme?: string;
   photoMode?: string;
+  profilePhotoId?: string;
 };
 
 type RenderResult = {
@@ -2973,6 +2975,29 @@ async function resolveMappingPath(
   );
 }
 
+async function resolvePhotoDataUrl(photoId: string): Promise<string> {
+  const safeId = path.basename(photoId).replace(/[^a-zA-Z0-9._-]/g, "");
+  if (!safeId) return "";
+  const photoPath = repoPath("photos", safeId);
+  const ext = path.extname(safeId).toLowerCase();
+  const mimeType =
+    ext === ".png"
+      ? "image/png"
+      : ext === ".webp"
+        ? "image/webp"
+        : ext === ".avif"
+          ? "image/avif"
+          : ext === ".gif"
+            ? "image/gif"
+            : "image/jpeg";
+  try {
+    const buffer = await fs.readFile(photoPath);
+    return `data:${mimeType};base64,${buffer.toString("base64")}`;
+  } catch {
+    return "";
+  }
+}
+
 function bindSlots(
   cv: CvDocument,
   mapping: MappingFile,
@@ -3004,6 +3029,12 @@ export async function buildCvTemplateHtml(
   const labels = template.labels?.[lang] ?? template.labels?.en ?? {};
 
   const slots = bindSlots(cv, mapping);
+  if (input.profilePhotoId && input.profilePhotoId.trim().length > 0) {
+    const dataUrl = await resolvePhotoDataUrl(input.profilePhotoId.trim());
+    if (dataUrl) {
+      slots["profile.photo"] = dataUrl;
+    }
+  }
   const edinburghTheme = resolveEdinburghTheme(template, input.theme);
   const harvardTheme = resolveHarvardTheme(input.theme);
   const stanfordTheme = resolveStanfordTheme(input.theme);
