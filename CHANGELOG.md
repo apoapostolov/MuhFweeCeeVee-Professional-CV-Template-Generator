@@ -19,6 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Harvard theme options so you can quickly restyle the template: Default Slate, Blue, Pink, Red, and Amber Gold.
 - New Stanford theme options: Default Slate, Blue, Pink, Red, and Amber Gold.
 - New Cambridge theme options: Default Blue, Mustard Gold, Emerald Green, Steel Blue, and Rose Red.
+- Harvard and Stanford now ship with broad data coverage on launch (projects, publication links, certifications/courses, awards, volunteering, patents, portfolio links, and competency groups).
+- Stanford ships with refined visual details out of the box:
+  - first-last header naming
+  - white sidebar separators
+  - dedicated divider under Work Experience heading
+  - improved spacing/typography and skill-bar balance.
+- Harvard ships with launch polish:
+  - first-last header naming
+  - improved photo/timeline marker alignment
+  - driving-license row removed from sidebar personal details.
+- Print Room now includes a `Photo` customization dropdown with:
+  `Default`, `On - Circle`, `On - Square`, `On - Original Ratio`, and `Off`.
+  The setting is applied to preview/export and is saved in browser state.
+- In `On - Original Ratio` mode:
+  - fallback now renders as a fixed 3:4 rectangle when no photo is available
+  - photos are bottom-anchored to reduce overlap risk with nearby text.
 
 ### Changed
 
@@ -36,43 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenRouter setup is simpler:
   - saving your API key now updates local `.env` automatically
   - credit display now reflects prepaid balance behavior
-- Harvard title name formatting is now intentional: it uses **First + Last** in the header instead of rendering full multi-part names.
 - Editor is more comfortable for long editing sessions: AI Scoring Analysis can now be minimized into a side drawer with a quick handle toggle, giving Form/YAML more room when you just want to write.
-- Stanford 1.0 got a full visual polish pass to match the real reference style more closely:
-  - balanced sidebar/content proportions
-  - cleaner typography scale for body and paragraph text
-  - refined work/education layout with cleaner date alignment
-  - first-last header naming in template title
-  - sidebar separators now match the hard right-edge cut style
-  - removed separator after positioning summary and removed Work Experience heading separator
-  - rebalanced skill label/bar proportions and bar thickness
-  - cleaner references block
-  - added divider lines under the name and below the Work Experience section in the right column
-- Theme swatches for Harvard and Stanford are now aligned to the intended visual palette order, with corrected additional accent colors.
-- Stanford themes now use the exact requested swatch family (slate, blue, pink, red, amber) in both picker and rendering palette.
-- Print Room now includes a `Photo` customization dropdown with:
-  `Default`, `On - Circle`, `On - Square`, `On - Original Ratio`, and `Off`.
-  The setting is applied to preview/export and is saved in browser state.
-- In `On - Original Ratio` mode, when no photo is provided, fallback now renders as a fixed 3:4 rectangle instead of collapsing.
-- In `On - Original Ratio` mode, photos are now bottom-anchored (not center-anchored) to reduce overlap risk with surrounding text blocks.
-- Cambridge visual polish:
-  - unified white sidebar/content backgrounds
-  - year-tick timeline lines centered to date rows
-  - vertical timeline rail moved left for cleaner spacing from year labels
-  - references section rendered without timeline rail/tick styling
-  - references layout fixed to stacked non-timeline blocks so organization/name/email cannot overlap
-- Harvard and Stanford now surface a broader data range to better match Edinburgh coverage:
-  courses/certifications, projects, awards, volunteering, patents, portfolio links, and competencies groups (core/social/other/publications).
-- Stanford sidebar separators are now rendered as true white lines to match the intended look.
-- Harvard and Stanford work-experience entries now also show embedded "Worked on projects" and "Publication links" details when provided, matching Edinburgh’s richer job-entry depth.
-- Stanford Work Experience now includes a dedicated divider under the section heading before job entries.
 
 ### Fixed
 
 - Fixed theme-toggle hydration warnings in the browser.
 - Improved OpenRouter error feedback so invalid/unauthorized key issues are clearer.
-- Polished Harvard visual alignment (photo and timeline marker positioning).
-- Removed driving-license row from sidebar personal details in Edinburgh and Harvard for a cleaner layout.
+- Removed driving-license row from sidebar personal details in Edinburgh for a cleaner layout.
 
 ## [1.0.0] - 2026-03-06
 
