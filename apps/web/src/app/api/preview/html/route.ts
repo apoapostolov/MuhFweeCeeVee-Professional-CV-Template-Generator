@@ -9,6 +9,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const cvId = url.searchParams.get("cvId");
   const templateId = url.searchParams.get("templateId");
   const theme = url.searchParams.get("theme") ?? undefined;
+  const photoMode = url.searchParams.get("photo") ?? undefined;
 
   if (!cvId || !templateId) {
     return NextResponse.json(
@@ -18,7 +19,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const { html } = await buildCvTemplateHtml({ cvId, templateId, theme });
+    const { html } = await buildCvTemplateHtml({
+      cvId,
+      templateId,
+      theme,
+      photoMode,
+    });
     return new NextResponse(html, {
       headers: {
         "content-type": "text/html; charset=utf-8",

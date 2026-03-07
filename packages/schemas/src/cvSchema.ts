@@ -62,6 +62,25 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
       },
       additionalProperties: true,
     },
+    targeting: {
+      type: "object",
+      properties: {
+        target_company: { type: "string" },
+        company_details: {
+          type: "object",
+          properties: {
+            industry: { type: "string" },
+            website: { type: "string", format: "uri" },
+          },
+          additionalProperties: true,
+        },
+        target_sector: { type: "string" },
+        target_functions: { type: "array" },
+        target_seniority: { type: "string" },
+        interview_context: { type: "string" },
+      },
+      additionalProperties: true,
+    },
     experience: {
       type: "array",
     },

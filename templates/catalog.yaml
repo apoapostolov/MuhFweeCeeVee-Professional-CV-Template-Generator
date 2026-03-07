@@ -1,5 +1,38 @@
 version: 1
 templates:
+  - id: cambridge-v1
+    name: Cambridge
+    version: "1.0"
+    status: draft
+    locale_support:
+      - bg-BG
+      - en-US
+    files:
+      meta: templates/cambridge-v1/template.yaml
+      layout: templates/cambridge-v1/layout.yaml
+      license: templates/cambridge-v1/license.yaml
+  - id: stanford-v1
+    name: Stanford
+    version: "1.0"
+    status: draft
+    locale_support:
+      - bg-BG
+      - en-US
+    files:
+      meta: templates/stanford-v1/template.yaml
+      layout: templates/stanford-v1/layout.yaml
+      license: templates/stanford-v1/license.yaml
+  - id: harvard-v1
+    name: Harvard
+    version: "1.0"
+    status: draft
+    locale_support:
+      - bg-BG
+      - en-US
+    files:
+      meta: templates/harvard-v1/template.yaml
+      layout: templates/harvard-v1/layout.yaml
+      license: templates/harvard-v1/license.yaml
   - id: edinburgh-v1
     name: Edinburgh (Prototype)
     version: "1.0"

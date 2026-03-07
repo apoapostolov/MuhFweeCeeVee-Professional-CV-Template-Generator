@@ -6,7 +6,7 @@ imported CV YAML standard and scoring rules.
 ## Implemented Assets
 
 - Seed CV:
-  - `data/cvs/cv_en_0001_john_doe.yaml`
+  - `data/cvs/cv_en_john_doe.yaml`
 - Template catalog:
   - `templates/catalog.yaml`
 - Bootstrap template:

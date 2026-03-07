@@ -114,6 +114,7 @@ type KeywordTagMetric = {
 type EditorTabKey =
   | "person"
   | "positioning"
+  | "targeting"
   | "experience"
   | "education"
   | "skills"
@@ -327,12 +328,57 @@ type TemplateThemeOption = {
   color: string;
 };
 
+type PhotoModeOption = {
+  id: "default" | "on-circle" | "on-square" | "on-original" | "off";
+  label: string;
+};
+
 const EDINBURGH_THEME_OPTIONS: TemplateThemeOption[] = [
   { id: "default", label: "Default Purple", color: "#4E557B" },
   { id: "ocean_teal", label: "Ocean Teal", color: "#068799" },
   { id: "forest_green", label: "Forest Green", color: "#316834" },
   { id: "ruby_red", label: "Ruby Red", color: "#b0292a" },
   { id: "amber_gold", label: "Amber Gold", color: "#ffc209" },
+];
+
+const HARVARD_THEME_OPTIONS: TemplateThemeOption[] = [
+  { id: "default", label: "Default Slate", color: "#434a54" },
+  { id: "blue", label: "Blue", color: "#416993" },
+  { id: "pink", label: "Pink", color: "#cf6fae" },
+  { id: "red", label: "Red", color: "#da4453" },
+  { id: "amber_gold", label: "Amber Gold", color: "#f0b230" },
+];
+
+const STANFORD_THEME_OPTIONS: TemplateThemeOption[] = [
+  { id: "default", label: "Default Slate", color: "#434a54" },
+  { id: "blue", label: "Blue", color: "#416993" },
+  { id: "pink", label: "Pink", color: "#cf6fae" },
+  { id: "red", label: "Red", color: "#da4453" },
+  { id: "amber_gold", label: "Amber Gold", color: "#f0b230" },
+];
+
+const CAMBRIDGE_THEME_OPTIONS: TemplateThemeOption[] = [
+  { id: "default", label: "Default Blue", color: "#416993" },
+  { id: "mustard_gold", label: "Mustard Gold", color: "#8a6e2f" },
+  { id: "emerald_green", label: "Emerald Green", color: "#3d9a4e" },
+  { id: "steel_blue", label: "Steel Blue", color: "#556f82" },
+  { id: "rose_red", label: "Rose Red", color: "#bb3254" },
+];
+
+function themeOptionsForTemplate(templateId: string): TemplateThemeOption[] {
+  if (templateId === "edinburgh-v1") return EDINBURGH_THEME_OPTIONS;
+  if (templateId === "harvard-v1") return HARVARD_THEME_OPTIONS;
+  if (templateId === "stanford-v1") return STANFORD_THEME_OPTIONS;
+  if (templateId === "cambridge-v1") return CAMBRIDGE_THEME_OPTIONS;
+  return [];
+}
+
+const PHOTO_MODE_OPTIONS: PhotoModeOption[] = [
+  { id: "default", label: "Default" },
+  { id: "on-circle", label: "On - Circle" },
+  { id: "on-square", label: "On - Square" },
+  { id: "on-original", label: "On - Original Ratio" },
+  { id: "off", label: "Off" },
 ];
 
 const LANGUAGE_OPTIONS: Array<{ code: string; label: string }> = [
@@ -367,11 +413,13 @@ const STORAGE_KEYS = {
   selectedLanguage: "mfcv_selected_language",
   selectedTemplateId: "mfcv_selected_template_id",
   selectedTemplateTheme: "mfcv_selected_template_theme",
+  selectedPhotoMode: "mfcv_selected_photo_mode",
 } as const;
 
 const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string }> = [
   { key: "person", label: "Person", path: "person" },
   { key: "positioning", label: "Positioning", path: "positioning" },
+  { key: "targeting", label: "Targeting", path: "targeting" },
   { key: "experience", label: "Experience", path: "experience" },
   { key: "education", label: "Education", path: "education" },
   { key: "skills", label: "Skills", path: "skills" },
@@ -404,6 +452,28 @@ const FIELD_META: Record<string, FieldMeta> = {
   positioning: {
     en: { label: "Positioning", description: "Headline and strategic profile text." },
     bg: { label: "Позициониране", description: "Заглавие и стратегически профил." },
+  },
+  targeting: {
+    en: {
+      label: "Targeting",
+      description:
+        "AI-only company targeting context used for advice and scoring. This is not rendered in CV output.",
+    },
+    bg: {
+      label: "Таргетиране",
+      description:
+        "Контекст за AI насочване към компания за анализ и съвети. Не се визуализира в CV.",
+    },
+  },
+  "targeting.target_company": {
+    en: {
+      label: "Target Company",
+      description: "Company name used by AI for role-positioning recommendations.",
+    },
+    bg: {
+      label: "Целева компания",
+      description: "Име на компания за AI препоръки за позициониране.",
+    },
   },
   "positioning.profile_summary": {
     en: { label: "Profile Summary", description: "Core 1-2 sentence professional summary." },
@@ -622,6 +692,9 @@ export function ComposerClient() {
   const [selectedCvId, setSelectedCvId] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [selectedTemplateTheme, setSelectedTemplateTheme] = useState("default");
+  const [selectedPhotoMode, setSelectedPhotoMode] = useState<
+    PhotoModeOption["id"]
+  >("default");
   const [previewNonce, setPreviewNonce] = useState(Date.now());
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
@@ -665,6 +738,7 @@ export function ComposerClient() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
   const [analysisData, setAnalysisData] = useState<SectionAnalysis | FullAnalysis | null>(null);
+  const [analysisDrawerCollapsed, setAnalysisDrawerCollapsed] = useState(false);
   const [keywordDatasets, setKeywordDatasets] = useState<KeywordDatasetListResponse["datasets"]>([]);
   const [selectedKeywordDataset, setSelectedKeywordDataset] = useState("");
   const [selectedKeywordRole, setSelectedKeywordRole] = useState("all");
@@ -870,9 +944,12 @@ export function ComposerClient() {
 
   const orderedTemplateItems = useMemo(() => {
     const priority = (id: string): number => {
-      if (id === "europass-v1") return 0;
-      if (id === "edinburgh-v1") return 1;
-      return 2;
+      if (id === "cambridge-v1") return 0;
+      if (id === "stanford-v1") return 1;
+      if (id === "harvard-v1") return 2;
+      if (id === "europass-v1") return 3;
+      if (id === "edinburgh-v1") return 4;
+      return 5;
     };
     return [...templateItems].sort((a, b) => {
       const p = priority(a.id) - priority(b.id);
@@ -880,6 +957,10 @@ export function ComposerClient() {
       return a.name.localeCompare(b.name);
     });
   }, [templateItems]);
+  const selectedTemplateThemeOptions = useMemo(
+    () => themeOptionsForTemplate(selectedTemplateId),
+    [selectedTemplateId],
+  );
 
   const cvPairs = useMemo<CvPair[]>(() => {
     const pairs = new Map<string, CvPair>();
@@ -931,11 +1012,19 @@ export function ComposerClient() {
       templateId: selectedTemplateId,
       v: String(previewNonce),
     });
-    if (selectedTemplateId === "edinburgh-v1") {
+    if (selectedTemplateThemeOptions.length > 0) {
       params.set("theme", selectedTemplateTheme);
     }
+    params.set("photo", selectedPhotoMode);
     return `/api/export/pdf?${params.toString()}`;
-  }, [previewNonce, selectedCvId, selectedTemplateId, selectedTemplateTheme]);
+  }, [
+    previewNonce,
+    selectedCvId,
+    selectedTemplateId,
+    selectedTemplateTheme,
+    selectedTemplateThemeOptions.length,
+    selectedPhotoMode,
+  ]);
 
   useEffect(() => {
     try {
@@ -1008,6 +1097,26 @@ export function ComposerClient() {
   }, [selectedTemplateTheme]);
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.selectedPhotoMode, selectedPhotoMode);
+    } catch {
+      // no-op
+    }
+  }, [selectedPhotoMode]);
+
+  useEffect(() => {
+    if (selectedTemplateThemeOptions.length === 0) {
+      if (selectedTemplateTheme !== "default") {
+        setSelectedTemplateTheme("default");
+      }
+      return;
+    }
+    if (!selectedTemplateThemeOptions.some((option) => option.id === selectedTemplateTheme)) {
+      setSelectedTemplateTheme("default");
+    }
+  }, [selectedTemplateTheme, selectedTemplateThemeOptions]);
+
+  useEffect(() => {
     let cancelled = false;
     async function loadWorkspaceData() {
       setLoadingWorkspace(true);
@@ -1052,23 +1161,38 @@ export function ComposerClient() {
         if (templateItemsLocal.length > 0) {
           let persistedTemplateId = "";
           let persistedTemplateTheme = "";
+          let persistedPhotoMode: PhotoModeOption["id"] = "default";
           try {
             persistedTemplateId = window.localStorage.getItem(STORAGE_KEYS.selectedTemplateId) ?? "";
             persistedTemplateTheme = window.localStorage.getItem(STORAGE_KEYS.selectedTemplateTheme) ?? "";
+            const savedPhotoMode =
+              window.localStorage.getItem(STORAGE_KEYS.selectedPhotoMode) ?? "default";
+            if (
+              savedPhotoMode === "default" ||
+              savedPhotoMode === "on-circle" ||
+              savedPhotoMode === "on-square" ||
+              savedPhotoMode === "on-original" ||
+              savedPhotoMode === "off"
+            ) {
+              persistedPhotoMode = savedPhotoMode;
+            }
           } catch {
             // no-op
           }
 
           const templateId =
             templateItemsLocal.find((item) => item.id === persistedTemplateId)?.id
+              ?? templateItemsLocal.find((entry) => entry.id === "cambridge-v1")?.id
               ?? templateItemsLocal.find((entry) => entry.id === "europass-v1")?.id
               ?? templateItemsLocal[0].id;
           setSelectedTemplateId(templateId);
 
-          const themeId = EDINBURGH_THEME_OPTIONS.some((option) => option.id === persistedTemplateTheme)
+          const templateThemeOptions = themeOptionsForTemplate(templateId);
+          const themeId = templateThemeOptions.some((option) => option.id === persistedTemplateTheme)
             ? persistedTemplateTheme
             : "default";
           setSelectedTemplateTheme(themeId);
+          setSelectedPhotoMode(persistedPhotoMode);
         }
       } finally {
         if (!cancelled) {
@@ -2375,9 +2499,10 @@ export function ComposerClient() {
       download: "1",
       v: String(Date.now()),
     });
-    if (selectedTemplateId === "edinburgh-v1") {
+    if (selectedTemplateThemeOptions.length > 0) {
       params.set("theme", selectedTemplateTheme);
     }
+    params.set("photo", selectedPhotoMode);
     window.open(`/api/export/pdf?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
@@ -3411,16 +3536,37 @@ export function ComposerClient() {
                     Theme
                     <select
                       className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 disabled:opacity-60"
-                      disabled={selectedTemplateId !== "edinburgh-v1"}
+                      disabled={selectedTemplateThemeOptions.length === 0}
                       onChange={(event) => {
                         setSelectedTemplateTheme(event.target.value);
                         setPreviewNonce(Date.now());
                       }}
                       value={selectedTemplateTheme}
                     >
-                      {EDINBURGH_THEME_OPTIONS.map((option) => (
+                      {(selectedTemplateThemeOptions.length > 0
+                        ? selectedTemplateThemeOptions
+                        : [{ id: "default", label: "Default", color: "-" }]).map((option) => (
                         <option key={option.id} value={option.id}>
                           {option.label} ({option.color})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-800">
+                    Photo
+                    <select
+                      className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
+                      onChange={(event) => {
+                        const nextMode = event.target.value as PhotoModeOption["id"];
+                        setSelectedPhotoMode(nextMode);
+                        setPreviewNonce(Date.now());
+                      }}
+                      value={selectedPhotoMode}
+                    >
+                      {PHOTO_MODE_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
@@ -3697,8 +3843,8 @@ export function ComposerClient() {
                     : "Edit the section in form or YAML mode. Save updates the YAML variant and snapshot history."}
                 </p>
 
-                <div className="mt-3 grid min-h-0 flex-1 gap-3 md:grid-cols-[1fr_360px]">
-                  <div className="min-h-0 overflow-auto rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+                <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 md:flex-row">
+                  <div className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3 md:min-w-0">
                     {editorLoading ? (
                       <p className="text-xs text-[var(--ink-muted)]">Loading CV...</p>
                     ) : editorView === "yaml" ? (
@@ -3763,101 +3909,129 @@ export function ComposerClient() {
                     )}
                   </div>
 
-                  <div className="min-h-0 overflow-auto rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">AI Scoring Analysis</p>
-                    {analysisLoading ? (
-                      <p className="mt-2 text-xs text-[var(--ink-muted)]">Running analysis...</p>
-                    ) : analysisData?.scope === "section" ? (
-                      <div className="mt-2 space-y-3">
-                        <div className="rounded-md border border-[var(--line)] bg-white p-2">
-                          <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-muted)]">
-                            Section: {analysisData.section ?? editorPath}
-                          </p>
-                          <p className={`mt-1 text-lg font-bold ${scoreTone(Number(analysisData.score ?? 0))}`}>
-                            Score {Number(analysisData.score ?? 0)}/100
-                          </p>
-                          {analysisData.summary ? (
-                            <p className="mt-1 text-xs text-slate-700">{analysisData.summary}</p>
-                          ) : null}
-                        </div>
+                  <div
+                    className={`min-h-0 overflow-hidden rounded-md border border-[var(--line)] bg-[var(--surface-1)] transition-all duration-200 ${
+                      analysisDrawerCollapsed ? "md:w-12" : "md:w-[360px]"
+                    }`}
+                  >
+                    <div className={`flex items-center justify-between gap-2 border-b border-[var(--line)] px-2 py-2 ${analysisDrawerCollapsed ? "md:justify-center" : ""}`}>
+                      <p className={`text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)] ${analysisDrawerCollapsed ? "md:hidden" : ""}`}>
+                        AI Scoring Analysis
+                      </p>
+                      <button
+                        aria-label={analysisDrawerCollapsed ? "Expand AI Scoring Analysis drawer" : "Collapse AI Scoring Analysis drawer"}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--line)] bg-white text-slate-700 hover:bg-slate-50"
+                        onClick={() => setAnalysisDrawerCollapsed((value) => !value)}
+                        title={analysisDrawerCollapsed ? "Expand analysis" : "Minimize analysis"}
+                        type="button"
+                      >
+                        {analysisDrawerCollapsed ? "◀" : "▶"}
+                      </button>
+                    </div>
 
-                        {(analysisData.field_feedback ?? []).map((item, index) => (
-                          <div key={`${item.field ?? "field"}-${index}`} className="rounded-md border border-[var(--line)] bg-white p-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-xs font-semibold text-slate-900">{item.field ?? `Field ${index + 1}`}</p>
-                              <p className={`text-xs font-bold ${scoreTone(Number(item.score ?? 0))}`}>
-                                {Number(item.score ?? 0)}/100
+                    {analysisDrawerCollapsed ? (
+                      <div className="hidden h-full items-center justify-center px-1 py-3 md:flex">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                          AI
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="h-full overflow-auto p-3">
+                        {analysisLoading ? (
+                          <p className="mt-2 text-xs text-[var(--ink-muted)]">Running analysis...</p>
+                        ) : analysisData?.scope === "section" ? (
+                          <div className="mt-2 space-y-3">
+                            <div className="rounded-md border border-[var(--line)] bg-white p-2">
+                              <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+                                Section: {analysisData.section ?? editorPath}
                               </p>
+                              <p className={`mt-1 text-lg font-bold ${scoreTone(Number(analysisData.score ?? 0))}`}>
+                                Score {Number(analysisData.score ?? 0)}/100
+                              </p>
+                              {analysisData.summary ? (
+                                <p className="mt-1 text-xs text-slate-700">{analysisData.summary}</p>
+                              ) : null}
                             </div>
-                            {item.analysis ? <p className="mt-1 text-xs text-slate-700">{item.analysis}</p> : null}
-                            {item.proposal ? (
-                              <div className="mt-1 rounded bg-[var(--surface-2)] px-2 py-1 text-xs text-slate-800">
-                                <span className="font-semibold">Proposal:</span> {item.proposal}
+
+                            {(analysisData.field_feedback ?? []).map((item, index) => (
+                              <div key={`${item.field ?? "field"}-${index}`} className="rounded-md border border-[var(--line)] bg-white p-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-xs font-semibold text-slate-900">{item.field ?? `Field ${index + 1}`}</p>
+                                  <p className={`text-xs font-bold ${scoreTone(Number(item.score ?? 0))}`}>
+                                    {Number(item.score ?? 0)}/100
+                                  </p>
+                                </div>
+                                {item.analysis ? <p className="mt-1 text-xs text-slate-700">{item.analysis}</p> : null}
+                                {item.proposal ? (
+                                  <div className="mt-1 rounded bg-[var(--surface-2)] px-2 py-1 text-xs text-slate-800">
+                                    <span className="font-semibold">Proposal:</span> {item.proposal}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
+
+                            {(analysisData.top_actions ?? []).length > 0 ? (
+                              <div className="rounded-md border border-[var(--line)] bg-white p-2">
+                                <p className="text-xs font-semibold text-slate-900">Top Actions</p>
+                                <ul className="mt-1 list-disc pl-4 text-xs text-slate-700">
+                                  {(analysisData.top_actions ?? []).map((action, index) => (
+                                    <li key={`${action}-${index}`}>{action}</li>
+                                  ))}
+                                </ul>
                               </div>
                             ) : null}
                           </div>
-                        ))}
-
-                        {(analysisData.top_actions ?? []).length > 0 ? (
-                          <div className="rounded-md border border-[var(--line)] bg-white p-2">
-                            <p className="text-xs font-semibold text-slate-900">Top Actions</p>
-                            <ul className="mt-1 list-disc pl-4 text-xs text-slate-700">
-                              {(analysisData.top_actions ?? []).map((action, index) => (
-                                <li key={`${action}-${index}`}>{action}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : analysisData?.scope === "full" ? (
-                      <div className="mt-2 space-y-3">
-                        <div className="rounded-md border border-[var(--line)] bg-white p-2">
-                          <p className={`text-lg font-bold ${scoreTone(Number(analysisData.overall_score ?? 0))}`}>
-                            Overall Score {Number(analysisData.overall_score ?? 0)}/100
-                          </p>
-                          {analysisData.summary ? (
-                            <p className="mt-1 text-xs text-slate-700">{analysisData.summary}</p>
-                          ) : null}
-                        </div>
-                        {(analysisData.section_scores ?? []).map((section, index) => (
-                          <div key={`${section.section ?? "section"}-${index}`} className="rounded-md border border-[var(--line)] bg-white p-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-xs font-semibold text-slate-900">{section.section ?? `Section ${index + 1}`}</p>
-                              <p className={`text-xs font-bold ${scoreTone(Number(section.score ?? 0))}`}>
-                                {Number(section.score ?? 0)}/100
+                        ) : analysisData?.scope === "full" ? (
+                          <div className="mt-2 space-y-3">
+                            <div className="rounded-md border border-[var(--line)] bg-white p-2">
+                              <p className={`text-lg font-bold ${scoreTone(Number(analysisData.overall_score ?? 0))}`}>
+                                Overall Score {Number(analysisData.overall_score ?? 0)}/100
                               </p>
+                              {analysisData.summary ? (
+                                <p className="mt-1 text-xs text-slate-700">{analysisData.summary}</p>
+                              ) : null}
                             </div>
-                            {(section.issues ?? []).length > 0 ? (
-                              <p className={`mt-1 text-xs ${resolvedTheme === "dark" ? "text-rose-300" : "text-rose-700"}`}>
-                                Issues: {(section.issues ?? []).join("; ")}
-                              </p>
-                            ) : null}
-                            {(section.improvements ?? []).length > 0 ? (
-                              <p className="mt-1 text-xs text-slate-700">
-                                Improvements: {(section.improvements ?? []).join("; ")}
-                              </p>
+                            {(analysisData.section_scores ?? []).map((section, index) => (
+                              <div key={`${section.section ?? "section"}-${index}`} className="rounded-md border border-[var(--line)] bg-white p-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-xs font-semibold text-slate-900">{section.section ?? `Section ${index + 1}`}</p>
+                                  <p className={`text-xs font-bold ${scoreTone(Number(section.score ?? 0))}`}>
+                                    {Number(section.score ?? 0)}/100
+                                  </p>
+                                </div>
+                                {(section.issues ?? []).length > 0 ? (
+                                  <p className={`mt-1 text-xs ${resolvedTheme === "dark" ? "text-rose-300" : "text-rose-700"}`}>
+                                    Issues: {(section.issues ?? []).join("; ")}
+                                  </p>
+                                ) : null}
+                                {(section.improvements ?? []).length > 0 ? (
+                                  <p className="mt-1 text-xs text-slate-700">
+                                    Improvements: {(section.improvements ?? []).join("; ")}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))}
+                            {(analysisData.top_actions ?? []).length > 0 ? (
+                              <div className="rounded-md border border-[var(--line)] bg-white p-2">
+                                <p className="text-xs font-semibold text-slate-900">Top Actions</p>
+                                <ul className="mt-1 list-disc pl-4 text-xs text-slate-700">
+                                  {(analysisData.top_actions ?? []).map((action, index) => (
+                                    <li key={`${action}-${index}`}>{action}</li>
+                                  ))}
+                                </ul>
+                              </div>
                             ) : null}
                           </div>
-                        ))}
-                        {(analysisData.top_actions ?? []).length > 0 ? (
-                          <div className="rounded-md border border-[var(--line)] bg-white p-2">
-                            <p className="text-xs font-semibold text-slate-900">Top Actions</p>
-                            <ul className="mt-1 list-disc pl-4 text-xs text-slate-700">
-                              {(analysisData.top_actions ?? []).map((action, index) => (
-                                <li key={`${action}-${index}`}>{action}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
+                        ) : analysisText ? (
+                          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-800">
+                            {analysisText}
+                          </pre>
+                        ) : (
+                          <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                            Run section or full CV scoring to receive score, field-level analysis, and rewrite proposals.
+                          </p>
+                        )}
                       </div>
-                    ) : analysisText ? (
-                      <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-800">
-                        {analysisText}
-                      </pre>
-                    ) : (
-                      <p className="mt-2 text-xs text-[var(--ink-muted)]">
-                        Run section or full CV scoring to receive score, field-level analysis, and rewrite proposals.
-                      </p>
                     )}
                   </div>
                 </div>

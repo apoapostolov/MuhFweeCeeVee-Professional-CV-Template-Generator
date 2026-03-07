@@ -16,6 +16,11 @@ schema:
 person:
 positioning:
 targeting:
+  # new fields for AI advice
+  target_company: string
+  company_details:
+    industry?: string
+    website?: string
 experience:
 education:
 skills:
@@ -36,6 +41,11 @@ metadata:
 - `metadata.updated_at`
 - `metadata.language` (`bg` or `en`)
 
+> _New optional targeting fields:_ `targeting.target_company` and
+> `targeting.company_details` can be supplied to describe the intended
+> employer. This information is used by helper AI tools to generate
+> positioning advice.
+
 ## Validation Rules
 
 - Dates are ISO: `YYYY-MM-DD`.
@@ -53,11 +63,11 @@ metadata:
 - CV files: `data/cvs/cv_<language>_<iteration>_<target>.yaml`
 - Supported languages: `bg`, `en`
 - Iteration format: 4 digits (`0001`, `0002`, ...)
-- Example: `data/cvs/cv_en_0001_john_doe.yaml`
+- Example: `data/cvs/cv_en_john_doe.yaml`
 
 ## Seed Example in this repo
 
-- `data/cvs/cv_en_0001_john_doe.yaml`
+- `data/cvs/cv_en_john_doe.yaml`
 
 ## Notes for parser and renderer
 
