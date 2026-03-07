@@ -5114,7 +5114,7 @@ export function ComposerClient() {
 
                   <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-800">AI Targeting</p>
+                      <p className="text-sm font-semibold text-slate-800">Target Companies</p>
                       <button
                         className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold text-slate-700"
                         onClick={() => setCompanyMetadataEditorOpen((value) => !value)}
