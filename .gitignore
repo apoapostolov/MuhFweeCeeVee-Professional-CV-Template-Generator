@@ -50,3 +50,6 @@ data/settings/openrouter.yaml
 data/settings/companies.personal.json
 photos/
 photos/metadata.json
+
+# Local planning docs
+/companies_api.md
