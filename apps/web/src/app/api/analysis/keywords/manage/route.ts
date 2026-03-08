@@ -11,6 +11,14 @@ import { repoPath } from "@/lib/server/repoPaths";
 export const runtime = "nodejs";
 
 const execFileAsync = promisify(execFile);
+const SQLITE_BINARIES = [
+  process.env.SQLITE_BIN?.trim(),
+  "sqlite3",
+  "/home/linuxbrew/.linuxbrew/bin/sqlite3",
+  "/usr/bin/sqlite3",
+].filter(
+  (value): value is string => Boolean(value),
+);
 const CACHE_DB_RELATIVE = path.join("outputs", "jd_scrape_cache.sqlite");
 const KEYWORD_CONFIG_RELATIVE = path.join("config", "relevance_keywords.json");
 
@@ -82,15 +90,18 @@ function lineSplit(value: string): string[] {
 }
 
 async function safeSqliteCountQuery(dbPath: string, sql: string): Promise<number> {
-  try {
-    const result = await execFileAsync("sqlite3", [dbPath, sql], {
-      timeout: 10_000,
-      maxBuffer: 1024 * 256,
-    });
-    return Number((result.stdout || "0").trim()) || 0;
-  } catch {
-    return 0;
+  for (const sqliteBin of SQLITE_BINARIES) {
+    try {
+      const result = await execFileAsync(sqliteBin, [dbPath, sql], {
+        timeout: 10_000,
+        maxBuffer: 1024 * 256,
+      });
+      return Number((result.stdout || "0").trim()) || 0;
+    } catch {
+      // Try the next sqlite binary fallback.
+    }
   }
+  return 0;
 }
 
 function updateRun(runId: string, mutator: (current: RunProgress) => void): void {

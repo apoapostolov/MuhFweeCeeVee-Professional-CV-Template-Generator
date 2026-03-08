@@ -6,6 +6,14 @@ import { promisify } from "node:util";
 import { repoPath } from "@/lib/server/repoPaths";
 
 const execFileAsync = promisify(execFile);
+const SQLITE_BINARIES = [
+  process.env.SQLITE_BIN?.trim(),
+  "sqlite3",
+  "/home/linuxbrew/.linuxbrew/bin/sqlite3",
+  "/usr/bin/sqlite3",
+].filter(
+  (value): value is string => Boolean(value),
+);
 
 export const CORE_DATASET_FILE = "merged.json";
 const CACHE_DB_RELATIVE = path.join("outputs", "jd_scrape_cache.sqlite");
@@ -67,18 +75,26 @@ function readDomain(urlValue: string): string {
 }
 
 async function runSqliteJsonQuery<T>(dbPath: string, sql: string): Promise<T[]> {
-  try {
-    const result = await execFileAsync("sqlite3", ["-json", dbPath, sql], {
-      timeout: 45_000,
-      maxBuffer: 1024 * 1024 * 16,
-    });
-    const raw = String(result.stdout ?? "").trim();
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as T[]) : [];
-  } catch {
-    return [];
+  let hadSuccessfulExecution = false;
+  for (const sqliteBin of SQLITE_BINARIES) {
+    try {
+      const result = await execFileAsync(sqliteBin, ["-json", dbPath, sql], {
+        timeout: 45_000,
+        maxBuffer: 1024 * 1024 * 16,
+      });
+      hadSuccessfulExecution = true;
+      const raw = String(result.stdout ?? "").trim();
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as unknown;
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      // Try the next sqlite binary fallback.
+    }
   }
+  if (!hadSuccessfulExecution) {
+    throw new Error("Unable to execute sqlite query using configured sqlite binary fallbacks.");
+  }
+  return [];
 }
 
 export async function removeLegacyKeywordSnapshots(): Promise<number> {
@@ -181,10 +197,17 @@ export async function ensureCoreDatasetFresh(options?: {
     removedLegacySnapshots = await removeLegacyKeywordSnapshots();
   }
 
-  const summaryRows = await runSqliteJsonQuery<CacheSummaryRow>(
-    dbPath,
-    "SELECT COUNT(*) AS scraped_count, MAX(last_seen_at) AS max_seen FROM scraped_pages WHERE scraped = 1;",
-  );
+  let summaryRows: CacheSummaryRow[] = [];
+  let sqliteSummaryAvailable = true;
+  try {
+    summaryRows = await runSqliteJsonQuery<CacheSummaryRow>(
+      dbPath,
+      "SELECT COUNT(*) AS scraped_count, MAX(last_seen_at) AS max_seen FROM scraped_pages WHERE scraped = 1;",
+    );
+  } catch {
+    sqliteSummaryAvailable = false;
+  }
+
   const summary = summaryRows[0] ?? {};
   const scrapedCount = Number(summary.scraped_count ?? 0);
   const maxSeenAt = String(summary.max_seen ?? "").trim();
@@ -198,7 +221,7 @@ export async function ensureCoreDatasetFresh(options?: {
       const maxSeenTs = Date.parse(maxSeenAt);
       const countMatches = existingCount === scrapedCount;
       const freshnessMatches = Number.isFinite(generatedAt) && (!maxSeenAt || (Number.isFinite(maxSeenTs) && generatedAt >= maxSeenTs));
-      if (countMatches && freshnessMatches) {
+      if (!sqliteSummaryAvailable || (countMatches && freshnessMatches)) {
         return {
           rebuilt: false,
           itemCount: existingCount,
@@ -209,6 +232,15 @@ export async function ensureCoreDatasetFresh(options?: {
     } catch {
       // Rebuild core dataset when missing or unreadable.
     }
+  }
+
+  if (!sqliteSummaryAvailable) {
+    return {
+      rebuilt: false,
+      itemCount: 0,
+      removedLegacySnapshots,
+      filePath: corePath,
+    };
   }
 
   const rebuilt = await buildCoreDatasetFromCache();

@@ -58,6 +58,10 @@ npm run lint
 npm run typecheck
 ```
 
+Keywords troubleshooting:
+
+- If the Keywords tab shows empty JD results despite existing cache data, set `SQLITE_BIN` to your sqlite executable path (for example `export SQLITE_BIN=/home/linuxbrew/.linuxbrew/bin/sqlite3`) before starting the web app.
+
 ## Production Build
 
 ```bash

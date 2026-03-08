@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed Keywords analysis false-empty dataset behavior when the web runtime could not resolve `sqlite3` from PATH; core dataset refresh now uses binary fallbacks and no longer silently reports zero JD items in this case.
 - Fixed theme-toggle hydration warnings in the browser.
 - Improved OpenRouter error feedback so invalid/unauthorized key issues are clearer.
 - Removed driving-license row from sidebar personal details in Edinburgh for a cleaner layout.
