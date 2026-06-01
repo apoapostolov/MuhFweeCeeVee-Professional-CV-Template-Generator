@@ -14,6 +14,11 @@ RUN npm run build
 
 RUN npx playwright install --with-deps chromium
 
+RUN groupadd --system app && useradd --system --gid app --create-home app \
+    && chown -R app:app /app /home/app
+
+USER app
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start"]
