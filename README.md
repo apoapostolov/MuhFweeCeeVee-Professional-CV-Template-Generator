@@ -184,10 +184,45 @@ Steps:
 
 - Changelog is the source of truth for release notes:
   - [`CHANGELOG.md`](CHANGELOG.md)
+- Changelog governance and writing style:
+  - [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md)
 - API reference (including post-1.0.0 additions):
   - [`docs/API.md`](docs/API.md)
 - MCP wrapper guide:
   - [`mcp.md`](mcp.md)
+
+## Documentation Map
+
+| File | Purpose |
+|------|---------|
+| [`README.md`](README.md) | Project overview, features, quick start, hosting guide |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release history (user-facing changes) |
+| [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md) | Changelog rules, overwrite-first principle, writing style |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution guide |
+| [`SECURITY.md`](SECURITY.md) | Security policy, privacy hardening, secret handling |
+| [`AGENTS.md`](AGENTS.md) | AI-assisted development operating contract (local, gitignored) |
+| [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) | Forward-looking plan (local, gitignored) |
+| [`DEVELOPMENT_LOG.md`](DEVELOPMENT_LOG.md) | Engineering journal (local, gitignored) |
+| [`TODO.md`](TODO.md) | Active work queue (local, gitignored) |
+| [`TODO_TEMPLATE.md`](TODO_TEMPLATE.md) | TODO structure template reference |
+| [`CODE_REVIEW_CHECKLIST.md`](CODE_REVIEW_CHECKLIST.md) | Code review checklist for AI and human reviews |
+| [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) | Preflight and publish checklist |
+| [`DECISION_RECORD_TEMPLATE.md`](DECISION_RECORD_TEMPLATE.md) | Architecture decision record template |
+| [`DEV_SERVER_WORKFLOW.md`](DEV_SERVER_WORKFLOW.md) | Dev server lifecycle (Next.js + parser) |
+| [`GENERATED_FILES.md`](GENERATED_FILES.md) | Generated file rules and staleness detection |
+| [`HARD_PROBLEMS.md`](HARD_PROBLEMS.md) | Record of recurring blockers and resolutions |
+| [`SELF_REVIEW.md`](SELF_REVIEW.md) | Running journal of mistaken approaches and better defaults |
+| [`VIBECHECK.md`](VIBECHECK.md) | Developer interaction profile (local, AI-owned) |
+| [`AGENT_ISSUES.md`](AGENT_ISSUES.md) | Agent/subagent failure records |
+| [`SKILLS_GUIDE.md`](SKILLS_GUIDE.md) | Skill mining and management guide |
+| [`PROJECT_CONVENTIONS.md`](PROJECT_CONVENTIONS.md) | Naming, directory, and structural conventions |
+| [`MARKDOWN_LINT.md`](MARKDOWN_LINT.md) | Markdown lint configuration and rules |
+| [`.markdownlint.json`](.markdownlint.json) | Markdown lint rule config |
+| [`docs/API.md`](docs/API.md) | Web API reference |
+| [`docs/CV_SCORING_STANDARD.md`](docs/CV_SCORING_STANDARD.md) | CV scoring rubric and quality checks |
+| [`docs/CV_YAML_STANDARD.md`](docs/CV_YAML_STANDARD.md) | CV YAML schema and validation rules |
+| [`docs/INITIAL_TEMPLATING_BOOTSTRAP.md`](docs/INITIAL_TEMPLATING_BOOTSTRAP.md) | Initial template implementation notes |
+| [`mcp.md`](mcp.md) | MCP wrapper usage guide |
 
 ## License
 
