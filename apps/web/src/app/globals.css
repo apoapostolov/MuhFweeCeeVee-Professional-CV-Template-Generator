@@ -195,3 +195,56 @@ h4 {
 :root[data-theme="dark"] .app-shell .text-indigo-700 {
   color: #c9d2ff !important;
 }
+
+/* Native date picker icon + control chrome (editor date fields). */
+.app-shell input[type="date"],
+.app-shell input.composer-date-input[type="date"] {
+  box-sizing: border-box;
+  color-scheme: light;
+  line-height: 1.25rem;
+  min-height: 2rem;
+}
+
+:root[data-theme="dark"] .app-shell input[type="date"],
+:root[data-theme="dark"] .app-shell input.composer-date-input[type="date"] {
+  color: var(--foreground);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-calendar-picker-indicator,
+:root[data-theme="dark"] .app-shell input.composer-date-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1 !important;
+  /* brightness(0) + invert(1) reliably yields a light icon on dark backgrounds */
+  filter: brightness(0) invert(1) !important;
+}
+
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-inner-spin-button {
+  filter: brightness(0) invert(1);
+}
+
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-datetime-edit,
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-datetime-edit-text,
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-datetime-edit-month-field,
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-datetime-edit-day-field,
+:root[data-theme="dark"] .app-shell input[type="date"]::-webkit-datetime-edit-year-field,
+:root[data-theme="dark"] .app-shell input.composer-date-input[type="date"]::-webkit-datetime-edit,
+:root[data-theme="dark"] .app-shell input.composer-date-input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  color: var(--foreground);
+}
+
+/* Shorten limit: fixed width, no number spinners or hover scroll chrome. */
+.app-shell input.composer-shorten-limit-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  overflow: hidden;
+}
+
+.app-shell input.composer-shorten-limit-input[type="number"]::-webkit-inner-spin-button,
+.app-shell input.composer-shorten-limit-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+

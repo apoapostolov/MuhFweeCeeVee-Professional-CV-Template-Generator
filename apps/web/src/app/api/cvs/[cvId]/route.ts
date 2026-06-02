@@ -1,6 +1,8 @@
 import { validateCvV1 } from "@muhfweeceevee/schemas";
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
+
 import { analyzeCvCompatibility } from "@/lib/server/cvCompatibility";
 import { isSupportedLanguage } from "@/lib/server/cvVariants";
 import {
@@ -70,6 +72,11 @@ export async function PUT(
   request: Request,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const { cvId } = await context.params;
   const body = (await request.json()) as { cv?: unknown };
   const validation = validateCvV1(body.cv);
@@ -92,9 +99,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const { cvId } = await context.params;
   const deleted = await deleteCv(cvId);
   if (!deleted) {

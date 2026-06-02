@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-02
+
+### Added
+
+- New **per-field Professional Rewrite** in the Editor: AI returns ranked proposals with confidence scores, an inline **current score** pill, **Apply** per proposal, **Undo** after apply, and **Shorten to** limits (characters or lines). Proposals persist in the browser until you run a new rewrite for that field.
+- New **autosave + translation workflow** for text fields: after you stop typing, the CV section saves automatically, a bottom-center toast confirms **CV template saved**, then OpenRouter translates that field into every other language variant you already have (all supported language codes except the one you are editing). A second toast reports when field translation finishes.
+- New **`/api/cvs/translate-field`** endpoint for targeted cross-language field updates (requires OpenRouter; skips empty text).
+- New **custom field** modal when adding fields to objects or lists: choose name, type (text, date, checklist, dropdown), options, and initial value. Custom field definitions live in section metadata and render with dedicated controls.
+- New **template visibility toggles** per field and subsection so you can hide paths from PDF output without deleting data.
+- New **collapse all subsections** control on Experience, Education, and References: **▴** collapses every entry; **▾** expands all when everything is collapsed.
+- New **two-step remove** buttons (✕ then confirm check) for fields, list items, and metadata entries to prevent accidental deletes.
+- New bottom-center **composer toasts** for save and translation feedback.
+- New optional API protection via `MFCV_API_TOKEN` (Bearer or `x-mfcv-api-token`) on mutation routes when set in the environment.
+- New Vitest coverage for field paths, field AI parsing, compact layout, custom fields, and CV schema helpers.
+
+### Changed
+
+- Editor UI was rebuilt as a modular **Composer** (Workspace, Templates, Editor, Photo Booth, Settings) with a compact single-row field grid, tighter vertical rhythm, and aligned AI proposal rows.
+- Experience, Education, and References now **indent whole subsections** (eye, title, and fields together). Person, Positioning, Optional Sections, and Metadata stay flush—only true list subsections tabulate.
+- Date fields use shared compact metrics and improved dark-theme calendar icon contrast.
+- Template rendering code was split into per-template server modules (Edinburgh, Cambridge, Harvard, Stanford, generic) for easier maintenance.
+- Workspace template/theme selectors now hydrate from saved preferences after load, fixing React hydration mismatches on first paint.
+
+### Removed
+
+- **Keyword Studio** tab, APIs, and in-repo `keywords/` pipeline were retired to `backup/retired-keywords/` (ATS-oriented keyword tooling is no longer part of the Composer UI).
+
+### Fixed
+
+- Fixed React hydration errors in Print Room when persisted template/theme differed from server defaults.
+- Fixed nested subsection indentation so padding applies to headers and child rows together (not title-only).
+
 ## [1.0.2] - 2026-03-08
 
 ### Added

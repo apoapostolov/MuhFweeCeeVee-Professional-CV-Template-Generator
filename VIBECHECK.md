@@ -40,6 +40,9 @@ this at the start of every session and update it when new patterns emerge.
 
 ## Subagent / Delegation Patterns
 
+Most subagent failures belong in [`AGENT_ISSUES.md`](AGENT_ISSUES.md), not here.
+Use this section only for **user-specific** delegation preferences.
+
 ### User Preferences Around Delegation
 
 - _to be filled from session interactions_

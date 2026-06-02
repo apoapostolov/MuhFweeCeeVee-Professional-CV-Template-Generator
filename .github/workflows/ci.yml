@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: npm run bootstrap
+
+      - name: Lint and typecheck
+        run: npm run check
+
+      - name: Schema and unit tests
+        run: npm run test
+
+      - name: Markdown lint (process docs)
+        run: npm run lint:md
+
+      - name: Production build
+        run: npm run build
+        env:
+          # Playwright may download browsers during build-related imports
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"

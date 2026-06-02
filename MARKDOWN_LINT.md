@@ -6,12 +6,16 @@ for consistent markdown quality across documentation.
 ## Quick Commands
 
 ```sh
-# Check everything
-npx -y markdownlint-cli2 "**/*.md" --ignore node_modules --ignore .git
+# From repo root (recommended)
+npm run lint:md
+npm run lint:md:fix
 
-# Auto-fix what can be fixed
-npx -y markdownlint-cli2 --fix "**/*.md" --ignore node_modules --ignore .git
+# Single file
+npm run lint:md:fix -- AGENTS.md
 ```
+
+Config: [`.markdownlint-cli2.cjs`](.markdownlint-cli2.cjs) (ignores `README.md`
+screenshot marketing copy, local skill experiments, and venv paths).
 
 ## Configuration
 
@@ -27,6 +31,7 @@ that actually improve readability and maintainability.
 **Default:** 80 characters. Extremely painful for technical prose.
 
 **Our setting:**
+
 - `line_length`: 120
 - `code_blocks`: false
 - `tables`: false

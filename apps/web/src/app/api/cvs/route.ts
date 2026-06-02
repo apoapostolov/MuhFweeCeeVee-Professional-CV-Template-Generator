@@ -1,6 +1,7 @@
 import { validateCvV1 } from "@muhfweeceevee/schemas";
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { buildCvVariantId, isSupportedLanguage } from "@/lib/server/cvVariants";
 import { listCvVariants, readCv, writeCv } from "@/lib/server/cvStore";
 
@@ -20,6 +21,11 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as {
     cvId?: unknown;
     cv?: unknown;

@@ -9,7 +9,7 @@ Use this before publishing, tagging, or syncing a release.
 - [ ] Run `npm run check` (lint + typecheck)
 - [ ] Run `npm run build` and confirm the production build succeeds
 - [ ] Run the parser test suite if changes touch `services/parser/`
-- [ ] Run keyword tests if changes touch `keywords/` (`pytest keywords/tests/`)
+- [ ] Run keyword tests if changes touch `keywords/` (`npm run test:keywords`)
 - [ ] Check for unrelated working tree changes
 - [ ] Confirm secrets, credentials, and private files are excluded
   - No `.env` files committed

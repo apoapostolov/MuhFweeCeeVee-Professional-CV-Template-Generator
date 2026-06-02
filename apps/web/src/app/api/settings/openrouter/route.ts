@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { getOpenRouterModels } from "@/lib/server/openRouterModels";
 import {
   maskApiKey,
@@ -28,6 +29,11 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function PUT(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const body = (await request.json()) as {
     apiKey?: unknown;
     model?: unknown;

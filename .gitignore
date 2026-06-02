@@ -16,14 +16,8 @@ logs/
 .env.*
 !.env.example
 # /work
-DEVELOPMENT_PLAN.md
-AGENTS.md
-keywords/DEVELOPMENT_PLAN.md
-keywords/AGENTS.md
-
-# Local planning/journal files
-TODO.md
-DEVELOPMENT_LOG.md
+# Agent/planning docs (AGENTS.md, TODO.md, DEVELOPMENT_*.md) are tracked.
+# Keep only personal runtime journals local if you add them later.
 keywords/TODO.md
 keywords/DEVELOPMENT_LOG.md
 
@@ -43,6 +37,9 @@ keywords/__pycache__/
 keywords/tests/__pycache__/
 keywords/outputs/*
 !keywords/outputs/.gitkeep
+backup/retired-keywords/**/__pycache__/
+backup/retired-keywords/**/outputs/*
+!backup/retired-keywords/**/outputs/.gitkeep
 
 # Runtime caches
 data/settings/openrouter_models.yaml
@@ -55,8 +52,12 @@ photos/metadata.json
 /companies_api.md
 /Companies_API.md
 
-# Local copied skills
-/skills/
+# Local skill experiments (optional); tracked skills live under skills/
+skills/_local/
+skills/_local/
+skills/prepare-user-journey/
+skills/agents/
+skills/SKILL.md
 
 # Raw screenshot drops (keep curated SCREENSHOT_XX.png files)
 /images/Screenshot_*.png

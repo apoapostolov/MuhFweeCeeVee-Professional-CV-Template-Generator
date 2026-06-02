@@ -1,3 +1,5 @@
+import Ajv, { type ErrorObject } from "ajv";
+
 export type JsonSchema = {
   [key: string]: unknown;
 };
@@ -130,7 +132,19 @@ function isEmptyValue(value: unknown): boolean {
   return false;
 }
 
-export function validateCvV1(input: unknown): CvValidationResult {
+const ajv = new Ajv({ allErrors: true, strict: false });
+const { $schema: _schema, $id: _id, ...cvV1SchemaForAjv } = CV_V1_JSON_SCHEMA;
+const validateCvV1Json = ajv.compile(cvV1SchemaForAjv);
+
+function jsonSchemaIssues(errors: ErrorObject[] | null | undefined): CvValidationIssue[] {
+  return (errors ?? []).map((error) => ({
+    path: error.instancePath?.replace(/^\//, "").replace(/\//g, ".") || "$",
+    message: error.message ?? "JSON Schema validation failed.",
+  }));
+}
+
+/** Required paths and non-empty checks used by the editor and API. */
+export function validateCvV1Structural(input: unknown): CvValidationResult {
   const issues: CvValidationIssue[] = [];
 
   if (!isRecord(input)) {
@@ -162,4 +176,30 @@ export function validateCvV1(input: unknown): CvValidationResult {
     valid: issues.length === 0,
     issues,
   };
+}
+
+/** JSON Schema shape validation (Ajv). */
+export function validateCvV1JsonSchema(input: unknown): CvValidationResult {
+  if (!validateCvV1Json(input)) {
+    return {
+      valid: false,
+      issues: jsonSchemaIssues(validateCvV1Json.errors),
+    };
+  }
+  return { valid: true, issues: [] };
+}
+
+/** Structural + JSON Schema (canonical API validation). */
+export function validateCvV1(input: unknown): CvValidationResult {
+  const structural = validateCvV1Structural(input);
+  if (!structural.valid) {
+    return structural;
+  }
+
+  const jsonSchema = validateCvV1JsonSchema(input);
+  if (!jsonSchema.valid) {
+    return jsonSchema;
+  }
+
+  return { valid: true, issues: [] };
 }

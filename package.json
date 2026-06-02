@@ -1,6 +1,6 @@
 {
   "name": "muhfweeceevee",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -18,6 +18,17 @@
     "typecheck": "npm run typecheck --workspace @muhfweeceevee/web",
     "typecheck:web": "npm run typecheck --workspace @muhfweeceevee/web",
     "check": "npm run lint && npm run typecheck",
+    "lint:md": "markdownlint-cli2",
+    "lint:md:fix": "markdownlint-cli2 --fix",
+    "test": "vitest run",
     "mcp:api": "npm run start --workspace @muhfweeceevee/mcp-wrapper"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.22.0",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "nanoid": "3.3.12",
+    "postcss": "8.5.15"
   }
 }

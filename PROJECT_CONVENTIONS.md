@@ -22,7 +22,7 @@
 
 ## Directory Structure
 
-```
+```text
 apps/web/          — Next.js web application (App Router)
 packages/          — Shared packages
   schemas/         — CV schema definitions and scoring constants

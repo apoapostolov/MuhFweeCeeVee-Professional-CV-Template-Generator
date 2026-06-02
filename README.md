@@ -3,6 +3,7 @@
 MuhFweeCeeVee started as a practical “enough is enough” project: paying recurring CV-tool subscriptions for features that can be built and customized in a few focused days did not make sense anymore.
 
 The core goal is simple:
+
 - save roughly **$15-$20 per month** (or more) versus common CV SaaS plans
 - keep full control of your data and workflow
 - quickly customize the product to fit your own job-search style
@@ -22,6 +23,7 @@ In short: why rent your resume workflow forever, when you can own it and make it
 ## Features
 
 ### 1) Print, preview, and theme confidence
+
 Use Print Room to configure template-based rendering (`cambridge-v1`, `stanford-v1`, `harvard-v1`, `europass-v1`, `edinburgh-v1`) and immediately validate readability in both light and dark visual modes before export. This is the print-ready PDF export path.
 
 <p align="center">
@@ -30,6 +32,7 @@ Use Print Room to configure template-based rendering (`cambridge-v1`, `stanford-
 </p>
 
 ### 2) Edit precision + job-fit diagnostics
+
 Combine Form + YAML editing with AI scoring, keyword-gap analysis, and selected-company targeting from external companies metadata so every change can be checked for recruiter relevance and missing signal.
 
 <p align="center">
@@ -38,6 +41,7 @@ Combine Form + YAML editing with AI scoring, keyword-gap analysis, and selected-
 </p>
 
 ### 3) Presentation polish and profile quality
+
 Review available CV templates side-by-side, then finalize profile-photo quality using Photo Booth analysis and recommendations as part of the full self-hosted CV authoring workflow.
 
 <p align="center">
@@ -48,6 +52,7 @@ Review available CV templates side-by-side, then finalize profile-photo quality 
 ## 1.0.2 Release Scope
 
 Version `1.0.2` is the current public release with a stable user-facing workflow:
+
 - Print Room (preview + export)
 - Editor (Form/YAML)
 - Editor Form View includes collapsible nested containers (collapsed by default for deep structures) with compact summary metadata for faster navigation.
@@ -75,6 +80,14 @@ Version `1.0.2` is the current public release with a stable user-facing workflow
 - `templates/`: template definitions and assets
 - `deploy/systemd/`, `deploy/nginx/`: Linux deployment references
 
+## Documentation for Contributors and Agents
+
+Process templates (adapted from shared defaults), checklists, and product specs:
+
+- [`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md) — full index
+- [`AGENTS.md`](AGENTS.md) — AI development operating contract
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — human contributor quick start
+
 ## Prerequisites
 
 - Node.js `>= 22`
@@ -88,11 +101,15 @@ npm run bootstrap
 npm run dev
 ```
 
-Optional parser service (second terminal):
+Optional parser service (second terminal; **scaffold only**, see
+[`services/parser/README.md`](services/parser/README.md)):
 
 ```bash
 npm run dev:parser
 ```
+
+When exposing the app beyond localhost, set `MFCV_API_TOKEN` in `.env` and send it
+as `Authorization: Bearer …` or `x-mfcv-api-token` on mutation/analysis routes.
 
 Quality checks:
 
@@ -120,11 +137,13 @@ Default web runtime port is `3000` unless overridden by environment.
 ### Windows 11
 
 Recommended stack:
+
 - app process: Node.js (`npm run build && npm run start`)
 - optional parser process: Python `uvicorn`
 - reverse proxy / TLS: Caddy (recommended) or IIS reverse proxy
 
 Steps:
+
 1. Install Node.js 22+ and Python 3.12.
 2. Clone repo and run `npm run bootstrap`.
 3. Build web: `npm run build`.
@@ -142,11 +161,13 @@ Steps:
 ### Linux (Ubuntu/Debian/RHEL)
 
 Recommended stack:
+
 - app process: systemd service for Next.js
 - optional parser process: systemd service for FastAPI
 - reverse proxy / TLS: nginx or Caddy
 
 Steps:
+
 1. Install Node.js 22+, npm 10+, Python 3.12.
 2. Clone repo and run `npm run bootstrap`.
 3. Build web: `npm run build`.
@@ -160,12 +181,14 @@ Steps:
 ### macOS
 
 Recommended stack:
+
 - app process: Node.js (`npm run build && npm run start`)
 - optional parser process: Python `uvicorn`
 - service manager: `launchd` (LaunchAgent/LaunchDaemon)
 - reverse proxy / TLS: Caddy or nginx
 
 Steps:
+
 1. Install Node.js 22+ and Python 3.12 (Homebrew recommended).
 2. Clone repo and run `npm run bootstrap`.
 3. Build web: `npm run build`.

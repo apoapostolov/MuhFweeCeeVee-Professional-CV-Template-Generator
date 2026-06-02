@@ -1,15 +1,13 @@
-# TODO Template — MuhFweeCeeVee
+# TODO — MuhFweeCeeVee
 
-Reference template for TODO.md structure. Use this format when starting a new
-epic in `TODO.md`.
-
-```md
-# TODO — <Epic Name>
+This template is optimized for a planner plus executor workflow. Each `TODO.md`
+should usually represent **one active epic**. Copy this file to `TODO.md` when
+starting a new epic; keep the working rules section intact.
 
 ## Current Focus
 
 - epic name and one-sentence mission
-- explicit canonical file or system owner
+- explicit canonical file or system owner (for example `apps/web/src/app/ComposerClient.tsx`)
 
 ## Scope and Boundaries
 
@@ -18,43 +16,28 @@ epic in `TODO.md`.
 
 ## Active Prompt Queue
 
-### [ ] Prompt 1 — <goal>
+Start active entries at `Prompt 1`. Add `Prompt 1A`, `Prompt 1B`, etc. only when
+a single deliverable needs to be split without hiding partial completion.
 
-Short prompt description.
+## Working Rules
 
-Context:
-
-- canonical files, systems, and assumptions this prompt depends on
-
-Inputs:
-
-- exact files, commands, or upstream prompts to inspect before acting
-
-Outputs:
-
-- expected file or system result
-
-Validation:
-
-- tests, lint, preview commands, or manual checks
-
-Delegation notes:
-
-- constraints, non-goals, and implementation guidance needed for a cheaper
-  executor to finish safely
-
-### [ ] Prompt 1A — <sub-goal>
-
-Use sub-prompts when a prompt needs to be split without hiding partial
-completion.
-
-Dependencies:
-
-- parent prompt or upstream prerequisite if applicable
-
-Completed output:
-
-- concrete finished deliverable
+- **Execution-ready:** every active prompt must be runnable without hidden planner
+  context.
+- **Prompt completeness:** state canonical inputs, expected outputs, validation,
+  and constraints. Avoid vague prompts without acceptance criteria.
+- **One epic per file:** split unrelated epics into separate TODO files.
+- **Prompt growth:** add prompts or sub-prompts when execution reveals missing work.
+- **Constant pushing:** continue to the next clear prompt unless blocked or the
+  user must decide.
+- **Subagents:** propose when work parallelizes safely; default 1 coordinator +
+  1–3 workers (max ~4). See
+  [`skills/patterns/subagent-delegation/SKILL.md`](skills/patterns/subagent-delegation/SKILL.md).
+- **Canonical sources:** CV YAML in `data/cvs/`, templates in `templates/`, API in
+  `apps/web/src/app/api/`, keywords in `keywords/`.
+- **Derived artifacts:** regenerate per [`GENERATED_FILES.md`](GENERATED_FILES.md).
+- **Privacy:** never commit private CVs, photos, or API keys.
+- **Markdown:** run `npm run lint:md:fix <file>` after editing docs. See
+  [`MARKDOWN_LINT.md`](MARKDOWN_LINT.md).
 
 ## Decision Log
 
@@ -64,20 +47,31 @@ Completed output:
 
 - open risk
 - explicit blocker if present
+
+## Template — New Epic Block
+
+```md
+### [ ] Prompt 1 — <goal>
+
+Short prompt description.
+
+Context:
+
+- canonical files, systems, and assumptions
+
+Inputs:
+
+- exact files, commands, or upstream prompts to inspect
+
+Outputs:
+
+- expected file or system result
+
+Validation:
+
+- `npm run check`, `npm run test:keywords`, manual Print Room check, etc.
+
+Delegation notes:
+
+- constraints and non-goals for executors
 ```
-
-## Working Rules
-
-- Execution-ready rule: every active prompt must be documented so a capable,
-  lower-cost executor can perform the work without relying on hidden planner
-  context.
-- Prompt completeness rule: prompts should state canonical inputs, expected
-  outputs, validation, and constraints.
-- One-epic-per-file rule: treat `Current Focus` as the active epic for this
-  file.
-- Prompt granularity rule: add a new top-level prompt when the work introduces
-  a materially different deliverable, validation path, or ownership boundary.
-- Cleanup rule: when asked to clean this file, remove completed prompt dumps
-  from the active TODO instead of preserving them.
-- Removal rule: if the user says to remove prompts, tasks, or completed items
-  from this file, delete them outright.

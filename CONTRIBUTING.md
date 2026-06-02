@@ -32,17 +32,29 @@ npm run dev:parser
 ### Code Quality
 
 ```bash
-# Lint and typecheck
+# Lint and typecheck (TypeScript web app)
 npm run lint
 npm run typecheck
-
-# Or both at once
 npm run check
+
+# Python keyword engine tests
+npm run test:keywords
+
+# Markdown docs (after editing *.md)
+npm run lint:md
+npm run lint:md:fix
 ```
+
+### Agent and Process Docs
+
+Contributors and AI agents should read
+[`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md) for the full map of
+`AGENTS.md`, checklists, templates, and skills. Operating rules live in
+[`AGENTS.md`](AGENTS.md).
 
 ### Project Structure
 
-```
+```text
 apps/web/          — Next.js web application (App Router)
 packages/schemas/  — Shared CV schema and scoring constants
 packages/render-core/ — Shared rendering primitives

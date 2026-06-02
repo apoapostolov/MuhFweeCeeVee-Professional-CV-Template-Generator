@@ -1,92 +1,92 @@
 # Dev Server Workflow — MuhFweeCeeVee
 
-This document defines the development-server lifecycle for this monorepo.
-The goal is to ensure the user (and the AI) never work against stale in-memory
-state during active development sessions.
+Development-server lifecycle for this monorepo (Next.js Turbopack + optional
+FastAPI parser). Ensures the user and AI never work against stale in-memory
+state.
+
+Referenced from [`AGENTS.md`](AGENTS.md#standard-work-loop).
 
 ## Core Rules
 
 ### Always Start a Dev Server
 
-After orienting (reading `AGENTS.md`, `TODO.md`, etc.) but before writing any
-code, start the project's development server.
+After orienting (`AGENTS.md`, `TODO.md`, etc.) and before editing application
+code, start the web dev server:
 
 ```bash
-# Start Next.js dev server (primary)
 npm run dev
+# Custom port (example):
+npm run dev --workspace @muhfweeceevee/web -- -p 3005
+```
 
-# (Optional) Start the parser service in a second terminal
+Optional parser (second terminal):
+
+```bash
 npm run dev:parser
 ```
 
-Do not start a production build during active development. Use the dev server
-so that file changes appear quickly without a full rebuild cycle.
+Do not run `npm run build` during active feature development.
 
-### Understanding the Two Services
+### Two Services
 
-| Service | Command | Port | Tech |
-|---------|---------|------|------|
-| Web app | `npm run dev` | `:3000` | Next.js (HMR) |
-| Parser | `npm run dev:parser` | `:8001` | FastAPI (uvicorn, auto-reload) |
+| Service | Command | Default port | Tech |
+|---------|---------|--------------|------|
+| Web app | `npm run dev` | `3000` | Next.js 16 (Turbopack HMR) |
+| Parser | `npm run dev:parser` | `8001` | FastAPI + uvicorn reload |
 
-The parser service is optional. The web app can function without it, but some
-workflows (PDF rendering, certain analysis features) depend on it.
+The parser is optional for most UI work; PDF export and some analysis paths use
+the web app and Playwright directly.
 
 ### Restart After Every Development Prompt
 
-A **development prompt** is any prompt that modifies code files — additions,
-edits, refactors, renames, or deletions of source, styles, templates, or
-configuration.
+A **development prompt** modifies source, styles, templates, or build config.
 
-At the **end** of every development prompt, restart the relevant dev server:
+At the end of each development prompt, restart the affected dev server:
 
 ```bash
-# Kill the running server (Ctrl+C in its terminal), then restart:
+# Ctrl+C in the server terminal, then:
 npm run dev
 ```
 
-Do **not** skip the restart because "nothing visible changed." Next.js may
-have cached module state, resolved paths, compiled artifacts, or plugin data
-that no longer matches the filesystem. A clean restart guarantees the user sees
-the actual result of the changes.
+Do not skip restart because "nothing visible changed." Next.js may retain stale
+module graphs or `.next` cache entries.
 
-If the UI still looks stale after the restart:
+### Stale UI Recovery (Next.js)
 
-1. Confirm the page is on the live dev port (`:3000`), not a static build.
-2. Hard refresh the browser (Ctrl+Shift+R).
-3. Clear Next.js cache: delete `apps/web/.next/` and restart.
-4. Clear any app-local storage that can restore old UI state.
+If the UI still looks wrong after restart, follow
+[`skills/tools/next-dev-workflow/SKILL.md`](skills/tools/next-dev-workflow/SKILL.md):
+
+1. Confirm the browser URL uses the live dev port (not an old tab or `npm start`
+   production port).
+2. Hard refresh (Ctrl+Shift+R).
+3. Delete `apps/web/.next/` and restart `npm run dev`.
+4. Clear browser storage used by the composer (local selections, panel state).
+5. Re-open the changed route directly.
+
+**Not applicable:** Vite `node_modules/.vite` cache (this project does not use Vite).
 
 ### What Is Not a Development Prompt
 
-These prompt types do **not** require a server restart:
+No restart required for:
 
-- **Audit prompts** — reading files, analyzing structure, reviewing code
-- **Plan prompts** — writing TODO entries, design docs, specifications
-- **Check prompts** — verifying output, confirming diagnostics, reading logs
-- **Config-scope prompts** — changing only `AGENTS.md`, `README.md`,
-  `CHANGELOG.md`, `TODO.md`, or similar non-build documentation
+- **Audit** — read-only code/doc review
+- **Plan** — TODO, design docs, specifications
+- **Check** — logs, diagnostics
+- **Docs-only** — `AGENTS.md`, `CHANGELOG.md`, `docs/*.md` without app code
 
-If a prompt mixed planning with code changes, it is a development prompt —
-restart after completing it.
+Mixed prompts (plan + code) require restart after the code portion.
 
 ### Do Not Build for Production Prematurely
 
-Do **not** run `npm run build` during active development unless the user
-explicitly requests it for:
-
-- commit and push of a release candidate
-- tag creation or release preparation
-- preview of the final production bundle
+Run `npm run build` only when the user requests release prep, production preview,
+or an explicit ship task.
 
 ## Quick Reference
 
 | Trigger | Action |
 |---------|--------|
-| After orient, before coding | `npm run dev` |
-| After every code-modifying prompt | Kill old server → restart |
-| Non-code prompts (audit, plan, docs) | No action needed |
-| User says "commit and push" or "release" | `npm run build` first, then ship |
-| User says "preview production build" | `npm run build` + `npm run start` |
-| UI looks stale after restart | Hard refresh → clear `.next/` → restart |
-| Parser changes needed | Restart parser in its terminal |
+| After orient, before coding | `npm run dev` (and parser if needed) |
+| After code-modifying prompt | Restart web and/or parser |
+| Audit / plan / docs only | No restart |
+| Stale UI after restart | Next dev workflow skill + clear `.next/` |
+| Release / ship | `npm run build`, then `npm run start` or deploy units |

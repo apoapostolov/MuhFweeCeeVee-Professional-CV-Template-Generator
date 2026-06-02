@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { readCompanyMetadata } from "@/lib/server/companyMetadataStore";
 import { readCv } from "@/lib/server/cvStore";
 import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
@@ -196,6 +197,11 @@ function buildPrompt(
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as ScoreRequest;
 
   const cvId = typeof payload.cvId === "string" ? payload.cvId.trim() : "";
