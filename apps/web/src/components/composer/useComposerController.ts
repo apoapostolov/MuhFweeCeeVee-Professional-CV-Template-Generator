@@ -176,6 +176,17 @@ export function useComposerController() {
   const [companyMetadataSaving, setCompanyMetadataSaving] = useState(false);
   const [companyMetadataNotice, setCompanyMetadataNotice] = useState("");
   const [companyMetadataYamlLintIssues, setCompanyMetadataYamlLintIssues] = useState<string[]>([]);
+  const companyMetadataAutoSaveEnabledRef = useRef(true);
+  const companyMetadataAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const companyMetadataAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const companyMetadataDraftRef = useRef<unknown>({ companies: [] });
+  const companyMetadataYamlDraftRef = useRef("");
+  const companyMetadataEditorViewRef = useRef<EditorViewMode>("form");
+  const analysisCompanySourceRef = useRef<CompanySource>("example");
+  const [companyMetadataAutoSaveEnabled, setCompanyMetadataAutoSaveEnabled] = useState(true);
+  const [companyMetadataSavedFingerprint, setCompanyMetadataSavedFingerprint] = useState("");
+  const [companyMetadataAutosaveActivity, setCompanyMetadataAutosaveActivity] =
+    useState<EditorAutosaveActivity>("idle");
   const [analysisDrawerCollapsed, setAnalysisDrawerCollapsed] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
@@ -637,6 +648,11 @@ export function useComposerController() {
         editorAutoSaveEnabledRef.current = false;
         setEditorAutoSaveEnabled(false);
       }
+      const metadataStored = window.localStorage.getItem(STORAGE_KEYS.companyMetadataAutoSave);
+      if (metadataStored === "0") {
+        companyMetadataAutoSaveEnabledRef.current = false;
+        setCompanyMetadataAutoSaveEnabled(false);
+      }
     } catch {
       // ignore private browsing / blocked storage
     }
@@ -647,12 +663,35 @@ export function useComposerController() {
   }, [editorAutoSaveEnabled]);
 
   useEffect(() => {
+    companyMetadataAutoSaveEnabledRef.current = companyMetadataAutoSaveEnabled;
+  }, [companyMetadataAutoSaveEnabled]);
+
+  useEffect(() => {
+    companyMetadataDraftRef.current = companyMetadataDraft;
+  }, [companyMetadataDraft]);
+  useEffect(() => {
+    companyMetadataYamlDraftRef.current = companyMetadataYamlDraft;
+  }, [companyMetadataYamlDraft]);
+  useEffect(() => {
+    companyMetadataEditorViewRef.current = companyMetadataEditorView;
+  }, [companyMetadataEditorView]);
+  useEffect(() => {
+    analysisCompanySourceRef.current = analysisCompanySource;
+  }, [analysisCompanySource]);
+
+  useEffect(() => {
     return () => {
       if (textFieldAutosaveTimerRef.current) {
         clearTimeout(textFieldAutosaveTimerRef.current);
       }
       if (editorAutosaveActivityTimerRef.current) {
         clearTimeout(editorAutosaveActivityTimerRef.current);
+      }
+      if (companyMetadataAutosaveTimerRef.current) {
+        clearTimeout(companyMetadataAutosaveTimerRef.current);
+      }
+      if (companyMetadataAutosaveActivityTimerRef.current) {
+        clearTimeout(companyMetadataAutosaveActivityTimerRef.current);
       }
     };
   }, []);
@@ -773,18 +812,30 @@ export function useComposerController() {
         const response = await fetch(`/api/companies?source=${encodeURIComponent(analysisCompanySource)}`);
         const payload = (await response.json()) as CompanyMetadataDocumentResponse;
         if (cancelled) return;
+        if (companyMetadataAutosaveTimerRef.current) {
+          clearTimeout(companyMetadataAutosaveTimerRef.current);
+          companyMetadataAutosaveTimerRef.current = null;
+        }
+        setCompanyMetadataAutosaveActivity("idle");
+
         if (!response.ok || !payload.ok) {
+          const emptyYaml = stringifyYaml({ companies: [] });
           setCompanyMetadataDraft({ companies: [] });
-          setCompanyMetadataYamlDraft(stringifyYaml({ companies: [] }));
+          setCompanyMetadataYamlDraft(emptyYaml);
+          setCompanyMetadataSavedFingerprint(emptyYaml);
           return;
         }
         const document = payload.document ?? { companies: [] };
+        const yaml = stringifyYaml(document);
         setCompanyMetadataDraft(document);
-        setCompanyMetadataYamlDraft(stringifyYaml(document));
+        setCompanyMetadataYamlDraft(yaml);
+        setCompanyMetadataSavedFingerprint(yaml);
       } catch {
         if (!cancelled) {
+          const emptyYaml = stringifyYaml({ companies: [] });
           setCompanyMetadataDraft({ companies: [] });
-          setCompanyMetadataYamlDraft(stringifyYaml({ companies: [] }));
+          setCompanyMetadataYamlDraft(emptyYaml);
+          setCompanyMetadataSavedFingerprint(emptyYaml);
         }
       }
     }
@@ -854,6 +905,16 @@ export function useComposerController() {
   }, [editorView, yamlDraft, sectionFormDraft]);
 
   const editorHasUnsavedChanges = editorSectionFingerprint !== editorSavedFingerprint;
+
+  const companyMetadataFingerprint = useMemo(() => {
+    if (companyMetadataEditorView === "yaml") {
+      return companyMetadataYamlDraft;
+    }
+    return stringifyYaml(companyMetadataDraft ?? {});
+  }, [companyMetadataEditorView, companyMetadataYamlDraft, companyMetadataDraft]);
+
+  const companyMetadataHasUnsavedChanges =
+    companyMetadataFingerprint !== companyMetadataSavedFingerprint;
 
   useEffect(() => {
     if (editorView !== "form" || editorLoading || !editorCv) {
@@ -954,6 +1015,87 @@ export function useComposerController() {
     }
     setEditorView(view);
   }, [editorPath, yamlDraft]);
+
+  function syncCompanyMetadataSavedFingerprintFromDraft(): void {
+    const fingerprint =
+      companyMetadataEditorViewRef.current === "yaml"
+        ? companyMetadataYamlDraftRef.current
+        : stringifyYaml(companyMetadataDraftRef.current ?? {});
+    setCompanyMetadataSavedFingerprint(fingerprint);
+  }
+
+  function setCompanyMetadataAutoSavePreference(enabled: boolean): void {
+    setCompanyMetadataAutoSaveEnabled(enabled);
+    companyMetadataAutoSaveEnabledRef.current = enabled;
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.companyMetadataAutoSave, enabled ? "1" : "0");
+    } catch {
+      // ignore
+    }
+    if (!enabled && companyMetadataAutosaveTimerRef.current) {
+      clearTimeout(companyMetadataAutosaveTimerRef.current);
+      companyMetadataAutosaveTimerRef.current = null;
+      setCompanyMetadataAutosaveActivity("idle");
+    }
+  }
+
+  function setCompanyMetadataAutosaveActivityVisible(status: EditorAutosaveActivity): void {
+    if (companyMetadataAutosaveActivityTimerRef.current) {
+      clearTimeout(companyMetadataAutosaveActivityTimerRef.current);
+      companyMetadataAutosaveActivityTimerRef.current = null;
+    }
+    setCompanyMetadataAutosaveActivity(status);
+    if (status === "saved") {
+      companyMetadataAutosaveActivityTimerRef.current = setTimeout(() => {
+        setCompanyMetadataAutosaveActivity("idle");
+        companyMetadataAutosaveActivityTimerRef.current = null;
+      }, 2800);
+    }
+  }
+
+  function scheduleCompanyMetadataAutosave(): void {
+    if (!companyMetadataAutoSaveEnabledRef.current) {
+      return;
+    }
+    if (companyMetadataAutosaveTimerRef.current) {
+      clearTimeout(companyMetadataAutosaveTimerRef.current);
+    }
+    setCompanyMetadataAutosaveActivityVisible("pending");
+    companyMetadataAutosaveTimerRef.current = setTimeout(() => {
+      companyMetadataAutosaveTimerRef.current = null;
+      void flushCompanyMetadataAutosave();
+    }, TEXT_FIELD_AUTOSAVE_MS);
+  }
+
+  const handleCompanyMetadataYamlDraftChange = useCallback((value: string) => {
+    setCompanyMetadataYamlDraft(value);
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setCompanyMetadataDraft({ companies: [] });
+      scheduleCompanyMetadataAutosave();
+      return;
+    }
+    try {
+      setCompanyMetadataDraft(parseYaml(value));
+      scheduleCompanyMetadataAutosave();
+    } catch {
+      // Keep draft until YAML parses.
+    }
+  }, []);
+
+  const handleCompanyMetadataEditorViewChange = useCallback((view: EditorViewMode) => {
+    if (view === "form") {
+      const trimmed = companyMetadataYamlDraft.trim();
+      if (trimmed) {
+        try {
+          setCompanyMetadataDraft(parseYaml(companyMetadataYamlDraft));
+        } catch {
+          // Keep existing draft.
+        }
+      }
+    }
+    setCompanyMetadataEditorView(view);
+  }, [companyMetadataYamlDraft]);
 
   const settingsCreditCompact = useMemo<string>(() => {
     if (typeof openRouter.creditStatus?.remainingUsd === "number") {
@@ -1352,6 +1494,7 @@ export function useComposerController() {
       setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleCompanyMetadataAutosave();
   }
 
   function removeCompanyMetadataDraftAt(path: PathSegment[]) {
@@ -1371,6 +1514,7 @@ export function useComposerController() {
       setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleCompanyMetadataAutosave();
   }
 
   function addCompanyMetadataArrayEntry(path: PathSegment[], pathLabel: string, sample: unknown) {
@@ -1379,6 +1523,7 @@ export function useComposerController() {
       setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleCompanyMetadataAutosave();
   }
 
   function addCompanyMetadataCustomObjectField(path: PathSegment[]) {
@@ -1393,6 +1538,7 @@ export function useComposerController() {
       setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleCompanyMetadataAutosave();
   }
 
   const templateVisibility = useMemo(
@@ -1470,37 +1616,71 @@ export function useComposerController() {
     companyMetadataDraft,
   });
 
-  async function saveCompanyMetadataSource() {
-    let parsedDocument = companyMetadataDraft;
-    if (companyMetadataEditorView === "yaml") {
+  async function persistCompanyMetadataDraft(): Promise<boolean> {
+    let parsedDocument = companyMetadataDraftRef.current;
+    if (companyMetadataEditorViewRef.current === "yaml") {
       try {
-        parsedDocument = parseYaml(companyMetadataYamlDraft);
+        parsedDocument = parseYaml(companyMetadataYamlDraftRef.current);
       } catch {
         setCompanyMetadataNotice("Invalid YAML.");
-        return;
+        return false;
       }
     }
 
-    setCompanyMetadataSaving(true);
-    setCompanyMetadataNotice("");
     try {
-      const response = await fetch(`/api/companies?source=${encodeURIComponent(analysisCompanySource)}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ document: parsedDocument }),
-      });
+      const response = await fetch(
+        `/api/companies?source=${encodeURIComponent(analysisCompanySourceRef.current)}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ document: parsedDocument }),
+        },
+      );
       const payload = (await response.json()) as CompanyMetadataDocumentResponse;
       if (!response.ok || !payload.ok) {
         setCompanyMetadataNotice(payload.error ?? "Failed to save company metadata.");
-        return;
+        return false;
       }
       const document = payload.document ?? { companies: [] };
       setCompanyMetadataDraft(document);
       setCompanyMetadataYamlDraft(stringifyYaml(document));
-      setCompanyMetadataNotice("Company metadata saved.");
+      syncCompanyMetadataSavedFingerprintFromDraft();
       await loadAnalysisCompanies();
+      return true;
     } catch {
       setCompanyMetadataNotice("Failed to save company metadata.");
+      return false;
+    }
+  }
+
+  async function flushCompanyMetadataAutosave(): Promise<void> {
+    if (!companyMetadataAutoSaveEnabledRef.current) {
+      return;
+    }
+
+    setCompanyMetadataAutosaveActivityVisible("saving");
+    setCompanyMetadataSaving(true);
+    setCompanyMetadataNotice("");
+    try {
+      const saved = await persistCompanyMetadataDraft();
+      if (!saved) {
+        setCompanyMetadataAutosaveActivityVisible("idle");
+        return;
+      }
+      setCompanyMetadataAutosaveActivityVisible("saved");
+    } finally {
+      setCompanyMetadataSaving(false);
+    }
+  }
+
+  async function saveCompanyMetadataSource() {
+    setCompanyMetadataSaving(true);
+    setCompanyMetadataNotice("");
+    try {
+      const saved = await persistCompanyMetadataDraft();
+      if (saved) {
+        setCompanyMetadataNotice("Company metadata saved.");
+      }
     } finally {
       setCompanyMetadataSaving(false);
     }
@@ -2104,10 +2284,10 @@ export function useComposerController() {
     companyMetadataEditorOpen,
     setCompanyMetadataEditorOpen,
     companyMetadataEditorView,
-    setCompanyMetadataEditorView,
     companyMetadataDraft,
     companyMetadataYamlDraft,
-    setCompanyMetadataYamlDraft,
+    setCompanyMetadataYamlDraft: handleCompanyMetadataYamlDraftChange,
+    handleCompanyMetadataEditorViewChange,
     companyMetadataSaving,
     companyMetadataNotice,
     companyMetadataYamlLintIssues,
@@ -2167,5 +2347,9 @@ export function useComposerController() {
     setEditorAutoSavePreference,
     editorHasUnsavedChanges,
     editorAutosaveActivity,
+    companyMetadataAutoSaveEnabled,
+    setCompanyMetadataAutoSavePreference,
+    companyMetadataHasUnsavedChanges,
+    companyMetadataAutosaveActivity,
   };
 }

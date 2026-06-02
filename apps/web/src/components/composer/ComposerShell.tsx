@@ -80,6 +80,9 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               companyMetadataEditorOpen={c.companyMetadataEditorOpen}
               companyMetadataEditorView={c.companyMetadataEditorView}
               companyMetadataSaving={c.companyMetadataSaving}
+              companyMetadataAutoSaveEnabled={c.companyMetadataAutoSaveEnabled}
+              companyMetadataAutosaveActivity={c.companyMetadataAutosaveActivity}
+              companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
               companyMetadataYamlDraft={c.companyMetadataYamlDraft}
               companyMetadataYamlLintIssues={c.companyMetadataYamlLintIssues}
               cvPairs={c.cvPairs}
@@ -94,7 +97,8 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               editorView={c.editorView}
               formRenderer={c.formRenderer}
               onAnalysisCompanySourceChange={c.setAnalysisCompanySource}
-              onCompanyMetadataEditorViewChange={c.setCompanyMetadataEditorView}
+              onCompanyMetadataAutoSaveChange={c.setCompanyMetadataAutoSavePreference}
+              onCompanyMetadataEditorViewChange={c.handleCompanyMetadataEditorViewChange}
               onCompanyMetadataYamlDraftChange={c.setCompanyMetadataYamlDraft}
               onEditorTabChange={c.setEditorTab}
               onEditorViewChange={c.setEditorView}

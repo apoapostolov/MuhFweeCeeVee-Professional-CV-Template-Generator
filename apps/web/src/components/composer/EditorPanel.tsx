@@ -54,6 +54,10 @@ export type EditorPanelProps = {
   onCompanyMetadataYamlDraftChange: (value: string) => void;
   companyMetadataYamlLintIssues: string[];
   companyMetadataSaving: boolean;
+  companyMetadataAutoSaveEnabled: boolean;
+  onCompanyMetadataAutoSaveChange: (enabled: boolean) => void;
+  companyMetadataHasUnsavedChanges: boolean;
+  companyMetadataAutosaveActivity: EditorAutosaveActivity;
   onSaveCompanyMetadata: () => void;
   editorView: EditorViewMode;
   onEditorViewChange: (view: EditorViewMode) => void;
@@ -116,6 +120,10 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onCompanyMetadataYamlDraftChange,
     companyMetadataYamlLintIssues,
     companyMetadataSaving,
+    companyMetadataAutoSaveEnabled,
+    onCompanyMetadataAutoSaveChange,
+    companyMetadataHasUnsavedChanges,
+    companyMetadataAutosaveActivity,
     onSaveCompanyMetadata,
     editorView,
     onEditorViewChange,
@@ -155,6 +163,18 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
 
   const manualSaveEnabled =
     !editorAutoSaveEnabled && editorHasUnsavedChanges && !editorSaving && !editorLoading && Boolean(selectedCvId);
+
+  const metadataAutosavePillLabel =
+    companyMetadataAutosaveActivity === "pending" || companyMetadataAutosaveActivity === "saving"
+      ? "Saving…"
+      : companyMetadataAutosaveActivity === "saved"
+        ? "Saved"
+        : "";
+
+  const metadataManualSaveEnabled =
+    !companyMetadataAutoSaveEnabled &&
+    companyMetadataHasUnsavedChanges &&
+    !companyMetadataSaving;
 
   return (
             <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[340px_1fr]">
@@ -327,7 +347,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             onClick={() => onCompanyMetadataEditorViewChange("form")}
                             type="button"
                           >
-                            Form
+                            Form View
                           </button>
                           <button
                             className={`border-l border-[var(--line)] px-3 py-1.5 text-xs font-semibold ${
@@ -336,17 +356,65 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             onClick={() => onCompanyMetadataEditorViewChange("yaml")}
                             type="button"
                           >
-                            YAML
+                            YAML View
                           </button>
                         </div>
-                        <button
-                          className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-                          disabled={companyMetadataSaving}
-                          onClick={onSaveCompanyMetadata}
-                          type="button"
+                        <div
+                          aria-label="Auto Save"
+                          className="inline-flex overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
+                          role="group"
                         >
-                          Save Metadata
-                        </button>
+                          <span className="border-r border-[var(--line)] bg-white px-2.5 py-1.5 text-slate-800">
+                            Auto Save
+                          </span>
+                          <button
+                            className={`px-2.5 py-1.5 ${
+                              companyMetadataAutoSaveEnabled
+                                ? "bg-[var(--accent)] text-white"
+                                : "bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                            onClick={() => onCompanyMetadataAutoSaveChange(true)}
+                            type="button"
+                          >
+                            ON
+                          </button>
+                          <button
+                            className={`border-l border-[var(--line)] px-2.5 py-1.5 ${
+                              !companyMetadataAutoSaveEnabled
+                                ? "bg-[var(--accent)] text-white"
+                                : "bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                            onClick={() => onCompanyMetadataAutoSaveChange(false)}
+                            type="button"
+                          >
+                            OFF
+                          </button>
+                        </div>
+                        {companyMetadataAutoSaveEnabled && companyMetadataAutosaveActivity !== "idle" ? (
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                              companyMetadataAutosaveActivity === "saved"
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                : "border-amber-300 bg-amber-50 text-amber-800"
+                            }`}
+                          >
+                            {metadataAutosavePillLabel}
+                          </span>
+                        ) : null}
+                        {!companyMetadataAutoSaveEnabled ? (
+                          <button
+                            className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${
+                              metadataManualSaveEnabled
+                                ? "bg-[var(--accent)] disabled:opacity-60"
+                                : "bg-slate-400 text-slate-100 disabled:opacity-100"
+                            }`}
+                            disabled={!metadataManualSaveEnabled}
+                            onClick={onSaveCompanyMetadata}
+                            type="button"
+                          >
+                            Save Metadata
+                          </button>
+                        ) : null}
                       </>
                     ) : (
                       <>
@@ -483,7 +551,9 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                 <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 md:flex-row">
                   <div
                     className={`min-h-0 flex-1 overflow-auto rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3 md:min-w-0 ${
-                      !companyMetadataEditorOpen && editorView === "form" && !editorLoading
+                      (companyMetadataEditorOpen &&
+                        companyMetadataEditorView === "form") ||
+                      (!companyMetadataEditorOpen && editorView === "form" && !editorLoading)
                         ? EDITOR_COMPACT_FORM_GRID_CLASS
                         : ""
                     }`}
