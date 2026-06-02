@@ -49,9 +49,7 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
         <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
           <p className="text-sm font-semibold text-slate-800">Approximate Cost per Check</p>
           <p className="mt-1 text-[11px] text-slate-600">
-            Estimates use live CV size + prompt/output heuristics with{" "}
-            {analysisCostEstimate.overhead.toFixed(1)}x overhead. Token counts are approximate; actual
-            spend depends on field length, image size, and the model selected above.
+            Rough tokens and USD from CV size and model rates; actual spend may differ.
           </p>
           <div className="mt-2 grid gap-2">
             {analysisCostEstimate.lines.map((line) => (
