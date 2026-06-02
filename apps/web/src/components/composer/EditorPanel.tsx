@@ -371,21 +371,27 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           </button>
                         </div>
                         <button
-                          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-transparent px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
                           disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
                           onClick={onRunAnalysisSection}
                           type="button"
                         >
-                          <AiStarsIcon className="h-3.5 w-3.5 shrink-0 text-white" />
+                          <AiStarsIcon
+                            className={`h-3.5 w-3.5 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
+                            variant={resolvedTheme === "dark" ? "default" : "on-light"}
+                          />
                           Score Section
                         </button>
                         <button
-                          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-transparent px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
                           disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
                           onClick={onRunAnalysisFull}
                           type="button"
                         >
-                          <AiStarsIcon className="h-3.5 w-3.5 shrink-0 text-white" />
+                          <AiStarsIcon
+                            className={`h-3.5 w-3.5 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
+                            variant={resolvedTheme === "dark" ? "default" : "on-light"}
+                          />
                           Score Whole CV
                         </button>
                         <div
