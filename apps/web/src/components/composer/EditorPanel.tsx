@@ -587,7 +587,15 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           </div>
                         </div>
                       ) : (
-                        formRenderer.renderCompanyMetadataFormNode(companyMetadataDraft ?? { companies: [] }, [], "", "Companies Metadata")
+                        formRenderer.renderCompanyMetadataFormNode(
+                          Array.isArray((companyMetadataDraft as { companies?: unknown })?.companies)
+                            ? ((companyMetadataDraft as { companies: unknown[] }).companies)
+                            : [],
+                          ["companies"],
+                          "companies",
+                          "companies",
+                          { headingTitle: "Companies" },
+                        )
                       )
                     ) : editorLoading ? (
                       <p className="text-xs text-[var(--ink-muted)]">Loading CV...</p>

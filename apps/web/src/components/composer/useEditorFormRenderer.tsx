@@ -967,92 +967,243 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       : fieldShell;
   }
 
+  const metadataCompactEditorPath = "companies";
+
+  function metadataFormPathKey(targetPath: PathSegment[]): string {
+    if (targetPath.length === 0) return "meta:__root__";
+    return `meta:${targetPath
+      .map((segment) => (typeof segment === "number" ? `[${segment}]` : segment))
+      .join(".")}`;
+  }
+
+  function setMetadataFormNodeExpanded(targetPath: PathSegment[], value: boolean): void {
+    setExpandedFormNodes((current) => ({ ...current, [metadataFormPathKey(targetPath)]: value }));
+  }
+
+  function isMetadataFormNodeExpanded(targetPath: PathSegment[]): boolean {
+    const key = metadataFormPathKey(targetPath);
+    if (typeof expandedFormNodes[key] === "boolean") {
+      return expandedFormNodes[key];
+    }
+    return true;
+  }
+
+  function readMetadataStringField(record: Record<string, unknown>, keys: string[]): string {
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return "";
+  }
+
+  function describeMetadataContainerHeading(
+    record: Record<string, unknown>,
+    fallbackTitle: string,
+  ): { title: string; subtitle: string } {
+    const name = readMetadataStringField(record, ["name", "title"]);
+    const id = readMetadataStringField(record, ["id"]);
+    const priority =
+      typeof record.priority === "number" && Number.isFinite(record.priority)
+        ? `Priority ${record.priority}`
+        : "";
+    const title = name || id || fallbackTitle;
+    const subtitle = [priority, id && name ? id : ""].filter(Boolean).join(" • ");
+    return { title, subtitle };
+  }
+
+  const metadataCompactLeading = (
+    <span className="sr-only" aria-hidden="true">
+      —
+    </span>
+  );
+
   function renderCompanyMetadataFormNode(
     node: unknown,
     path: PathSegment[],
     pathLabel: string,
     keyName: string,
-    options?: { onRemove?: () => void },
+    options?: {
+      onRemove?: () => void;
+      headingTitle?: string;
+      headingSubtitle?: string;
+      depth?: number;
+    },
   ): JSX.Element {
+    const depth = options?.depth ?? 0;
+    const childDepth = depth + 1;
+    const compactFieldLayout = true;
     const copy = resolveFieldCopy(pathLabel, keyName, "en");
     const removeButton = options?.onRemove ? (
       <ConfirmRemoveButton kind="field" language="en" onConfirm={options.onRemove} />
     ) : null;
+    const isContainer = Array.isArray(node) || (node !== null && typeof node === "object");
+    const expanded = isContainer ? isMetadataFormNodeExpanded(path) : true;
+    const headerTitle = options?.headingTitle ?? copy.label;
+    const headerSubtitle = options?.headingSubtitle ?? (isContainer ? copy.description : "");
 
     if (Array.isArray(node)) {
+      const arrayNode = node;
+      const tabulatedSubsectionIndices: number[] = [];
+      for (let index = 0; index < arrayNode.length; index += 1) {
+        const item = arrayNode[index];
+        if (item !== null && (Array.isArray(item) || typeof item === "object")) {
+          tabulatedSubsectionIndices.push(index);
+        }
+      }
+      const showCollapseAllSubsections =
+        isTabulatedRootArraySection(metadataCompactEditorPath, depth) && tabulatedSubsectionIndices.length > 0;
+      const allSubsectionsCollapsed = tabulatedSubsectionIndices.every(
+        (index) => !isMetadataFormNodeExpanded([...path, index]),
+      );
+      function toggleAllTabulatedSubsections(): void {
+        const nextExpanded = allSubsectionsCollapsed;
+        const updates: Record<string, boolean> = {};
+        for (const index of tabulatedSubsectionIndices) {
+          updates[metadataFormPathKey([...path, index])] = nextExpanded;
+        }
+        setExpandedFormNodes((current) => ({ ...current, ...updates }));
+      }
+      const arrayHeaderActions = (
+        <div className="flex shrink-0 gap-2">
+          <button
+            aria-expanded={expanded}
+            aria-label={expanded ? "Collapse section" : "Expand section"}
+            className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-[var(--line)] bg-white px-1 text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
+            onClick={() => setMetadataFormNodeExpanded(path, !expanded)}
+            title={expanded ? "Collapse" : "Expand"}
+            type="button"
+          >
+            {expanded ? "▾" : "▸"}
+          </button>
+          {showCollapseAllSubsections ? (
+            <button
+              aria-expanded={!allSubsectionsCollapsed}
+              aria-label={
+                allSubsectionsCollapsed ? "Expand all subsections" : "Collapse all subsections"
+              }
+              className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-[var(--line)] bg-white px-1 text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
+              onClick={toggleAllTabulatedSubsections}
+              title={
+                allSubsectionsCollapsed ? "Expand all subsections" : "Collapse all subsections"
+              }
+              type="button"
+            >
+              {allSubsectionsCollapsed ? "▾" : "▴"}
+            </button>
+          ) : null}
+          {removeButton}
+          <button
+            aria-label="Add item"
+            className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
+            onClick={() => addCompanyMetadataArrayEntry(path, pathLabel, node[0])}
+            title="Add item"
+            type="button"
+          >
+            +
+          </button>
+          <button
+            aria-label="Add custom item"
+            className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
+            onClick={() => addCompanyMetadataCustomArrayEntry(path)}
+            title="Add custom item"
+            type="button"
+          >
+            ✎
+          </button>
+        </div>
+      );
+      const arrayHeaderTitle = (
+        <>
+          <p className="text-sm font-semibold text-slate-900">{headerTitle}</p>
+          {headerSubtitle ? <p className="text-xs text-[var(--ink-muted)]">{headerSubtitle}</p> : null}
+        </>
+      );
+      const sectionIndentStyle = compactSectionIndentStyle(compactFieldLayout, metadataCompactEditorPath, depth);
+
       return (
-        <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{copy.label}</p>
-              <p className="text-xs text-[var(--ink-muted)]">{copy.description}</p>
-            </div>
-            <div className="flex gap-2">
-              {removeButton}
-              <button
-                aria-label="Add item"
-                className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
-                onClick={() => addCompanyMetadataArrayEntry(path, pathLabel, node[0])}
-                title="Add item"
-                type="button"
-              >
-                +
-              </button>
-              <button
-                aria-label="Add custom item"
-                className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
-                onClick={() => addCompanyMetadataCustomArrayEntry(path)}
-                title="Add custom item"
-                type="button"
-              >
-                ✎
-              </button>
-            </div>
+        <div
+          className={compactContainerShellClass(compactFieldLayout, metadataCompactEditorPath, depth)}
+          style={sectionIndentStyle}
+        >
+          <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
+            <div className="flex h-6 w-6 items-center justify-center self-start">{metadataCompactLeading}</div>
+            <div className="col-span-2 min-w-0 self-start">{arrayHeaderTitle}</div>
+            <div className="flex items-center justify-end gap-2 self-start">{arrayHeaderActions}</div>
           </div>
 
-          <div className="space-y-2">
-            {node.length === 0 ? <p className="text-xs text-[var(--ink-muted)]">Empty list.</p> : null}
-            {node.map((item, index) => {
-              const childPath = [...path, index];
-              const childLabel = `${pathLabel}[${index}]`;
-              const primitive = item === null || ["string", "number", "boolean"].includes(typeof item);
-              if (primitive) {
-                const stringValue = String(item ?? "");
-                const useTextarea = shouldUseTextarea(stringValue);
-                return (
-                  <div key={childLabel} className="flex items-start gap-2 rounded-md border border-[var(--line)] bg-white p-2">
-                    {useTextarea ? (
-                      <textarea
-                        className="w-full rounded border border-[var(--line)] bg-white px-2 py-1 text-xs"
-                        onChange={(event) => updateCompanyMetadataDraftAt(childPath, event.target.value)}
-                        rows={estimateTextareaRows(stringValue)}
-                        value={stringValue}
-                      />
-                    ) : (
-                      <input
-                        className="w-full rounded border border-[var(--line)] bg-white px-2 py-1 text-xs"
-                        onChange={(event) => updateCompanyMetadataDraftAt(childPath, event.target.value)}
-                        value={stringValue}
-                      />
-                    )}
+          {expanded ? (
+            <div className={compactChildrenStackClass(compactFieldLayout, metadataCompactEditorPath, depth)}>
+              {node.length === 0 ? (
+                <p className="col-span-full text-xs text-[var(--ink-muted)]">Empty list.</p>
+              ) : null}
+              {node.map((item, index) => {
+                const childPath = [...path, index];
+                const childLabel = `${pathLabel}[${index}]`;
+                const primitive = item === null || ["string", "number", "boolean"].includes(typeof item);
+                if (primitive) {
+                  const stringValue = String(item ?? "");
+                  const useTextarea = shouldUseTextarea(stringValue);
+                  const listItemLabel = `${copy.label} ${index + 1}`;
+                  const inputControl = useTextarea ? (
+                    <textarea
+                      className="w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1 text-xs leading-5"
+                      onChange={(event) => updateCompanyMetadataDraftAt(childPath, event.target.value)}
+                      rows={Math.min(3, estimateTextareaRows(stringValue))}
+                      value={stringValue}
+                    />
+                  ) : (
+                    <input
+                      className={`w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1 text-xs min-h-8 box-border`}
+                      onChange={(event) => updateCompanyMetadataDraftAt(childPath, event.target.value)}
+                      value={stringValue}
+                    />
+                  );
+                  const removeItemButton = (
                     <ConfirmRemoveButton
                       kind="item"
                       language="en"
                       onConfirm={() => removeCompanyMetadataDraftAt(childPath)}
                     />
+                  );
+                  return (
+                    <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
+                      <EditorCompactFieldRow
+                        alignTop={useTextarea}
+                        control={inputControl}
+                        includeAiActionSlot={false}
+                        label={listItemLabel}
+                        trailing={removeItemButton}
+                        useFormGrid={compactFieldLayout}
+                      />
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
+                    {(() => {
+                      const fallbackItemTitle = `${copy.label} ${index + 1}`;
+                      const heading =
+                        item && typeof item === "object" && !Array.isArray(item)
+                          ? describeMetadataContainerHeading(
+                              item as Record<string, unknown>,
+                              fallbackItemTitle,
+                            )
+                          : { title: fallbackItemTitle, subtitle: "" };
+                      return renderCompanyMetadataFormNode(item, childPath, childLabel, `${keyName} ${index + 1}`, {
+                        depth: childDepth,
+                        onRemove: () => removeCompanyMetadataDraftAt(childPath),
+                        headingTitle: heading.title,
+                        headingSubtitle: heading.subtitle,
+                      });
+                    })()}
                   </div>
                 );
-              }
-
-              return (
-                <div key={childLabel}>
-                  {renderCompanyMetadataFormNode(item, childPath, childLabel, `${keyName} ${index + 1}`, {
-                    onRemove: () => removeCompanyMetadataDraftAt(childPath),
-                  })}
-                </div>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -1061,39 +1212,64 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       const entries = Object.entries(node as Record<string, unknown>).filter(
         ([key]) => !isReservedObjectEntryKey(key),
       );
+      const objectHeaderActions = (
+        <div className="flex shrink-0 gap-2">
+          <button
+            aria-expanded={expanded}
+            aria-label={expanded ? "Collapse section" : "Expand section"}
+            className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-[var(--line)] bg-white px-1 text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
+            onClick={() => setMetadataFormNodeExpanded(path, !expanded)}
+            title={expanded ? "Collapse" : "Expand"}
+            type="button"
+          >
+            {expanded ? "▾" : "▸"}
+          </button>
+          {removeButton}
+          <button
+            aria-label="Add custom field"
+            className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
+            onClick={() => addCompanyMetadataCustomObjectField(path)}
+            title="Add custom field"
+            type="button"
+          >
+            +
+          </button>
+        </div>
+      );
+      const objectHeaderTitle = (
+        <>
+          <p className="text-sm font-semibold text-slate-900">{headerTitle}</p>
+          {headerSubtitle ? <p className="text-xs text-[var(--ink-muted)]">{headerSubtitle}</p> : null}
+        </>
+      );
+      const sectionIndentStyle = compactSectionIndentStyle(compactFieldLayout, metadataCompactEditorPath, depth);
+
       return (
-        <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{copy.label}</p>
-              <p className="text-xs text-[var(--ink-muted)]">{copy.description}</p>
-            </div>
-            <div className="flex gap-2">
-              {removeButton}
-              <button
-                aria-label="Add custom field"
-                className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
-                onClick={() => addCompanyMetadataCustomObjectField(path)}
-                title="Add custom field"
-                type="button"
-              >
-                +
-              </button>
-            </div>
+        <div
+          className={compactContainerShellClass(compactFieldLayout, metadataCompactEditorPath, depth)}
+          style={sectionIndentStyle}
+        >
+          <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
+            <div className="flex h-6 w-6 items-center justify-center self-start">{metadataCompactLeading}</div>
+            <div className="col-span-2 min-w-0 self-start">{objectHeaderTitle}</div>
+            <div className="flex items-center justify-end gap-2 self-start">{objectHeaderActions}</div>
           </div>
-          <div className="space-y-2">
-            {entries.map(([key, value]) => {
-              const childPath = [...path, key];
-              const childLabel = pathLabel ? `${pathLabel}.${key}` : key;
-              return (
-                <div key={childLabel}>
-                  {renderCompanyMetadataFormNode(value, childPath, childLabel, key, {
-                    onRemove: () => removeCompanyMetadataDraftAt(childPath),
-                  })}
-                </div>
-              );
-            })}
-          </div>
+          {expanded ? (
+            <div className={compactChildrenStackClass(compactFieldLayout, metadataCompactEditorPath, depth)}>
+              {entries.map(([key, value]) => {
+                const childPath = [...path, key];
+                const childLabel = pathLabel ? `${pathLabel}.${key}` : key;
+                return (
+                  <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
+                    {renderCompanyMetadataFormNode(value, childPath, childLabel, key, {
+                      depth: childDepth,
+                      onRemove: () => removeCompanyMetadataDraftAt(childPath),
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -1101,67 +1277,69 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const primitive = node ?? "";
     const isBool = typeof primitive === "boolean";
     const isNum = typeof primitive === "number";
-    const isDate = isDateLike(primitive);
+    const isDate = isDateLike(primitive) || isDateFieldKey(keyName);
+    const stringValue = String(primitive);
+    const useTextarea = shouldUseTextarea(stringValue);
     const customFieldDef = getCustomFieldDefinition(companyMetadataDraft, path, keyName);
 
-    return (
-      <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-        <div className="flex items-start justify-between gap-2">
-          <label className="block text-sm font-semibold text-slate-900">{copy.label}</label>
-          {removeButton}
-        </div>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">
-          {copy.description}
-          {copy.requirement ? ` • ${copy.requirement}` : ""}
-        </p>
+    const valueControl = customFieldDef ? (
+      <CustomFieldControl
+        definition={customFieldDef}
+        language="en"
+        onChange={(next) => updateCompanyMetadataDraftAt(path, next)}
+        useCompactMetrics={compactFieldLayout}
+        value={primitive}
+      />
+    ) : isBool ? (
+      <label className="inline-flex items-center gap-2 text-xs">
+        <input
+          checked={Boolean(primitive)}
+          onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.checked)}
+          type="checkbox"
+        />
+        True/False
+      </label>
+    ) : isDate ? (
+      <input
+        className={EDITOR_COMPACT_DATE_INPUT_CLASS}
+        onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.value)}
+        type="date"
+        value={String(primitive)}
+      />
+    ) : isNum ? (
+      <input
+        className={EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS}
+        onChange={(event) => updateCompanyMetadataDraftAt(path, Number(event.target.value))}
+        type="number"
+        value={Number(primitive)}
+      />
+    ) : useTextarea ? (
+      <textarea
+        className="w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs leading-5"
+        onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.value)}
+        rows={Math.min(3, estimateTextareaRows(stringValue))}
+        value={stringValue}
+      />
+    ) : (
+      <input
+        className={EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS}
+        onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.value)}
+        type="text"
+        value={stringValue}
+      />
+    );
 
-        {customFieldDef ? (
-          <div className="mt-2">
-            <CustomFieldControl
-              definition={customFieldDef}
-              language="en"
-              onChange={(next) => updateCompanyMetadataDraftAt(path, next)}
-              value={primitive}
-            />
-          </div>
-        ) : isBool ? (
-          <label className="mt-2 inline-flex items-center gap-2 text-xs">
-            <input
-              checked={Boolean(primitive)}
-              onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.checked)}
-              type="checkbox"
-            />
-            True/False
-          </label>
-        ) : isDate ? (
-          <input
-            className="mt-2 w-full rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
-            onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.value)}
-            type="date"
-            value={String(primitive)}
-          />
-        ) : isNum ? (
-          <input
-            className="mt-2 w-full rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
-            onChange={(event) => updateCompanyMetadataDraftAt(path, Number(event.target.value))}
-            type="number"
-            value={Number(primitive)}
-          />
-        ) : shouldUseTextarea(String(primitive)) ? (
-          <textarea
-            className="mt-2 w-full rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
-            onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.value)}
-            rows={estimateTextareaRows(String(primitive))}
-            value={String(primitive)}
-          />
-        ) : (
-          <input
-            className="mt-2 w-full rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
-            onChange={(event) => updateCompanyMetadataDraftAt(path, event.target.value)}
-            type="text"
-            value={String(primitive)}
-          />
-        )}
+    return (
+      <div className={compactFieldShellClass(compactFieldLayout, false)}>
+        <EditorCompactFieldRow
+          alignTop={useTextarea}
+          control={valueControl}
+          includeAiActionSlot={false}
+          label={copy.label}
+          rowClassName={isDate ? EDITOR_COMPACT_DATE_ROW_CLASS : ""}
+          trailing={removeButton}
+          useFormGrid={compactFieldLayout}
+        />
       </div>
     );
   }

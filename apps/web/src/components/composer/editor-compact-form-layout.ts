@@ -1,4 +1,8 @@
-import { ROOT_ARRAY_EDITOR_PATHS } from "./constants";
+import { COMPANY_METADATA_TABULATED_PATH, ROOT_ARRAY_EDITOR_PATHS } from "./constants";
+
+export function isTabulatedArrayEditorPath(editorPath: string): boolean {
+  return ROOT_ARRAY_EDITOR_PATHS.has(editorPath) || editorPath === COMPANY_METADATA_TABULATED_PATH;
+}
 
 /** Vertical rhythm between all compact field rows (single source of row spacing). */
 export const EDITOR_COMPACT_FORM_ROW_GAP = "gap-y-2";
@@ -8,12 +12,12 @@ export const EDITOR_COMPACT_FORM_ROW_GAP = "gap-y-2";
  * Person, positioning, optional_sections, metadata keep nested groups flush (contact, residence, …).
  */
 export function compactSubsectionVisualDepth(editorPath: string, depth: number): number {
-  return ROOT_ARRAY_EDITOR_PATHS.has(editorPath) ? depth : 0;
+  return isTabulatedArrayEditorPath(editorPath) ? depth : 0;
 }
 
 /** Top-level experience / education / references lists (tabulated array items). */
 export function isTabulatedRootArraySection(editorPath: string, depth: number): boolean {
-  return depth === 0 && ROOT_ARRAY_EDITOR_PATHS.has(editorPath);
+  return depth === 0 && isTabulatedArrayEditorPath(editorPath);
 }
 
 /** Parent grid on the form column — all compact field rows subgrid to these tracks. */

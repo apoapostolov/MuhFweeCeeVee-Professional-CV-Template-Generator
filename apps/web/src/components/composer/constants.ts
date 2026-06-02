@@ -112,6 +112,9 @@ export const ROOT_ARRAY_EDITOR_PATHS = new Set(
   ),
 );
 
+/** Companies list in metadata editor (tabulated compact subsections, same as experience). */
+export const COMPANY_METADATA_TABULATED_PATH = "companies";
+
 export function defaultSectionDraftForEditorPath(editorPath: string): unknown {
   return ROOT_ARRAY_EDITOR_PATHS.has(editorPath) ? [] : {};
 }
