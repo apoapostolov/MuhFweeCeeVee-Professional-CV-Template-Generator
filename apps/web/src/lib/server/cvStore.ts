@@ -56,6 +56,28 @@ async function ensureCvDir(): Promise<void> {
   await fs.mkdir(CVS_DIR, { recursive: true });
 }
 
+function readMetadataVariantBlock(
+  metadata: Record<string, unknown> | null,
+): { iteration: string | null; target: string | null; language: string | null } {
+  const variant =
+    metadata?.variant && typeof metadata.variant === "object" && !Array.isArray(metadata.variant)
+      ? (metadata.variant as Record<string, unknown>)
+      : null;
+  const iteration =
+    typeof variant?.iteration === "string" && variant.iteration.trim().length > 0
+      ? variant.iteration.trim()
+      : null;
+  const target =
+    typeof variant?.target === "string" && variant.target.trim().length > 0
+      ? variant.target.trim().toLowerCase()
+      : null;
+  const language =
+    typeof variant?.language === "string" && variant.language.trim().length > 0
+      ? variant.language.trim().toLowerCase()
+      : null;
+  return { iteration, target, language };
+}
+
 function withUpdatedMetadata(input: CvDocument): CvDocument {
   const nowIso = new Date().toISOString();
   const nowDate = nowIso.slice(0, 10);
@@ -147,7 +169,7 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
   const ids = await listCvIds();
   const variants = await Promise.all(
     ids.map(async (id) => {
-      const parsed = parseCvVariantId(id);
+      const parsed = parseCvVariantIdLoose(id);
       const doc = await readCv(id);
       const metadata =
         doc?.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata)
@@ -155,15 +177,21 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
           : null;
       const metadataLanguage =
         typeof metadata?.language === "string" ? metadata.language.trim().toLowerCase() : "";
+      const variantMeta = readMetadataVariantBlock(metadata);
+      const parsedTarget =
+        parsed?.target && parsed.target.trim().length > 0 ? parsed.target.trim().toLowerCase() : null;
       const internalName =
         (typeof metadata?.internal_name === "string" && metadata.internal_name) || id;
       const internalVersion =
         (typeof metadata?.internal_version === "string" && metadata.internal_version) || "1.0";
       return {
         id,
-        language: parsed?.language ?? (isSupportedLanguage(metadataLanguage) ? metadataLanguage : null),
-        iteration: parsed?.iteration ?? null,
-        target: parsed?.target ?? null,
+        language:
+          parsed?.language ??
+          variantMeta.language ??
+          (isSupportedLanguage(metadataLanguage) ? metadataLanguage : null),
+        iteration: parsed?.iteration ?? variantMeta.iteration,
+        target: parsedTarget ?? variantMeta.target,
         displayName: internalName,
         displayVersion: internalVersion,
         git: await gitVersionInfo(id),

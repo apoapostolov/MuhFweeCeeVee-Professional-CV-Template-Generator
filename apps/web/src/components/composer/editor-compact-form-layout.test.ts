@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  compactLeadingIndentStyle,
   compactSectionHeaderIndentPx,
+  compactSectionIndentStyle,
   compactSubsectionVisualDepth,
 } from "./editor-compact-form-layout";
 
@@ -17,5 +19,10 @@ describe("editor-compact-form-layout", () => {
   it("applies no indent px for flat sections", () => {
     expect(compactSectionHeaderIndentPx(true, "person", 2)).toBe(0);
     expect(compactSectionHeaderIndentPx(true, "experience", 2)).toBe(20);
+  });
+
+  it("does not pad compact subsection shells (inputs share one grid)", () => {
+    expect(compactSectionIndentStyle(true, "experience", 2)).toBeUndefined();
+    expect(compactLeadingIndentStyle(true, "experience", 2)).toEqual({ paddingLeft: 20 });
   });
 });

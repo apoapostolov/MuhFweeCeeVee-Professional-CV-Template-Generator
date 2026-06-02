@@ -29,6 +29,14 @@ describe("parseCvVariantIdLoose", () => {
       target: "john_doe",
     });
   });
+
+  it("parses profile-prefixed ids (owner slug + language + iteration)", () => {
+    expect(parseCvVariantIdLoose("cv_apoapostolov_en_001")).toEqual({
+      language: "en",
+      iteration: "001",
+      target: "",
+    });
+  });
 });
 
 describe("buildCvVariantId", () => {

@@ -43,6 +43,7 @@ import {
   compactContainerShellClass,
   compactFieldShellClass,
   compactFormPassthroughClass,
+  compactLeadingIndentStyle,
   compactSectionIndentStyle,
   isTabulatedRootArraySection,
   EDITOR_STACKED_FIELD_ACTIONS_CLASS,
@@ -384,6 +385,8 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     /** Experimental: compact grid while AI scoring drawer is open. Revert to `analysisDrawerCollapsed`. */
     const compactFieldLayout =
       true || analysisDrawerCollapsed;
+    const leadingIndentStyle = compactLeadingIndentStyle(compactFieldLayout, editorPath, depth);
+    const sectionIndentStyle = compactSectionIndentStyle(compactFieldLayout, editorPath, depth);
 
     function wrapFieldWithAi(
       fieldPath: PathSegment[],
@@ -506,17 +509,19 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           {headerSubtitle ? <p className="text-xs text-[var(--ink-muted)]">{headerSubtitle}</p> : null}
         </>
       );
-      const sectionIndentStyle = compactSectionIndentStyle(compactFieldLayout, editorPath, depth);
-
       return (
-        <div
-          className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}
-          style={sectionIndentStyle}
-        >
+        <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
           {compactFieldLayout ? (
             <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
-              <div className="flex h-6 w-6 items-center justify-center self-start">{visibilityToggle}</div>
-              <div className="col-span-2 min-w-0 self-start">{arrayHeaderTitle}</div>
+              <div
+                className="flex h-6 w-6 items-center justify-center self-start"
+                style={leadingIndentStyle}
+              >
+                {visibilityToggle}
+              </div>
+              <div className="col-span-2 min-w-0 self-start" style={leadingIndentStyle}>
+                {arrayHeaderTitle}
+              </div>
               <div className="flex items-center justify-end gap-2 self-start">{arrayHeaderActions}</div>
             </div>
           ) : (
@@ -548,7 +553,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                 const primitive = item === null || ["string", "number", "boolean"].includes(typeof item);
                 if (primitive) {
                   const stringValue = String(item ?? "");
-                  const useTextarea = shouldUseTextarea(stringValue);
+                  const useTextarea = shouldUseTextarea(stringValue, selectedLanguage);
                   const useTwoRowListLayout = !compactFieldLayout;
                   const childVisibilityKey = pathSegmentsToVisibilityKey(childPath, editorPath);
                   const childVisible = isTemplatePathVisible(childVisibilityKey, templateVisibility);
@@ -638,6 +643,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                           removeItemButton
                         )
                       }
+                      leadingIndentStyle={leadingIndentStyle}
                       useFormGrid={compactFieldLayout}
                     />
                   );
@@ -760,19 +766,18 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           {objectHeaderActions}
         </div>
       );
-      const sectionIndentStyle = compactSectionIndentStyle(compactFieldLayout, editorPath, depth);
       const objectHeaderDivider =
         compactFieldLayout && depth > 0 ? "border-t border-[var(--line)] pt-2" : "";
 
       return (
-        <div
-          className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}
-          style={sectionIndentStyle}
-        >
+        <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
           {compactFieldLayout ? (
             experienceItem ? (
               <div className={`col-span-full flex items-start gap-2 ${objectHeaderDivider}`}>
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center self-start">
+                <div
+                  className="flex h-6 w-6 shrink-0 items-center justify-center self-start"
+                  style={leadingIndentStyle}
+                >
                   {visibilityToggle}
                 </div>
                 <div className="min-w-0 flex-1 self-start">{objectHeaderTitle}</div>
@@ -780,8 +785,15 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               </div>
             ) : (
               <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
-                <div className="flex h-6 w-6 items-center justify-center self-start">{visibilityToggle}</div>
-                <div className="col-span-2 min-w-0 self-start">{objectHeaderTitle}</div>
+                <div
+                  className="flex h-6 w-6 items-center justify-center self-start"
+                  style={leadingIndentStyle}
+                >
+                  {visibilityToggle}
+                </div>
+                <div className="col-span-2 min-w-0 self-start" style={leadingIndentStyle}>
+                  {objectHeaderTitle}
+                </div>
                 <div className="flex items-center justify-end gap-2 self-start">{objectHeaderActions}</div>
               </div>
             )
@@ -822,7 +834,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const isNum = typeof primitive === "number";
     const isDate = isDateLike(primitive) || isDateFieldKey(keyName);
     const stringValue = String(primitive);
-    const useTextarea = shouldUseTextarea(stringValue);
+    const useTextarea = shouldUseTextarea(stringValue, selectedLanguage);
     const useTwoRowFieldLayout = !compactFieldLayout;
     const isEmploymentTypeField =
       keyName === "employment_type" && pathLabel.toLowerCase().includes("experience");
@@ -923,6 +935,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               removeButton
             )
           }
+          leadingIndentStyle={leadingIndentStyle}
           useFormGrid
         />
         {showFieldAi ? (
@@ -1152,7 +1165,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                 const primitive = item === null || ["string", "number", "boolean"].includes(typeof item);
                 if (primitive) {
                   const stringValue = String(item ?? "");
-                  const useTextarea = shouldUseTextarea(stringValue);
+                  const useTextarea = shouldUseTextarea(stringValue, selectedLanguage);
                   const listItemLabel = `${copy.label} ${index + 1}`;
                   const listShowFieldAi = companyMetadataFieldSupportsAi(childLabel, childLabel, item);
                   const inputControl = useTextarea ? (
@@ -1326,7 +1339,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const isNum = typeof primitive === "number";
     const isDate = isDateLike(primitive) || isDateFieldKey(keyName);
     const stringValue = String(primitive);
-    const useTextarea = shouldUseTextarea(stringValue);
+    const useTextarea = shouldUseTextarea(stringValue, selectedLanguage);
     const customFieldDef = getCustomFieldDefinition(companyMetadataDraft, path, keyName);
 
     const showFieldAi =

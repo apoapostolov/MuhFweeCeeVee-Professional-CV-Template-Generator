@@ -89,8 +89,19 @@ export function isDateLike(value: unknown): boolean {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export function shouldUseTextarea(value: string): boolean {
-  return value.length > 120 || value.includes("\n");
+/** BG: expand when content clearly exceeds one compact row. EN: higher bar (longer copy per field). */
+const TEXTAREA_CHAR_THRESHOLD_BG = 120;
+const TEXTAREA_CHAR_THRESHOLD_EN = 240;
+
+export function shouldUseTextarea(value: string, language?: string): boolean {
+  const lang = (language ?? "").trim().toLowerCase();
+  const threshold = lang === "en" ? TEXTAREA_CHAR_THRESHOLD_EN : TEXTAREA_CHAR_THRESHOLD_BG;
+  const nonEmptyLines = value.split("\n").filter((line) => line.trim().length > 0);
+  if (nonEmptyLines.length >= 2) {
+    return true;
+  }
+  const singleLine = nonEmptyLines[0] ?? value.trim();
+  return singleLine.length > threshold;
 }
 
 export function estimateTextareaRows(value: string): number {

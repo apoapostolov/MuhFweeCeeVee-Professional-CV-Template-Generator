@@ -295,6 +295,11 @@ export function useComposerController() {
     });
   }, [cvItems]);
 
+  const cvTemplatesForLanguage = useMemo(() => {
+    const lang = selectedLanguage.toLowerCase();
+    return cvPairs.filter((pair) => Boolean(pair.variants[lang]));
+  }, [cvPairs, selectedLanguage]);
+
   const pdfUrl = useMemo(() => {
     if (!selectedCvId || !selectedTemplateId) {
       return "";
@@ -740,6 +745,27 @@ export function useComposerController() {
       setSelectedCvId(nextVariant.id);
     }
   }, [availableLanguages, selectedLanguage, selectedCvId, variantGroup]);
+
+  useEffect(() => {
+    const lang = selectedLanguage.toLowerCase();
+    if (cvTemplatesForLanguage.length === 0) {
+      return;
+    }
+    const activePair = cvTemplatesForLanguage.find((pair) => pair.key === selectedPairKey);
+    if (activePair) {
+      const variant = activePair.variants[lang];
+      if (variant?.id && variant.id !== selectedCvId) {
+        setSelectedCvId(variant.id);
+        setPreviewNonce(Date.now());
+      }
+      return;
+    }
+    const fallback = cvTemplatesForLanguage[0]?.variants[lang];
+    if (fallback?.id && fallback.id !== selectedCvId) {
+      setSelectedCvId(fallback.id);
+      setPreviewNonce(Date.now());
+    }
+  }, [cvTemplatesForLanguage, selectedLanguage, selectedPairKey, selectedCvId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2438,6 +2464,7 @@ export function useComposerController() {
     filteredAnalysisCompanies,
     analysisCostEstimate,
     cvPairs,
+    cvTemplatesForLanguage,
     availableLanguages,
     selectedPairKey,
     languageOptionChoices,

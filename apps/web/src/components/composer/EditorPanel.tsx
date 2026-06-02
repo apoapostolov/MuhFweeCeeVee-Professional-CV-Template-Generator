@@ -34,7 +34,7 @@ export type EditorPanelProps = {
   syncModalLoading: boolean;
   selectedCvId: string;
   onOpenSyncModal: () => void;
-  cvPairs: CvPair[];
+  cvTemplatesForLanguage: CvPair[];
   selectedPairKey: string;
   onSwitchCvPair: (pairKey: string) => void;
   editorTab: EditorTabKey;
@@ -102,7 +102,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     syncModalLoading,
     selectedCvId,
     onOpenSyncModal,
-    cvPairs,
+    cvTemplatesForLanguage,
     selectedPairKey,
     onSwitchCvPair,
     editorTab,
@@ -246,13 +246,13 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                   </div>
 
                   <label className="block text-sm font-medium text-slate-800">
-                    CV Variant
+                    CV Template
                     <select
                       className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
                       onChange={(event) => onSwitchCvPair(event.target.value)}
                       value={selectedPairKey}
                     >
-                      {cvPairs.map((pair) => (
+                      {cvTemplatesForLanguage.map((pair) => (
                         <option key={pair.key} value={pair.key}>
                           {pair.displayName} {pair.displayVersion}
                         </option>

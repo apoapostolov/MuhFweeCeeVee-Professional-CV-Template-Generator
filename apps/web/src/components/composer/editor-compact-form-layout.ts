@@ -39,19 +39,16 @@ export function compactFormPassthroughClass(compact: boolean): string {
   return compact ? "contents" : "";
 }
 
-/** Nested subsection shell: real grid so padding indents header title and all child rows. */
-export const EDITOR_COMPACT_NESTED_SECTION_CLASS = `col-span-full col-start-1 col-end-[-1] grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
-
 export function compactContainerShellClass(
   compact: boolean,
-  editorPath: string,
-  depth = 0,
+  _editorPath: string,
+  _depth = 0,
 ): string {
   if (!compact) {
     return "rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3";
   }
-  const visualDepth = compactSubsectionVisualDepth(editorPath, depth);
-  return visualDepth > 0 ? EDITOR_COMPACT_NESTED_SECTION_CLASS : "contents";
+  /** Join the parent form grid so every input shares the same column-3 left edge. */
+  return "contents";
 }
 
 export function compactContainerHeaderClass(compact: boolean, depth: number): string {
@@ -148,8 +145,21 @@ export function compactSectionHeaderIndentPx(
   return compact && visualDepth > 0 ? visualDepth * 10 : 0;
 }
 
-/** Indent subsection shell so title, eye, actions, and child fields shift together. */
+/** Stacked (non-compact) layout: indent whole subsection blocks. */
 export function compactSectionIndentStyle(
+  compact: boolean,
+  editorPath: string,
+  depth: number,
+): { paddingLeft: number } | undefined {
+  if (compact) {
+    return undefined;
+  }
+  const px = compactSectionHeaderIndentPx(compact, editorPath, depth);
+  return px > 0 ? { paddingLeft: px } : undefined;
+}
+
+/** Compact layout: indent toggle/label only — never shift the shared input column. */
+export function compactLeadingIndentStyle(
   compact: boolean,
   editorPath: string,
   depth: number,

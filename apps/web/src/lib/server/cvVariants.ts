@@ -14,6 +14,9 @@ export type CvVariantPartsLoose = {
 };
 
 const CV_ID_PATTERN = /^cv_([a-z]{2,8})_(\d{3,4})_([a-z0-9][a-z0-9_-]{1,79})$/i;
+/** e.g. cv_apoapostolov_en_001 — owner slug, language, iteration; target from metadata.variant */
+const CV_ID_PATTERN_PROFILE_LANG_ITER =
+  /^cv_([a-z0-9][a-z0-9_-]{1,79})_([a-z]{2,8})_(\d{3,4})$/i;
 const CV_ID_PATTERN_NO_ITERATION = /^cv_([a-z]{2,8})_([a-z0-9][a-z0-9_-]{1,79})$/i;
 const SYNC_LANGUAGES = new Set<SyncLanguage>(["bg", "en"]);
 
@@ -54,6 +57,19 @@ export function parseCvVariantIdLoose(cvId: string): CvVariantPartsLoose | null 
       language: strict.language,
       iteration: strict.iteration,
       target: strict.target,
+    };
+  }
+
+  const profileMatch = CV_ID_PATTERN_PROFILE_LANG_ITER.exec(cvId.trim());
+  if (profileMatch) {
+    const language = profileMatch[2].toLowerCase();
+    if (!isSupportedLanguage(language)) {
+      return null;
+    }
+    return {
+      language,
+      iteration: profileMatch[3],
+      target: "",
     };
   }
 

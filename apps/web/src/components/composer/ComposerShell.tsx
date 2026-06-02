@@ -41,7 +41,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
           {c.activePanel === "workspace" && (
             <WorkspacePanel
               availableLanguages={c.availableLanguages}
-              cvPairs={c.cvPairs}
+              cvTemplatesForLanguage={c.cvTemplatesForLanguage}
               loadingWorkspace={c.loadingWorkspace}
               onDownloadPdf={c.downloadPdf}
               onOpenPdf={c.openPdf}
@@ -86,7 +86,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
               companyMetadataYamlDraft={c.companyMetadataYamlDraft}
               companyMetadataYamlLintIssues={c.companyMetadataYamlLintIssues}
-              cvPairs={c.cvPairs}
+              cvTemplatesForLanguage={c.cvTemplatesForLanguage}
               editorNotice={c.editorNotice}
               editorPath={c.editorPath}
               editorSaving={c.editorSaving}

@@ -10,7 +10,7 @@ export type WorkspacePanelProps = {
   availableLanguages: string[];
   selectedLanguage: string;
   onSwitchLanguage: (language: string) => void;
-  cvPairs: CvPair[];
+  cvTemplatesForLanguage: CvPair[];
   selectedPairKey: string;
   onSwitchCvPair: (pairKey: string) => void;
   orderedTemplateItems: Array<{ id: string; name: string; version: string }>;
@@ -33,7 +33,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     availableLanguages,
     selectedLanguage,
     onSwitchLanguage,
-    cvPairs,
+    cvTemplatesForLanguage,
     selectedPairKey,
     onSwitchCvPair,
     orderedTemplateItems,
@@ -83,13 +83,13 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
           </div>
 
           <label className="block text-sm font-medium text-slate-800">
-            CV Variant
+            CV Template
             <select
               className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
               onChange={(event) => onSwitchCvPair(event.target.value)}
               value={selectedPairKey}
             >
-              {cvPairs.map((pair) => (
+              {cvTemplatesForLanguage.map((pair) => (
                 <option key={pair.key} value={pair.key}>
                   {pair.displayName} {pair.displayVersion}
                 </option>

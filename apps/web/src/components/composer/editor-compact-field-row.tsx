@@ -1,6 +1,6 @@
 "use client";
 
-import type { JSX, ReactNode } from "react";
+import type { CSSProperties, JSX, ReactNode } from "react";
 
 import {
   EDITOR_COMPACT_FIELD_TRACKS_CLASS,
@@ -29,6 +29,8 @@ export type EditorCompactFieldRowProps = {
   rowClassName?: string;
   /** When false, omit the leading column (e.g. company metadata has no visibility toggles). */
   reserveLeadingColumn?: boolean;
+  /** Indents toggle/label hierarchy without shifting the input column (tabulated subsections). */
+  leadingIndentStyle?: CSSProperties;
 };
 
 export function EditorCompactFieldRow({
@@ -41,6 +43,7 @@ export function EditorCompactFieldRow({
   alignTop = false,
   rowClassName = "",
   reserveLeadingColumn = true,
+  leadingIndentStyle,
 }: EditorCompactFieldRowProps): JSX.Element {
   const rowAlign = alignTop ? "items-start" : "items-center";
   const labelAlign = alignTop ? "self-start pt-1" : "self-center";
@@ -54,12 +57,20 @@ export function EditorCompactFieldRow({
       : EDITOR_COMPACT_METADATA_FIELD_GRID_CLASS;
   const rowClass = [gridClass, rowAlign, useFormGrid ? "w-full" : "", rowClassName].filter(Boolean).join(" ");
   const leadingCell = reserveLeadingColumn ? (
-    <div className={`flex h-6 w-6 items-center justify-center ${alignTop ? "self-start" : "self-center"}`}>
+    <div
+      className={`flex h-6 w-6 items-center justify-center ${alignTop ? "self-start" : "self-center"}`}
+      style={leadingIndentStyle}
+    >
       {leading ?? <span className="sr-only" aria-hidden="true" />}
     </div>
   ) : null;
   const labelCell = (
-    <div className={`min-w-0 truncate text-xs font-semibold text-slate-900 ${labelAlign}`}>{label}</div>
+    <div
+      className={`min-w-0 truncate text-xs font-semibold text-slate-900 ${labelAlign}`}
+      style={leadingIndentStyle}
+    >
+      {label}
+    </div>
   );
 
   if (!includeAiActionSlot) {
