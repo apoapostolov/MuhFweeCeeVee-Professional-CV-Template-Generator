@@ -86,6 +86,10 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               editorNotice={c.editorNotice}
               editorPath={c.editorPath}
               editorSaving={c.editorSaving}
+              editorAutoSaveEnabled={c.editorAutoSaveEnabled}
+              editorAutosaveActivity={c.editorAutosaveActivity}
+              editorHasUnsavedChanges={c.editorHasUnsavedChanges}
+              onEditorAutoSaveChange={c.setEditorAutoSavePreference}
               editorTab={c.editorTab}
               editorView={c.editorView}
               formRenderer={c.formRenderer}

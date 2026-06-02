@@ -85,6 +85,7 @@ export const STORAGE_KEYS = {
   approvedPhotoId: "mfcv_photo_booth_approved_id",
   imageGenerationModel: "mfcv_image_generation_model",
   fieldRewriteProposals: "mfcv_field_rewrite_proposals_v1",
+  editorAutoSave: "mfcv_editor_auto_save_v1",
 } as const;
 export const LEGACY_PHOTO_STORAGE_KEYS = [
   "mfcv_photo_booth_gallery_v1",
