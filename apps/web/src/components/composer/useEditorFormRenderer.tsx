@@ -360,8 +360,9 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const expanded = isContainer ? isFormNodeExpanded(path) : true;
     const headerTitle = options?.headingTitle ?? copy.label;
     const headerSubtitle = options?.headingSubtitle ?? (isContainer ? copy.description : "");
-    /** Keep the eye / label / input / actions on one row in the form column. */
-    const compactFieldLayout = true;
+    /** Experimental: compact grid while AI scoring drawer is open. Revert to `analysisDrawerCollapsed`. */
+    const compactFieldLayout =
+      true || analysisDrawerCollapsed;
 
     function wrapFieldWithAi(
       fieldPath: PathSegment[],
@@ -378,7 +379,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           fieldLabel={fieldLabel}
           fieldLayout={compactFieldLayout ? "compact" : "stacked"}
           language={selectedLanguage}
-          onApply={(next) => updateTextDraftAt(fieldPath, next, { fieldLabel })}
+          onApply={(next) => updateDraftAt(fieldPath, next)}
           onNotice={onEditorNotice}
           pathLabel={fieldPathLabel}
           resolvedTheme={resolvedTheme}
@@ -622,12 +623,12 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
 
                   const listFieldShell = listShowFieldAi ? (
                     compactFieldLayout ? (
-                      <div className="contents">
+                      <>
                         {listFieldBody}
                         <div className={compactAiPanelWrapClass(true)}>
                           <EditorFieldAiPanel />
                         </div>
-                      </div>
+                      </>
                     ) : (
                       <div
                         className={`${compactFieldShellClass(false, true)} ${EDITOR_STACKED_FIELD_GRID_CLASS}`}
@@ -883,7 +884,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const hasFieldBelow = aiFieldIndex >= 0 && aiFieldIndex < aiFieldOrder.length - 1;
 
     const fieldShell = compactFieldLayout ? (
-      <div className="contents">
+      <>
         <EditorCompactFieldRow
           alignTop={useTextarea}
           control={wrappedValueControl}
@@ -908,7 +909,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
             <EditorFieldAiPanel />
           </div>
         ) : null}
-      </div>
+      </>
     ) : (
       <div
         className={
