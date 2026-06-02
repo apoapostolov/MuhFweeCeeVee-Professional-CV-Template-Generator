@@ -52,9 +52,29 @@ export function imageModelOptionLabel(model: {
   return `${labelName} • ${mixedLabel}`;
 }
 
-export function formatImageModelPricingBox(model: ImagePerUnitPricing & { isFree?: boolean }): string {
+/** One-line pricing for the settings “Selected … Model Pricing” panel. */
+export function formatSelectedImageModelPricingLine(
+  model: ImagePerUnitPricing & { isFree?: boolean },
+): string {
   if (model.isFree) return "FREE model";
-  const label = formatImagePriceLabel(model);
-  if (label) return label.replace(/^~/, "Approx. ").replace("/img", " per image");
-  return "Per-image pricing unavailable — see OpenRouter model page.";
+  const { pricePerImageUsd, pricePerImageMaxUsd, pricePerImageNote } = model;
+  if (pricePerImageUsd === null) {
+    return "Per-image pricing unavailable.";
+  }
+  const minLabel = formatUsdPerImage(pricePerImageUsd);
+  if (
+    pricePerImageMaxUsd !== null &&
+    pricePerImageMaxUsd !== undefined &&
+    pricePerImageMaxUsd > pricePerImageUsd
+  ) {
+    const maxLabel = formatUsdPerImage(pricePerImageMaxUsd);
+    const noteSuffix = pricePerImageNote ? ` • ${pricePerImageNote}` : "";
+    return `From ${minLabel} per image • Up to ${maxLabel} per image${noteSuffix}`;
+  }
+  const noteSuffix = pricePerImageNote ? ` • ${pricePerImageNote}` : "";
+  return `${minLabel} per image${noteSuffix}`;
+}
+
+export function formatImageModelPricingBox(model: ImagePerUnitPricing & { isFree?: boolean }): string {
+  return formatSelectedImageModelPricingLine(model);
 }

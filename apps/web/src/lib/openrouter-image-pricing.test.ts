@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatImagePriceLabel,
+  formatSelectedImageModelPricingLine,
   formatUsdPerImage,
   imageModelOptionLabel,
 } from "./openrouter-image-pricing";
@@ -33,5 +34,25 @@ describe("openrouter-image-pricing", () => {
         pricePerImageMaxUsd: 0.151,
       }),
     ).toBe("from $0.067/img");
+  });
+
+  it("formats selected image model pricing for settings panel", () => {
+    expect(
+      formatSelectedImageModelPricingLine({
+        isFree: false,
+        pricePerImageUsd: 0.039,
+        pricePerImageMaxUsd: null,
+      }),
+    ).toBe("$0.039 per image");
+  });
+
+  it("formats selected image model pricing with min and max", () => {
+    expect(
+      formatSelectedImageModelPricingLine({
+        isFree: false,
+        pricePerImageUsd: 0.067,
+        pricePerImageMaxUsd: 0.151,
+      }),
+    ).toBe("From $0.067 per image • Up to $0.15 per image");
   });
 });

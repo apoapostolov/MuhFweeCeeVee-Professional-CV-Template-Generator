@@ -3,7 +3,7 @@
 import type { JSX } from "react";
 
 import {
-  formatImageModelPricingBox,
+  formatSelectedImageModelPricingLine,
   imageModelOptionLabel,
 } from "@/lib/openrouter-image-pricing";
 import {
@@ -141,17 +141,22 @@ export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-[11px] text-slate-600">
+          </label>
+          <div className="rounded-md border border-[var(--line)] bg-white p-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Selected Image Model Pricing
+            </p>
+            <p className="mt-1 text-xs text-slate-700">
               {selectedImageGenerationModelOption
-                ? formatImageModelPricingBox({
+                ? formatSelectedImageModelPricingLine({
                     isFree: selectedImageGenerationModelOption.isFree,
                     pricePerImageUsd: selectedImageGenerationModelOption.pricePerImageUsd ?? null,
                     pricePerImageMaxUsd: selectedImageGenerationModelOption.pricePerImageMaxUsd ?? null,
                     pricePerImageNote: selectedImageGenerationModelOption.pricePerImageNote ?? null,
                   })
-                : "Not used yet. This is a future-facing selection."}
+                : "Model pricing unavailable."}
             </p>
-          </label>
+          </div>
           <label className="block text-xs font-medium text-slate-700">
             Base URL
             <input
