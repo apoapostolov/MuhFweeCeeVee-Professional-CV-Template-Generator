@@ -80,6 +80,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               companyMetadataEditorOpen={c.companyMetadataEditorOpen}
               companyMetadataEditorView={c.companyMetadataEditorView}
               companyMetadataSaving={c.companyMetadataSaving}
+              companyResearchLoading={c.companyResearchLoading}
               companyMetadataAutoSaveEnabled={c.companyMetadataAutoSaveEnabled}
               companyMetadataAutosaveActivity={c.companyMetadataAutosaveActivity}
               companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
@@ -106,6 +107,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onOpenSyncModal={c.openSyncModal}
               onRunAnalysisFull={() => void c.runAnalysis("full")}
               onRunAnalysisSection={() => void c.runAnalysis("section")}
+              onResearchCompanies={() => void c.researchCompaniesMetadata()}
               onSaveCompanyMetadata={() => void c.saveCompanyMetadataSource()}
               onSaveEditor={() => void c.saveEditorSection()}
               onSwitchCvPair={c.switchCvPair}

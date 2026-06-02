@@ -1,7 +1,7 @@
-import { COMPANY_METADATA_TABULATED_PATH, ROOT_ARRAY_EDITOR_PATHS } from "./constants";
+import { ROOT_ARRAY_EDITOR_PATHS } from "./constants";
 
 export function isTabulatedArrayEditorPath(editorPath: string): boolean {
-  return ROOT_ARRAY_EDITOR_PATHS.has(editorPath) || editorPath === COMPANY_METADATA_TABULATED_PATH;
+  return ROOT_ARRAY_EDITOR_PATHS.has(editorPath);
 }
 
 /** Vertical rhythm between all compact field rows (single source of row spacing). */
@@ -24,7 +24,14 @@ export function isTabulatedRootArraySection(editorPath: string, depth: number): 
 export const EDITOR_COMPACT_FORM_GRID_CLASS =
   `grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
 
+/** Company metadata editor: no template visibility column. */
+export const EDITOR_COMPACT_METADATA_FORM_GRID_CLASS =
+  `grid grid-cols-[8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
+
 export const EDITOR_COMPACT_FIELD_TRACKS_CLASS =
+  "grid grid-cols-subgrid col-span-full col-start-1 col-end-[-1] gap-x-2 w-full";
+
+export const EDITOR_COMPACT_METADATA_FIELD_TRACKS_CLASS =
   "grid grid-cols-subgrid col-span-full col-start-1 col-end-[-1] gap-x-2 w-full";
 
 /** Promotes children to the parent form grid (for subgrid column alignment). */
@@ -50,6 +57,11 @@ export function compactContainerShellClass(
 export function compactContainerHeaderClass(compact: boolean, depth: number): string {
   const sectionDivider = compact && depth > 0 ? "border-t border-[var(--line)] pt-2" : "";
   return compact ? `${EDITOR_COMPACT_FIELD_TRACKS_CLASS} col-span-full items-start ${sectionDivider}` : "";
+}
+
+export function compactMetadataContainerHeaderClass(compact: boolean, depth: number): string {
+  const sectionDivider = compact && depth > 0 ? "border-t border-[var(--line)] pt-2" : "";
+  return compact ? `${EDITOR_COMPACT_METADATA_FIELD_TRACKS_CLASS} col-span-full items-start ${sectionDivider}` : "";
 }
 
 export function compactFieldShellClass(compact: boolean, twoRow: boolean): string {
@@ -85,6 +97,18 @@ export const EDITOR_FIELD_AI_SEPARATOR_LINE_CLASS = "border-b border-[var(--line
 
 /** Three rewrite proposals under the AI toolbar. */
 export const EDITOR_FIELD_AI_PROPOSALS_CLASS = "col-start-3 col-end-[-1] min-w-0 space-y-2";
+
+/** Company metadata (3-col grid): AI panel aligns under input + actions (not label). */
+export const EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS =
+  "col-start-2 col-end-[-1] min-w-0 w-full";
+
+export const EDITOR_METADATA_FIELD_AI_ROW_CLASS =
+  "col-start-2 col-end-[-1] min-w-0 w-full grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2";
+
+export const EDITOR_METADATA_FIELD_AI_PROPOSALS_CLASS =
+  "col-start-2 col-end-[-1] min-w-0 w-full space-y-2";
+
+export const EDITOR_METADATA_FIELD_AI_SEPARATOR_CLASS = "col-start-2 col-end-[-1] w-full py-2";
 
 export const EDITOR_STACKED_FIELD_AI_PROPOSALS_CLASS = "col-start-2 col-end-[-1] min-w-0 space-y-2";
 

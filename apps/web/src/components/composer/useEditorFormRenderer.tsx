@@ -16,18 +16,30 @@ import {
 } from "./form-path-utils";
 import {
   collectVisibleAiFieldPathLabels,
+  companyMetadataFieldSupportsAi,
   isExperienceItemPath,
   isDateFieldKey,
   primitiveFieldSupportsAiRewrite,
   renderEmploymentTypeSelect,
   renderIsCurrentHeaderControl,
 } from "./editor-form-fields";
+import {
+  resolveCompanyNameFromMetadataPath,
+  resolveCompanyRecordFromMetadataPath,
+} from "@/lib/company-field-ai";
+import {
+  CompanyFieldAiInputChrome,
+  CompanyFieldAiPanel,
+  CompanyFieldAiProvider,
+  CompanyFieldAiTrigger,
+} from "./company-field-ai";
 import { ConfirmRemoveButton } from "./confirm-remove-button";
 import { EditorCompactFieldRow } from "./editor-compact-field-row";
 import {
   compactAiPanelWrapClass,
   compactChildrenStackClass,
   compactContainerHeaderClass,
+  compactMetadataContainerHeaderClass,
   compactContainerShellClass,
   compactFieldShellClass,
   compactFormPassthroughClass,
@@ -41,6 +53,7 @@ import {
   EDITOR_COMPACT_DATE_INPUT_CLASS,
   EDITOR_COMPACT_DATE_ROW_CLASS,
   EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS,
+  EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS,
 } from "./editor-compact-form-layout";
 import {
   EDITOR_FIELD_AI_INPUT_PAD_CLASS,
@@ -71,11 +84,13 @@ export type EditorFormRendererContext = {
   setExpandedFormNodes: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   updateDraftAt: (path: PathSegment[], value: unknown) => void;
   updateTextDraftAt: (path: PathSegment[], value: string, meta: { fieldLabel: string }) => void;
+  applyEditorFieldText: (path: PathSegment[], value: string, meta: { fieldLabel: string }) => void;
   removeDraftAt: (path: PathSegment[]) => void;
   addArrayEntry: (path: PathSegment[], sample: unknown) => void;
   addCustomObjectField: (path: PathSegment[]) => void;
   addCustomArrayEntry: (path: PathSegment[]) => void;
   updateCompanyMetadataDraftAt: (path: PathSegment[], value: unknown) => void;
+  applyCompanyMetadataFieldText: (path: PathSegment[], value: string) => void;
   removeCompanyMetadataDraftAt: (path: PathSegment[]) => void;
   addCompanyMetadataArrayEntry: (path: PathSegment[], pathLabel: string, sample: unknown) => void;
   addCompanyMetadataCustomObjectField: (path: PathSegment[]) => void;
@@ -85,6 +100,8 @@ export type EditorFormRendererContext = {
   setYamlDraft: React.Dispatch<React.SetStateAction<string>>;
   sectionDraft: unknown;
   companyMetadataDraft: unknown;
+  analysisCompanySource: string;
+  onCompanyMetadataNotice: (message: string) => void;
 };
 
 export function extractYamlLintIssuesFromDocument(text: string): string[] {
@@ -121,11 +138,13 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     setExpandedFormNodes,
     updateDraftAt,
     updateTextDraftAt,
+    applyEditorFieldText,
     removeDraftAt,
     addArrayEntry,
     addCustomObjectField,
     addCustomArrayEntry,
     updateCompanyMetadataDraftAt,
+    applyCompanyMetadataFieldText,
     removeCompanyMetadataDraftAt,
     addCompanyMetadataArrayEntry,
     addCompanyMetadataCustomObjectField,
@@ -135,6 +154,8 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     setYamlDraft,
     sectionDraft,
     companyMetadataDraft,
+    analysisCompanySource,
+    onCompanyMetadataNotice,
   } = ctx;
 
   function renderYamlLine(line: string, index: number): JSX.Element {
@@ -379,7 +400,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           fieldLabel={fieldLabel}
           fieldLayout={compactFieldLayout ? "compact" : "stacked"}
           language={selectedLanguage}
-          onApply={(next) => updateTextDraftAt(fieldPath, next, { fieldLabel })}
+          onApply={(next) => applyEditorFieldText(fieldPath, next, { fieldLabel })}
           onNotice={onEditorNotice}
           pathLabel={fieldPathLabel}
           resolvedTheme={resolvedTheme}
@@ -1013,11 +1034,36 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     return { title, subtitle };
   }
 
-  const metadataCompactLeading = (
-    <span className="sr-only" aria-hidden="true">
-      —
-    </span>
-  );
+  function wrapCompanyFieldWithAi(
+    fieldPath: PathSegment[],
+    fieldPathLabel: string,
+    fieldLabel: string,
+    fieldKey: string,
+    text: string,
+    shell: JSX.Element,
+    hasFieldBelow: boolean,
+  ): JSX.Element {
+    const companyName = resolveCompanyNameFromMetadataPath(companyMetadataDraft, fieldPath);
+    const companyContext = resolveCompanyRecordFromMetadataPath(companyMetadataDraft, fieldPath) ?? {};
+
+    return (
+      <CompanyFieldAiProvider
+        companyContext={companyContext}
+        companyName={companyName}
+        fieldKey={fieldKey}
+        fieldLabel={fieldLabel}
+        metadataSource={analysisCompanySource}
+        onApply={(next) => applyCompanyMetadataFieldText(fieldPath, next)}
+        onNotice={onCompanyMetadataNotice}
+        pathLabel={fieldPathLabel}
+        resolvedTheme={resolvedTheme}
+        showSeparatorBelow={hasFieldBelow}
+        value={text}
+      >
+        {shell}
+      </CompanyFieldAiProvider>
+    );
+  }
 
   function renderCompanyMetadataFormNode(
     node: unknown,
@@ -1044,27 +1090,6 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const headerSubtitle = options?.headingSubtitle ?? (isContainer ? copy.description : "");
 
     if (Array.isArray(node)) {
-      const arrayNode = node;
-      const tabulatedSubsectionIndices: number[] = [];
-      for (let index = 0; index < arrayNode.length; index += 1) {
-        const item = arrayNode[index];
-        if (item !== null && (Array.isArray(item) || typeof item === "object")) {
-          tabulatedSubsectionIndices.push(index);
-        }
-      }
-      const showCollapseAllSubsections =
-        isTabulatedRootArraySection(metadataCompactEditorPath, depth) && tabulatedSubsectionIndices.length > 0;
-      const allSubsectionsCollapsed = tabulatedSubsectionIndices.every(
-        (index) => !isMetadataFormNodeExpanded([...path, index]),
-      );
-      function toggleAllTabulatedSubsections(): void {
-        const nextExpanded = allSubsectionsCollapsed;
-        const updates: Record<string, boolean> = {};
-        for (const index of tabulatedSubsectionIndices) {
-          updates[metadataFormPathKey([...path, index])] = nextExpanded;
-        }
-        setExpandedFormNodes((current) => ({ ...current, ...updates }));
-      }
       const arrayHeaderActions = (
         <div className="flex shrink-0 gap-2">
           <button
@@ -1077,22 +1102,6 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           >
             {expanded ? "▾" : "▸"}
           </button>
-          {showCollapseAllSubsections ? (
-            <button
-              aria-expanded={!allSubsectionsCollapsed}
-              aria-label={
-                allSubsectionsCollapsed ? "Expand all subsections" : "Collapse all subsections"
-              }
-              className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-[var(--line)] bg-white px-1 text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
-              onClick={toggleAllTabulatedSubsections}
-              title={
-                allSubsectionsCollapsed ? "Expand all subsections" : "Collapse all subsections"
-              }
-              type="button"
-            >
-              {allSubsectionsCollapsed ? "▾" : "▴"}
-            </button>
-          ) : null}
           {removeButton}
           <button
             aria-label="Add item"
@@ -1127,8 +1136,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           className={compactContainerShellClass(compactFieldLayout, metadataCompactEditorPath, depth)}
           style={sectionIndentStyle}
         >
-          <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
-            <div className="flex h-6 w-6 items-center justify-center self-start">{metadataCompactLeading}</div>
+          <div className={compactMetadataContainerHeaderClass(compactFieldLayout, depth)}>
             <div className="col-span-2 min-w-0 self-start">{arrayHeaderTitle}</div>
             <div className="flex items-center justify-end gap-2 self-start">{arrayHeaderActions}</div>
           </div>
@@ -1146,6 +1154,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                   const stringValue = String(item ?? "");
                   const useTextarea = shouldUseTextarea(stringValue);
                   const listItemLabel = `${copy.label} ${index + 1}`;
+                  const listShowFieldAi = companyMetadataFieldSupportsAi(childLabel, childLabel, item);
                   const inputControl = useTextarea ? (
                     <textarea
                       className="w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1 text-xs leading-5"
@@ -1160,6 +1169,11 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                       value={stringValue}
                     />
                   );
+                  const wrappedInputControl = listShowFieldAi ? (
+                    <CompanyFieldAiInputChrome multiline={useTextarea}>{inputControl}</CompanyFieldAiInputChrome>
+                  ) : (
+                    inputControl
+                  );
                   const removeItemButton = (
                     <ConfirmRemoveButton
                       kind="item"
@@ -1167,16 +1181,50 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                       onConfirm={() => removeCompanyMetadataDraftAt(childPath)}
                     />
                   );
+                  const listFieldBody = (
+                    <EditorCompactFieldRow
+                      alignTop={useTextarea}
+                      control={wrappedInputControl}
+                      includeAiActionSlot={false}
+                      label={listItemLabel}
+                      reserveLeadingColumn={false}
+                      trailing={
+                        listShowFieldAi ? (
+                          <>
+                            <CompanyFieldAiTrigger />
+                            {removeItemButton}
+                          </>
+                        ) : (
+                          removeItemButton
+                        )
+                      }
+                      useFormGrid={compactFieldLayout}
+                    />
+                  );
+                  const listFieldShell = listShowFieldAi ? (
+                    <>
+                      {listFieldBody}
+                      <div className={EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS}>
+                        <CompanyFieldAiPanel />
+                      </div>
+                    </>
+                  ) : (
+                    listFieldBody
+                  );
+
                   return (
                     <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
-                      <EditorCompactFieldRow
-                        alignTop={useTextarea}
-                        control={inputControl}
-                        includeAiActionSlot={false}
-                        label={listItemLabel}
-                        trailing={removeItemButton}
-                        useFormGrid={compactFieldLayout}
-                      />
+                      {listShowFieldAi
+                        ? wrapCompanyFieldWithAi(
+                            childPath,
+                            childLabel,
+                            listItemLabel,
+                            childLabel,
+                            stringValue,
+                            listFieldShell,
+                            false,
+                          )
+                        : listFieldShell}
                     </div>
                   );
                 }
@@ -1249,8 +1297,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           className={compactContainerShellClass(compactFieldLayout, metadataCompactEditorPath, depth)}
           style={sectionIndentStyle}
         >
-          <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
-            <div className="flex h-6 w-6 items-center justify-center self-start">{metadataCompactLeading}</div>
+          <div className={compactMetadataContainerHeaderClass(compactFieldLayout, depth)}>
             <div className="col-span-2 min-w-0 self-start">{objectHeaderTitle}</div>
             <div className="flex items-center justify-end gap-2 self-start">{objectHeaderActions}</div>
           </div>
@@ -1281,6 +1328,9 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const stringValue = String(primitive);
     const useTextarea = shouldUseTextarea(stringValue);
     const customFieldDef = getCustomFieldDefinition(companyMetadataDraft, path, keyName);
+
+    const showFieldAi =
+      !customFieldDef && companyMetadataFieldSupportsAi(pathLabel, keyName, primitive);
 
     const valueControl = customFieldDef ? (
       <CustomFieldControl
@@ -1329,17 +1379,46 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       />
     );
 
-    return (
-      <div className={compactFieldShellClass(compactFieldLayout, false)}>
+    const wrappedValueControl = showFieldAi ? (
+      <CompanyFieldAiInputChrome multiline={useTextarea}>{valueControl}</CompanyFieldAiInputChrome>
+    ) : (
+      valueControl
+    );
+
+    const fieldShell = (
+      <>
         <EditorCompactFieldRow
           alignTop={useTextarea}
-          control={valueControl}
+          control={wrappedValueControl}
           includeAiActionSlot={false}
           label={copy.label}
+          reserveLeadingColumn={false}
           rowClassName={isDate ? EDITOR_COMPACT_DATE_ROW_CLASS : ""}
-          trailing={removeButton}
+          trailing={
+            showFieldAi ? (
+              <>
+                <CompanyFieldAiTrigger />
+                {removeButton}
+              </>
+            ) : (
+              removeButton
+            )
+          }
           useFormGrid={compactFieldLayout}
         />
+        {showFieldAi ? (
+          <div className={EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS}>
+            <CompanyFieldAiPanel />
+          </div>
+        ) : null}
+      </>
+    );
+
+    return (
+      <div className={compactFormPassthroughClass(compactFieldLayout)}>
+        {showFieldAi
+          ? wrapCompanyFieldWithAi(path, pathLabel, copy.label, keyName, stringValue, fieldShell, false)
+          : fieldShell}
       </div>
     );
   }

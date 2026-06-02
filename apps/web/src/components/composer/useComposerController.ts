@@ -34,6 +34,10 @@ import {
   setByPath,
 } from "@/components/composer/form-path-utils";
 import {
+  mergeResearchedCompanyRecord,
+  resolveCompanyIdsToResearch,
+} from "@/lib/company-research";
+import {
   coerceSectionDraftForEditorPath,
   resolveSectionDraftForForm,
   sectionDraftNeedsSync,
@@ -174,6 +178,7 @@ export function useComposerController() {
   const [companyMetadataDraft, setCompanyMetadataDraft] = useState<unknown>({ companies: [] });
   const [companyMetadataYamlDraft, setCompanyMetadataYamlDraft] = useState("");
   const [companyMetadataSaving, setCompanyMetadataSaving] = useState(false);
+  const [companyResearchLoading, setCompanyResearchLoading] = useState(false);
   const [companyMetadataNotice, setCompanyMetadataNotice] = useState("");
   const [companyMetadataYamlLintIssues, setCompanyMetadataYamlLintIssues] = useState<string[]>([]);
   const companyMetadataAutoSaveEnabledRef = useRef(true);
@@ -1383,7 +1388,10 @@ export function useComposerController() {
   ): void {
     setSectionDraft((current: unknown) => {
       const next = setAtPath(current, path, value);
-      setYamlDraft(stringifyYaml(next ?? {}));
+      const yaml = stringifyYaml(next ?? {});
+      yamlDraftRef.current = yaml;
+      sectionDraftRef.current = next;
+      setYamlDraft(yaml);
       return next;
     });
     if (!editorAutoSaveEnabledRef.current) {
@@ -1395,6 +1403,18 @@ export function useComposerController() {
       value,
     };
     scheduleEditorAutosave();
+  }
+
+  function applyEditorFieldText(
+    path: PathSegment[],
+    value: string,
+    meta: { fieldLabel: string },
+  ): void {
+    const current = String(getAtPath(sectionDraftRef.current, path) ?? "");
+    if (value === current) {
+      return;
+    }
+    updateTextDraftAt(path, value, meta);
   }
 
   function removeDraftAt(path: PathSegment[]) {
@@ -1491,10 +1511,21 @@ export function useComposerController() {
   function updateCompanyMetadataDraftAt(path: PathSegment[], value: unknown) {
     setCompanyMetadataDraft((current: unknown) => {
       const next = setAtPath(current, path, value);
-      setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
+      const yaml = stringifyYaml(next ?? {});
+      companyMetadataDraftRef.current = next;
+      companyMetadataYamlDraftRef.current = yaml;
+      setCompanyMetadataYamlDraft(yaml);
       return next;
     });
     scheduleCompanyMetadataAutosave();
+  }
+
+  function applyCompanyMetadataFieldText(path: PathSegment[], value: string): void {
+    const current = String(getAtPath(companyMetadataDraftRef.current, path) ?? "");
+    if (value === current) {
+      return;
+    }
+    updateCompanyMetadataDraftAt(path, value);
   }
 
   function removeCompanyMetadataDraftAt(path: PathSegment[]) {
@@ -1600,11 +1631,13 @@ export function useComposerController() {
     setExpandedFormNodes,
     updateDraftAt,
     updateTextDraftAt,
+    applyEditorFieldText,
     removeDraftAt,
     addArrayEntry,
     addCustomObjectField,
     addCustomArrayEntry,
     updateCompanyMetadataDraftAt,
+    applyCompanyMetadataFieldText,
     removeCompanyMetadataDraftAt,
     addCompanyMetadataArrayEntry,
     addCompanyMetadataCustomObjectField,
@@ -1614,6 +1647,8 @@ export function useComposerController() {
     setYamlDraft,
     sectionDraft,
     companyMetadataDraft,
+    analysisCompanySource,
+    onCompanyMetadataNotice: setCompanyMetadataNotice,
   });
 
   async function persistCompanyMetadataDraft(): Promise<boolean> {
@@ -1684,6 +1719,97 @@ export function useComposerController() {
     } finally {
       setCompanyMetadataSaving(false);
     }
+  }
+
+  async function researchCompaniesMetadata(): Promise<void> {
+    const draft = companyMetadataDraftRef.current;
+    const companies = Array.isArray((draft as { companies?: unknown })?.companies)
+      ? [...((draft as { companies: unknown[] }).companies)]
+      : [];
+    const idsToResearch = resolveCompanyIdsToResearch(draft, analysisCompanyIds);
+
+    if (idsToResearch.length === 0) {
+      setCompanyMetadataNotice(
+        "Add a company with an id, or select target companies in the sidebar to research.",
+      );
+      return;
+    }
+
+    setCompanyResearchLoading(true);
+    setCompanyMetadataNotice("");
+
+    let researchedCount = 0;
+    const failures: string[] = [];
+
+    for (const companyId of idsToResearch) {
+      const index = companies.findIndex((entry) => {
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          return false;
+        }
+        const id = (entry as Record<string, unknown>).id;
+        return typeof id === "string" && id.trim() === companyId;
+      });
+      if (index < 0) {
+        continue;
+      }
+
+      const existing =
+        companies[index] && typeof companies[index] === "object" && !Array.isArray(companies[index])
+          ? (companies[index] as Record<string, unknown>)
+          : {};
+      const companyName =
+        typeof existing.name === "string" && existing.name.trim().length > 0
+          ? existing.name.trim()
+          : companyId;
+
+      try {
+        const response = await fetch("/api/analysis/company-research", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            companyName,
+            existingRecord: existing,
+          }),
+        });
+        const payload = (await response.json()) as {
+          error?: string;
+          company?: Record<string, unknown>;
+        };
+        if (!response.ok || !payload.company) {
+          failures.push(`${companyName}: ${payload.error ?? "research failed"}`);
+          continue;
+        }
+        companies[index] = mergeResearchedCompanyRecord(existing, payload.company);
+        researchedCount += 1;
+      } catch {
+        failures.push(`${companyName}: research request failed`);
+      }
+    }
+
+    if (researchedCount > 0) {
+      const nextDocument = { companies };
+      setCompanyMetadataDraft(nextDocument);
+      setCompanyMetadataYamlDraft(stringifyYaml(nextDocument));
+      companyMetadataDraftRef.current = nextDocument;
+      companyMetadataYamlDraftRef.current = stringifyYaml(nextDocument);
+      scheduleCompanyMetadataAutosave();
+    }
+
+    if (failures.length === 0 && researchedCount > 0) {
+      setCompanyMetadataNotice(
+        researchedCount === 1
+          ? "Web research applied to 1 company (empty fields filled)."
+          : `Web research applied to ${researchedCount} companies (empty fields filled).`,
+      );
+    } else if (failures.length > 0 && researchedCount > 0) {
+      setCompanyMetadataNotice(
+        `Research updated ${researchedCount} company${researchedCount === 1 ? "" : "ies"}. Some failed: ${failures.slice(0, 2).join("; ")}`,
+      );
+    } else {
+      setCompanyMetadataNotice(failures[0] ?? "Company research failed.");
+    }
+
+    setCompanyResearchLoading(false);
   }
 
   async function saveEditorSection() {
@@ -2289,6 +2415,7 @@ export function useComposerController() {
     setCompanyMetadataYamlDraft: handleCompanyMetadataYamlDraftChange,
     handleCompanyMetadataEditorViewChange,
     companyMetadataSaving,
+    companyResearchLoading,
     companyMetadataNotice,
     companyMetadataYamlLintIssues,
     analysisDrawerCollapsed,
@@ -2332,6 +2459,7 @@ export function useComposerController() {
     analyzePhotoBoothItem,
     comparePhotoBoothPair,
     saveCompanyMetadataSource,
+    researchCompaniesMetadata,
     saveEditorSection,
     runAnalysis,
     toggleAnalysisCompanySelection,

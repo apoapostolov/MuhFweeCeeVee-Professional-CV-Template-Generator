@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   collectVisibleAiFieldPathLabels,
+  companyMetadataFieldSupportsAi,
   isExperienceItemPath,
   isUrlFieldKey,
   normalizeEmploymentType,
@@ -24,6 +25,15 @@ describe("editor-form-fields", () => {
     expect(isUrlFieldKey("website")).toBe(true);
     expect(isUrlFieldKey("linkedin_url")).toBe(true);
     expect(isUrlFieldKey("summary")).toBe(false);
+  });
+
+  it("allows company metadata text fields but skips id and priority", () => {
+    expect(companyMetadataFieldSupportsAi("companies[0].name", "name", "Acme")).toBe(true);
+    expect(companyMetadataFieldSupportsAi("companies[0].company_details.website", "website", "")).toBe(
+      true,
+    );
+    expect(companyMetadataFieldSupportsAi("companies[0].id", "id", "acme")).toBe(false);
+    expect(companyMetadataFieldSupportsAi("companies[0].priority", "priority", 1)).toBe(false);
   });
 
   it("excludes URL and date fields from AI rewrite", () => {

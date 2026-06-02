@@ -3,7 +3,10 @@
 import type { ChangeEvent, JSX, KeyboardEvent, RefObject, UIEvent } from "react";
 
 import { defaultSectionDraftForEditorPath, EDITOR_TABS } from "./constants";
-import { EDITOR_COMPACT_FORM_GRID_CLASS } from "./editor-compact-form-layout";
+import {
+  EDITOR_COMPACT_FORM_GRID_CLASS,
+  EDITOR_COMPACT_METADATA_FORM_GRID_CLASS,
+} from "./editor-compact-form-layout";
 import { AiStarsIcon } from "./ai-stars-icon";
 import { scoreTone } from "./analysis-ui-utils";
 import type { useEditorFormRenderer } from "./useEditorFormRenderer";
@@ -54,6 +57,8 @@ export type EditorPanelProps = {
   onCompanyMetadataYamlDraftChange: (value: string) => void;
   companyMetadataYamlLintIssues: string[];
   companyMetadataSaving: boolean;
+  companyResearchLoading: boolean;
+  onResearchCompanies: () => void;
   companyMetadataAutoSaveEnabled: boolean;
   onCompanyMetadataAutoSaveChange: (enabled: boolean) => void;
   companyMetadataHasUnsavedChanges: boolean;
@@ -120,6 +125,8 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onCompanyMetadataYamlDraftChange,
     companyMetadataYamlLintIssues,
     companyMetadataSaving,
+    companyResearchLoading,
+    onResearchCompanies,
     companyMetadataAutoSaveEnabled,
     onCompanyMetadataAutoSaveChange,
     companyMetadataHasUnsavedChanges,
@@ -359,6 +366,18 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             YAML View
                           </button>
                         </div>
+                        <button
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-transparent px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={companyResearchLoading || companyMetadataSaving}
+                          onClick={onResearchCompanies}
+                          type="button"
+                        >
+                          <AiStarsIcon
+                            className={`h-3.5 w-3.5 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
+                            variant={resolvedTheme === "dark" ? "default" : "on-light"}
+                          />
+                          {companyResearchLoading ? "Researching..." : "Research Company"}
+                        </button>
                         <div
                           aria-label="Auto Save"
                           className="inline-flex overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
@@ -525,7 +544,11 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
 
                 {companyMetadataEditorOpen ? (
                   <p className="mt-2 text-xs text-[var(--ink-muted)]">
-                    Edit the selected metadata source in Form or YAML mode. Saving updates the source JSON used by AI analysis targeting.
+                    Edit the selected metadata source in Form or YAML mode. Research Company uses web AI to fill empty fields
+                    {analysisCompanyIds.length > 0
+                      ? " for selected target companies"
+                      : " for all companies in this source"}
+                    .
                   </p>
                 ) : (
                   <>
@@ -551,11 +574,11 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                 <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 md:flex-row">
                   <div
                     className={`min-h-0 flex-1 overflow-auto rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3 md:min-w-0 ${
-                      (companyMetadataEditorOpen &&
-                        companyMetadataEditorView === "form") ||
-                      (!companyMetadataEditorOpen && editorView === "form" && !editorLoading)
-                        ? EDITOR_COMPACT_FORM_GRID_CLASS
-                        : ""
+                      companyMetadataEditorOpen && companyMetadataEditorView === "form"
+                        ? EDITOR_COMPACT_METADATA_FORM_GRID_CLASS
+                        : !companyMetadataEditorOpen && editorView === "form" && !editorLoading
+                          ? EDITOR_COMPACT_FORM_GRID_CLASS
+                          : ""
                     }`}
                   >
                     {companyMetadataEditorOpen ? (

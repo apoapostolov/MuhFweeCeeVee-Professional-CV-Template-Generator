@@ -88,6 +88,32 @@ export function isFormPathExpanded(
   return true;
 }
 
+const COMPANY_METADATA_AI_SKIP_KEYS = new Set(["id", "priority"]);
+
+export function companyMetadataFieldSupportsAi(
+  pathLabel: string,
+  keyName: string,
+  primitive: unknown,
+): boolean {
+  const key = keyName.trim().toLowerCase();
+  if (COMPANY_METADATA_AI_SKIP_KEYS.has(key)) {
+    return false;
+  }
+  const isBool = typeof primitive === "boolean";
+  const isNum = typeof primitive === "number";
+  const isDate =
+    isDateLike(primitive) ||
+    isDateFieldKey(keyName) ||
+    isDateFieldKey(fieldKeyFromPathLabel(pathLabel));
+  return fieldSupportsAiRewrite({
+    isBool,
+    isNum,
+    isDate,
+    isEmploymentTypeField: false,
+    isUrlField: false,
+  });
+}
+
 export function primitiveFieldSupportsAiRewrite(
   pathLabel: string,
   keyName: string,

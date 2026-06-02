@@ -87,6 +87,7 @@ export const STORAGE_KEYS = {
   fieldRewriteProposals: "mfcv_field_rewrite_proposals_v1",
   editorAutoSave: "mfcv_editor_auto_save_v1",
   companyMetadataAutoSave: "mfcv_company_metadata_auto_save_v1",
+  companyFieldResearchProposals: "mfcv_company_field_research_proposals_v1",
 } as const;
 export const LEGACY_PHOTO_STORAGE_KEYS = [
   "mfcv_photo_booth_gallery_v1",
@@ -111,9 +112,6 @@ export const ROOT_ARRAY_EDITOR_PATHS = new Set(
     (tab) => tab.path,
   ),
 );
-
-/** Companies list in metadata editor (tabulated compact subsections, same as experience). */
-export const COMPANY_METADATA_TABULATED_PATH = "companies";
 
 export function defaultSectionDraftForEditorPath(editorPath: string): unknown {
   return ROOT_ARRAY_EDITOR_PATHS.has(editorPath) ? [] : {};
