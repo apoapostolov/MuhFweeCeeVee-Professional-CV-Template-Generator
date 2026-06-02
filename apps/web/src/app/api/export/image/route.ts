@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { buildCvTemplateHtml } from "@/lib/server/renderCvTemplate";
+import { parseRenderTweaks } from "@/lib/server/render/tweaks";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       theme,
       photoMode,
       profilePhotoId,
+      tweaks: parseRenderTweaks(url.searchParams),
     });
     const { chromium } = await import("playwright");
     browser = await chromium.launch({ headless: true });

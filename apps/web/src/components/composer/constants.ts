@@ -48,6 +48,31 @@ export const PHOTO_MODE_OPTIONS: PhotoModeOption[] = [
   { id: "off", label: "Off" },
 ];
 
+export const TEMPLATES_WITH_LEFT_SIDEBAR = new Set([
+  "cambridge-v1",
+  "edinburgh-v1",
+  "harvard-v1",
+  "stanford-v1",
+]);
+
+export const PRINT_TWEAK_OPTIONS = [
+  { id: "moveSkillsLeft" as const, label: "Move Skills Left" },
+];
+
+export function templateSupportsPrintTweaks(templateId: string): boolean {
+  return TEMPLATES_WITH_LEFT_SIDEBAR.has(templateId);
+}
+
+export function appendPrintTweakParams(
+  params: URLSearchParams,
+  moveSkillsLeft: boolean,
+  templateId: string,
+): void {
+  if (moveSkillsLeft && templateSupportsPrintTweaks(templateId)) {
+    params.set("moveSkillsLeft", "1");
+  }
+}
+
 export const LANGUAGE_OPTIONS: Array<{ code: string; label: string }> = [
   { code: "en", label: "English" },
   { code: "bg", label: "Bulgarian" },
@@ -82,6 +107,7 @@ export const STORAGE_KEYS = {
   selectedTemplateId: "mfcv_selected_template_id",
   selectedTemplateTheme: "mfcv_selected_template_theme",
   selectedPhotoMode: "mfcv_selected_photo_mode",
+  printTweakMoveSkillsLeft: "mfcv_print_tweak_move_skills_left",
   approvedPhotoId: "mfcv_photo_booth_approved_id",
   imageGenerationModel: "mfcv_image_generation_model",
   fieldRewriteProposals: "mfcv_field_rewrite_proposals_v1",

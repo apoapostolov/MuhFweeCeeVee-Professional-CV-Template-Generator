@@ -34,12 +34,17 @@ export type MappingFile = {
   bindings?: Array<{ cv_path?: string; slot_id?: string }>;
 };
 
+import type { RenderTweaks } from "./tweaks";
+
+export type { RenderTweaks };
+
 export type RenderInput = {
   cvId: string;
   templateId: string;
   theme?: string;
   photoMode?: string;
   profilePhotoId?: string;
+  tweaks?: RenderTweaks;
 };
 
 export type RenderResult = {

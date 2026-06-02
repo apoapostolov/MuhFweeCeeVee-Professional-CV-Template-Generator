@@ -62,6 +62,7 @@ export function renderCambridge(
   slots: Record<string, unknown>,
   labels: Record<string, unknown>,
   theme: CambridgeThemePalette,
+  moveSkillsLeft = false,
 ): string {
   const margins = resolveMargins(template);
   const experienceDateMode = template.date_display?.experience ?? "year";
@@ -401,12 +402,13 @@ export function renderCambridge(
         ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}</h2><ul>${personalHtml}</ul></section>` : ""}
         ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}</h2><p class="interests-text">${escapeHtml(interestsHtml)}</p></section>` : ""}
         ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}</h2><ul class="rated-list">${languageHtml}</ul></section>` : ""}
+        ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="rated-list">${skillsHtml}</ul></section>` : ""}
       </aside>
       <main class="content">
         ${summaryText ? `<section><p class="summary">${escapeHtml(summaryText)}</p></section>` : ""}
         ${workHtml ? `<section><h2>${escapeHtml(label(labels, "sections.work_experience", "Work experience"))}</h2><div class="dated-list">${workHtml}</div></section>` : ""}
         ${educationHtml ? `<section><h2>${escapeHtml(label(labels, "sections.education", "Education and Qualifications"))}</h2><div class="dated-list">${educationHtml}</div></section>` : ""}
-        ${skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="skill-list">${skillsHtml}</ul></section>` : ""}
+        ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="skill-list">${skillsHtml}</ul></section>` : ""}
         ${refsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.references", "References"))}</h2>${refsHtml}</section>` : ""}
         ${optionalCourses}
         ${optionalProjects}

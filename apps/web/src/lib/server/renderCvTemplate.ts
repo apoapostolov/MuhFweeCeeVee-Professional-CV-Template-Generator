@@ -13,6 +13,7 @@ import {
   resolvePhotoDataUrl,
   resolveRenderLanguage,
 } from "./render/shared";
+import { shouldMoveSkillsLeft } from "./render/tweaks";
 import type { MappingFile, RenderInput, RenderResult, TemplateFile } from "./render/types";
 import {
   resolveCambridgeTheme,
@@ -55,6 +56,10 @@ export async function buildCvTemplateHtml(
   const harvardTheme = resolveHarvardTheme(input.theme);
   const stanfordTheme = resolveStanfordTheme(input.theme);
   const cambridgeTheme = resolveCambridgeTheme(template, input.theme);
+  const moveSkillsLeft = shouldMoveSkillsLeft(
+    input.templateId,
+    input.tweaks ?? { moveSkillsLeft: false },
+  );
   const html =
     input.templateId === "edinburgh-v1"
       ? renderEdinburgh(
@@ -64,13 +69,30 @@ export async function buildCvTemplateHtml(
           labels,
           edinburghTheme,
           input.photoMode,
+          moveSkillsLeft,
         )
       : input.templateId === "harvard-v1"
-        ? renderHarvard(cv, template, slots, labels, harvardTheme, input.photoMode)
+        ? renderHarvard(
+            cv,
+            template,
+            slots,
+            labels,
+            harvardTheme,
+            input.photoMode,
+            moveSkillsLeft,
+          )
         : input.templateId === "stanford-v1"
-          ? renderStanford(cv, template, slots, labels, stanfordTheme, input.photoMode)
+          ? renderStanford(
+              cv,
+              template,
+              slots,
+              labels,
+              stanfordTheme,
+              input.photoMode,
+              moveSkillsLeft,
+            )
           : input.templateId === "cambridge-v1"
-            ? renderCambridge(cv, template, slots, labels, cambridgeTheme)
+            ? renderCambridge(cv, template, slots, labels, cambridgeTheme, moveSkillsLeft)
             : input.templateId === "europass-v1"
               ? renderEuropass(cv, template, slots, labels)
               : renderGeneric(cv, template, slots, labels);

@@ -37,6 +37,7 @@ export function renderHarvard(
   labels: Record<string, unknown>,
   theme: HarvardThemePalette,
   photoModeInput?: string,
+  moveSkillsLeft = false,
 ): string {
   const margins = resolveMargins(template);
   const experienceDateMode = template.date_display?.experience ?? "year";
@@ -453,6 +454,11 @@ export function renderHarvard(
           ? `<section><h3>${escapeHtml(label(labels, "sections.languages", "Languages"))}</h3><ul class="star-list">${languageRows}</ul></section>`
           : ""
       }
+      ${
+        moveSkillsLeft && skillRows
+          ? `<section><h3>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h3><ul class="star-list">${skillRows}</ul></section>`
+          : ""
+      }
     </aside>
     <main class="content">
       ${titleName ? `<h1 class="name">${escapeHtml(titleName)}</h1>` : ""}
@@ -461,7 +467,7 @@ export function renderHarvard(
       ${timelineSectionHtml(label(labels, "sections.work_experience", "Work experience"), "fa-briefcase", experienceItems)}
       ${timelineSectionHtml(label(labels, "sections.education", "Education and Qualifications"), "fa-graduation-cap", educationItems)}
       ${
-        skillRows
+        !moveSkillsLeft && skillRows
           ? `<section><h2><span class="section-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="star-list">${skillRows}</ul></section>`
           : ""
       }

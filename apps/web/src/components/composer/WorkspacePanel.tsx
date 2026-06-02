@@ -2,7 +2,12 @@
 
 import type { JSX } from "react";
 
-import { PHOTO_MODE_OPTIONS, themeOptionsForTemplate } from "./constants";
+import {
+  PHOTO_MODE_OPTIONS,
+  PRINT_TWEAK_OPTIONS,
+  templateSupportsPrintTweaks,
+  themeOptionsForTemplate,
+} from "./constants";
 import { templateDisplayName } from "./form-path-utils";
 import type { CvPair, PhotoModeOption, TemplateThemeOption } from "./types";
 
@@ -20,6 +25,8 @@ export type WorkspacePanelProps = {
   onSelectTemplateTheme: (theme: string) => void;
   selectedPhotoMode: PhotoModeOption["id"];
   onSelectPhotoMode: (mode: PhotoModeOption["id"]) => void;
+  printTweakMoveSkillsLeft: boolean;
+  onPrintTweakMoveSkillsLeftChange: (enabled: boolean) => void;
   selectedCvId: string;
   loadingWorkspace: boolean;
   pdfUrl: string;
@@ -43,6 +50,8 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     onSelectTemplateTheme,
     selectedPhotoMode,
     onSelectPhotoMode,
+    printTweakMoveSkillsLeft,
+    onPrintTweakMoveSkillsLeftChange,
     selectedCvId,
     loadingWorkspace,
     pdfUrl,
@@ -52,6 +61,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
   } = props;
 
   const selectedTemplateThemeOptions: TemplateThemeOption[] = themeOptionsForTemplate(selectedTemplateId);
+  const tweaksAvailable = templateSupportsPrintTweaks(selectedTemplateId);
 
   return (
     <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[340px_1fr]">
@@ -145,6 +155,43 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
               ))}
             </select>
           </label>
+
+          <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+            <p className="text-sm font-medium text-slate-800">Tweaks</p>
+            <div
+              className="mt-2 min-h-[9.5rem] space-y-2 overflow-y-auto pr-1"
+              title={
+                tweaksAvailable
+                  ? undefined
+                  : "This template has no left sidebar (for example Europass)."
+              }
+            >
+              {PRINT_TWEAK_OPTIONS.map((option) => {
+                const checked =
+                  option.id === "moveSkillsLeft" ? printTweakMoveSkillsLeft : false;
+                const disabled = option.id === "moveSkillsLeft" ? !tweaksAvailable : true;
+                return (
+                  <label
+                    key={option.id}
+                    className={`flex items-center gap-2 text-sm text-slate-800 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                  >
+                    <input
+                      checked={checked}
+                      className="h-4 w-4 rounded border-[var(--line)]"
+                      disabled={disabled ? true : undefined}
+                      onChange={(event) => {
+                        if (option.id === "moveSkillsLeft") {
+                          onPrintTweakMoveSkillsLeftChange(event.target.checked);
+                        }
+                      }}
+                      type="checkbox"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">

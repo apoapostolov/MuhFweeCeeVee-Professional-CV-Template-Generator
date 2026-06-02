@@ -9,6 +9,7 @@ import {
   ROOT_ARRAY_EDITOR_PATHS,
   defaultSectionDraftForEditorPath,
   LANGUAGE_OPTIONS,
+  appendPrintTweakParams,
   LEGACY_PHOTO_STORAGE_KEYS,
   STORAGE_KEYS,
   themeOptionsForTemplate,
@@ -112,6 +113,7 @@ export function useComposerController() {
   const [selectedPhotoMode, setSelectedPhotoMode] = useState<
     PhotoModeOption["id"]
   >("default");
+  const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
   const [photoBoothItems, setPhotoBoothItems] = useState<PhotoBoothItem[]>([]);
   const [approvedPhotoId, setApprovedPhotoId] = useState("");
   const [photoBoothNotice, setPhotoBoothNotice] = useState("");
@@ -317,6 +319,7 @@ export function useComposerController() {
     if (approvedPhoto) {
       params.set("photoId", approvedPhoto.id);
     }
+    appendPrintTweakParams(params, printTweakMoveSkillsLeft, selectedTemplateId);
     return `/api/export/pdf?${params.toString()}`;
   }, [
     previewNonce,
@@ -325,6 +328,7 @@ export function useComposerController() {
     selectedTemplateTheme,
     selectedTemplateThemeOptions.length,
     selectedPhotoMode,
+    printTweakMoveSkillsLeft,
     approvedPhotoId,
     photoBoothItems,
   ]);
@@ -425,6 +429,18 @@ export function useComposerController() {
       // no-op
     }
   }, [selectedPhotoMode]);
+
+  useEffect(() => {
+    try {
+      if (printTweakMoveSkillsLeft) {
+        window.localStorage.setItem(STORAGE_KEYS.printTweakMoveSkillsLeft, "1");
+      } else {
+        window.localStorage.removeItem(STORAGE_KEYS.printTweakMoveSkillsLeft);
+      }
+    } catch {
+      // no-op
+    }
+  }, [printTweakMoveSkillsLeft]);
 
   useEffect(() => {
     try {
@@ -572,6 +588,14 @@ export function useComposerController() {
             // no-op
           }
           setSelectedPhotoMode(persistedPhotoMode);
+
+          try {
+            const savedMoveSkillsLeft =
+              window.localStorage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1";
+            setPrintTweakMoveSkillsLeft(savedMoveSkillsLeft);
+          } catch {
+            // no-op
+          }
         }
       } finally {
         if (!cancelled) {
@@ -2108,7 +2132,13 @@ export function useComposerController() {
     if (approvedPhoto) {
       params.set("photoId", approvedPhoto.id);
     }
+    appendPrintTweakParams(params, printTweakMoveSkillsLeft, selectedTemplateId);
     window.open(`/api/export/pdf?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
+  function setPrintTweakMoveSkillsLeftEnabled(enabled: boolean) {
+    setPrintTweakMoveSkillsLeft(enabled);
+    setPreviewNonce(Date.now());
   }
 
   const addPhotoBoothFiles = useCallback(async (files: FileList | File[]): Promise<void> => {
@@ -2424,6 +2454,8 @@ export function useComposerController() {
     setSelectedTemplateTheme,
     selectedPhotoMode,
     setSelectedPhotoMode,
+    printTweakMoveSkillsLeft,
+    setPrintTweakMoveSkillsLeftEnabled,
     photoBoothItems,
     approvedPhotoId,
     photoBoothNotice,

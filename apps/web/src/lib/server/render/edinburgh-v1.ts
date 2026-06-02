@@ -158,6 +158,7 @@ export function renderEdinburgh(
   labels: Record<string, unknown>,
   theme: EdinburghThemePalette,
   photoModeInput?: string,
+  _moveSkillsLeft = false,
 ): string {
   const accent = theme.accent;
   const sidebar = theme.sidebarBackground;

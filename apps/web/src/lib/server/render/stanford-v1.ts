@@ -34,6 +34,7 @@ export function renderStanford(
   labels: Record<string, unknown>,
   theme: StanfordThemePalette,
   photoModeInput?: string,
+  moveSkillsLeft = false,
 ): string {
   const margins = resolveMargins(template);
   const experienceDateMode = template.date_display?.experience ?? "year";
@@ -234,6 +235,10 @@ export function renderStanford(
     .skill-name { font-size: 4.02mm; font-weight: 700; color: #26303c; }
     .bar { height: 1.72mm; background: ${theme.barTrack}; border-radius: 99px; overflow: hidden; }
     .fill { height: 100%; background: ${theme.barFill}; border-radius: 99px; }
+    .sidebar .skill { grid-template-columns: 1fr; gap: 1.1mm; margin-bottom: 2.4mm; }
+    .sidebar .skill-name { font-size: 3.2mm; color: ${theme.sidebarText}; }
+    .sidebar .bar { height: 1.45mm; background: rgba(255,255,255,0.22); }
+    .sidebar .fill { background: rgba(255,255,255,0.92); }
 
     .reference { margin-top: 0.4mm; }
     .reference-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 2.4mm; margin-bottom: 0.8mm; }
@@ -267,6 +272,7 @@ export function renderStanford(
       ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}</h2><ul>${personalHtml}</ul></section>` : ""}
       ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}</h2><ul>${interestsHtml}</ul></section>` : ""}
       ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}</h2><ul class="languages">${languageHtml}</ul></section>` : ""}
+      ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
     </aside>
     <main class="content">
       ${titleName ? `<h1 class="name">${escapeHtml(titleName)}</h1>` : ""}
@@ -274,7 +280,7 @@ export function renderStanford(
       ${summaryText ? `<section class="summary"><p>${escapeHtml(summaryText)}</p></section>` : ""}
       ${workHtml ? `<section class="work-section"><h2>${escapeHtml(label(labels, "sections.work_experience", "Work experience"))}</h2><div class="section-divider"></div>${workHtml}</section>` : ""}
       ${educationHtml ? `<section><h2>${escapeHtml(label(labels, "sections.education", "Education and Qualifications"))}</h2>${educationHtml}</section>` : ""}
-      ${skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
+      ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
       ${refsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.references", "References"))}</h2>${refsHtml}</section>` : ""}
       ${optionalCourses}
       ${optionalProjects}
