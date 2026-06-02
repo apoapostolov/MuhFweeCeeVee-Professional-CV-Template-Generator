@@ -2,11 +2,14 @@
 
 import type { JSX, ReactNode } from "react";
 
-import { EDITOR_COMPACT_FIELD_TRACKS_CLASS } from "./editor-compact-form-layout";
+import {
+  EDITOR_COMPACT_FIELD_TRACKS_CLASS,
+  EDITOR_COMPACT_FORM_ACTIONS_COL,
+} from "./editor-compact-form-layout";
 
 /** Standalone row (no form-level grid parent). */
 export const EDITOR_COMPACT_FIELD_GRID_CLASS =
-  "grid w-full grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2";
+  `grid w-full grid-cols-[1.5rem_8rem_minmax(0,1fr)_${EDITOR_COMPACT_FORM_ACTIONS_COL}] gap-x-2`;
 
 export type EditorCompactFieldRowProps = {
   leading?: ReactNode;
@@ -67,7 +70,7 @@ export function EditorCompactFieldRow({
       {leadingCell}
       {labelCell}
       <div className="min-w-0">{control}</div>
-      <div className={`flex items-center justify-end gap-2 ${actionsAlign}`}>{trailing}</div>
+      <div className={`flex min-w-0 items-center justify-end gap-1 ${actionsAlign}`}>{trailing}</div>
     </div>
   );
 }

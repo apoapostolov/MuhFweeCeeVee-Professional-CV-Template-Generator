@@ -248,3 +248,9 @@ export type PhotoBoothListResponse = {
   error?: string;
   items?: PhotoBoothItem[];
 };
+
+/** Editor toolbar autosave feedback (pending → saving → saved). */
+export type EditorAutosaveActivity = "idle" | "pending" | "saving" | "saved";
+
+/** @deprecated Use EditorAutosaveActivity */
+export type TextFieldAutosaveStatus = EditorAutosaveActivity;

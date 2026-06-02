@@ -3,6 +3,10 @@ import path from "node:path";
 
 import { parse, stringify } from "yaml";
 
+import {
+  loadOpenRouterImagePricingCatalog,
+  lookupImagePricing,
+} from "./openRouterImagePricing";
 import { repoPath } from "./repoPaths";
 
 export type OpenRouterModelOption = {
@@ -14,6 +18,9 @@ export type OpenRouterModelOption = {
   mixedPricePer1M: number | null;
   isFree: boolean;
   supportsImageGeneration: boolean;
+  pricePerImageUsd?: number | null;
+  pricePerImageMaxUsd?: number | null;
+  pricePerImageNote?: string | null;
 };
 
 type ModelCacheFile = {
@@ -199,6 +206,20 @@ function isPricingIncomplete(cache: ModelCacheFile | null): boolean {
   return cache.models.every((model) => !hasPricing(model));
 }
 
+async function mergeImagePricing(models: OpenRouterModelOption[]): Promise<OpenRouterModelOption[]> {
+  const catalog = await loadOpenRouterImagePricingCatalog();
+  return models.map((model) => {
+    const entry = lookupImagePricing(catalog, model.id);
+    if (!entry) return model;
+    return {
+      ...model,
+      pricePerImageUsd: entry.usdPerImage,
+      pricePerImageMaxUsd: entry.usdPerImageMax ?? null,
+      pricePerImageNote: entry.note ?? entry.noteMax ?? null,
+    };
+  });
+}
+
 export async function getOpenRouterModels(options?: {
   apiKey?: string;
   forceRefresh?: boolean;
@@ -211,7 +232,7 @@ export async function getOpenRouterModels(options?: {
   if (!options?.forceRefresh && isFresh(cache) && !isPricingIncomplete(cache)) {
     return {
       fetchedAt: cache?.fetchedAt ?? "",
-      models: cache?.models ?? [],
+      models: await mergeImagePricing(cache?.models ?? []),
       fromCache: true,
     };
   }
@@ -221,7 +242,7 @@ export async function getOpenRouterModels(options?: {
     const written = await writeModelCache(fresh);
     return {
       fetchedAt: written.fetchedAt,
-      models: written.models,
+      models: await mergeImagePricing(written.models),
       fromCache: false,
     };
   } catch {
@@ -233,7 +254,7 @@ export async function getOpenRouterModels(options?: {
         const written = await writeModelCache(fresh);
         return {
           fetchedAt: written.fetchedAt,
-          models: written.models,
+          models: await mergeImagePricing(written.models),
           fromCache: false,
         };
       } catch {
@@ -244,7 +265,7 @@ export async function getOpenRouterModels(options?: {
     if (cache) {
       return {
         fetchedAt: cache.fetchedAt,
-        models: cache.models,
+        models: await mergeImagePricing(cache.models),
         fromCache: true,
       };
     }

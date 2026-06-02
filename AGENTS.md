@@ -168,6 +168,10 @@ When committing:
 - Keep commits atomic; use conventional prefixes (`feat:`, `fix:`, `docs:`,
   `chore:`, `refactor:`, `test:`).
 - Never commit `.env`, private CV YAML, `photos/`, or personal company JSON.
+- Never commit CV YAML or history whose **path** contains `Apostol` or `ApoApostolov`
+  (any casing), or whose `metadata.internal_name` is **Apostol Apostolov CV** (any
+  version suffix). The public repo keeps only fictional samples (e.g.
+  `data/cvs/cv_en_john_doe.yaml`). See `.gitignore` name patterns.
 - Commit source + regenerated lockfile together when `package.json` changes.
 
 ## Changelog Governance
@@ -201,7 +205,9 @@ Before push or public sync:
 
 - Confirm no API keys, private CVs, photos, or `companies.personal.json` in the
   index.
-- Confirm only fictional sample data (`cv_en_john_doe.yaml`) is tracked.
+- Confirm only fictional sample data (`cv_en_john_doe.yaml`) is tracked — no paths
+  matching `*Apostol*` / `*ApoApostolov*` (case-insensitive) and no **Apostol
+  Apostolov CV** internal names.
 - Review [`SECURITY.md`](SECURITY.md).
 
 ## Dependency and Runtime Changes

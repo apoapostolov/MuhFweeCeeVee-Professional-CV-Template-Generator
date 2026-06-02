@@ -4,6 +4,7 @@ import type { ChangeEvent, JSX, KeyboardEvent, RefObject, UIEvent } from "react"
 
 import { defaultSectionDraftForEditorPath, EDITOR_TABS } from "./constants";
 import { EDITOR_COMPACT_FORM_GRID_CLASS } from "./editor-compact-form-layout";
+import { AiStarsIcon } from "./ai-stars-icon";
 import { scoreTone } from "./analysis-ui-utils";
 import type { useEditorFormRenderer } from "./useEditorFormRenderer";
 import type {
@@ -14,6 +15,7 @@ import type {
   EditorViewMode,
   FullAnalysis,
   SectionAnalysis,
+  EditorAutosaveActivity,
 } from "./types";
 
 type FormRenderer = ReturnType<typeof useEditorFormRenderer>;
@@ -63,6 +65,10 @@ export type EditorPanelProps = {
   sectionDraft: unknown;
   editorPath: string;
   editorSaving: boolean;
+  editorAutoSaveEnabled: boolean;
+  onEditorAutoSaveChange: (enabled: boolean) => void;
+  editorHasUnsavedChanges: boolean;
+  editorAutosaveActivity: EditorAutosaveActivity;
   onSaveEditor: () => void;
   analysisDrawerCollapsed: boolean;
   onToggleAnalysisDrawer: () => void;
@@ -121,6 +127,10 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     sectionDraft,
     editorPath,
     editorSaving,
+    editorAutoSaveEnabled,
+    onEditorAutoSaveChange,
+    editorHasUnsavedChanges,
+    editorAutosaveActivity,
     onSaveEditor,
     analysisDrawerCollapsed,
     onToggleAnalysisDrawer,
@@ -131,6 +141,20 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onRunAnalysisFull,
     editorNotice,
   } = props;
+
+  const autosavePillLabel =
+    editorAutosaveActivity === "pending" || editorAutosaveActivity === "saving"
+      ? selectedLanguage === "bg"
+        ? "Запазване…"
+        : "Saving…"
+      : editorAutosaveActivity === "saved"
+        ? selectedLanguage === "bg"
+          ? "Запазено"
+          : "Saved"
+        : "";
+
+  const manualSaveEnabled =
+    !editorAutoSaveEnabled && editorHasUnsavedChanges && !editorSaving && !editorLoading && Boolean(selectedCvId);
 
   return (
             <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[340px_1fr]">
@@ -290,7 +314,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                   <h3 className="text-lg font-bold text-slate-900">
                     {companyMetadataEditorOpen
                       ? `Companies Metadata Editor: ${analysisCompanySource === "personal" ? "Personal" : "Example"}`
-                      : `Section Editor: ${EDITOR_TABS.find((tab) => tab.key === editorTab)?.label}`}
+                      : `CV Editor: ${EDITOR_TABS.find((tab) => tab.key === editorTab)?.label}`}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {companyMetadataEditorOpen ? (
@@ -347,29 +371,69 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           </button>
                         </div>
                         <button
-                          className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
                           disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
                           onClick={onRunAnalysisSection}
                           type="button"
                         >
+                          <AiStarsIcon className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
                           Score Section
                         </button>
                         <button
-                          className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
                           disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
                           onClick={onRunAnalysisFull}
                           type="button"
                         >
+                          <AiStarsIcon className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
                           Score Whole CV
                         </button>
-                        <button
-                          className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-                          disabled={editorSaving || editorLoading || !selectedCvId}
-                          onClick={onSaveEditor}
-                          type="button"
-                        >
-                          Save Section
-                        </button>
+                        <label className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-slate-800">
+                          <span>{selectedLanguage === "bg" ? "Авто запис" : "Auto Save"}</span>
+                          <button
+                            aria-checked={editorAutoSaveEnabled}
+                            className={`relative h-5 w-9 rounded-full transition-colors ${
+                              editorAutoSaveEnabled ? "bg-[var(--accent)]" : "bg-slate-300"
+                            }`}
+                            onClick={() => onEditorAutoSaveChange(!editorAutoSaveEnabled)}
+                            role="switch"
+                            type="button"
+                          >
+                            <span
+                              className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                                editorAutoSaveEnabled ? "left-[1.125rem]" : "left-0.5"
+                              }`}
+                            />
+                          </button>
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                            {editorAutoSaveEnabled ? "ON" : "OFF"}
+                          </span>
+                        </label>
+                        {editorAutoSaveEnabled && editorAutosaveActivity !== "idle" ? (
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                              editorAutosaveActivity === "saved"
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                : "border-amber-300 bg-amber-50 text-amber-800"
+                            }`}
+                          >
+                            {autosavePillLabel}
+                          </span>
+                        ) : null}
+                        {!editorAutoSaveEnabled ? (
+                          <button
+                            className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${
+                              manualSaveEnabled
+                                ? "bg-[var(--accent)] disabled:opacity-60"
+                                : "bg-slate-400 text-slate-100 disabled:opacity-100"
+                            }`}
+                            disabled={!manualSaveEnabled}
+                            onClick={onSaveEditor}
+                            type="button"
+                          >
+                            Save Section
+                          </button>
+                        ) : null}
                       </>
                     )}
                   </div>

@@ -16,9 +16,12 @@ export function isTabulatedRootArraySection(editorPath: string, depth: number): 
   return depth === 0 && ROOT_ARRAY_EDITOR_PATHS.has(editorPath);
 }
 
+/** Actions column fits AI ✨ trigger + remove control side by side. */
+export const EDITOR_COMPACT_FORM_ACTIONS_COL = "5.5rem";
+
 /** Parent grid on the form column — all compact field rows subgrid to these tracks. */
 export const EDITOR_COMPACT_FORM_GRID_CLASS =
-  `grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
+  `grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_${EDITOR_COMPACT_FORM_ACTIONS_COL}] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
 
 export const EDITOR_COMPACT_FIELD_TRACKS_CLASS =
   "grid grid-cols-subgrid col-span-full col-start-1 col-end-[-1] gap-x-2 w-full";
@@ -29,7 +32,7 @@ export function compactFormPassthroughClass(compact: boolean): string {
 }
 
 /** Nested subsection shell: real grid so padding indents header title and all child rows. */
-export const EDITOR_COMPACT_NESTED_SECTION_CLASS = `col-span-full col-start-1 col-end-[-1] grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
+export const EDITOR_COMPACT_NESTED_SECTION_CLASS = `col-span-full col-start-1 col-end-[-1] grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_${EDITOR_COMPACT_FORM_ACTIONS_COL}] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
 
 export function compactContainerShellClass(
   compact: boolean,

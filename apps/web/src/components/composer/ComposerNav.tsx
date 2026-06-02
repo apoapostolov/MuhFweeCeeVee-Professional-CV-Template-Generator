@@ -32,6 +32,15 @@ export function ComposerNav({
         </button>
         <button
           className={`rounded-md px-4 py-2 text-sm font-semibold ${
+            activePanel === "photo_booth" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+          }`}
+          onClick={() => onPanelChange("photo_booth")}
+          type="button"
+        >
+          Photo Booth
+        </button>
+        <button
+          className={`rounded-md px-4 py-2 text-sm font-semibold ${
             activePanel === "editor" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
           }`}
           onClick={() => onPanelChange("editor")}
@@ -47,15 +56,6 @@ export function ComposerNav({
           type="button"
         >
           Templates
-        </button>
-        <button
-          className={`rounded-md px-4 py-2 text-sm font-semibold ${
-            activePanel === "photo_booth" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
-          }`}
-          onClick={() => onPanelChange("photo_booth")}
-          type="button"
-        >
-          Photo Booth
         </button>
       </div>
       <button

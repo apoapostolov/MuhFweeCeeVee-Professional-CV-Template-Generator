@@ -67,6 +67,7 @@ import type {
   SyncResponse,
   SyncStatusResponse,
   TemplateListResponse,
+  EditorAutosaveActivity,
   ThemeMode,
 } from "@/components/composer/types";
 import {
@@ -156,6 +157,11 @@ export function useComposerController() {
     fieldLabel: string;
     value: string;
   } | null>(null);
+  const editorAutoSaveEnabledRef = useRef(true);
+  const editorAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editorAutoSaveEnabled, setEditorAutoSaveEnabled] = useState(true);
+  const [editorSavedFingerprint, setEditorSavedFingerprint] = useState("");
+  const [editorAutosaveActivity, setEditorAutosaveActivity] = useState<EditorAutosaveActivity>("idle");
 
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
@@ -625,9 +631,28 @@ export function useComposerController() {
     variantGroupRef.current = variantGroup;
   }, [variantGroup]);
   useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEYS.editorAutoSave);
+      if (stored === "0") {
+        editorAutoSaveEnabledRef.current = false;
+        setEditorAutoSaveEnabled(false);
+      }
+    } catch {
+      // ignore private browsing / blocked storage
+    }
+  }, []);
+
+  useEffect(() => {
+    editorAutoSaveEnabledRef.current = editorAutoSaveEnabled;
+  }, [editorAutoSaveEnabled]);
+
+  useEffect(() => {
     return () => {
       if (textFieldAutosaveTimerRef.current) {
         clearTimeout(textFieldAutosaveTimerRef.current);
+      }
+      if (editorAutosaveActivityTimerRef.current) {
+        clearTimeout(editorAutosaveActivityTimerRef.current);
       }
     };
   }, []);
@@ -795,13 +820,24 @@ export function useComposerController() {
       editorPath,
       cloneValue(loaded ?? fallback),
     );
+    if (textFieldAutosaveTimerRef.current) {
+      clearTimeout(textFieldAutosaveTimerRef.current);
+      textFieldAutosaveTimerRef.current = null;
+    }
+    pendingTextFieldAutosaveRef.current = null;
+    setEditorAutosaveActivity("idle");
+
     if (editorPath === "metadata" && section && typeof section === "object" && !Array.isArray(section)) {
       const { template_visibility: _ignored, ...rest } = section as Record<string, unknown>;
+      const yaml = stringifyYaml(rest);
       setSectionDraft(rest);
-      setYamlDraft(stringifyYaml(rest));
+      setYamlDraft(yaml);
+      setEditorSavedFingerprint(yaml);
     } else {
+      const yaml = stringifyYaml(section);
       setSectionDraft(section);
-      setYamlDraft(stringifyYaml(section));
+      setYamlDraft(yaml);
+      setEditorSavedFingerprint(yaml);
     }
   }, [editorCv, editorPath, editorLoading]);
 
@@ -809,6 +845,15 @@ export function useComposerController() {
     () => resolveSectionDraftForForm(editorPath, sectionDraft, yamlDraft),
     [editorPath, sectionDraft, yamlDraft],
   );
+
+  const editorSectionFingerprint = useMemo(() => {
+    if (editorView === "yaml") {
+      return yamlDraft;
+    }
+    return stringifyYaml(sectionFormDraft ?? {});
+  }, [editorView, yamlDraft, sectionFormDraft]);
+
+  const editorHasUnsavedChanges = editorSectionFingerprint !== editorSavedFingerprint;
 
   useEffect(() => {
     if (editorView !== "form" || editorLoading || !editorCv) {
@@ -827,16 +872,75 @@ export function useComposerController() {
     setSectionDraft(sectionFormDraft);
   }, [editorView, editorLoading, editorCv, editorPath, sectionDraft, sectionFormDraft]);
 
+  function syncEditorSavedFingerprintFromDraft(): void {
+    const fingerprint =
+      editorViewRef.current === "yaml"
+        ? yamlDraftRef.current
+        : stringifyYaml(
+            resolveSectionDraftForForm(
+              editorPathRef.current,
+              sectionDraftRef.current,
+              yamlDraftRef.current,
+            ) ?? {},
+          );
+    setEditorSavedFingerprint(fingerprint);
+  }
+
+  function setEditorAutoSavePreference(enabled: boolean): void {
+    setEditorAutoSaveEnabled(enabled);
+    editorAutoSaveEnabledRef.current = enabled;
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.editorAutoSave, enabled ? "1" : "0");
+    } catch {
+      // ignore
+    }
+    if (!enabled && textFieldAutosaveTimerRef.current) {
+      clearTimeout(textFieldAutosaveTimerRef.current);
+      textFieldAutosaveTimerRef.current = null;
+      setEditorAutosaveActivity("idle");
+    }
+  }
+
+  function setEditorAutosaveActivityVisible(status: EditorAutosaveActivity): void {
+    if (editorAutosaveActivityTimerRef.current) {
+      clearTimeout(editorAutosaveActivityTimerRef.current);
+      editorAutosaveActivityTimerRef.current = null;
+    }
+    setEditorAutosaveActivity(status);
+    if (status === "saved") {
+      editorAutosaveActivityTimerRef.current = setTimeout(() => {
+        setEditorAutosaveActivity("idle");
+        editorAutosaveActivityTimerRef.current = null;
+      }, 2800);
+    }
+  }
+
+  function scheduleEditorAutosave(): void {
+    if (!editorAutoSaveEnabledRef.current) {
+      return;
+    }
+    if (textFieldAutosaveTimerRef.current) {
+      clearTimeout(textFieldAutosaveTimerRef.current);
+    }
+    setEditorAutosaveActivityVisible("pending");
+    textFieldAutosaveTimerRef.current = setTimeout(() => {
+      textFieldAutosaveTimerRef.current = null;
+      void flushTextFieldAutosave();
+    }, TEXT_FIELD_AUTOSAVE_MS);
+  }
+
   const handleYamlDraftChange = useCallback((value: string) => {
     setYamlDraft(value);
     const trimmed = value.trim();
     if (!trimmed) {
       setSectionDraft(defaultSectionDraftForEditorPath(editorPath));
+      scheduleEditorAutosave();
       return;
     }
     try {
       const parsed = parseYaml(value);
       setSectionDraft(coerceSectionDraftForEditorPath(editorPath, parsed));
+      scheduleEditorAutosave();
     } catch {
       // Keep sectionDraft until YAML parses; form still reads via resolveSectionDraftForForm.
     }
@@ -959,6 +1063,7 @@ export function useComposerController() {
       setYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleEditorAutosave();
   }
 
   async function persistEditorSectionDraft(): Promise<boolean> {
@@ -1002,18 +1107,20 @@ export function useComposerController() {
     }
     setEditorCv(updated);
     setPreviewNonce(Date.now());
+    syncEditorSavedFingerprintFromDraft();
     return true;
   }
 
   async function flushTextFieldAutosave(): Promise<void> {
-    const pending = pendingTextFieldAutosaveRef.current;
-    if (!pending || editorViewRef.current !== "form") {
+    if (!editorAutoSaveEnabledRef.current) {
       return;
     }
 
+    const pending = pendingTextFieldAutosaveRef.current;
     const generation = textFieldAutosaveGenerationRef.current + 1;
     textFieldAutosaveGenerationRef.current = generation;
 
+    setEditorAutosaveActivityVisible("saving");
     setEditorSaving(true);
     try {
       const saved = await persistEditorSectionDraft();
@@ -1021,12 +1128,18 @@ export function useComposerController() {
         return;
       }
       if (!saved) {
+        setEditorAutosaveActivityVisible("idle");
         return;
       }
 
+      setEditorAutosaveActivityVisible("saved");
       showComposerToast(
         selectedLanguageRef.current === "bg" ? "Шаблонът на CV е запазен." : "CV template saved.",
       );
+
+      if (!pending || editorViewRef.current !== "form") {
+        return;
+      }
 
       const trimmed = pending.value.trim();
       if (!trimmed) {
@@ -1126,19 +1239,20 @@ export function useComposerController() {
     value: string,
     meta: { fieldLabel: string },
   ): void {
-    updateDraftAt(path, value);
+    setSectionDraft((current: unknown) => {
+      const next = setAtPath(current, path, value);
+      setYamlDraft(stringifyYaml(next ?? {}));
+      return next;
+    });
+    if (!editorAutoSaveEnabledRef.current) {
+      return;
+    }
     pendingTextFieldAutosaveRef.current = {
       path,
       fieldLabel: meta.fieldLabel,
       value,
     };
-    if (textFieldAutosaveTimerRef.current) {
-      clearTimeout(textFieldAutosaveTimerRef.current);
-    }
-    textFieldAutosaveTimerRef.current = setTimeout(() => {
-      textFieldAutosaveTimerRef.current = null;
-      void flushTextFieldAutosave();
-    }, TEXT_FIELD_AUTOSAVE_MS);
+    scheduleEditorAutosave();
   }
 
   function removeDraftAt(path: PathSegment[]) {
@@ -1158,6 +1272,7 @@ export function useComposerController() {
       setYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleEditorAutosave();
   }
 
   function addArrayEntry(path: PathSegment[], sample: unknown) {
@@ -1166,6 +1281,7 @@ export function useComposerController() {
       setYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleEditorAutosave();
   }
 
   function addCustomObjectField(path: PathSegment[]) {
@@ -1185,6 +1301,7 @@ export function useComposerController() {
               setYamlDraft(stringifyYaml(next ?? {}));
               return next;
             });
+            scheduleEditorAutosave();
           }
         : (updater: (current: unknown) => unknown) => {
             setCompanyMetadataDraft((current: unknown) => {
@@ -1218,6 +1335,7 @@ export function useComposerController() {
       setYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
+    scheduleEditorAutosave();
   }
 
   function toggleAnalysisCompanySelection(companyId: string) {
@@ -1425,6 +1543,7 @@ export function useComposerController() {
       }
       setEditorCv(updated);
       setPreviewNonce(Date.now());
+      syncEditorSavedFingerprintFromDraft();
       setEditorNotice(selectedLanguage === "bg" ? "Секцията е запазена." : "Section saved.");
     } finally {
       setEditorSaving(false);
@@ -2044,5 +2163,9 @@ export function useComposerController() {
     submitAddCustomObjectField,
     composerToasts,
     dismissComposerToast,
+    editorAutoSaveEnabled,
+    setEditorAutoSavePreference,
+    editorHasUnsavedChanges,
+    editorAutosaveActivity,
   };
 }

@@ -27,6 +27,9 @@ data/cvs/cv_*_private.yaml
 data/template_mappings/cv_*_private__*.yaml
 data/cvs/*alianz*.yaml
 data/cvs/*allianz*.yaml
+*[Aa]postol*
+*[Aa][Pp][Oo][Aa]postolov*
+*[Aa][Pp][Oo]apostolov*
 
 # Local editor and private examples
 .vscode/
@@ -45,8 +48,8 @@ backup/retired-keywords/**/outputs/*
 data/settings/openrouter_models.yaml
 data/settings/openrouter.yaml
 data/settings/companies.personal.json
-photos/
-photos/metadata.json
+/photos/
+/photos/metadata.json
 
 # Local API planning docs
 /companies_api.md

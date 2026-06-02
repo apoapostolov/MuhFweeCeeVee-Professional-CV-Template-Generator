@@ -7,6 +7,9 @@ export type OpenRouterModelOption = {
   mixedPricePer1M: number | null;
   isFree: boolean;
   supportsImageGeneration: boolean;
+  pricePerImageUsd?: number | null;
+  pricePerImageMaxUsd?: number | null;
+  pricePerImageNote?: string | null;
 };
 
 export type AnalysisCostEstimate = {

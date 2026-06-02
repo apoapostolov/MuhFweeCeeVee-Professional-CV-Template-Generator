@@ -379,7 +379,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           fieldLabel={fieldLabel}
           fieldLayout={compactFieldLayout ? "compact" : "stacked"}
           language={selectedLanguage}
-          onApply={(next) => updateDraftAt(fieldPath, next)}
+          onApply={(next) => updateTextDraftAt(fieldPath, next, { fieldLabel })}
           onNotice={onEditorNotice}
           pathLabel={fieldPathLabel}
           resolvedTheme={resolvedTheme}

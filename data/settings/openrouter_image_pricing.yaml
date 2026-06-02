@@ -1,0 +1,114 @@
+# Per-image USD estimates for OpenRouter image-output models (output_modalities=image).
+# Sources: OpenRouter model pages, Google Gemini API pricing, provider docs (BFL, Sourceful, Recraft).
+# Default basis: 1K output (1024²) unless noted. Re-check quarterly — list changes often.
+updatedAt: "2026-06-02"
+models:
+  google/gemini-2.5-flash-image:
+    usdPerImage: 0.039
+    note: "1K output (~1290 image tokens)"
+    source: https://developers.googleblog.com/en/introducing-gemini-2-5-flash-image/
+  google/gemini-3.1-flash-image-preview:
+    usdPerImage: 0.067
+    note: "1K output"
+    source: https://ai.google.dev/gemini-api/docs/pricing
+  google/gemini-3-pro-image-preview:
+    usdPerImage: 0.134
+    note: "1K/2K output"
+    usdPerImageMax: 0.24
+    noteMax: "4K output"
+    source: https://ai.google.dev/gemini-api/docs/pricing
+  openai/gpt-5-image:
+    usdPerImage: 0.016
+    note: "~1K image, token-est. from OR rates"
+    source: https://openrouter.ai/openai/gpt-5-image
+  openai/gpt-5-image-mini:
+    usdPerImage: 0.003
+    note: "~1K image, token-est. from OR rates"
+    source: https://openrouter.ai/openai/gpt-5-image-mini
+  openai/gpt-5.4-image-2:
+    usdPerImage: 0.022
+    note: "~1K image, token-est. from OR rates"
+    source: https://openrouter.ai/openai/gpt-5.4-image-2
+  x-ai/grok-imagine-image-quality:
+    usdPerImage: 0.05
+    note: "from $0.05/image on OR"
+    source: https://openrouter.ai/x-ai/grok-imagine-image-quality
+  black-forest-labs/flux.2-pro:
+    usdPerImage: 0.03
+    note: "~1 MP output"
+    source: https://openrouter.ai/black-forest-labs/flux.2-pro
+  black-forest-labs/flux.2-flex:
+    usdPerImage: 0.06
+    note: "~1 MP output"
+    source: https://openrouter.ai/black-forest-labs/flux.2-flex
+  black-forest-labs/flux.2-max:
+    usdPerImage: 0.07
+    note: "first MP output"
+    source: https://openrouter.ai/black-forest-labs/flux.2-max
+  black-forest-labs/flux.2-klein-4b:
+    usdPerImage: 0.014
+    note: "first MP output"
+    source: https://openrouter.ai/black-forest-labs/flux.2-klein-4b
+  bytedance-seed/seedream-4.5:
+    usdPerImage: 0.04
+    note: "flat per output image"
+    source: https://openrouter.ai/bytedance-seed/seedream-4.5
+  sourceful/riverflow-v2-fast:
+    usdPerImage: 0.02
+    note: "1K output"
+    usdPerImageMax: 0.04
+    noteMax: "2K output"
+    source: https://openrouter.ai/sourceful/riverflow-v2-fast
+  sourceful/riverflow-v2-pro:
+    usdPerImage: 0.15
+    note: "1K/2K output"
+    usdPerImageMax: 0.33
+    noteMax: "4K output"
+    source: https://openrouter.ai/sourceful/riverflow-v2-pro
+  sourceful/riverflow-v2-fast-preview:
+    usdPerImage: 0.02
+    note: "1K output (preview)"
+    source: https://openrouter.ai/sourceful/riverflow-v2-fast
+  sourceful/riverflow-v2-standard-preview:
+    usdPerImage: 0.035
+    note: "flat per output image"
+    source: https://openrouter.ai/sourceful/riverflow-v2-standard-preview
+  sourceful/riverflow-v2-max-preview:
+    usdPerImage: 0.08
+    note: "preview tier estimate"
+    source: https://openrouter.ai/sourceful/riverflow-v2-pro
+  recraft/recraft-v3:
+    usdPerImage: 0.04
+    source: https://openrouter.ai/recraft/recraft-v3
+  recraft/recraft-v4:
+    usdPerImage: 0.04
+    source: https://openrouter.ai/recraft/recraft-v4
+  recraft/recraft-v4-pro:
+    usdPerImage: 0.25
+    source: https://openrouter.ai/recraft/recraft-v4-pro
+  recraft/recraft-v4-vector:
+    usdPerImage: 0.04
+    source: https://openrouter.ai/recraft/recraft-v4
+  recraft/recraft-v4-pro-vector:
+    usdPerImage: 0.25
+    source: https://openrouter.ai/recraft/recraft-v4-pro
+  recraft/recraft-v4.1:
+    usdPerImage: 0.04
+    source: https://openrouter.ai/recraft/recraft-v4
+  recraft/recraft-v4.1-pro:
+    usdPerImage: 0.25
+    source: https://openrouter.ai/recraft/recraft-v4.1-pro
+  recraft/recraft-v4.1-vector:
+    usdPerImage: 0.04
+    source: https://openrouter.ai/recraft/recraft-v4
+  recraft/recraft-v4.1-pro-vector:
+    usdPerImage: 0.25
+    source: https://openrouter.ai/recraft/recraft-v4.1-pro
+  recraft/recraft-v4.1-utility:
+    usdPerImage: 0.04
+    source: https://openrouter.ai/recraft/recraft-v4
+  recraft/recraft-v4.1-utility-pro:
+    usdPerImage: 0.25
+    source: https://openrouter.ai/recraft/recraft-v4.1-utility-pro
+  openrouter/auto:
+    usdPerImage: null

@@ -24,48 +24,21 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
         </div>
         <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
           <p className="text-sm font-semibold text-slate-800">Approximate Cost per Check</p>
-          <p className="mt-1 text-[11px] text-slate-600">
-            Estimates use live CV size + prompt/output heuristics with{" "}
-            {analysisCostEstimate.overhead.toFixed(1)}x overhead.
+          <p className="mt-2 text-xs leading-relaxed text-[var(--ink-muted)]">
+            Typical OpenRouter cost with the selected analysis model: CV analysis{" "}
+            {analysisCostEstimate.analysisCost === null
+              ? "n/a"
+              : formatUsd(analysisCostEstimate.analysisCost)}
+            , one photo{" "}
+            {analysisCostEstimate.photoAnalysisCost === null
+              ? "n/a"
+              : formatUsd(analysisCostEstimate.photoAnalysisCost)}
+            , two-photo compare{" "}
+            {analysisCostEstimate.photoComparisonCost === null
+              ? "n/a"
+              : formatUsd(analysisCostEstimate.photoComparisonCost)}
+            . Actual spend depends on CV length and model.
           </p>
-          <div className="mt-2 grid gap-2">
-            <div className="rounded-md border border-[var(--line)] bg-white p-2">
-              <p className="text-xs font-semibold text-slate-900">AI Analysis (CV section/full scoring)</p>
-              <p className="mt-1 text-[11px] text-slate-600">
-                Input ~{analysisCostEstimate.analysisInputTokens.toLocaleString()} tok • Output ~
-                {analysisCostEstimate.analysisOutputTokens.toLocaleString()} tok
-              </p>
-              <p className="mt-1 text-xs font-semibold text-slate-800">
-                {analysisCostEstimate.analysisCost === null
-                  ? "Estimated cost: N/A"
-                  : `Estimated cost: ${formatUsd(analysisCostEstimate.analysisCost)}`}
-              </p>
-            </div>
-            <div className="rounded-md border border-[var(--line)] bg-white p-2">
-              <p className="text-xs font-semibold text-slate-900">Photo Analysis (single image)</p>
-              <p className="mt-1 text-[11px] text-slate-600">
-                Input ~{analysisCostEstimate.photoAnalysisInputTokens.toLocaleString()} tok • Output ~
-                {analysisCostEstimate.photoAnalysisOutputTokens.toLocaleString()} tok
-              </p>
-              <p className="mt-1 text-xs font-semibold text-slate-800">
-                {analysisCostEstimate.photoAnalysisCost === null
-                  ? "Estimated cost: N/A"
-                  : `Estimated cost: ${formatUsd(analysisCostEstimate.photoAnalysisCost)}`}
-              </p>
-            </div>
-            <div className="rounded-md border border-[var(--line)] bg-white p-2">
-              <p className="text-xs font-semibold text-slate-900">Photo Comparison (2 images baseline)</p>
-              <p className="mt-1 text-[11px] text-slate-600">
-                Input ~{analysisCostEstimate.photoComparisonInputTokens.toLocaleString()} tok • Output ~
-                {analysisCostEstimate.photoComparisonOutputTokens.toLocaleString()} tok
-              </p>
-              <p className="mt-1 text-xs font-semibold text-slate-800">
-                {analysisCostEstimate.photoComparisonCost === null
-                  ? "Estimated cost: N/A"
-                  : `Estimated cost: ${formatUsd(analysisCostEstimate.photoComparisonCost)}`}
-              </p>
-            </div>
-          </div>
         </div>
       </article>
       <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-[#fcfcfd] p-5">

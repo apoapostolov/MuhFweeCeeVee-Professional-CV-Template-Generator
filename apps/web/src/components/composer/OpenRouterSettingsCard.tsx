@@ -3,6 +3,10 @@
 import type { JSX } from "react";
 
 import {
+  formatImageModelPricingBox,
+  imageModelOptionLabel,
+} from "@/lib/openrouter-image-pricing";
+import {
   formatUsd,
   modelOptionLabel,
   type OpenRouterModelOption,
@@ -133,13 +137,18 @@ export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.
               ) : null}
               {imageGenerationModelOptions.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {modelOptionLabel(item)}
+                  {imageModelOptionLabel(item)}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-[11px] text-slate-600">
               {selectedImageGenerationModelOption
-                ? `Prepared for future image features: ${selectedImageGenerationModelOption.name || selectedImageGenerationModelOption.id}`
+                ? formatImageModelPricingBox({
+                    isFree: selectedImageGenerationModelOption.isFree,
+                    pricePerImageUsd: selectedImageGenerationModelOption.pricePerImageUsd ?? null,
+                    pricePerImageMaxUsd: selectedImageGenerationModelOption.pricePerImageMaxUsd ?? null,
+                    pricePerImageNote: selectedImageGenerationModelOption.pricePerImageNote ?? null,
+                  })
                 : "Not used yet. This is a future-facing selection."}
             </p>
           </label>

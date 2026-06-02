@@ -152,12 +152,12 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                             {item.analysis.verdict}
                           </span>
                         ) : null}
-                        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-1 bg-gradient-to-t from-black/75 to-black/0 p-1.5">
+                        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-1 bg-gradient-to-t from-black/80 to-transparent p-1.5">
                           <button
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm ${
                               isApproved
-                                ? "border-emerald-300 bg-emerald-100 text-emerald-900"
-                                : "border-white/70 bg-white/90 text-slate-800"
+                                ? "border-emerald-400/80 bg-emerald-600/90 text-white"
+                                : "border-white/50 bg-black/55 text-white hover:bg-black/70"
                             }`}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -171,7 +171,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                             </svg>
                           </button>
                           <button
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-rose-200 bg-rose-100 text-rose-800"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-rose-300/80 bg-rose-700/90 text-white shadow-sm hover:bg-rose-800/90"
                             onClick={(event) => {
                               event.stopPropagation();
                               onRequestDelete(item.id);
@@ -184,10 +184,10 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                             </svg>
                           </button>
                           <button
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm ${
                               isCompareSelected
-                                ? "border-amber-300 bg-amber-100 text-amber-900"
-                                : "border-white/70 bg-white/90 text-slate-800"
+                                ? "border-amber-400/80 bg-amber-600/90 text-white"
+                                : "border-white/50 bg-black/55 text-white hover:bg-black/70"
                             }`}
                             onClick={(event) => {
                               event.stopPropagation();

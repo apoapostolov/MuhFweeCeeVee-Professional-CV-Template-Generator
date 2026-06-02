@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Editor **Auto Save** toggle (persisted in browser storage): when ON, **Save Section** is hidden and the section debounces to disk with a saving/saved pill; when OFF, **Save Section** appears and turns accent blue only while the section has unsaved edits.
+- **AI stars** on **Score Section** and **Score Whole CV**; field rewrite scores show as a number on the current pill and with `%` on proposals.
+- Photo Booth gallery API (`/api/photos`) and dark overlay action buttons on thumbnails.
+- OpenRouter **per-image** USD hints in Settings (from `data/settings/openrouter_image_pricing.yaml`).
+- `.gitignore` / `AGENTS.md` rules to block personal CV paths (`Apostol`, `ApoApostolov`, `alianz`).
+
+### Changed
+
+- Product branding: header **MuhFweeCeeVee**, document title, main panel title **CV Editor**.
+- Nav order: **Print Room → Photo Booth → Editor → Templates → Settings**; Settings shows a short approximate cost blurb.
+
 ## [1.1.0] - 2026-06-02
 
 ### Added
