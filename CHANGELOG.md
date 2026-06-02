@@ -18,7 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Product branding: header **MuhFweeCeeVee**, document title, main panel title **CV Editor**.
-- Nav order: **Print Room → Photo Booth → Editor → Templates → Settings**; Settings shows a short approximate cost blurb.
+- Nav order: **Print Room → Photo Booth → Editor → Templates → Settings**.
+- Settings **Approximate Cost per Check** lists each AI action with input/output token estimates and USD cost (not a single summary line).
+- Editor **Auto Save** control is a three-part pill: label | **ON** | **OFF**.
+
+### Fixed
+
+- Compact editor rows keep the visibility eye, field name, and input on one grid line (subgrid + actions column width).
+- Professional Rewrite current-score pill shows **`%`** again.
 
 ## [1.1.0] - 2026-06-02
 

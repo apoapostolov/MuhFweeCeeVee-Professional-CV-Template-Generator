@@ -388,27 +388,37 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           <AiStarsIcon className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
                           Score Whole CV
                         </button>
-                        <label className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-slate-800">
-                          <span>{selectedLanguage === "bg" ? "Авто запис" : "Auto Save"}</span>
+                        <div
+                          aria-label={selectedLanguage === "bg" ? "Автоматичен запис" : "Auto Save"}
+                          className="inline-flex overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
+                          role="group"
+                        >
+                          <span className="border-r border-[var(--line)] bg-white px-2.5 py-1.5 text-slate-800">
+                            {selectedLanguage === "bg" ? "Авто запис" : "Auto Save"}
+                          </span>
                           <button
-                            aria-checked={editorAutoSaveEnabled}
-                            className={`relative h-5 w-9 rounded-full transition-colors ${
-                              editorAutoSaveEnabled ? "bg-[var(--accent)]" : "bg-slate-300"
+                            className={`px-2.5 py-1.5 ${
+                              editorAutoSaveEnabled
+                                ? "bg-[var(--accent)] text-white"
+                                : "bg-white text-slate-600 hover:bg-slate-50"
                             }`}
-                            onClick={() => onEditorAutoSaveChange(!editorAutoSaveEnabled)}
-                            role="switch"
+                            onClick={() => onEditorAutoSaveChange(true)}
                             type="button"
                           >
-                            <span
-                              className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                                editorAutoSaveEnabled ? "left-[1.125rem]" : "left-0.5"
-                              }`}
-                            />
+                            ON
                           </button>
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                            {editorAutoSaveEnabled ? "ON" : "OFF"}
-                          </span>
-                        </label>
+                          <button
+                            className={`border-l border-[var(--line)] px-2.5 py-1.5 ${
+                              !editorAutoSaveEnabled
+                                ? "bg-[var(--accent)] text-white"
+                                : "bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                            onClick={() => onEditorAutoSaveChange(false)}
+                            type="button"
+                          >
+                            OFF
+                          </button>
+                        </div>
                         {editorAutoSaveEnabled && editorAutosaveActivity !== "idle" ? (
                           <span
                             className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${

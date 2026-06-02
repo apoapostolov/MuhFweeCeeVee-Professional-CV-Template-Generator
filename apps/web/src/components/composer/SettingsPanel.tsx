@@ -9,6 +9,30 @@ export type SettingsPanelProps = OpenRouterSettingsCardProps & {
   analysisCostEstimate: AnalysisCostEstimate;
 };
 
+function CostEstimateCard({
+  label,
+  inputTokens,
+  outputTokens,
+  cost,
+}: {
+  label: string;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number | null;
+}): JSX.Element {
+  return (
+    <div className="rounded-md border border-[var(--line)] bg-white p-2">
+      <p className="text-xs font-semibold text-slate-900">{label}</p>
+      <p className="mt-1 text-[11px] text-slate-600">
+        Input ~{inputTokens.toLocaleString()} tok • Output ~{outputTokens.toLocaleString()} tok
+      </p>
+      <p className="mt-1 text-xs font-semibold text-slate-800">
+        {cost === null ? "Estimated cost: N/A" : `Estimated cost: ${formatUsd(cost)}`}
+      </p>
+    </div>
+  );
+}
+
 export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
   const { analysisCostEstimate, creditStatus, ...cardProps } = props;
 
@@ -24,21 +48,22 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
         </div>
         <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
           <p className="text-sm font-semibold text-slate-800">Approximate Cost per Check</p>
-          <p className="mt-2 text-xs leading-relaxed text-[var(--ink-muted)]">
-            Typical OpenRouter cost with the selected analysis model: CV analysis{" "}
-            {analysisCostEstimate.analysisCost === null
-              ? "n/a"
-              : formatUsd(analysisCostEstimate.analysisCost)}
-            , one photo{" "}
-            {analysisCostEstimate.photoAnalysisCost === null
-              ? "n/a"
-              : formatUsd(analysisCostEstimate.photoAnalysisCost)}
-            , two-photo compare{" "}
-            {analysisCostEstimate.photoComparisonCost === null
-              ? "n/a"
-              : formatUsd(analysisCostEstimate.photoComparisonCost)}
-            . Actual spend depends on CV length and model.
+          <p className="mt-1 text-[11px] text-slate-600">
+            Estimates use live CV size + prompt/output heuristics with{" "}
+            {analysisCostEstimate.overhead.toFixed(1)}x overhead. Token counts are approximate; actual
+            spend depends on field length, image size, and the model selected above.
           </p>
+          <div className="mt-2 grid gap-2">
+            {analysisCostEstimate.lines.map((line) => (
+              <CostEstimateCard
+                key={line.label}
+                cost={line.cost}
+                inputTokens={line.inputTokens}
+                label={line.label}
+                outputTokens={line.outputTokens}
+              />
+            ))}
+          </div>
         </div>
       </article>
       <article className="min-h-0 overflow-auto rounded-xl border border-[var(--line)] bg-[#fcfcfd] p-5">

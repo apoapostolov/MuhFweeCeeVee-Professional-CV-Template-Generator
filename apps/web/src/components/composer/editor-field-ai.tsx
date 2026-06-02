@@ -369,7 +369,7 @@ export function EditorFieldAiInputChrome({
             title={language === "bg" ? "Оценка на текущия текст" : "Current wording score"}
           >
             
-            {rewriteSession.currentScore}
+            {rewriteSession.currentScore}%
           </span>
         </div>
       ) : null}

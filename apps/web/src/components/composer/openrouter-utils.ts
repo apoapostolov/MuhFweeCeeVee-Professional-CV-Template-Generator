@@ -12,6 +12,13 @@ export type OpenRouterModelOption = {
   pricePerImageNote?: string | null;
 };
 
+export type AnalysisCostLine = {
+  label: string;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number | null;
+};
+
 export type AnalysisCostEstimate = {
   overhead: number;
   analysisInputTokens: number;
@@ -20,9 +27,19 @@ export type AnalysisCostEstimate = {
   photoAnalysisOutputTokens: number;
   photoComparisonInputTokens: number;
   photoComparisonOutputTokens: number;
+  fieldRewriteInputTokens: number;
+  fieldRewriteOutputTokens: number;
+  fieldShortenInputTokens: number;
+  fieldShortenOutputTokens: number;
+  fieldTranslateInputTokens: number;
+  fieldTranslateOutputTokens: number;
   analysisCost: number | null;
   photoAnalysisCost: number | null;
   photoComparisonCost: number | null;
+  fieldRewriteCost: number | null;
+  fieldShortenCost: number | null;
+  fieldTranslateCost: number | null;
+  lines: AnalysisCostLine[];
 };
 
 export function formatUsd(value: number): string {
@@ -68,6 +85,80 @@ export function buildAnalysisCostEstimate(
   const photoAnalysisOutputTokens = Math.round(420 * overhead);
   const photoComparisonInputTokens = Math.round((950 + 1100 * 2) * overhead);
   const photoComparisonOutputTokens = Math.round(900 * overhead);
+  const fieldRewriteInputTokens = Math.round((650 + 1100) * overhead);
+  const fieldRewriteOutputTokens = Math.round(720 * overhead);
+  const fieldShortenInputTokens = Math.round((520 + 1100) * overhead);
+  const fieldShortenOutputTokens = Math.round(380 * overhead);
+  const fieldTranslateInputTokens = Math.round((420 + 1100) * overhead);
+  const fieldTranslateOutputTokens = Math.round(320 * overhead);
+  const analysisCost = estimateOpenRouterCost(
+    selectedAnalysisModel,
+    analysisInputTokens,
+    analysisOutputTokens,
+  );
+  const photoAnalysisCost = estimateOpenRouterCost(
+    selectedAnalysisModel,
+    photoAnalysisInputTokens,
+    photoAnalysisOutputTokens,
+  );
+  const photoComparisonCost = estimateOpenRouterCost(
+    selectedAnalysisModel,
+    photoComparisonInputTokens,
+    photoComparisonOutputTokens,
+  );
+  const fieldRewriteCost = estimateOpenRouterCost(
+    selectedAnalysisModel,
+    fieldRewriteInputTokens,
+    fieldRewriteOutputTokens,
+  );
+  const fieldShortenCost = estimateOpenRouterCost(
+    selectedAnalysisModel,
+    fieldShortenInputTokens,
+    fieldShortenOutputTokens,
+  );
+  const fieldTranslateCost = estimateOpenRouterCost(
+    selectedAnalysisModel,
+    fieldTranslateInputTokens,
+    fieldTranslateOutputTokens,
+  );
+  const lines: AnalysisCostLine[] = [
+    {
+      label: "CV scoring (section or full CV)",
+      inputTokens: analysisInputTokens,
+      outputTokens: analysisOutputTokens,
+      cost: analysisCost,
+    },
+    {
+      label: "Professional Rewrite (one field)",
+      inputTokens: fieldRewriteInputTokens,
+      outputTokens: fieldRewriteOutputTokens,
+      cost: fieldRewriteCost,
+    },
+    {
+      label: "Shorten field (one field)",
+      inputTokens: fieldShortenInputTokens,
+      outputTokens: fieldShortenOutputTokens,
+      cost: fieldShortenCost,
+    },
+    {
+      label: "Translate field (one field, one target language)",
+      inputTokens: fieldTranslateInputTokens,
+      outputTokens: fieldTranslateOutputTokens,
+      cost: fieldTranslateCost,
+    },
+    {
+      label: "Photo analysis (single image)",
+      inputTokens: photoAnalysisInputTokens,
+      outputTokens: photoAnalysisOutputTokens,
+      cost: photoAnalysisCost,
+    },
+    {
+      label: "Photo comparison (two images)",
+      inputTokens: photoComparisonInputTokens,
+      outputTokens: photoComparisonOutputTokens,
+      cost: photoComparisonCost,
+    },
+  ];
   return {
     overhead,
     analysisInputTokens,
@@ -76,17 +167,19 @@ export function buildAnalysisCostEstimate(
     photoAnalysisOutputTokens,
     photoComparisonInputTokens,
     photoComparisonOutputTokens,
-    analysisCost: estimateOpenRouterCost(selectedAnalysisModel, analysisInputTokens, analysisOutputTokens),
-    photoAnalysisCost: estimateOpenRouterCost(
-      selectedAnalysisModel,
-      photoAnalysisInputTokens,
-      photoAnalysisOutputTokens,
-    ),
-    photoComparisonCost: estimateOpenRouterCost(
-      selectedAnalysisModel,
-      photoComparisonInputTokens,
-      photoComparisonOutputTokens,
-    ),
+    fieldRewriteInputTokens,
+    fieldRewriteOutputTokens,
+    fieldShortenInputTokens,
+    fieldShortenOutputTokens,
+    fieldTranslateInputTokens,
+    fieldTranslateOutputTokens,
+    analysisCost,
+    photoAnalysisCost,
+    photoComparisonCost,
+    fieldRewriteCost,
+    fieldShortenCost,
+    fieldTranslateCost,
+    lines,
   };
 }
 

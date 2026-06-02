@@ -16,8 +16,8 @@ export function isTabulatedRootArraySection(editorPath: string, depth: number): 
   return depth === 0 && ROOT_ARRAY_EDITOR_PATHS.has(editorPath);
 }
 
-/** Actions column fits AI ✨ trigger + remove control side by side. */
-export const EDITOR_COMPACT_FORM_ACTIONS_COL = "5.5rem";
+/** Actions column fits AI ✨ trigger + remove control side by side (no `.` — breaks Tailwind arbitrary grid-cols). */
+export const EDITOR_COMPACT_FORM_ACTIONS_COL = "5rem";
 
 /** Parent grid on the form column — all compact field rows subgrid to these tracks. */
 export const EDITOR_COMPACT_FORM_GRID_CLASS =
