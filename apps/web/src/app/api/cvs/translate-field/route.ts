@@ -10,15 +10,16 @@ import {
   translateFieldText,
 } from "@/lib/server/translateFieldText";
 import {
-  buildCvVariantId,
   isSupportedLanguage,
-  parseCvVariantId,
+  parseCvVariantIdLoose,
+  resolveSiblingCvId,
 } from "@/lib/server/cvVariants";
 
 export const runtime = "nodejs";
 
 type TranslateFieldRequest = {
   sourceCvId?: unknown;
+  targetCvId?: unknown;
   targetLanguage?: unknown;
   sectionPath?: unknown;
   fieldPath?: unknown;
@@ -34,6 +35,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const payload = (await request.json()) as TranslateFieldRequest;
   const sourceCvId = typeof payload.sourceCvId === "string" ? payload.sourceCvId.trim() : "";
+  const targetCvIdInput = typeof payload.targetCvId === "string" ? payload.targetCvId.trim() : "";
   const targetLanguageRaw =
     typeof payload.targetLanguage === "string" ? payload.targetLanguage.trim().toLowerCase() : "";
   const sectionPath = typeof payload.sectionPath === "string" ? payload.sectionPath.trim() : "";
@@ -54,10 +56,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "targetLanguage is invalid." }, { status: 400 });
   }
 
-  const parsed = parseCvVariantId(sourceCvId);
-  if (!parsed) {
+  const parsed = parseCvVariantIdLoose(sourceCvId);
+  if (!parsed?.language) {
     return NextResponse.json(
-      { error: "sourceCvId must be a language variant id: cv_<language>_<iter>_<target>." },
+      { error: "sourceCvId is not a recognized CV variant id." },
       { status: 400 },
     );
   }
@@ -81,11 +83,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "fieldPath is empty." }, { status: 400 });
   }
 
-  const targetCvId = buildCvVariantId({
-    language: targetLanguageRaw,
-    iteration: parsed.iteration,
-    target: parsed.target,
-  });
+  const targetCvId =
+    targetCvIdInput || resolveSiblingCvId(sourceCvId, targetLanguageRaw) || "";
+  if (!targetCvId) {
+    return NextResponse.json(
+      { error: "Could not resolve target CV id for translation." },
+      { status: 400 },
+    );
+  }
 
   const [, targetCv] = await Promise.all([readCv(sourceCvId), readCv(targetCvId)]);
   if (!targetCv) {
@@ -113,7 +118,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     translatedText = await translateFieldText({
       text: trimmedText,
-      sourceLanguage: parsed.language,
+      sourceLanguage: parsed.language as string,
       targetLanguage: targetLanguageRaw,
       fieldLabel,
     });

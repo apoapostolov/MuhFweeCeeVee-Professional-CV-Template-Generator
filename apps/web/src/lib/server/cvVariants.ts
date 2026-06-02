@@ -50,6 +50,57 @@ export function buildCvVariantId(parts: CvVariantParts): string {
   return `cv_${parts.language.toLowerCase()}_${parts.iteration}_${parts.target}`;
 }
 
+export type CvProfileVariantParts = {
+  profile: string;
+  language: CvLanguage;
+  iteration: string;
+};
+
+export function parseCvProfileVariantId(cvId: string): CvProfileVariantParts | null {
+  const match = CV_ID_PATTERN_PROFILE_LANG_ITER.exec(cvId.trim());
+  if (!match) {
+    return null;
+  }
+  const language = match[2].toLowerCase();
+  if (!isSupportedLanguage(language)) {
+    return null;
+  }
+  return {
+    profile: match[1].toLowerCase(),
+    language,
+    iteration: match[3],
+  };
+}
+
+export function buildCvProfileVariantId(parts: CvProfileVariantParts): string {
+  return `cv_${parts.profile.toLowerCase()}_${parts.language.toLowerCase()}_${parts.iteration}`;
+}
+
+/** Resolve the paired CV file id for another language (same iteration/target or profile slug). */
+export function resolveSiblingCvId(cvId: string, targetLanguage: string): string | null {
+  const lang = targetLanguage.trim().toLowerCase();
+  if (!isSupportedLanguage(lang)) {
+    return null;
+  }
+
+  const profile = parseCvProfileVariantId(cvId);
+  if (profile) {
+    return buildCvProfileVariantId({ profile: profile.profile, language: lang, iteration: profile.iteration });
+  }
+
+  const strict = parseCvVariantId(cvId);
+  if (strict) {
+    return buildCvVariantId({ language: lang, iteration: strict.iteration, target: strict.target });
+  }
+
+  const loose = parseCvVariantIdLoose(cvId);
+  if (loose?.target) {
+    return buildCvVariantIdLoose({ language: lang, iteration: loose.iteration, target: loose.target });
+  }
+
+  return null;
+}
+
 export function parseCvVariantIdLoose(cvId: string): CvVariantPartsLoose | null {
   const strict = parseCvVariantId(cvId);
   if (strict) {
@@ -90,8 +141,15 @@ export function parseCvVariantIdLoose(cvId: string): CvVariantPartsLoose | null 
   };
 }
 
-export function buildCvVariantIdLoose(parts: CvVariantPartsLoose): string {
-  if (parts.iteration && parts.iteration.trim().length > 0) {
+export function buildCvVariantIdLoose(parts: CvVariantPartsLoose, profileSlug?: string): string {
+  if (profileSlug?.trim()) {
+    return buildCvProfileVariantId({
+      profile: profileSlug.trim().toLowerCase(),
+      language: parts.language,
+      iteration: parts.iteration?.trim() || "001",
+    });
+  }
+  if (parts.iteration && parts.iteration.trim().length > 0 && parts.target.trim().length > 0) {
     return buildCvVariantId({
       language: parts.language,
       iteration: parts.iteration,

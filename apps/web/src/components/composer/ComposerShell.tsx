@@ -82,7 +82,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               companyMetadataSaving={c.companyMetadataSaving}
               companyResearchLoading={c.companyResearchLoading}
               companyMetadataAutoSaveEnabled={c.companyMetadataAutoSaveEnabled}
-              companyMetadataAutosaveActivity={c.companyMetadataAutosaveActivity}
+
               companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
               companyMetadataYamlDraft={c.companyMetadataYamlDraft}
               companyMetadataYamlLintIssues={c.companyMetadataYamlLintIssues}
@@ -91,7 +91,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               editorPath={c.editorPath}
               editorSaving={c.editorSaving}
               editorAutoSaveEnabled={c.editorAutoSaveEnabled}
-              editorAutosaveActivity={c.editorAutosaveActivity}
+
               editorHasUnsavedChanges={c.editorHasUnsavedChanges}
               onEditorAutoSaveChange={c.setEditorAutoSavePreference}
               editorTab={c.editorTab}

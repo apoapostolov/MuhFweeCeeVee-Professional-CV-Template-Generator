@@ -18,7 +18,6 @@ import type {
   EditorViewMode,
   FullAnalysis,
   SectionAnalysis,
-  EditorAutosaveActivity,
 } from "./types";
 
 type FormRenderer = ReturnType<typeof useEditorFormRenderer>;
@@ -62,7 +61,7 @@ export type EditorPanelProps = {
   companyMetadataAutoSaveEnabled: boolean;
   onCompanyMetadataAutoSaveChange: (enabled: boolean) => void;
   companyMetadataHasUnsavedChanges: boolean;
-  companyMetadataAutosaveActivity: EditorAutosaveActivity;
+
   onSaveCompanyMetadata: () => void;
   editorView: EditorViewMode;
   onEditorViewChange: (view: EditorViewMode) => void;
@@ -77,7 +76,7 @@ export type EditorPanelProps = {
   editorAutoSaveEnabled: boolean;
   onEditorAutoSaveChange: (enabled: boolean) => void;
   editorHasUnsavedChanges: boolean;
-  editorAutosaveActivity: EditorAutosaveActivity;
+
   onSaveEditor: () => void;
   analysisDrawerCollapsed: boolean;
   onToggleAnalysisDrawer: () => void;
@@ -130,7 +129,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     companyMetadataAutoSaveEnabled,
     onCompanyMetadataAutoSaveChange,
     companyMetadataHasUnsavedChanges,
-    companyMetadataAutosaveActivity,
+
     onSaveCompanyMetadata,
     editorView,
     onEditorViewChange,
@@ -145,7 +144,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     editorAutoSaveEnabled,
     onEditorAutoSaveChange,
     editorHasUnsavedChanges,
-    editorAutosaveActivity,
+
     onSaveEditor,
     analysisDrawerCollapsed,
     onToggleAnalysisDrawer,
@@ -157,26 +156,8 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     editorNotice,
   } = props;
 
-  const autosavePillLabel =
-    editorAutosaveActivity === "pending" || editorAutosaveActivity === "saving"
-      ? selectedLanguage === "bg"
-        ? "Запазване…"
-        : "Saving…"
-      : editorAutosaveActivity === "saved"
-        ? selectedLanguage === "bg"
-          ? "Запазено"
-          : "Saved"
-        : "";
-
   const manualSaveEnabled =
     !editorAutoSaveEnabled && editorHasUnsavedChanges && !editorSaving && !editorLoading && Boolean(selectedCvId);
-
-  const metadataAutosavePillLabel =
-    companyMetadataAutosaveActivity === "pending" || companyMetadataAutosaveActivity === "saving"
-      ? "Saving…"
-      : companyMetadataAutosaveActivity === "saved"
-        ? "Saved"
-        : "";
 
   const metadataManualSaveEnabled =
     !companyMetadataAutoSaveEnabled &&
@@ -409,17 +390,6 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             OFF
                           </button>
                         </div>
-                        {companyMetadataAutoSaveEnabled && companyMetadataAutosaveActivity !== "idle" ? (
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                              companyMetadataAutosaveActivity === "saved"
-                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                                : "border-amber-300 bg-amber-50 text-amber-800"
-                            }`}
-                          >
-                            {metadataAutosavePillLabel}
-                          </span>
-                        ) : null}
                         {!companyMetadataAutoSaveEnabled ? (
                           <button
                             className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${
@@ -512,17 +482,6 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             OFF
                           </button>
                         </div>
-                        {editorAutoSaveEnabled && editorAutosaveActivity !== "idle" ? (
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                              editorAutosaveActivity === "saved"
-                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                                : "border-amber-300 bg-amber-50 text-amber-800"
-                            }`}
-                          >
-                            {autosavePillLabel}
-                          </span>
-                        ) : null}
                         {!editorAutoSaveEnabled ? (
                           <button
                             className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${

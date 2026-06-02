@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildCvProfileVariantId,
   buildCvVariantId,
   buildCvVariantIdLoose,
+  parseCvProfileVariantId,
   parseCvVariantId,
   parseCvVariantIdLoose,
+  resolveSiblingCvId,
 } from "./cvVariants";
 
 describe("parseCvVariantId", () => {
@@ -36,6 +39,23 @@ describe("parseCvVariantIdLoose", () => {
       iteration: "001",
       target: "",
     });
+  });
+});
+
+describe("profile CV ids", () => {
+  it("round-trips profile variant ids", () => {
+    expect(parseCvProfileVariantId("cv_apoapostolov_en_001")).toEqual({
+      profile: "apoapostolov",
+      language: "en",
+      iteration: "001",
+    });
+    expect(
+      buildCvProfileVariantId({ profile: "apoapostolov", language: "bg", iteration: "001" }),
+    ).toBe("cv_apoapostolov_bg_001");
+  });
+
+  it("resolves sibling profile CV id for translation", () => {
+    expect(resolveSiblingCvId("cv_apoapostolov_en_001", "bg")).toBe("cv_apoapostolov_bg_001");
   });
 });
 

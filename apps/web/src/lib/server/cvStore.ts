@@ -6,8 +6,10 @@ import { parse, stringify } from "yaml";
 
 import { repoPath } from "./repoPaths";
 import {
+  buildCvProfileVariantId,
   buildCvVariantIdLoose,
   isSupportedLanguage,
+  parseCvProfileVariantId,
   parseCvVariantId,
   parseCvVariantIdLoose,
   type CvLanguage,
@@ -87,8 +89,11 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
       ? (metadataRaw as Record<string, unknown>)
       : {};
 
-  const parsed = parseCvVariantIdLoose(String(input.id ?? ""));
+  const cvId = String(input.id ?? "");
+  const profile = parseCvProfileVariantId(cvId);
+  const parsed = parseCvVariantIdLoose(cvId);
   const inferred = parsed ?? null;
+  const variantMeta = readMetadataVariantBlock(metadata);
 
   return {
     ...input,
@@ -99,14 +104,21 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
         (metadata.language as string | undefined) ??
         "bg",
       variant:
-        inferred
+        profile
           ? {
-              cv_id: buildCvVariantIdLoose(inferred),
-              iteration: inferred.iteration,
-              target: inferred.target,
-              language: inferred.language,
+              cv_id: buildCvProfileVariantId(profile),
+              iteration: profile.iteration,
+              target: variantMeta.target ?? inferred?.target ?? "",
+              language: profile.language,
             }
-          : (metadata.variant as Record<string, unknown> | undefined),
+          : inferred
+            ? {
+                cv_id: buildCvVariantIdLoose(inferred),
+                iteration: inferred.iteration,
+                target: inferred.target,
+                language: inferred.language,
+              }
+            : (metadata.variant as Record<string, unknown> | undefined),
       created_at: (metadata.created_at as string | undefined) ?? nowDate,
       updated_at: nowIso,
       updated_on: (metadata.updated_on as string | undefined) ?? nowDate,

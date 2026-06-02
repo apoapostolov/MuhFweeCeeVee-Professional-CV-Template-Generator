@@ -993,12 +993,24 @@ export function useComposerController() {
     }
   }
 
+  function editorAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
+    if (status !== "saved") {
+      return null;
+    }
+    const lang = selectedLanguageRef.current;
+    return lang === "bg" ? "Шаблонът на CV е запазен." : "CV template saved.";
+  }
+
   function setEditorAutosaveActivityVisible(status: EditorAutosaveActivity): void {
     if (editorAutosaveActivityTimerRef.current) {
       clearTimeout(editorAutosaveActivityTimerRef.current);
       editorAutosaveActivityTimerRef.current = null;
     }
     setEditorAutosaveActivity(status);
+    const toastMessage = editorAutosaveStatusToast(status);
+    if (toastMessage) {
+      showComposerToast(toastMessage);
+    }
     if (status === "saved") {
       editorAutosaveActivityTimerRef.current = setTimeout(() => {
         setEditorAutosaveActivity("idle");
@@ -1070,12 +1082,23 @@ export function useComposerController() {
     }
   }
 
+  function companyMetadataAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
+    if (status === "saved") {
+      return "Company metadata saved.";
+    }
+    return null;
+  }
+
   function setCompanyMetadataAutosaveActivityVisible(status: EditorAutosaveActivity): void {
     if (companyMetadataAutosaveActivityTimerRef.current) {
       clearTimeout(companyMetadataAutosaveActivityTimerRef.current);
       companyMetadataAutosaveActivityTimerRef.current = null;
     }
     setCompanyMetadataAutosaveActivity(status);
+    const toastMessage = companyMetadataAutosaveStatusToast(status);
+    if (toastMessage) {
+      showComposerToast(toastMessage);
+    }
     if (status === "saved") {
       companyMetadataAutosaveActivityTimerRef.current = setTimeout(() => {
         setCompanyMetadataAutosaveActivity("idle");
@@ -1306,9 +1329,6 @@ export function useComposerController() {
       }
 
       setEditorAutosaveActivityVisible("saved");
-      showComposerToast(
-        selectedLanguageRef.current === "bg" ? "Шаблонът на CV е запазен." : "CV template saved.",
-      );
 
       if (!pending || editorViewRef.current !== "form") {
         return;
@@ -1346,6 +1366,7 @@ export function useComposerController() {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
               sourceCvId: selectedCvIdRef.current,
+              targetCvId: job.variantId,
               targetLanguage: job.code,
               sectionPath: editorPathRef.current,
               fieldPath,
@@ -1376,6 +1397,10 @@ export function useComposerController() {
         const job = jobs[index];
         if (result.status === "rejected") {
           failedCount += 1;
+          console.error(
+            `[translate-field] ${job.code} failed:`,
+            result.reason instanceof Error ? result.reason.message : result.reason,
+          );
           continue;
         }
         if (result.value.skipped) {
@@ -1394,10 +1419,19 @@ export function useComposerController() {
             : `Field translation complete: ${labelList}.`,
         );
       } else if (failedCount > 0) {
+        const firstError = results.find((entry) => entry.status === "rejected");
+        const detail =
+          firstError && firstError.status === "rejected" && firstError.reason instanceof Error
+            ? firstError.reason.message
+            : null;
         showComposerToast(
           selectedLanguageRef.current === "bg"
-            ? "Преводът на полето не успя."
-            : "Field translation failed.",
+            ? detail
+              ? `Преводът на полето не успя: ${detail}`
+              : "Преводът на полето не успя."
+            : detail
+              ? `Field translation failed: ${detail}`
+              : "Field translation failed.",
         );
       }
     } finally {
@@ -2501,10 +2535,10 @@ export function useComposerController() {
     editorAutoSaveEnabled,
     setEditorAutoSavePreference,
     editorHasUnsavedChanges,
-    editorAutosaveActivity,
+
     companyMetadataAutoSaveEnabled,
     setCompanyMetadataAutoSavePreference,
     companyMetadataHasUnsavedChanges,
-    companyMetadataAutosaveActivity,
+
   };
 }
