@@ -19,6 +19,7 @@ import {
   readTemplateVisibility,
   writeTemplateVisibility,
 } from "@/lib/cvTemplateVisibility";
+import { cvVariantGroupKey } from "@/lib/server/cvVariants";
 import {
   appendToArrayAtPath,
   asRecord,
@@ -113,6 +114,7 @@ export function useComposerController() {
   const [selectedPhotoMode, setSelectedPhotoMode] = useState<
     PhotoModeOption["id"]
   >("default");
+  const [printTweakRemovePhoto, setPrintTweakRemovePhoto] = useState(false);
   const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
   const [photoBoothItems, setPhotoBoothItems] = useState<PhotoBoothItem[]>([]);
   const [approvedPhotoId, setApprovedPhotoId] = useState("");
@@ -259,7 +261,7 @@ export function useComposerController() {
   const cvPairs = useMemo<CvPair[]>(() => {
     const pairs = new Map<string, CvPair>();
     for (const item of cvItems) {
-      const key = item.iteration && item.target ? `${item.iteration}::${item.target}` : item.id;
+      const key = cvVariantGroupKey(item) ?? item.id;
       const ts = item.git?.lastCommitAt ? Date.parse(item.git.lastCommitAt) : 0;
       const existing = pairs.get(key);
 
@@ -319,7 +321,14 @@ export function useComposerController() {
     if (approvedPhoto) {
       params.set("photoId", approvedPhoto.id);
     }
-    appendPrintTweakParams(params, printTweakMoveSkillsLeft, selectedTemplateId);
+    appendPrintTweakParams(
+      params,
+      {
+        removePhoto: printTweakRemovePhoto,
+        moveSkillsLeft: printTweakMoveSkillsLeft,
+      },
+      selectedTemplateId,
+    );
     return `/api/export/pdf?${params.toString()}`;
   }, [
     previewNonce,
@@ -328,6 +337,7 @@ export function useComposerController() {
     selectedTemplateTheme,
     selectedTemplateThemeOptions.length,
     selectedPhotoMode,
+    printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
     approvedPhotoId,
     photoBoothItems,
@@ -429,6 +439,18 @@ export function useComposerController() {
       // no-op
     }
   }, [selectedPhotoMode]);
+
+  useEffect(() => {
+    try {
+      if (printTweakRemovePhoto) {
+        window.localStorage.setItem(STORAGE_KEYS.printTweakRemovePhoto, "1");
+      } else {
+        window.localStorage.removeItem(STORAGE_KEYS.printTweakRemovePhoto);
+      }
+    } catch {
+      // no-op
+    }
+  }, [printTweakRemovePhoto]);
 
   useEffect(() => {
     try {
@@ -590,9 +612,12 @@ export function useComposerController() {
           setSelectedPhotoMode(persistedPhotoMode);
 
           try {
-            const savedMoveSkillsLeft =
-              window.localStorage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1";
-            setPrintTweakMoveSkillsLeft(savedMoveSkillsLeft);
+            setPrintTweakRemovePhoto(
+              window.localStorage.getItem(STORAGE_KEYS.printTweakRemovePhoto) === "1",
+            );
+            setPrintTweakMoveSkillsLeft(
+              window.localStorage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1",
+            );
           } catch {
             // no-op
           }
@@ -615,20 +640,25 @@ export function useComposerController() {
   );
 
   const variantGroup = useMemo(() => {
-    if (!selectedCvMeta?.target || !selectedCvMeta?.iteration) {
+    if (!selectedCvMeta) {
       return null;
+    }
+    const groupKey = cvVariantGroupKey(selectedCvMeta);
+    if (!groupKey) {
+      const fallbackLang = (selectedCvMeta.language ?? "").toLowerCase();
+      return fallbackLang ? { [fallbackLang]: selectedCvMeta } : null;
     }
     const variants: Record<string, CvListResponse["items"][number]> = {};
     for (const item of cvItems) {
-      if (item.iteration !== selectedCvMeta.iteration || item.target !== selectedCvMeta.target) {
+      if (cvVariantGroupKey(item) !== groupKey) {
         continue;
       }
       const language = (item.language ?? "").toLowerCase();
       if (!language) continue;
       variants[language] = item;
     }
-    return variants;
-  }, [cvItems, selectedCvMeta?.iteration, selectedCvMeta?.target]);
+    return Object.keys(variants).length > 0 ? variants : null;
+  }, [cvItems, selectedCvMeta]);
   const availableLanguages = useMemo<string[]>(() => {
     const languages = Object.keys(variantGroup ?? {});
     if (languages.length === 0) {
@@ -732,10 +762,7 @@ export function useComposerController() {
 
   const selectedPairKey = useMemo(() => {
     if (!selectedCvMeta) return "";
-    if (selectedCvMeta.iteration && selectedCvMeta.target) {
-      return `${selectedCvMeta.iteration}::${selectedCvMeta.target}`;
-    }
-    return selectedCvMeta.id;
+    return cvVariantGroupKey(selectedCvMeta) ?? selectedCvMeta.id;
   }, [selectedCvMeta]);
 
   useEffect(() => {
@@ -2132,12 +2159,26 @@ export function useComposerController() {
     if (approvedPhoto) {
       params.set("photoId", approvedPhoto.id);
     }
-    appendPrintTweakParams(params, printTweakMoveSkillsLeft, selectedTemplateId);
+    appendPrintTweakParams(
+      params,
+      {
+        removePhoto: printTweakRemovePhoto,
+        moveSkillsLeft: printTweakMoveSkillsLeft,
+      },
+      selectedTemplateId,
+    );
     window.open(`/api/export/pdf?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
-  function setPrintTweakMoveSkillsLeftEnabled(enabled: boolean) {
-    setPrintTweakMoveSkillsLeft(enabled);
+  function setPrintTweakEnabled(
+    tweakId: "removePhoto" | "moveSkillsLeft",
+    enabled: boolean,
+  ): void {
+    if (tweakId === "removePhoto") {
+      setPrintTweakRemovePhoto(enabled);
+    } else {
+      setPrintTweakMoveSkillsLeft(enabled);
+    }
     setPreviewNonce(Date.now());
   }
 
@@ -2454,8 +2495,9 @@ export function useComposerController() {
     setSelectedTemplateTheme,
     selectedPhotoMode,
     setSelectedPhotoMode,
+    printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
-    setPrintTweakMoveSkillsLeftEnabled,
+    setPrintTweakEnabled,
     photoBoothItems,
     approvedPhotoId,
     photoBoothNotice,

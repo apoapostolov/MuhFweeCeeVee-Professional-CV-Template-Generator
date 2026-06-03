@@ -326,8 +326,31 @@ export function renderCambridge(
     .sidebar li span { font-size: 3.65mm; color: ${theme.muted}; line-height: 1.28; }
 
     .interests-text { margin: 0; color: ${theme.muted}; font-size: 4mm; line-height: 1.35; }
-    .rated-list li { display: flex; justify-content: space-between; align-items: center; gap: 3mm; margin: 1.6mm 0; }
-    .rated-list .label { font-size: 3.9mm; font-weight: 600; }
+    .rated-list li,
+    .skill-list li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 17.4mm;
+      align-items: center;
+      column-gap: 2.2mm;
+      margin: 1.6mm 0;
+    }
+    .rated-list .label,
+    .skill-list .label {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: 3.9mm;
+      font-weight: 600;
+    }
+    .rated-list .dots,
+    .skill-list .dots {
+      justify-self: end;
+      display: inline-flex;
+      justify-content: flex-end;
+      width: 17.4mm;
+      gap: 1.6mm;
+      flex-shrink: 0;
+    }
     .dots { display: inline-flex; gap: 1.6mm; }
     .dot { width: 2.2mm; height: 2.2mm; border-radius: 999px; background: ${theme.dotOff}; display: inline-block; }
     .dot.on { background: ${theme.dotOn}; }
@@ -373,8 +396,8 @@ export function renderCambridge(
     .entry-body .publication-links-list a:hover { border-bottom-color: ${theme.dotOn}; }
 
     .skill-list { list-style: none; margin: 0; padding: 0; }
-    .skill-list li { display: flex; justify-content: space-between; align-items: center; gap: 3.6mm; margin: 1.8mm 0; }
-    .skill-list .label { font-size: 4.2mm; font-weight: 600; color: #2a3441; }
+    .skill-list li { margin: 1.8mm 0; }
+    .skill-list .label { font-size: 4.2mm; color: #2a3441; }
     .reference-entry {
       margin: 0.7mm 0 2.2mm;
       break-inside: avoid;

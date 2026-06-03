@@ -13,7 +13,11 @@ import {
   resolvePhotoDataUrl,
   resolveRenderLanguage,
 } from "./render/shared";
-import { shouldMoveSkillsLeft } from "./render/tweaks";
+import {
+  DEFAULT_RENDER_TWEAKS,
+  resolveEffectivePhotoMode,
+  shouldMoveSkillsLeft,
+} from "./render/tweaks";
 import type { MappingFile, RenderInput, RenderResult, TemplateFile } from "./render/types";
 import {
   resolveCambridgeTheme,
@@ -45,8 +49,15 @@ export async function buildCvTemplateHtml(
   const lang = resolveRenderLanguage(cv, input.cvId);
   const labels = template.labels?.[lang] ?? template.labels?.en ?? {};
 
+  const tweaks = input.tweaks ?? DEFAULT_RENDER_TWEAKS;
+  const photoMode = resolveEffectivePhotoMode(input.photoMode, tweaks);
+
   const slots = bindSlots(cv, mapping);
-  if (input.profilePhotoId && input.profilePhotoId.trim().length > 0) {
+  if (
+    !tweaks.removePhoto &&
+    input.profilePhotoId &&
+    input.profilePhotoId.trim().length > 0
+  ) {
     const dataUrl = await resolvePhotoDataUrl(input.profilePhotoId.trim());
     if (dataUrl) {
       slots["profile.photo"] = dataUrl;
@@ -56,10 +67,7 @@ export async function buildCvTemplateHtml(
   const harvardTheme = resolveHarvardTheme(input.theme);
   const stanfordTheme = resolveStanfordTheme(input.theme);
   const cambridgeTheme = resolveCambridgeTheme(template, input.theme);
-  const moveSkillsLeft = shouldMoveSkillsLeft(
-    input.templateId,
-    input.tweaks ?? { moveSkillsLeft: false },
-  );
+  const moveSkillsLeft = shouldMoveSkillsLeft(input.templateId, tweaks);
   const html =
     input.templateId === "edinburgh-v1"
       ? renderEdinburgh(
@@ -68,7 +76,7 @@ export async function buildCvTemplateHtml(
           slots,
           labels,
           edinburghTheme,
-          input.photoMode,
+          photoMode,
           moveSkillsLeft,
         )
       : input.templateId === "harvard-v1"
@@ -78,7 +86,7 @@ export async function buildCvTemplateHtml(
             slots,
             labels,
             harvardTheme,
-            input.photoMode,
+            photoMode,
             moveSkillsLeft,
           )
         : input.templateId === "stanford-v1"
@@ -88,7 +96,7 @@ export async function buildCvTemplateHtml(
               slots,
               labels,
               stanfordTheme,
-              input.photoMode,
+              photoMode,
               moveSkillsLeft,
             )
           : input.templateId === "cambridge-v1"

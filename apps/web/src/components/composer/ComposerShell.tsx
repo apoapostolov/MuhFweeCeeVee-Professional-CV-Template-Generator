@@ -47,8 +47,11 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onOpenPdf={c.openPdf}
               onRefreshPreview={c.refreshPreview}
               onSelectPhotoMode={c.setSelectedPhotoMode}
-              onPrintTweakMoveSkillsLeftChange={c.setPrintTweakMoveSkillsLeftEnabled}
-              printTweakMoveSkillsLeft={c.printTweakMoveSkillsLeft}
+              onPrintTweakChange={c.setPrintTweakEnabled}
+              printTweaks={{
+                removePhoto: c.printTweakRemovePhoto,
+                moveSkillsLeft: c.printTweakMoveSkillsLeft,
+              }}
               onSelectTemplateId={c.setSelectedTemplateId}
               onSelectTemplateTheme={c.setSelectedTemplateTheme}
               onSwitchCvPair={c.switchCvPair}

@@ -335,11 +335,30 @@ export function renderEdinburgh(
     .edinburgh-languages,
     .edinburgh-skills { list-style: none; margin: 0; padding: 0; }
     .edinburgh-languages li,
-    .edinburgh-skills li { display: flex; justify-content: space-between; gap: 8px; margin: 7px 0; align-items: center; }
+    .edinburgh-skills li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 56px;
+      align-items: center;
+      column-gap: 8px;
+      margin: 7px 0;
+    }
     .edinburgh-languages .label,
-    .edinburgh-skills .label { font-weight: 600; font-size: 11.4px; }
+    .edinburgh-skills .label {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-weight: 600;
+      font-size: 11.4px;
+    }
     .edinburgh-languages .dots,
-    .edinburgh-skills .dots { display: inline-flex; gap: 4px; }
+    .edinburgh-skills .dots {
+      justify-self: end;
+      display: inline-flex;
+      justify-content: flex-end;
+      width: 56px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
     .edinburgh-languages .dot,
     .edinburgh-skills .dot { width: 8px; height: 8px; border-radius: 999px; background: ${theme.dotOff}; display: inline-block; }
 

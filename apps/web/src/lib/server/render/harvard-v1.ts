@@ -345,9 +345,27 @@ export function renderHarvard(
     .sq-list li { display: flex; align-items: center; gap: 2.4mm; margin: 1.6mm 0; }
     .sq-list .sq { width: 2.1mm; height: 2.1mm; background: ${theme.sidebarText}; }
 
-    .star-list li { display: flex; justify-content: space-between; gap: 3mm; margin: 1.8mm 0; align-items: center; }
-    .star-list .label { font-size: 3.5mm; font-weight: 600; }
-    .star-list .stars { letter-spacing: 0.7mm; white-space: nowrap; }
+    .star-list li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 15.5mm;
+      align-items: center;
+      column-gap: 2mm;
+      margin: 1.8mm 0;
+    }
+    .star-list .label {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: 3.5mm;
+      font-weight: 600;
+    }
+    .star-list .stars {
+      justify-self: end;
+      width: 15.5mm;
+      text-align: right;
+      letter-spacing: 0.7mm;
+      white-space: nowrap;
+    }
     .star { color: ${theme.starOff}; font-size: 3.8mm; }
     .star.on { color: ${theme.starOn}; }
 

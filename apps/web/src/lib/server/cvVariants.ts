@@ -162,3 +162,34 @@ export function buildCvVariantIdLoose(parts: CvVariantPartsLoose, profileSlug?: 
 export function siblingLanguage(language: SyncLanguage): SyncLanguage {
   return language === "bg" ? "en" : "bg";
 }
+
+export type CvVariantListItem = {
+  id: string;
+  language?: string | null;
+  iteration?: string | null;
+  target?: string | null;
+};
+
+/** Groups language variants for Print Controls pills and CV Template pairs. */
+export function cvVariantGroupKey(item: CvVariantListItem): string | null {
+  const profile = parseCvProfileVariantId(item.id);
+  if (profile) {
+    return `profile:${profile.profile}:${profile.iteration}`;
+  }
+
+  const iteration = (item.iteration ?? "").trim();
+  const target = (item.target ?? "").trim().toLowerCase();
+  if (iteration && target) {
+    return `iter:${iteration}:${target}`;
+  }
+
+  const loose = parseCvVariantIdLoose(item.id);
+  if (loose?.iteration && loose.target) {
+    return `iter:${loose.iteration}:${loose.target}`;
+  }
+  if (loose?.iteration) {
+    return `iter:${loose.iteration}:profile`;
+  }
+
+  return null;
+}

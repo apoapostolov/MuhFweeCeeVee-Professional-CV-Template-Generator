@@ -235,9 +235,24 @@ export function renderStanford(
     .skill-name { font-size: 4.02mm; font-weight: 700; color: #26303c; }
     .bar { height: 1.72mm; background: ${theme.barTrack}; border-radius: 99px; overflow: hidden; }
     .fill { height: 100%; background: ${theme.barFill}; border-radius: 99px; }
-    .sidebar .skill { grid-template-columns: 1fr; gap: 1.1mm; margin-bottom: 2.4mm; }
-    .sidebar .skill-name { font-size: 3.2mm; color: ${theme.sidebarText}; }
-    .sidebar .bar { height: 1.45mm; background: rgba(255,255,255,0.22); }
+    .sidebar .skill {
+      grid-template-columns: minmax(0, 1fr) 11mm;
+      gap: 2mm;
+      margin-bottom: 2.2mm;
+    }
+    .sidebar .skill-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: 3.2mm;
+      color: ${theme.sidebarText};
+    }
+    .sidebar .bar {
+      width: 100%;
+      height: 1.45mm;
+      background: rgba(255,255,255,0.22);
+      justify-self: end;
+    }
     .sidebar .fill { background: rgba(255,255,255,0.92); }
 
     .reference { margin-top: 0.4mm; }

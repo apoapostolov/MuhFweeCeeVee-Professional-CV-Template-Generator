@@ -4,6 +4,7 @@ import {
   buildCvProfileVariantId,
   buildCvVariantId,
   buildCvVariantIdLoose,
+  cvVariantGroupKey,
   parseCvProfileVariantId,
   parseCvVariantId,
   parseCvVariantIdLoose,
@@ -56,6 +57,23 @@ describe("profile CV ids", () => {
 
   it("resolves sibling profile CV id for translation", () => {
     expect(resolveSiblingCvId("cv_apoapostolov_en_001", "bg")).toBe("cv_apoapostolov_bg_001");
+  });
+
+  it("groups EN/BG profile CVs when metadata target differs", () => {
+    const enKey = cvVariantGroupKey({
+      id: "cv_apoapostolov_en_001",
+      language: "en",
+      iteration: "001",
+      target: "alianz",
+    });
+    const bgKey = cvVariantGroupKey({
+      id: "cv_apoapostolov_bg_001",
+      language: "bg",
+      iteration: "001",
+      target: "",
+    });
+    expect(enKey).toBe("profile:apoapostolov:001");
+    expect(bgKey).toBe(enKey);
   });
 });
 

@@ -5,6 +5,8 @@ import type { JSX } from "react";
 import {
   PHOTO_MODE_OPTIONS,
   PRINT_TWEAK_OPTIONS,
+  type PrintTweakId,
+  type PrintTweaksState,
   templateSupportsPrintTweaks,
   themeOptionsForTemplate,
 } from "./constants";
@@ -25,8 +27,8 @@ export type WorkspacePanelProps = {
   onSelectTemplateTheme: (theme: string) => void;
   selectedPhotoMode: PhotoModeOption["id"];
   onSelectPhotoMode: (mode: PhotoModeOption["id"]) => void;
-  printTweakMoveSkillsLeft: boolean;
-  onPrintTweakMoveSkillsLeftChange: (enabled: boolean) => void;
+  printTweaks: PrintTweaksState;
+  onPrintTweakChange: (tweakId: PrintTweakId, enabled: boolean) => void;
   selectedCvId: string;
   loadingWorkspace: boolean;
   pdfUrl: string;
@@ -50,8 +52,8 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     onSelectTemplateTheme,
     selectedPhotoMode,
     onSelectPhotoMode,
-    printTweakMoveSkillsLeft,
-    onPrintTweakMoveSkillsLeftChange,
+    printTweaks,
+    onPrintTweakChange,
     selectedCvId,
     loadingWorkspace,
     pdfUrl,
@@ -158,32 +160,26 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
 
           <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
             <p className="text-sm font-medium text-slate-800">Tweaks</p>
-            <div
-              className="mt-2 min-h-[9.5rem] space-y-2 overflow-y-auto pr-1"
-              title={
-                tweaksAvailable
-                  ? undefined
-                  : "This template has no left sidebar (for example Europass)."
-              }
-            >
+            <div className="mt-2 min-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
               {PRINT_TWEAK_OPTIONS.map((option) => {
-                const checked =
-                  option.id === "moveSkillsLeft" ? printTweakMoveSkillsLeft : false;
-                const disabled = option.id === "moveSkillsLeft" ? !tweaksAvailable : true;
+                const checked = printTweaks[option.id];
+                const disabled =
+                  option.id === "moveSkillsLeft" ? !tweaksAvailable : false;
+                const disabledTitle =
+                  option.id === "moveSkillsLeft" && !tweaksAvailable
+                    ? "This template has no left sidebar (for example Europass)."
+                    : undefined;
                 return (
                   <label
                     key={option.id}
                     className={`flex items-center gap-2 text-sm text-slate-800 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                    title={disabledTitle}
                   >
                     <input
                       checked={checked}
                       className="h-4 w-4 rounded border-[var(--line)]"
                       disabled={disabled ? true : undefined}
-                      onChange={(event) => {
-                        if (option.id === "moveSkillsLeft") {
-                          onPrintTweakMoveSkillsLeftChange(event.target.checked);
-                        }
-                      }}
+                      onChange={(event) => onPrintTweakChange(option.id, event.target.checked)}
                       type="checkbox"
                     />
                     <span>{option.label}</span>

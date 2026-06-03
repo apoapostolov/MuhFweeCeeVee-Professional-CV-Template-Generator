@@ -55,20 +55,31 @@ export const TEMPLATES_WITH_LEFT_SIDEBAR = new Set([
   "stanford-v1",
 ]);
 
-export const PRINT_TWEAK_OPTIONS = [
-  { id: "moveSkillsLeft" as const, label: "Move Skills Left" },
+export type PrintTweakId = "removePhoto" | "moveSkillsLeft";
+
+export const PRINT_TWEAK_OPTIONS: Array<{ id: PrintTweakId; label: string }> = [
+  { id: "removePhoto", label: "Remove Photo" },
+  { id: "moveSkillsLeft", label: "Skills Moved to Sidebar" },
 ];
 
 export function templateSupportsPrintTweaks(templateId: string): boolean {
   return TEMPLATES_WITH_LEFT_SIDEBAR.has(templateId);
 }
 
+export type PrintTweaksState = {
+  removePhoto: boolean;
+  moveSkillsLeft: boolean;
+};
+
 export function appendPrintTweakParams(
   params: URLSearchParams,
-  moveSkillsLeft: boolean,
+  tweaks: PrintTweaksState,
   templateId: string,
 ): void {
-  if (moveSkillsLeft && templateSupportsPrintTweaks(templateId)) {
+  if (tweaks.removePhoto) {
+    params.set("removePhoto", "1");
+  }
+  if (tweaks.moveSkillsLeft && templateSupportsPrintTweaks(templateId)) {
     params.set("moveSkillsLeft", "1");
   }
 }
@@ -107,6 +118,7 @@ export const STORAGE_KEYS = {
   selectedTemplateId: "mfcv_selected_template_id",
   selectedTemplateTheme: "mfcv_selected_template_theme",
   selectedPhotoMode: "mfcv_selected_photo_mode",
+  printTweakRemovePhoto: "mfcv_print_tweak_remove_photo",
   printTweakMoveSkillsLeft: "mfcv_print_tweak_move_skills_left",
   approvedPhotoId: "mfcv_photo_booth_approved_id",
   imageGenerationModel: "mfcv_image_generation_model",
