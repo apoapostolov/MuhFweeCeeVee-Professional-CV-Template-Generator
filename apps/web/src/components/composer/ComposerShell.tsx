@@ -8,6 +8,7 @@ import { EditorPanel } from "./EditorPanel";
 import { PhotoBoothPanel } from "./PhotoBoothPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { TemplatesPanel } from "./TemplatesPanel";
+import { ResearchPanel } from "./ResearchPanel";
 import { WorkspacePanel } from "./WorkspacePanel";
 import { asRecord } from "./form-path-utils";
 import { ComposerToastHost } from "./composer-toast";
@@ -67,27 +68,65 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
             />
           )}
 
+          {c.activePanel === "research" && (
+            <ResearchPanel
+              companies={c.researchCompanies}
+              companyDetail={c.selectedResearchCompany}
+              jobDetail={c.selectedResearchJob}
+              jobPositions={c.researchJobPositions}
+              language={c.selectedLanguage}
+              loadingCatalog={c.researchCatalogLoading}
+              notice={c.researchNotice}
+              onDeleteCompany={(id) => void c.deleteResearchCompany(id)}
+              onDeleteJob={(id) => void c.deleteResearchJob(id)}
+              onNotice={c.setResearchNotice}
+              onResearchCompany={(payload) => void c.researchCompanyOffice(payload)}
+              onResearchJob={(payload) => void c.researchJobPosition(payload)}
+              onSaveCompany={(company) => void c.saveResearchCompany(company)}
+              onSaveJob={(job) => void c.saveResearchJob(job)}
+              onSelectCompany={c.selectResearchCompany}
+              onSelectJob={c.selectResearchJob}
+              onSidebarTabChange={c.setResearchSidebarTab}
+              researchingCompany={c.researchingCompany}
+              researchingJob={c.researchingJob}
+              resolvedTheme={c.resolvedTheme}
+              savingResearch={c.savingResearch}
+              researchAutoSaveEnabled={c.researchAutoSaveEnabled}
+              researchAutosaveActivity={c.researchAutosaveActivity}
+              onResearchAutoSaveChange={c.setResearchAutoSavePreference}
+              onResearchDraftChange={c.handleResearchDraftChange}
+              selectedCompanyId={c.selectedResearchCompanyId}
+              selectedJobId={c.selectedResearchJobPositionId}
+              sidebarTab={c.researchSidebarTab}
+            />
+          )}
+
           {c.activePanel === "editor" && (
             <EditorPanel
-              analysisCompanyIds={c.analysisCompanyIds}
-              analysisCompanySource={c.analysisCompanySource}
               companyMetadataNotice={c.companyMetadataNotice}
               editorLoading={c.editorLoading}
-              filteredAnalysisCompanies={c.filteredAnalysisCompanies}
-              onClearAnalysisCompanyIds={() => c.setAnalysisCompanyIds([])}
               selectedTemplateId={c.selectedTemplateId}
+              researchCompanies={c.researchCompanies}
+              researchJobsForCompany={c.researchJobsForCompany}
+              selectedResearchCompanyId={c.selectedResearchCompanyId}
+              selectedResearchJobPositionId={c.selectedResearchJobPositionId}
+              selectedResearchJobKeywordCount={c.selectedResearchJob?.weighted_keywords.length ?? 0}
+              selectedResearchJobAtsKeywordCount={c.editorAtsKeywords.length}
+              onSelectResearchCompany={c.selectResearchCompany}
+              onSelectResearchJob={c.selectResearchJob}
               analysisData={c.analysisData}
               analysisDrawerCollapsed={c.analysisDrawerCollapsed}
               analysisLoading={c.analysisLoading}
               analysisText={c.analysisText}
               availableLanguages={c.availableLanguages}
               companyMetadataDraft={asRecord(c.companyMetadataDraft)}
+              analysisCompanySource={c.analysisCompanySource}
               companyMetadataEditorOpen={c.companyMetadataEditorOpen}
               companyMetadataEditorView={c.companyMetadataEditorView}
               companyMetadataSaving={c.companyMetadataSaving}
               companyResearchLoading={c.companyResearchLoading}
               companyMetadataAutoSaveEnabled={c.companyMetadataAutoSaveEnabled}
-
+              companyMetadataAutosaveActivity={c.companyMetadataAutosaveActivity}
               companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
               companyMetadataYamlDraft={c.companyMetadataYamlDraft}
               companyMetadataYamlLintIssues={c.companyMetadataYamlLintIssues}
@@ -96,13 +135,14 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               editorPath={c.editorPath}
               editorSaving={c.editorSaving}
               editorAutoSaveEnabled={c.editorAutoSaveEnabled}
-
+              editorAutosaveActivity={c.editorAutosaveActivity}
               editorHasUnsavedChanges={c.editorHasUnsavedChanges}
               onEditorAutoSaveChange={c.setEditorAutoSavePreference}
+              editorFlatSubsections={c.editorFlatSubsections}
+              onEditorFlatSubsectionsChange={c.setEditorFlatSubsectionsPreference}
               editorTab={c.editorTab}
               editorView={c.editorView}
               formRenderer={c.formRenderer}
-              onAnalysisCompanySourceChange={c.setAnalysisCompanySource}
               onCompanyMetadataAutoSaveChange={c.setCompanyMetadataAutoSavePreference}
               onCompanyMetadataEditorViewChange={c.handleCompanyMetadataEditorViewChange}
               onCompanyMetadataYamlDraftChange={c.setCompanyMetadataYamlDraft}
@@ -117,7 +157,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onSaveEditor={() => void c.saveEditorSection()}
               onSwitchCvPair={c.switchCvPair}
               onSwitchLanguage={c.switchLanguage}
-              onToggleAnalysisCompanySelection={c.toggleAnalysisCompanySelection}
+
               onToggleAnalysisDrawer={() => c.setAnalysisDrawerCollapsed((v) => !v)}
               onToggleCompanyMetadataEditor={() => c.setCompanyMetadataEditorOpen((v) => !v)}
               onYamlDraftChange={c.setYamlDraft}

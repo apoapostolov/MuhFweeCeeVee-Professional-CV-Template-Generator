@@ -49,7 +49,9 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
         <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
           <p className="text-sm font-semibold text-slate-800">Approximate Cost per Check</p>
           <p className="mt-1 text-[11px] text-slate-600">
-            Rough tokens and USD from CV size and model rates; actual spend may differ.
+            Rough tokens and USD from CV size and OpenRouter model rates; Research company/job
+            lines use the web-research model (Perplexity Sonar by default). Actual spend may
+            differ.
           </p>
           <div className="mt-2 grid gap-2">
             {analysisCostEstimate.lines.map((line) => (

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { parseFieldRewriteResponse } from "@/lib/field-ai-rewrite";
+import { buildFieldAiJobContext } from "@/lib/research/research-prompts";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
+import {
+  findResearchedCompany,
+  findResearchedJobPosition,
+  readResearchCatalog,
+} from "@/lib/server/researchStore";
 
 export const runtime = "nodejs";
 
@@ -16,6 +22,7 @@ type FieldAiRequest = {
   limit?: unknown;
   unit?: unknown;
   charCap?: unknown;
+  jobPositionId?: unknown;
 };
 
 const CV_HR_PERSONA_RULES = [
@@ -49,6 +56,7 @@ function buildPrompt(payload: {
   charLimit?: number;
   lineLimit?: number;
   unit?: "characters" | "lines";
+  jobContext?: string;
 }): string {
   const lang = payload.language === "bg" ? "Bulgarian" : "English";
   const context = [
@@ -56,7 +64,10 @@ function buildPrompt(payload: {
     `Field path: ${payload.fieldPath}`,
     `Field label: ${payload.fieldLabel}`,
     `Output language: ${lang}`,
-  ].join("\n");
+    payload.jobContext ?? "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   if (payload.mode === "shorten") {
     const limit =
@@ -79,8 +90,9 @@ function buildPrompt(payload: {
   return [
     CV_HR_PERSONA_RULES,
     context,
-    "Task: Score the current wording and produce exactly three alternative rewrites for this CV field.",
-    "Scoring (0-100, same rubric as CV screening): clarity, impact, evidence, ATS readability, professional tone.",
+      "Task: Score the current wording and produce exactly three alternative rewrites for this CV field.",
+      "When job targeting context is provided, prefer keywords only when they fit naturally — never force irrelevant terms.",
+      "Scoring (0-100, same rubric as CV screening): clarity, impact, evidence, ATS readability, professional tone.",
     "current_score: quality of the ORIGINAL text only (do not score your proposals).",
     "proposals: three distinct rewrites; confidence = how strongly you recommend that option vs the other two (0-100).",
     "Use different angles (e.g. impact-led, concise, keyword-rich) while preserving facts from the original.",
@@ -120,6 +132,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "text is required." }, { status: 400 });
   }
 
+  const jobPositionId =
+    typeof body.jobPositionId === "string" ? body.jobPositionId.trim() : "";
+  let jobContext = "";
+  if (jobPositionId) {
+    const catalog = await readResearchCatalog();
+    const job = findResearchedJobPosition(catalog, jobPositionId);
+    const company = job ? findResearchedCompany(catalog, job.company_id) : null;
+    if (job && company) {
+      jobContext = buildFieldAiJobContext({ job, company });
+    }
+  }
+
   const settings = await readOpenRouterSettings();
   const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
   if (!apiKey) {
@@ -139,6 +163,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     charLimit: unit === "characters" ? (charCap ?? limit) : charCap,
     lineLimit: unit === "lines" ? limit : undefined,
     unit,
+    jobContext,
   });
 
   const systemContent =

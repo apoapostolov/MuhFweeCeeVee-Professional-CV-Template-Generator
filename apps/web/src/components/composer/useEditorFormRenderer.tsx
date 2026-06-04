@@ -43,9 +43,11 @@ import {
   compactContainerShellClass,
   compactFieldShellClass,
   compactFormPassthroughClass,
-  compactLeadingIndentStyle,
+  compactLeadingGroupIndentStyle,
+  EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS,
   compactSectionIndentStyle,
   isTabulatedRootArraySection,
+  EDITOR_COMPACT_FIELD_TRACKS_CLASS,
   EDITOR_STACKED_FIELD_ACTIONS_CLASS,
   EDITOR_STACKED_FIELD_GRID_CLASS,
   EDITOR_STACKED_FIELD_INPUT_CLASS,
@@ -64,10 +66,12 @@ import {
   EditorFieldAiTrigger,
 } from "./editor-field-ai";
 import { CustomFieldControl } from "./custom-field-control";
+import { KeywordHighlightedField } from "./keyword-highlighted-input";
 import {
   getCustomFieldDefinition,
   isReservedObjectEntryKey,
 } from "./custom-field-types";
+import type { WeightedKeyword } from "@/lib/research/types";
 import type { PathSegment } from "./types";
 import { VisibilityToggleButton } from "./visibility-toggle";
 
@@ -103,6 +107,11 @@ export type EditorFormRendererContext = {
   companyMetadataDraft: unknown;
   analysisCompanySource: string;
   onCompanyMetadataNotice: (message: string) => void;
+  editorWeightedKeywords: WeightedKeyword[];
+  editorAtsKeywords: string[];
+  /** When false, all CV subsections render flush (no hierarchical left indent). */
+  editorSubsectionIndentEnabled: boolean;
+  selectedResearchJobPositionId: string;
 };
 
 export function extractYamlLintIssuesFromDocument(text: string): string[] {
@@ -157,7 +166,69 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     companyMetadataDraft,
     analysisCompanySource,
     onCompanyMetadataNotice,
+    editorWeightedKeywords,
+    editorAtsKeywords,
+    editorSubsectionIndentEnabled,
+    selectedResearchJobPositionId: _selectedResearchJobPositionId,
   } = ctx;
+
+  const editorKeywordHighlightActive =
+    editorWeightedKeywords.length > 0 || editorAtsKeywords.length > 0;
+
+  function renderKeywordAwareTextControl(options: {
+    value: string;
+    onChange: (value: string) => void;
+    useTextarea: boolean;
+    rows?: number;
+    innerControl?: boolean;
+    singleLineClassName?: string;
+    textareaClassName?: string;
+  }): JSX.Element {
+    const {
+      value,
+      onChange,
+      useTextarea,
+      rows,
+      innerControl,
+      singleLineClassName = "",
+      textareaClassName = "",
+    } = options;
+
+    if (!editorKeywordHighlightActive) {
+      if (useTextarea) {
+        return (
+          <textarea
+            className={textareaClassName}
+            onChange={(event) => onChange(event.target.value)}
+            rows={rows ?? Math.max(1, estimateTextareaRows(value))}
+            value={value}
+          />
+        );
+      }
+      return (
+        <input
+          className={singleLineClassName}
+          onChange={(event) => onChange(event.target.value)}
+          type="text"
+          value={value}
+        />
+      );
+    }
+
+    return (
+      <KeywordHighlightedField
+        atsKeywords={editorAtsKeywords}
+        innerControl={innerControl}
+        inputClassName={singleLineClassName}
+        multiline={useTextarea}
+        onChange={onChange}
+        resolvedTheme={resolvedTheme}
+        rows={rows ?? Math.max(1, estimateTextareaRows(value))}
+        value={value}
+        weightedKeywords={editorWeightedKeywords}
+      />
+    );
+  }
 
   function renderYamlLine(line: string, index: number): JSX.Element {
     const keyValueMatch = /^(\s*)(-\s+)?([A-Za-z0-9_.-]+):(.*)$/.exec(line);
@@ -385,8 +456,18 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     /** Experimental: compact grid while AI scoring drawer is open. Revert to `analysisDrawerCollapsed`. */
     const compactFieldLayout =
       true || analysisDrawerCollapsed;
-    const leadingIndentStyle = compactLeadingIndentStyle(compactFieldLayout, editorPath, depth);
-    const sectionIndentStyle = compactSectionIndentStyle(compactFieldLayout, editorPath, depth);
+    const leadingGroupIndentStyle = compactLeadingGroupIndentStyle(
+      compactFieldLayout,
+      editorPath,
+      depth,
+      editorSubsectionIndentEnabled,
+    );
+    const sectionIndentStyle = compactSectionIndentStyle(
+      compactFieldLayout,
+      editorPath,
+      depth,
+      editorSubsectionIndentEnabled,
+    );
 
     function wrapFieldWithAi(
       fieldPath: PathSegment[],
@@ -509,18 +590,17 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           {headerSubtitle ? <p className="text-xs text-[var(--ink-muted)]">{headerSubtitle}</p> : null}
         </>
       );
+      const showArrayChildren = expanded;
+
       return (
         <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
           {compactFieldLayout ? (
             <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
-              <div
-                className="flex h-6 w-6 items-center justify-center self-start"
-                style={leadingIndentStyle}
-              >
-                {visibilityToggle}
-              </div>
-              <div className="col-span-2 min-w-0 self-start" style={leadingIndentStyle}>
-                {arrayHeaderTitle}
+              <div className={EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS} style={leadingGroupIndentStyle}>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center self-start">
+                  {visibilityToggle}
+                </div>
+                <div className="min-w-0 flex-1 self-start">{arrayHeaderTitle}</div>
               </div>
               <div className="flex items-center justify-end gap-2 self-start">{arrayHeaderActions}</div>
             </div>
@@ -534,7 +614,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
             </div>
           )}
 
-          {expanded ? (
+          {showArrayChildren ? (
             <div className={compactChildrenStackClass(compactFieldLayout, editorPath, depth)}>
               {node.length === 0 && (
                 <p
@@ -576,28 +656,18 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                   const listShowFieldAi = primitiveFieldSupportsAiRewrite(childLabel, childLabel, item);
                   const listAiInputPad = listShowFieldAi ? EDITOR_FIELD_AI_INPUT_PAD_CLASS : "";
                   const listAiInputHeight = listShowFieldAi && !useTextarea ? "min-h-8 box-border" : "";
-                  const inputControl = useTextarea ? (
-                    <textarea
-                      className={`w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1 text-xs leading-5 ${listAiInputPad}`}
-                      onChange={(event) =>
-                        updateTextDraftAt(childPath, event.target.value, { fieldLabel: listItemLabel })
-                      }
-                      rows={
-                        compactFieldLayout
-                          ? Math.min(3, estimateTextareaRows(stringValue))
-                          : estimateTextareaRows(stringValue)
-                      }
-                      value={stringValue}
-                    />
-                  ) : (
-                    <input
-                      className={`w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1 text-xs ${listAiInputHeight} ${listAiInputPad}`}
-                      onChange={(event) =>
-                        updateTextDraftAt(childPath, event.target.value, { fieldLabel: listItemLabel })
-                      }
-                      value={stringValue}
-                    />
-                  );
+                  const listRows = compactFieldLayout
+                    ? Math.min(3, estimateTextareaRows(stringValue))
+                    : estimateTextareaRows(stringValue);
+                  const inputControl = renderKeywordAwareTextControl({
+                    onChange: (next) =>
+                      updateTextDraftAt(childPath, next, { fieldLabel: listItemLabel }),
+                    rows: listRows,
+                    singleLineClassName: `w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1 text-xs ${listAiInputHeight} ${listAiInputPad}`,
+                    textareaClassName: `w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1 text-xs leading-5 ${listAiInputPad}`,
+                    useTextarea,
+                    value: stringValue,
+                  });
                   const listInputControl = listShowFieldAi ? (
                     <EditorFieldAiInputChrome multiline={useTextarea}>{inputControl}</EditorFieldAiInputChrome>
                   ) : (
@@ -643,7 +713,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                           removeItemButton
                         )
                       }
-                      leadingIndentStyle={leadingIndentStyle}
+                      leadingGroupIndentStyle={leadingGroupIndentStyle}
                       useFormGrid={compactFieldLayout}
                     />
                   );
@@ -773,26 +843,25 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
           {compactFieldLayout ? (
             experienceItem ? (
-              <div className={`col-span-full flex items-start gap-2 ${objectHeaderDivider}`}>
-                <div
-                  className="flex h-6 w-6 shrink-0 items-center justify-center self-start"
-                  style={leadingIndentStyle}
-                >
+              <div
+                className={`col-span-full flex items-start gap-x-2 ${objectHeaderDivider}`}
+                style={leadingGroupIndentStyle}
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center self-start">
                   {visibilityToggle}
                 </div>
                 <div className="min-w-0 flex-1 self-start">{objectHeaderTitle}</div>
-                {objectHeaderRightControls}
+                <div className="ml-auto flex shrink-0 items-center justify-end gap-2 self-start">
+                  {objectHeaderRightControls}
+                </div>
               </div>
             ) : (
               <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
-                <div
-                  className="flex h-6 w-6 items-center justify-center self-start"
-                  style={leadingIndentStyle}
-                >
-                  {visibilityToggle}
-                </div>
-                <div className="col-span-2 min-w-0 self-start" style={leadingIndentStyle}>
-                  {objectHeaderTitle}
+                <div className={EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS} style={leadingGroupIndentStyle}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center self-start">
+                    {visibilityToggle}
+                  </div>
+                  <div className="min-w-0 flex-1 self-start">{objectHeaderTitle}</div>
                 </div>
                 <div className="flex items-center justify-end gap-2 self-start">{objectHeaderActions}</div>
               </div>
@@ -845,20 +914,28 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const aiInputPad = showFieldAi ? EDITOR_FIELD_AI_INPUT_PAD_CLASS : "";
     const aiInputHeight = showFieldAi && !useTextarea ? "min-h-8 box-border" : "";
 
+    const fieldRows = compactFieldLayout
+      ? Math.min(3, estimateTextareaRows(stringValue))
+      : estimateTextareaRows(stringValue);
     const valueControl = customFieldDef ? (
-      <CustomFieldControl
-        definition={customFieldDef}
-        language={selectedLanguage}
-        onChange={(next) => {
-          if (customFieldDef.type === "text" || customFieldDef.type === undefined) {
-            updateTextDraftAt(path, String(next ?? ""), { fieldLabel: copy.label });
-            return;
-          }
-          updateDraftAt(path, next);
-        }}
-        useCompactMetrics={compactFieldLayout}
-        value={primitive}
-      />
+      customFieldDef.type === "text" || customFieldDef.type === undefined ? (
+        renderKeywordAwareTextControl({
+          onChange: (next) => updateTextDraftAt(path, next, { fieldLabel: copy.label }),
+          rows: fieldRows,
+          singleLineClassName: `${EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS} ${aiInputHeight} ${aiInputPad}`,
+          textareaClassName: `w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs leading-5 ${aiInputPad}`,
+          useTextarea,
+          value: stringValue,
+        })
+      ) : (
+        <CustomFieldControl
+          definition={customFieldDef}
+          language={selectedLanguage}
+          onChange={(next) => updateDraftAt(path, next)}
+          useCompactMetrics={compactFieldLayout}
+          value={primitive}
+        />
+      )
     ) : isEmploymentTypeField ? (
       renderEmploymentTypeSelect({
         language: selectedLanguage,
@@ -888,24 +965,15 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         type="number"
         value={Number(primitive)}
       />
-    ) : useTextarea ? (
-      <textarea
-        className={`w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs leading-5 ${aiInputPad}`}
-        onChange={(event) => updateTextDraftAt(path, event.target.value, { fieldLabel: copy.label })}
-        rows={
-          compactFieldLayout
-            ? Math.min(3, estimateTextareaRows(stringValue))
-            : estimateTextareaRows(stringValue)
-        }
-        value={stringValue}
-      />
     ) : (
-      <input
-        className={`${EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS} ${aiInputHeight} ${aiInputPad}`}
-        onChange={(event) => updateTextDraftAt(path, event.target.value, { fieldLabel: copy.label })}
-        type="text"
-        value={stringValue}
-      />
+      renderKeywordAwareTextControl({
+        onChange: (next) => updateTextDraftAt(path, next, { fieldLabel: copy.label }),
+        rows: fieldRows,
+        singleLineClassName: `${EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS} ${aiInputHeight} ${aiInputPad}`,
+        textareaClassName: `w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs leading-5 ${aiInputPad}`,
+        useTextarea,
+        value: stringValue,
+      })
     );
 
     const wrappedValueControl = showFieldAi ? (
@@ -935,7 +1003,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               removeButton
             )
           }
-          leadingIndentStyle={leadingIndentStyle}
+          leadingGroupIndentStyle={leadingGroupIndentStyle}
           useFormGrid
         />
         {showFieldAi ? (

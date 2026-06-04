@@ -89,29 +89,56 @@ export function isDateLike(value: unknown): boolean {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-/** BG: expand when content clearly exceeds one compact row. EN: higher bar (longer copy per field). */
-const TEXTAREA_CHAR_THRESHOLD_BG = 120;
-const TEXTAREA_CHAR_THRESHOLD_EN = 240;
+/**
+ * Approximate wrap width in the composer form column (wider than PDF template columns).
+ * Used for textarea row growth — not for PDF/ATS layout hints.
+ */
+const EDITOR_FORM_WRAP_CHARS_PER_LINE_BG = 100;
+const EDITOR_FORM_WRAP_CHARS_PER_LINE_EN = 118;
 
-export function shouldUseTextarea(value: string, language?: string): boolean {
-  const lang = (language ?? "").trim().toLowerCase();
-  const threshold = lang === "en" ? TEXTAREA_CHAR_THRESHOLD_EN : TEXTAREA_CHAR_THRESHOLD_BG;
+/** Fallback when only language is known (research form, etc.). */
+const DEFAULT_WRAP_CHARS_PER_LINE_BG = EDITOR_FORM_WRAP_CHARS_PER_LINE_BG;
+const DEFAULT_WRAP_CHARS_PER_LINE_EN = EDITOR_FORM_WRAP_CHARS_PER_LINE_EN;
+
+export function editorFormWrapCharsPerLine(language?: string, hasAiChrome = false): number {
+  const base =
+    (language ?? "").trim().toLowerCase() === "en"
+      ? EDITOR_FORM_WRAP_CHARS_PER_LINE_EN
+      : EDITOR_FORM_WRAP_CHARS_PER_LINE_BG;
+  return hasAiChrome ? Math.max(48, base - 8) : base;
+}
+
+export function defaultWrapCharsPerLine(language?: string): number {
+  return editorFormWrapCharsPerLine(language, false);
+}
+
+/** Use a wrapping textarea before horizontal scroll would be needed. */
+export function shouldUseTextarea(value: string, language?: string, charsPerLine?: number): boolean {
+  const wrapAt = charsPerLine ?? defaultWrapCharsPerLine(language);
   const nonEmptyLines = value.split("\n").filter((line) => line.trim().length > 0);
   if (nonEmptyLines.length >= 2) {
     return true;
   }
   const singleLine = nonEmptyLines[0] ?? value.trim();
-  return singleLine.length > threshold;
+  if (singleLine.length === 0) {
+    return false;
+  }
+  return singleLine.length > wrapAt;
 }
 
-export function estimateTextareaRows(value: string): number {
+export function estimateTextareaRows(value: string, charsPerLine?: number): number {
+  const wrapAt = Math.max(8, charsPerLine ?? DEFAULT_WRAP_CHARS_PER_LINE_EN);
   const lines = value.split("\n");
   let rowEstimate = 0;
   for (const line of lines) {
-    rowEstimate += Math.max(1, Math.ceil(line.length / 90));
+    rowEstimate += Math.max(1, Math.ceil(Math.max(1, line.length) / wrapAt));
   }
-  return Math.max(4, Math.min(16, rowEstimate));
+  return Math.max(1, Math.min(24, rowEstimate || 1));
 }
+
+/** Shared classes so long lines wrap instead of scrolling horizontally. */
+export const WRAPPING_TEXT_CONTROL_CLASS =
+  "whitespace-pre-wrap break-words overflow-x-hidden";
 
 export function templateDisplayName(raw: string): string {
   return raw.replace(/\s*\((?:Rebuilt|Prototype)\)\s*/gi, " ").replace(/\s{2,}/g, " ").trim();

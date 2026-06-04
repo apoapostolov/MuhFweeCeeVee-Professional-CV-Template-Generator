@@ -46,6 +46,7 @@ backup/retired-keywords/**/outputs/*
 data/settings/openrouter_models.yaml
 data/settings/openrouter.yaml
 data/settings/companies.personal.json
+data/research/catalog.json
 /photos/
 /photos/metadata.json
 

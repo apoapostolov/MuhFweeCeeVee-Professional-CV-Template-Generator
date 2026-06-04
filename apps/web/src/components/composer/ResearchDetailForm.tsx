@@ -1,0 +1,606 @@
+"use client";
+
+import { useEffect, useMemo, useState, type JSX } from "react";
+
+import {
+  getAtPath,
+  parseFieldValueFromProposal,
+  setAtPath,
+  stringifyFieldValue,
+} from "@/lib/research/research-path-utils";
+import { KEYWORD_WEIGHT_UNDERLINE_CLASS, keywordWeightTone } from "@/lib/research/keyword-highlight";
+import { parseWeightedKeywordsFromProposal } from "@/lib/research/weighted-keywords";
+import type {
+  ResearchedCompany,
+  ResearchedJobPosition,
+  ResearchFieldRefineEntity,
+  WeightedKeyword,
+} from "@/lib/research/types";
+import type { EditorAutosaveActivity, PathSegment } from "./types";
+
+import {
+  defaultWrapCharsPerLine,
+  estimateTextareaRows,
+  shouldUseTextarea,
+  WRAPPING_TEXT_CONTROL_CLASS,
+} from "./form-path-utils";
+import { EditorAutoSaveToggle, EditorAutosaveStatusPill } from "./editor-autosave-ui";
+import {
+  EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS,
+  EDITOR_COMPACT_METADATA_FORM_GRID_CLASS,
+} from "./editor-compact-form-layout";
+import { EditorCompactFieldRow } from "./editor-compact-field-row";
+import { ResearchFieldAi } from "./research-field-ai";
+
+const INPUT_CLASS =
+  `w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs leading-5 text-slate-800 ${WRAPPING_TEXT_CONTROL_CLASS}`;
+
+const NUMBER_INPUT_CLASS = `${INPUT_CLASS} composer-number-input box-border`;
+
+/** One row per keyword; keyword/category flex, weight fixed. Two columns L→R, T→B. */
+const WEIGHTED_KEYWORD_ROW_COLS =
+  "grid w-full min-w-0 grid-cols-[minmax(0,2fr)_3.25rem_minmax(0,1fr)] gap-x-2 items-center";
+const WEIGHTED_KEYWORDS_GRID_CLASS = "col-span-full grid grid-cols-2 gap-x-4 gap-y-1.5";
+
+function gradedKeywordInputClass(theme: "light" | "dark", weight: number): string {
+  return `w-full min-w-0 rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1 text-xs font-bold ${KEYWORD_WEIGHT_UNDERLINE_CLASS} ${keywordWeightTone(theme, weight)}`;
+}
+
+function gradedWeightInputClass(theme: "light" | "dark", weight: number): string {
+  return `composer-number-input box-border w-full min-w-0 rounded border border-[var(--line)] bg-[var(--surface-1)] px-1 py-1 text-center text-xs font-bold tabular-nums ${KEYWORD_WEIGHT_UNDERLINE_CLASS} ${keywordWeightTone(theme, weight)}`;
+}
+
+export type ResearchDetailFormProps = {
+  entityType: ResearchFieldRefineEntity;
+  company: ResearchedCompany | null;
+  job: ResearchedJobPosition | null;
+  language: string;
+  resolvedTheme: "light" | "dark";
+  saving: boolean;
+  researchAutoSaveEnabled: boolean;
+  researchAutosaveActivity: EditorAutosaveActivity;
+  onResearchAutoSaveChange: (enabled: boolean) => void;
+  onDraftChange?: (
+    draft: ResearchedCompany | ResearchedJobPosition,
+    entityType: ResearchFieldRefineEntity,
+  ) => void;
+  onSave: (payload: ResearchedCompany | ResearchedJobPosition) => void;
+  onNotice: (message: string) => void;
+};
+
+type ScalarFieldDef = {
+  label: string;
+  path: PathSegment[];
+  multiline?: boolean;
+  inputType?: "text" | "number";
+};
+
+function SectionHeader({ title }: { title: string }): JSX.Element {
+  return (
+    <h4 className="col-span-full border-t border-[var(--line)] pt-3 text-sm font-bold text-slate-900 first:border-t-0 first:pt-0">
+      {title}
+    </h4>
+  );
+}
+
+function SectionHeaderWithAction({
+  title,
+  action,
+}: {
+  title: string;
+  action: JSX.Element;
+}): JSX.Element {
+  return (
+    <div className="col-span-full flex items-center justify-between gap-2 border-t border-[var(--line)] pt-3 first:border-t-0 first:pt-0">
+      <h4 className="text-sm font-bold text-slate-900">{title}</h4>
+      {action}
+    </div>
+  );
+}
+
+export function ResearchDetailForm({
+  entityType,
+  company,
+  job,
+  language,
+  resolvedTheme,
+  saving,
+  researchAutoSaveEnabled,
+  researchAutosaveActivity,
+  onResearchAutoSaveChange,
+  onDraftChange,
+  onSave,
+  onNotice,
+}: ResearchDetailFormProps): JSX.Element {
+  const source = entityType === "company" ? company : job;
+  const [draft, setDraft] = useState<unknown>(source);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setDraft(source);
+    setDirty(false);
+  }, [source, entityType]);
+
+  const entityId = entityType === "company" ? company?.id ?? "" : job?.id ?? "";
+
+  const updateAt = (path: PathSegment[], value: unknown) => {
+    setDraft((current: unknown) => {
+      const next = setAtPath(current, path, value);
+      if (researchAutoSaveEnabled && onDraftChange && current) {
+        onDraftChange(next as ResearchedCompany | ResearchedJobPosition, entityType);
+      }
+      return next;
+    });
+    setDirty(true);
+  };
+
+  const applyRefined = (path: PathSegment[], current: unknown, proposal: unknown) => {
+    updateAt(path, parseFieldValueFromProposal(current, proposal));
+  };
+
+  const renderScalar = (def: ScalarFieldDef): JSX.Element => {
+    const value = getAtPath(draft, def.path);
+    const stringValue = stringifyFieldValue(value);
+    const fieldPath = def.path.join(".");
+    const wrapAt = defaultWrapCharsPerLine(language);
+    const useTextarea =
+      def.multiline || (def.inputType !== "number" && shouldUseTextarea(stringValue, language, wrapAt));
+    const rows = estimateTextareaRows(stringValue, wrapAt);
+    const control =
+      def.inputType === "number" ? (
+        <input
+          className={NUMBER_INPUT_CLASS}
+          onChange={(event) => updateAt(def.path, Number(event.target.value))}
+          type="number"
+          value={stringValue}
+        />
+      ) : useTextarea ? (
+        <textarea
+          className={`${EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS} resize-y`}
+          onChange={(event) => updateAt(def.path, event.target.value)}
+          rows={Math.max(def.multiline ? 3 : 1, rows)}
+          value={stringValue}
+        />
+      ) : (
+        <input
+          className={INPUT_CLASS}
+          onChange={(event) => updateAt(def.path, event.target.value)}
+          type="text"
+          value={stringValue}
+        />
+      );
+
+    return (
+      <EditorCompactFieldRow
+        alignTop={useTextarea}
+        control={control}
+        includeAiActionSlot={false}
+        key={fieldPath}
+        label={def.label}
+        reserveLeadingColumn={false}
+        trailing={
+          <ResearchFieldAi
+            currentValue={stringValue}
+            entityId={entityId}
+            entityType={entityType}
+            fieldLabel={def.label}
+            fieldPath={fieldPath}
+            language={language}
+            onApply={(proposal) => applyRefined(def.path, value, proposal)}
+            onNotice={onNotice}
+            resolvedTheme={resolvedTheme}
+          />
+        }
+        unifiedControlBorder={useTextarea}
+        useFormGrid
+      />
+    );
+  };
+
+  const renderStringList = (label: string, path: PathSegment[]): JSX.Element => {
+    const value = getAtPath(draft, path);
+    const lines = Array.isArray(value) ? value.map((v) => String(v)).join("\n") : "";
+    const fieldPath = path.join(".");
+    const wrapAt = defaultWrapCharsPerLine(language);
+    const rows = estimateTextareaRows(lines, wrapAt);
+    return (
+      <EditorCompactFieldRow
+        alignTop
+        control={
+          <textarea
+            className={`${EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS} resize-y`}
+            onChange={(event) =>
+              updateAt(
+                path,
+                event.target.value
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter(Boolean),
+              )
+            }
+            rows={Math.max(3, rows)}
+            value={lines}
+          />
+        }
+        includeAiActionSlot={false}
+        key={fieldPath}
+        label={label}
+        unifiedControlBorder
+        reserveLeadingColumn={false}
+        trailing={
+          <ResearchFieldAi
+            currentValue={lines}
+            entityId={entityId}
+            entityType={entityType}
+            fieldLabel={label}
+            fieldPath={fieldPath}
+            language={language}
+            onApply={(proposal) => applyRefined(path, value, proposal)}
+            onNotice={onNotice}
+            resolvedTheme={resolvedTheme}
+          />
+        }
+        useFormGrid
+      />
+    );
+  };
+
+  const companyFields = useMemo((): ScalarFieldDef[] => {
+    if (entityType !== "company") {
+      return [];
+    }
+    return [
+      { label: "Display name", path: ["name"] },
+      { label: "Legal name", path: ["identity", "legal_name"] },
+      { label: "Brand name", path: ["identity", "brand_name"] },
+      { label: "Industry", path: ["identity", "industry"] },
+      { label: "Sub-industry", path: ["identity", "sub_industry"] },
+      { label: "Company size", path: ["identity", "company_size"] },
+      { label: "Founded year", path: ["identity", "founded_year"] },
+      { label: "Website", path: ["identity", "website"] },
+      { label: "Company description", path: ["identity", "description"], multiline: true },
+      { label: "LinkedIn company URL", path: ["identity", "linkedin_company_url"] },
+      { label: "LinkedIn company ID", path: ["identity", "linkedin_company_id"] },
+      { label: "Office country", path: ["office", "country"] },
+      { label: "Office city", path: ["office", "city"] },
+      { label: "Office label", path: ["office", "label"] },
+      { label: "Office type", path: ["office", "office_type"] },
+      { label: "Timezone", path: ["office", "timezone"] },
+      { label: "Street address", path: ["office", "street_address"] },
+      { label: "Address line 2", path: ["office", "address_line_2"] },
+      { label: "Postal code", path: ["office", "postal_code"] },
+      { label: "Region / state", path: ["office", "region_state"] },
+      { label: "Formatted address", path: ["office", "formatted_address"], multiline: true },
+      { label: "Maps URL", path: ["office", "maps_url"] },
+      { label: "General email", path: ["contacts", "general_email"] },
+      { label: "HR email", path: ["contacts", "hr_email"] },
+      { label: "Recruitment email", path: ["contacts", "recruitment_email"] },
+      { label: "Phone", path: ["contacts", "phone"] },
+      { label: "Secondary phone", path: ["contacts", "phone_secondary"] },
+      { label: "Careers page", path: ["contacts", "careers_page_url"] },
+      { label: "Press email", path: ["contacts", "press_email"] },
+      { label: "LinkedIn page URL", path: ["linkedin", "company_page_url"] },
+      { label: "LinkedIn follower count", path: ["linkedin", "follower_count"] },
+      { label: "LinkedIn posts summary", path: ["linkedin", "recent_posts_summary"], multiline: true },
+      { label: "Hiring status", path: ["hiring", "hiring_status"] },
+      { label: "Open roles estimate", path: ["hiring", "open_roles_count_estimate"] },
+      { label: "Employees at office", path: ["hiring", "employee_count_at_office"] },
+      { label: "Company headcount", path: ["hiring", "employee_count_company"] },
+      { label: "Glassdoor rating", path: ["hiring", "glassdoor_rating"] },
+      { label: "Research notes", path: ["research", "notes"], multiline: true },
+    ];
+  }, [entityType]);
+
+  const jobScalarFields = useMemo((): ScalarFieldDef[] => {
+    if (entityType !== "job_position") {
+      return [];
+    }
+    return [
+      { label: "Job title", path: ["title"] },
+      { label: "Normalized title", path: ["identity", "normalized_title"] },
+      { label: "Department", path: ["identity", "department"] },
+      { label: "Seniority", path: ["identity", "seniority_level"] },
+      { label: "Employment type", path: ["identity", "employment_type"] },
+      { label: "Remote policy", path: ["identity", "remote_policy"] },
+      { label: "Source", path: ["identity", "source"] },
+      { label: "LinkedIn job URL", path: ["identity", "linkedin_url"] },
+      { label: "LinkedIn job ID", path: ["identity", "linkedin_job_id"] },
+      { label: "Location country", path: ["location", "country"] },
+      { label: "Location city", path: ["location", "city"] },
+      { label: "Salary range", path: ["compensation", "salary_range_text"] },
+      { label: "Currency", path: ["compensation", "currency"] },
+      { label: "Benefits summary", path: ["compensation", "benefits_summary"], multiline: true },
+      { label: "Role summary", path: ["role", "description_summary"], multiline: true },
+      { label: "Reports to", path: ["role", "reporting_to"] },
+      { label: "Team size", path: ["role", "team_size"] },
+      { label: "Min years experience", path: ["skills", "years_experience_min"] },
+      { label: "Research notes", path: ["research", "notes"], multiline: true },
+    ];
+  }, [entityType]);
+
+  if (!source || !draft) {
+    return (
+      <div className="flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface-1)] p-8 text-center">
+        <p className="text-sm font-semibold text-slate-800">
+          {entityType === "company"
+            ? language === "bg"
+              ? "Изберете или създайте компания"
+              : "Select or research a company"
+            : language === "bg"
+              ? "Изберете или създайте позиция"
+              : "Select or research a job position"}
+        </p>
+        <p className="mt-2 max-w-md text-xs text-[var(--ink-muted)]">
+          {language === "bg"
+            ? "Използвайте страничната лента за ново проучване или избор от каталога."
+            : "Use the sidebar to run new research or pick an item from the catalog."}
+        </p>
+      </div>
+    );
+  }
+
+  const keywords =
+    entityType === "job_position" && draft
+      ? ((getAtPath(draft, ["weighted_keywords"]) as WeightedKeyword[] | undefined) ?? [])
+      : [];
+
+  const people =
+    entityType === "company" && draft
+      ? ((getAtPath(draft, ["people"]) as ResearchedCompany["people"]) ?? [])
+      : [];
+
+  const linkedinJobs =
+    entityType === "company" && draft
+      ? ((getAtPath(draft, ["linkedin_jobs"]) as ResearchedCompany["linkedin_jobs"]) ?? [])
+      : [];
+
+  const weightedKeywordsSummary = keywords
+    .map((entry) => `${entry.keyword} (weight ${entry.weight})`)
+    .join("\n");
+
+  return (
+    <article className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">
+            {entityType === "company"
+              ? (draft as ResearchedCompany).name
+              : (draft as ResearchedJobPosition).title}
+          </h3>
+          <p className="text-xs text-[var(--ink-muted)]">
+            {language === "bg"
+              ? "Редактирайте полетата и използвайте ✨ за по-дълбоко проучване."
+              : "Edit fields and use ✨ Research More to refine individual values."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <EditorAutoSaveToggle
+            enabled={researchAutoSaveEnabled}
+            language={language}
+            onChange={onResearchAutoSaveChange}
+          />
+          {researchAutoSaveEnabled ? (
+            <EditorAutosaveStatusPill activity={researchAutosaveActivity} language={language} />
+          ) : (
+            <button
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${
+                dirty && !saving
+                  ? "bg-[var(--accent)] disabled:opacity-60"
+                  : "bg-slate-400 text-slate-100 disabled:opacity-100"
+              }`}
+              disabled={!dirty || saving}
+              onClick={() => {
+                if (entityType === "company") {
+                  onSave(draft as ResearchedCompany);
+                } else {
+                  onSave(draft as ResearchedJobPosition);
+                }
+                setDirty(false);
+              }}
+              type="button"
+            >
+              {saving
+                ? language === "bg"
+                  ? "Запис..."
+                  : "Saving..."
+                : language === "bg"
+                  ? "Запази"
+                  : "Save changes"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto p-4">
+        <div className={`grid ${EDITOR_COMPACT_METADATA_FORM_GRID_CLASS}`}>
+          {entityType === "company" ? (
+            <>
+              <SectionHeader title="Identity & brand" />
+              {companyFields.slice(0, 11).map((field) => renderScalar(field))}
+              <SectionHeader title="Office location" />
+              {companyFields.slice(11, 21).map((field) => renderScalar(field))}
+              <SectionHeader title="Contacts" />
+              {companyFields.slice(21, 28).map((field) => renderScalar(field))}
+              <SectionHeader title="LinkedIn company" />
+              {companyFields.slice(28, 31).map((field) => renderScalar(field))}
+              <SectionHeader title="Hiring signals" />
+              {companyFields.slice(31, 35).map((field) => renderScalar(field))}
+              {renderStringList("Typical role families (one per line)", ["hiring", "typical_role_families"])}
+              {renderStringList("Research sources (one per line)", ["research", "sources"])}
+              <SectionHeader title="People at office" />
+              {(people ?? []).map((person, index) => (
+                <div className="col-span-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3" key={index}>
+                  <p className="mb-2 text-xs font-semibold text-slate-800">
+                    {language === "bg" ? `Контакт ${index + 1}` : `Contact ${index + 1}`}
+                  </p>
+                  <div className={`grid ${EDITOR_COMPACT_METADATA_FORM_GRID_CLASS}`}>
+                    {(
+                      [
+                        { label: "Name", path: ["people", index, "name"] },
+                        { label: "Title", path: ["people", index, "title"] },
+                        { label: "Department", path: ["people", index, "department"] },
+                        { label: "Seniority", path: ["people", index, "seniority"] },
+                        { label: "LinkedIn URL", path: ["people", index, "linkedin_url"] },
+                        { label: "Email", path: ["people", index, "email"] },
+                        { label: "Location", path: ["people", index, "location"] },
+                        { label: "Relevance", path: ["people", index, "relevance"], multiline: true },
+                      ] as ScalarFieldDef[]
+                    ).map((field) => renderScalar(field))}
+                  </div>
+                </div>
+              ))}
+              <SectionHeader title="LinkedIn open roles" />
+              {(linkedinJobs ?? []).map((role, index) => (
+                <div className="col-span-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3" key={index}>
+                  <p className="mb-2 text-xs font-semibold text-slate-800">
+                    {language === "bg" ? `Роля ${index + 1}` : `Role ${index + 1}`}
+                  </p>
+                  <div className={`grid ${EDITOR_COMPACT_METADATA_FORM_GRID_CLASS}`}>
+                    {(
+                      [
+                        { label: "Title", path: ["linkedin_jobs", index, "title"] },
+                        { label: "URL", path: ["linkedin_jobs", index, "url"] },
+                        { label: "Location", path: ["linkedin_jobs", index, "location"] },
+                        { label: "Posted at", path: ["linkedin_jobs", index, "posted_at"] },
+                        { label: "Employment type", path: ["linkedin_jobs", index, "employment_type"] },
+                        { label: "Seniority", path: ["linkedin_jobs", index, "seniority"] },
+                        { label: "Remote policy", path: ["linkedin_jobs", index, "remote_policy"] },
+                        {
+                          label: "Description snippet",
+                          path: ["linkedin_jobs", index, "description_snippet"],
+                          multiline: true,
+                        },
+                      ] as ScalarFieldDef[]
+                    ).map((field) => renderScalar(field))}
+                  </div>
+                </div>
+              ))}
+              <SectionHeader title="Notes" />
+              {companyFields.slice(35).map((field) => renderScalar(field))}
+            </>
+          ) : (
+            <>
+              <SectionHeader title="Role identity" />
+              {jobScalarFields.slice(0, 9).map((field) => renderScalar(field))}
+              <SectionHeader title="Location & compensation" />
+              {jobScalarFields.slice(9, 15).map((field) => renderScalar(field))}
+              <SectionHeader title="Role narrative" />
+              {jobScalarFields.slice(15, 18).map((field) => renderScalar(field))}
+              {renderStringList("Responsibilities (one per line)", ["role", "responsibilities"])}
+              {renderStringList("Qualifications (one per line)", ["role", "qualifications"])}
+              {renderStringList("Nice to have (one per line)", ["role", "nice_to_have"])}
+              <SectionHeader title="Skills profile" />
+              {renderStringList("Required skills", ["skills", "skills_required"])}
+              {renderStringList("Preferred skills", ["skills", "skills_preferred"])}
+              {renderStringList("Tools", ["skills", "tools"])}
+              {renderStringList("Certifications", ["skills", "certifications"])}
+              {renderStringList("Languages", ["skills", "languages"])}
+              {jobScalarFields.slice(17, 18).map((field) => renderScalar(field))}
+              <SectionHeaderWithAction
+                action={
+                  <ResearchFieldAi
+                    currentValue={weightedKeywordsSummary}
+                    entityId={entityId}
+                    entityType="job_position"
+                    fieldLabel={
+                      language === "bg" ? "Тегловни ключови думи" : "Weighted keywords"
+                    }
+                    fieldPath="weighted_keywords"
+                    language={language}
+                    onApply={(proposal) => {
+                      const next = parseWeightedKeywordsFromProposal(proposal);
+                      if (next.length > 0) {
+                        updateAt(["weighted_keywords"], next);
+                      }
+                    }}
+                    onNotice={onNotice}
+                    resolvedTheme={resolvedTheme}
+                  />
+                }
+                title={language === "bg" ? "Тегловни ключови думи" : "Weighted keywords"}
+              />
+              <div className={WEIGHTED_KEYWORDS_GRID_CLASS}>
+                {keywords.length === 0 ? (
+                  <p className="col-span-2 text-xs text-[var(--ink-muted)]">
+                    {language === "bg"
+                      ? "Няма ключови думи. Пуснете проучване на позиция от страничната лента."
+                      : "No keywords yet. Research a job position from the sidebar."}
+                  </p>
+                ) : (
+                  <>
+                    <div className="col-span-2 grid grid-cols-2 gap-x-4">
+                      {[0, 1].map((column) => (
+                        <div className={WEIGHTED_KEYWORD_ROW_COLS} key={`kw-header-${column}`}>
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                            {language === "bg" ? "Ключова дума" : "Keyword"}
+                          </span>
+                          <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                            {language === "bg" ? "Тегло" : "Weight"}
+                          </span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                            {language === "bg" ? "Категория" : "Category"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {keywords.map((entry, index) => {
+                      const weightValue = Number.isFinite(entry.weight) ? entry.weight : 0;
+                      return (
+                        <div className={WEIGHTED_KEYWORD_ROW_COLS} key={`kw-row-${index}-${entry.keyword}`}>
+                          <input
+                            className={gradedKeywordInputClass(resolvedTheme, weightValue)}
+                            onChange={(event) => {
+                              const next = [...keywords];
+                              next[index] = { ...next[index], keyword: event.target.value };
+                              updateAt(["weighted_keywords"], next);
+                            }}
+                            placeholder={language === "bg" ? "ключова дума" : "keyword"}
+                            value={entry.keyword}
+                          />
+                          <input
+                            className={gradedWeightInputClass(resolvedTheme, weightValue)}
+                            max={100}
+                            min={0}
+                            onChange={(event) => {
+                              const next = [...keywords];
+                              const parsed = Number(event.target.value);
+                              next[index] = {
+                                ...next[index],
+                                weight: Number.isFinite(parsed)
+                                  ? Math.max(0, Math.min(100, Math.round(parsed)))
+                                  : 0,
+                              };
+                              updateAt(["weighted_keywords"], next);
+                            }}
+                            type="number"
+                            value={weightValue}
+                          />
+                          <input
+                            className={`${INPUT_CLASS} min-w-0 px-1.5 py-1 text-[11px]`}
+                            onChange={(event) => {
+                              const next = [...keywords];
+                              next[index] = { ...next[index], category: event.target.value };
+                              updateAt(["weighted_keywords"], next);
+                            }}
+                            placeholder="skill"
+                            value={entry.category ?? ""}
+                          />
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+              <SectionHeader title="ATS helpers" />
+              {renderStringList("ATS keywords", ["ats", "keywords"])}
+              {renderStringList("Action verbs", ["ats", "action_verbs"])}
+              <SectionHeader title="Notes" />
+              {jobScalarFields.slice(18, 19).map((field) => renderScalar(field))}
+              {renderStringList("Research sources", ["research", "sources"])}
+            </>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}

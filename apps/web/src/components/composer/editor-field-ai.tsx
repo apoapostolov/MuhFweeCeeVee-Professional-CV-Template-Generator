@@ -30,6 +30,7 @@ import {
   EDITOR_STACKED_FIELD_AI_SEPARATOR_LINE_CLASS,
 } from "./editor-compact-form-layout";
 import {
+  EDITOR_FIELD_AI_CONTENT_PAD_PX,
   getFieldTextBudget,
   limitToCharacters,
 } from "./field-text-budget";
@@ -67,6 +68,7 @@ export type EditorFieldAiProviderProps = {
   onNotice?: (message: string) => void;
   showSeparatorBelow?: boolean;
   fieldLayout?: EditorFieldAiLayout;
+  jobPositionId?: string;
   children: ReactNode;
 };
 
@@ -137,6 +139,7 @@ export function EditorFieldAiProvider({
   onNotice,
   showSeparatorBelow = false,
   fieldLayout = "stacked",
+  jobPositionId = "",
   children,
 }: EditorFieldAiProviderProps): JSX.Element {
   const storageKey = useMemo(
@@ -155,7 +158,10 @@ export function EditorFieldAiProvider({
   const [rewriteSession, setRewriteSession] = useState<FieldRewriteSession | null>(null);
   const [undoBeforeApply, setUndoBeforeApply] = useState<string | null>(null);
   const [proposalsHydrated, setProposalsHydrated] = useState(false);
-  const budget = useMemo(() => getFieldTextBudget(pathLabel, templateId), [pathLabel, templateId]);
+  const budget = useMemo(
+    () => getFieldTextBudget(pathLabel, templateId, { contentInsetPx: EDITOR_FIELD_AI_CONTENT_PAD_PX }),
+    [pathLabel, templateId],
+  );
   const [limitInput, setLimitInput] = useState(String(budget.defaultCharLimit));
 
   useEffect(() => {
@@ -223,6 +229,7 @@ export function EditorFieldAiProvider({
           limit: limitValid ? limitNumber : budget.defaultCharLimit,
           unit: mode === "shorten" ? unit : "characters",
           charCap,
+          jobPositionId: jobPositionId.trim().length > 0 ? jobPositionId.trim() : undefined,
         }),
       });
       const payload = (await response.json()) as {
@@ -279,6 +286,7 @@ export function EditorFieldAiProvider({
     storageKey,
     onApply,
     onNotice,
+    jobPositionId,
   ]);
 
   const ctxValue = useMemo<EditorFieldAiContextValue>(
@@ -357,7 +365,7 @@ export function EditorFieldAiInputChrome({
     : fieldAiChromeOverlayClass;
 
   return (
-    <div className="relative min-w-0">
+    <div className="relative w-full min-w-0">
       {children}
       {showUndo ? (
         <div className={overlayClass}>

@@ -50,6 +50,15 @@ export function ComposerNav({
         </button>
         <button
           className={`rounded-md px-4 py-2 text-sm font-semibold ${
+            activePanel === "research" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+          }`}
+          onClick={() => onPanelChange("research")}
+          type="button"
+        >
+          Research
+        </button>
+        <button
+          className={`rounded-md px-4 py-2 text-sm font-semibold ${
             activePanel === "templates" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
           }`}
           onClick={() => onPanelChange("templates")}

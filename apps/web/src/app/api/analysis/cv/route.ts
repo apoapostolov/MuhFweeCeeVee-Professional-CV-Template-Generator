@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
+import { buildFieldAiJobContext } from "@/lib/research/research-prompts";
 import { readCompanyMetadata } from "@/lib/server/companyMetadataStore";
+import {
+  findResearchedCompany,
+  findResearchedJobPosition,
+  readResearchCatalog,
+} from "@/lib/server/researchStore";
 import { readCv } from "@/lib/server/cvStore";
 import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
@@ -13,6 +19,7 @@ type ScoreRequest = {
   scope?: unknown;
   sectionKey?: unknown;
   companyIds?: unknown;
+  jobPositionId?: unknown;
 };
 
 function asRecord(input: unknown): Record<string, unknown> | null {
@@ -95,8 +102,10 @@ function buildPrompt(
   sectionKey: string,
   sectionValue: unknown,
   selectedCompanies: unknown[],
+  jobTargetingNote: string,
 ): string {
   const targetingContext = getTargetCompanyContext(selectedCompanies);
+  const jobNote = jobTargetingNote.trim();
   const rubric = [
     "Use this weighted rubric (total 100):",
     "- timeline_integrity_consistency: 25",
@@ -123,6 +132,7 @@ function buildPrompt(
       "You are a senior CV reviewer and recruiter-screening analyst.",
       "Analyze only the requested CV section while considering full CV context.",
       targetingContext.summary,
+      jobNote,
       rubric,
       "Output schema:",
       "{",
@@ -158,6 +168,7 @@ function buildPrompt(
     "You are a senior CV reviewer and recruiter-screening analyst.",
     "Analyze the whole CV and return strict JSON with weighted scoring and prioritized fixes.",
     targetingContext.summary,
+    jobNote,
     rubric,
     "Output schema:",
     "{",
@@ -239,6 +250,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const sectionValue = scope === "section" ? getByPath(cv, sectionKey) : null;
+  const jobPositionId =
+    typeof payload.jobPositionId === "string" ? payload.jobPositionId.trim() : "";
+  let jobTargetingNote = "";
+  if (jobPositionId) {
+    const catalog = await readResearchCatalog();
+    const job = findResearchedJobPosition(catalog, jobPositionId);
+    const company = job ? findResearchedCompany(catalog, job.company_id) : null;
+    if (job && company) {
+      jobTargetingNote = buildFieldAiJobContext({ job, company });
+    }
+  }
+
   const allCompanies = await readCompanyMetadata();
   const selectedCompanies = allCompanies.filter((entry) => companyIds.includes(entry.id));
   const prompt = buildPrompt(
@@ -248,6 +271,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     sectionKey,
     sectionValue,
     selectedCompanies as unknown[],
+    jobTargetingNote,
   );
 
   const response = await fetch(settings.baseUrl, {
@@ -285,6 +309,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     cvId,
     templateId,
     companyIds: companyIds.length > 0 ? companyIds : undefined,
+    jobPositionId: jobPositionId || undefined,
     sectionKey: scope === "section" ? sectionKey : undefined,
     analysis: parsed,
     raw: content,

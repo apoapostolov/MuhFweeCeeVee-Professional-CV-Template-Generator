@@ -31,6 +31,14 @@ const TEMPLATE_SIDEBAR_WIDTH_PX: Record<string, number> = {
 
 const AVG_CHAR_WIDTH_PX = 6.5;
 
+/** Matches `EDITOR_FIELD_AI_INPUT_PAD_CLASS` (pr-14) — badges sit over the field, not in layout width. */
+export const EDITOR_FIELD_AI_CONTENT_PAD_PX = 56;
+
+export type FieldTextBudgetOptions = {
+  /** Subtract from printable column width (e.g. AI score badge padding on inputs). */
+  contentInsetPx?: number;
+};
+
 function charsPerLineForWidth(widthPx: number): number {
   return Math.max(24, Math.floor(widthPx / AVG_CHAR_WIDTH_PX));
 }
@@ -52,15 +60,22 @@ export function classifyFieldLayout(pathLabel: string): FieldLayoutRegion {
   return "main";
 }
 
-export function getFieldTextBudget(pathLabel: string, templateId: string): FieldTextBudget {
+export function getFieldTextBudget(
+  pathLabel: string,
+  templateId: string,
+  options?: FieldTextBudgetOptions,
+): FieldTextBudget {
   const region = classifyFieldLayout(pathLabel);
   const templateKey = templateId in TEMPLATE_MAIN_WIDTH_PX ? templateId : "generic";
-  const mainWidth = TEMPLATE_MAIN_WIDTH_PX[templateKey] ?? TEMPLATE_MAIN_WIDTH_PX.generic;
-  const sidebarWidth = TEMPLATE_SIDEBAR_WIDTH_PX[templateKey] ?? 0;
+  const inset = Math.max(0, options?.contentInsetPx ?? 0);
+  const fullMainWidth = TEMPLATE_MAIN_WIDTH_PX[templateKey] ?? TEMPLATE_MAIN_WIDTH_PX.generic;
+  const mainWidth = Math.max(160, fullMainWidth - inset);
+  const sidebarRaw = TEMPLATE_SIDEBAR_WIDTH_PX[templateKey] ?? 0;
+  const sidebarWidth = sidebarRaw > 0 ? Math.max(120, sidebarRaw - inset) : 0;
 
   const mainCharsPerLine = charsPerLineForWidth(mainWidth);
   const sidebarCharsPerLine = sidebarWidth > 0 ? charsPerLineForWidth(sidebarWidth) : mainCharsPerLine;
-  const titleCharsPerLine = charsPerLineForWidth(Math.min(mainWidth, 520));
+  const titleCharsPerLine = charsPerLineForWidth(Math.max(120, Math.min(fullMainWidth, 520) - inset));
 
   if (region === "sidebar") {
     return {

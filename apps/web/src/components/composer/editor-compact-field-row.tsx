@@ -3,6 +3,7 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
 
 import {
+  EDITOR_COMPACT_FIELD_LEADING_GROUP_CLASS,
   EDITOR_COMPACT_FIELD_TRACKS_CLASS,
   EDITOR_COMPACT_METADATA_FIELD_TRACKS_CLASS,
 } from "./editor-compact-form-layout";
@@ -12,7 +13,7 @@ export const EDITOR_COMPACT_FIELD_GRID_CLASS =
   "grid w-full grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2";
 
 export const EDITOR_COMPACT_METADATA_FIELD_GRID_CLASS =
-  "grid w-full grid-cols-[8rem_minmax(0,1fr)_3.5rem] gap-x-2";
+  "grid w-full grid-cols-[8rem_minmax(0,1fr)] gap-x-2";
 
 export type EditorCompactFieldRowProps = {
   leading?: ReactNode;
@@ -29,8 +30,10 @@ export type EditorCompactFieldRowProps = {
   rowClassName?: string;
   /** When false, omit the leading column (e.g. company metadata has no visibility toggles). */
   reserveLeadingColumn?: boolean;
-  /** Indents toggle/label hierarchy without shifting the input column (tabulated subsections). */
-  leadingIndentStyle?: CSSProperties;
+  /** Indents toggle + label together without changing their internal gap (tabulated subsections). */
+  leadingGroupIndentStyle?: CSSProperties;
+  /** Draw one border around the control + trailing actions (multi-line fields). */
+  unifiedControlBorder?: boolean;
 };
 
 export function EditorCompactFieldRow({
@@ -43,7 +46,8 @@ export function EditorCompactFieldRow({
   alignTop = false,
   rowClassName = "",
   reserveLeadingColumn = true,
-  leadingIndentStyle,
+  leadingGroupIndentStyle,
+  unifiedControlBorder = false,
 }: EditorCompactFieldRowProps): JSX.Element {
   const rowAlign = alignTop ? "items-start" : "items-center";
   const labelAlign = alignTop ? "self-start pt-1" : "self-center";
@@ -56,56 +60,72 @@ export function EditorCompactFieldRow({
       ? EDITOR_COMPACT_FIELD_GRID_CLASS
       : EDITOR_COMPACT_METADATA_FIELD_GRID_CLASS;
   const rowClass = [gridClass, rowAlign, useFormGrid ? "w-full" : "", rowClassName].filter(Boolean).join(" ");
-  const leadingCell = reserveLeadingColumn ? (
-    <div
-      className={`flex h-6 w-6 items-center justify-center ${alignTop ? "self-start" : "self-center"}`}
-      style={leadingIndentStyle}
-    >
-      {leading ?? <span className="sr-only" aria-hidden="true" />}
+  const leadingGroupAlign = alignTop ? "items-start" : "items-center";
+  const leadingGroupClass = useFormGrid
+    ? `${EDITOR_COMPACT_FIELD_LEADING_GROUP_CLASS} ${leadingGroupAlign}`
+    : `col-span-2 flex min-w-0 gap-x-2 ${leadingGroupAlign}`;
+  const leadingGroup = reserveLeadingColumn ? (
+    <div className={leadingGroupClass} style={leadingGroupIndentStyle}>
+      <div
+        className={`flex h-6 w-6 shrink-0 items-center justify-center ${alignTop ? "self-start" : "self-center"}`}
+      >
+        {leading ?? <span className="sr-only" aria-hidden="true" />}
+      </div>
+      <div className={`min-w-0 flex-1 truncate text-xs font-semibold text-slate-900 ${labelAlign}`}>{label}</div>
     </div>
   ) : null;
   const labelCell = (
-    <div
-      className={`min-w-0 truncate text-xs font-semibold text-slate-900 ${labelAlign}`}
-      style={leadingIndentStyle}
-    >
-      {label}
+    <div className={`min-w-0 truncate text-xs font-semibold text-slate-900 ${labelAlign}`}>{label}</div>
+  );
+
+  const unifiedShellClass = unifiedControlBorder
+    ? `flex min-w-0 max-w-full gap-2 rounded border border-[var(--line)] bg-white ${
+        alignTop ? "items-start" : "items-center"
+      }`
+    : `flex min-w-0 max-w-full gap-2 ${alignTop ? "items-start" : "items-center"}`;
+
+  const controlArea = (
+    <div className={unifiedShellClass}>
+      <div className="min-w-0 flex-1">{control}</div>
+      {trailing ? (
+        <div className={`flex shrink-0 items-center justify-end gap-2 ${actionsAlign}`}>{trailing}</div>
+      ) : null}
     </div>
   );
 
   if (!includeAiActionSlot) {
     if (!reserveLeadingColumn) {
+      /** Research / metadata: label + flex row (input grows to single action button). */
       return (
         <div className={rowClass}>
           {labelCell}
-          <div className="min-w-0 flex-1">{control}</div>
-          {trailing ? (
-            <div className={`flex shrink-0 items-center justify-end gap-2 ${actionsAlign}`}>{trailing}</div>
-          ) : null}
+          {controlArea}
         </div>
       );
     }
 
     return (
       <div className={rowClass}>
-        {leadingCell}
+        {leadingGroup}
+        <div className="col-span-2 min-w-0">{controlArea}</div>
+      </div>
+    );
+  }
+
+  if (!reserveLeadingColumn) {
+    return (
+      <div className={rowClass}>
         {labelCell}
-        <div
-          className={`col-span-2 flex min-w-0 gap-2 ${alignTop ? "items-start" : "items-center"}`}
-        >
-          <div className="min-w-0 flex-1">{control}</div>
-          {trailing ? <div className={`flex shrink-0 items-center gap-2 ${actionsAlign}`}>{trailing}</div> : null}
-        </div>
+        {controlArea}
       </div>
     );
   }
 
   return (
     <div className={rowClass}>
-      {leadingCell}
-      {labelCell}
-      <div className="min-w-0">{control}</div>
-      <div className={`flex items-center justify-end gap-2 ${actionsAlign}`}>{trailing}</div>
+      {leadingGroup}
+      <div className="min-w-0 w-full">{control}</div>
+      <div className={`flex shrink-0 items-center justify-end gap-2 ${actionsAlign}`}>{trailing}</div>
     </div>
   );
 }

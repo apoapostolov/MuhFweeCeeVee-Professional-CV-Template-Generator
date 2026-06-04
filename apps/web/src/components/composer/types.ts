@@ -85,7 +85,13 @@ export type SyncStatusResponse = {
   }>;
 };
 
-export type ActivePanel = "workspace" | "templates" | "editor" | "photo_booth" | "settings";
+export type ActivePanel =
+  | "workspace"
+  | "photo_booth"
+  | "research"
+  | "editor"
+  | "templates"
+  | "settings";
 export type EditorViewMode = "form" | "yaml";
 export type ThemeMode = "light" | "dark" | "system";
 export type CompanySource = "example" | "personal";

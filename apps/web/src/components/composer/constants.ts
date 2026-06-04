@@ -124,8 +124,14 @@ export const STORAGE_KEYS = {
   imageGenerationModel: "mfcv_image_generation_model",
   fieldRewriteProposals: "mfcv_field_rewrite_proposals_v1",
   editorAutoSave: "mfcv_editor_auto_save_v1",
+  /** "1" = flat subsections (no indent); "0" = tabulated indent. Missing key defaults to flat. */
+  editorFlatSubsections: "mfcv_editor_flat_subsections_v1",
   companyMetadataAutoSave: "mfcv_company_metadata_auto_save_v1",
+  researchAutoSave: "mfcv_research_auto_save_v1",
   companyFieldResearchProposals: "mfcv_company_field_research_proposals_v1",
+  selectedResearchCompanyId: "mfcv_selected_research_company_id",
+  selectedResearchJobPositionId: "mfcv_selected_research_job_position_id",
+  researchSidebarTab: "mfcv_research_sidebar_tab_v1",
 } as const;
 export const LEGACY_PHOTO_STORAGE_KEYS = [
   "mfcv_photo_booth_gallery_v1",

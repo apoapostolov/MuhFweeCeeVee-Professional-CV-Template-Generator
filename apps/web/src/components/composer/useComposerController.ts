@@ -39,6 +39,11 @@ import {
   mergeResearchedCompanyRecord,
   resolveCompanyIdsToResearch,
 } from "@/lib/company-research";
+import { collectEditorAtsTerms } from "@/lib/research/editor-ats-keywords";
+import {
+  readEditorFlatSubsectionsPreference,
+  writeEditorFlatSubsectionsPreference,
+} from "@/components/composer/editor-subsection-indent-prefs";
 import {
   coerceSectionDraftForEditorPath,
   resolveSectionDraftForForm,
@@ -79,6 +84,7 @@ import type {
 import {
   buildAnalysisCostEstimate,
   formatUsd,
+  resolveResearchModelOption,
   orderTemplateItems,
 } from "@/components/composer/openrouter-utils";
 import { useOpenRouterSettings } from "@/components/composer/useOpenRouterSettings";
@@ -89,7 +95,18 @@ import {
   useEditorFormRenderer,
 } from "@/components/composer/useEditorFormRenderer";
 import { useComposerToast } from "@/components/composer/composer-toast";
+import {
+  readStoredResearchSelection,
+  resolveStoredResearchCompanyId,
+  resolveStoredResearchJobId,
+  writeStoredResearchSelection,
+} from "@/components/composer/research-selection-storage";
 import { serializeFieldPath } from "@/lib/field-path-key";
+import type {
+  ResearchedCompany,
+  ResearchedJobPosition,
+  ResearchSidebarTab,
+} from "@/lib/research/types";
 
 
 export type ComposerController = ReturnType<typeof useComposerController>;
@@ -168,6 +185,7 @@ export function useComposerController() {
   const editorAutoSaveEnabledRef = useRef(true);
   const editorAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editorAutoSaveEnabled, setEditorAutoSaveEnabled] = useState(true);
+  const [editorFlatSubsections, setEditorFlatSubsections] = useState(true);
   const [editorSavedFingerprint, setEditorSavedFingerprint] = useState("");
   const [editorAutosaveActivity, setEditorAutosaveActivity] = useState<EditorAutosaveActivity>("idle");
 
@@ -194,6 +212,32 @@ export function useComposerController() {
   const analysisCompanySourceRef = useRef<CompanySource>("example");
   const [companyMetadataAutoSaveEnabled, setCompanyMetadataAutoSaveEnabled] = useState(true);
   const [companyMetadataSavedFingerprint, setCompanyMetadataSavedFingerprint] = useState("");
+  const [researchCompanies, setResearchCompanies] = useState<ResearchedCompany[]>([]);
+  const [researchJobPositions, setResearchJobPositions] = useState<ResearchedJobPosition[]>([]);
+  const [selectedResearchCompanyId, setSelectedResearchCompanyId] = useState(
+    () => readStoredResearchSelection().companyId,
+  );
+  const [selectedResearchJobPositionId, setSelectedResearchJobPositionId] = useState(
+    () => readStoredResearchSelection().jobId,
+  );
+  const researchSelectionPersistReadyRef = useRef(false);
+  const [researchCatalogLoading, setResearchCatalogLoading] = useState(false);
+  const [researchingCompany, setResearchingCompany] = useState(false);
+  const [researchingJob, setResearchingJob] = useState(false);
+  const [researchNotice, setResearchNotice] = useState("");
+  const [researchSidebarTab, setResearchSidebarTab] = useState<ResearchSidebarTab>("companies");
+  const [savingResearch, setSavingResearch] = useState(false);
+  const researchAutoSaveEnabledRef = useRef(true);
+  const researchAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const researchAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingResearchDraftRef = useRef<{
+    entityType: "company" | "job_position";
+    draft: ResearchedCompany | ResearchedJobPosition;
+  } | null>(null);
+  const researchSidebarTabRef = useRef<ResearchSidebarTab>("companies");
+  const [researchAutoSaveEnabled, setResearchAutoSaveEnabled] = useState(true);
+  const [researchAutosaveActivity, setResearchAutosaveActivity] =
+    useState<EditorAutosaveActivity>("idle");
   const [companyMetadataAutosaveActivity, setCompanyMetadataAutosaveActivity] =
     useState<EditorAutosaveActivity>("idle");
   const [analysisDrawerCollapsed, setAnalysisDrawerCollapsed] = useState(true);
@@ -348,14 +392,25 @@ export function useComposerController() {
     [analysisCompanies, analysisCompanySource],
   );
 
+  const selectedResearchModelOption = useMemo(
+    () => resolveResearchModelOption(openRouter.modelInput, openRouter.modelOptions),
+    [openRouter.modelInput, openRouter.modelOptions],
+  );
+
   const analysisCostEstimate = useMemo(
     () =>
       buildAnalysisCostEstimate(
         cvSizeTokenEstimate,
         fullCvOutputTokenEstimate,
         openRouter.selectedAnalysisModelOption,
+        selectedResearchModelOption,
       ),
-    [cvSizeTokenEstimate, fullCvOutputTokenEstimate, openRouter.selectedAnalysisModelOption],
+    [
+      cvSizeTokenEstimate,
+      fullCvOutputTokenEstimate,
+      openRouter.selectedAnalysisModelOption,
+      selectedResearchModelOption,
+    ],
   );
 
   const loadPhotoBoothGallery = useCallback(async (): Promise<void> => {
@@ -372,6 +427,64 @@ export function useComposerController() {
       setPhotoBoothItems([]);
     }
   }, []);
+
+  const loadResearchCatalog = useCallback(async (): Promise<void> => {
+    setResearchCatalogLoading(true);
+    try {
+      const response = await fetch("/api/research/catalog");
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        companies?: ResearchedCompany[];
+        job_positions?: ResearchedJobPosition[];
+      };
+      if (!response.ok || !payload.ok) {
+        setResearchCompanies([]);
+        setResearchJobPositions([]);
+        return;
+      }
+      const companies = Array.isArray(payload.companies) ? payload.companies : [];
+      const jobs = Array.isArray(payload.job_positions) ? payload.job_positions : [];
+      setResearchCompanies(companies);
+      setResearchJobPositions(jobs);
+      setSelectedResearchCompanyId((current) => {
+        const companyId = resolveStoredResearchCompanyId(companies, current);
+        setSelectedResearchJobPositionId((jobCurrent) =>
+          resolveStoredResearchJobId(jobs, companyId, jobCurrent),
+        );
+        return companyId;
+      });
+    } catch {
+      setResearchCompanies([]);
+      setResearchJobPositions([]);
+    } finally {
+      setResearchCatalogLoading(false);
+    }
+  }, []);
+
+  const selectedResearchCompany = useMemo(
+    () => researchCompanies.find((c) => c.id === selectedResearchCompanyId) ?? null,
+    [researchCompanies, selectedResearchCompanyId],
+  );
+
+  const researchJobsForCompany = useMemo(
+    () => researchJobPositions.filter((j) => j.company_id === selectedResearchCompanyId),
+    [researchJobPositions, selectedResearchCompanyId],
+  );
+
+  const selectedResearchJob = useMemo(
+    () => researchJobPositions.find((j) => j.id === selectedResearchJobPositionId) ?? null,
+    [researchJobPositions, selectedResearchJobPositionId],
+  );
+
+  const editorWeightedKeywords = useMemo(
+    () => selectedResearchJob?.weighted_keywords ?? [],
+    [selectedResearchJob],
+  );
+
+  const editorAtsKeywords = useMemo(
+    () => collectEditorAtsTerms(selectedResearchJob?.ats),
+    [selectedResearchJob],
+  );
 
   const loadAnalysisCompanies = useCallback(async (): Promise<void> => {
     try {
@@ -396,6 +509,46 @@ export function useComposerController() {
       setAnalysisCompanyIds([]);
     }
   }, []);
+
+  useEffect(() => {
+    void loadResearchCatalog();
+  }, [loadResearchCatalog]);
+
+  useEffect(() => {
+    researchSelectionPersistReadyRef.current = true;
+    try {
+      const savedSidebarTab = window.localStorage.getItem(STORAGE_KEYS.researchSidebarTab);
+      if (savedSidebarTab === "companies" || savedSidebarTab === "job_positions") {
+        setResearchSidebarTab(savedSidebarTab);
+      }
+    } catch {
+      // no-op
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!researchSelectionPersistReadyRef.current) {
+      return;
+    }
+    writeStoredResearchSelection(selectedResearchCompanyId, selectedResearchJobPositionId);
+  }, [selectedResearchCompanyId, selectedResearchJobPositionId]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.researchSidebarTab, researchSidebarTab);
+    } catch {
+      // no-op
+    }
+  }, [researchSidebarTab]);
+
+  useEffect(() => {
+    if (
+      selectedResearchJobPositionId &&
+      !researchJobsForCompany.some((job) => job.id === selectedResearchJobPositionId)
+    ) {
+      setSelectedResearchJobPositionId("");
+    }
+  }, [researchJobsForCompany, selectedResearchJobPositionId]);
 
   useEffect(() => {
     try {
@@ -717,6 +870,12 @@ export function useComposerController() {
         companyMetadataAutoSaveEnabledRef.current = false;
         setCompanyMetadataAutoSaveEnabled(false);
       }
+      const researchStored = window.localStorage.getItem(STORAGE_KEYS.researchAutoSave);
+      if (researchStored === "0") {
+        researchAutoSaveEnabledRef.current = false;
+        setResearchAutoSaveEnabled(false);
+      }
+      setEditorFlatSubsections(readEditorFlatSubsectionsPreference());
     } catch {
       // ignore private browsing / blocked storage
     }
@@ -729,6 +888,14 @@ export function useComposerController() {
   useEffect(() => {
     companyMetadataAutoSaveEnabledRef.current = companyMetadataAutoSaveEnabled;
   }, [companyMetadataAutoSaveEnabled]);
+
+  useEffect(() => {
+    researchAutoSaveEnabledRef.current = researchAutoSaveEnabled;
+  }, [researchAutoSaveEnabled]);
+
+  useEffect(() => {
+    researchSidebarTabRef.current = researchSidebarTab;
+  }, [researchSidebarTab]);
 
   useEffect(() => {
     companyMetadataDraftRef.current = companyMetadataDraft;
@@ -757,8 +924,27 @@ export function useComposerController() {
       if (companyMetadataAutosaveActivityTimerRef.current) {
         clearTimeout(companyMetadataAutosaveActivityTimerRef.current);
       }
+      if (researchAutosaveTimerRef.current) {
+        clearTimeout(researchAutosaveTimerRef.current);
+      }
+      if (researchAutosaveActivityTimerRef.current) {
+        clearTimeout(researchAutosaveActivityTimerRef.current);
+      }
     };
   }, []);
+
+  function clearResearchAutosaveTimers(): void {
+    if (researchAutosaveTimerRef.current) {
+      clearTimeout(researchAutosaveTimerRef.current);
+      researchAutosaveTimerRef.current = null;
+    }
+    if (researchAutosaveActivityTimerRef.current) {
+      clearTimeout(researchAutosaveActivityTimerRef.current);
+      researchAutosaveActivityTimerRef.current = null;
+    }
+    pendingResearchDraftRef.current = null;
+    setResearchAutosaveActivity("idle");
+  }
 
   const selectedPairKey = useMemo(() => {
     if (!selectedCvMeta) return "";
@@ -1029,6 +1215,11 @@ export function useComposerController() {
     setEditorSavedFingerprint(fingerprint);
   }
 
+  function setEditorFlatSubsectionsPreference(flat: boolean): void {
+    setEditorFlatSubsections(flat);
+    writeEditorFlatSubsectionsPreference(flat);
+  }
+
   function setEditorAutoSavePreference(enabled: boolean): void {
     setEditorAutoSaveEnabled(enabled);
     editorAutoSaveEnabledRef.current = enabled;
@@ -1134,11 +1325,77 @@ export function useComposerController() {
   }
 
   function companyMetadataAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
-    if (status === "saved") {
-      return "Company metadata saved.";
+    if (status !== "saved") {
+      return null;
     }
-    return null;
+    const lang = selectedLanguageRef.current;
+    return lang === "bg" ? "Метаданните за компании са запазени." : "Company metadata saved.";
   }
+
+  function researchAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
+    if (status !== "saved") {
+      return null;
+    }
+    const lang = selectedLanguageRef.current;
+    const tab = researchSidebarTabRef.current;
+    if (tab === "companies") {
+      return lang === "bg" ? "Компанията е запазена." : "Company saved.";
+    }
+    return lang === "bg" ? "Позицията е запазена." : "Job position saved.";
+  }
+
+  function setResearchAutosaveActivityVisible(status: EditorAutosaveActivity): void {
+    if (researchAutosaveActivityTimerRef.current) {
+      clearTimeout(researchAutosaveActivityTimerRef.current);
+      researchAutosaveActivityTimerRef.current = null;
+    }
+    setResearchAutosaveActivity(status);
+    const toastMessage = researchAutosaveStatusToast(status);
+    if (toastMessage) {
+      showComposerToast(toastMessage);
+    }
+    if (status === "saved") {
+      researchAutosaveActivityTimerRef.current = setTimeout(() => {
+        setResearchAutosaveActivity("idle");
+        researchAutosaveActivityTimerRef.current = null;
+      }, 2800);
+    }
+  }
+
+  function setResearchAutoSavePreference(enabled: boolean): void {
+    setResearchAutoSaveEnabled(enabled);
+    researchAutoSaveEnabledRef.current = enabled;
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.researchAutoSave, enabled ? "1" : "0");
+    } catch {
+      // ignore
+    }
+    if (!enabled) {
+      clearResearchAutosaveTimers();
+    }
+  }
+
+  function scheduleResearchAutosave(): void {
+    if (!researchAutoSaveEnabledRef.current || !pendingResearchDraftRef.current) {
+      return;
+    }
+    if (researchAutosaveTimerRef.current) {
+      clearTimeout(researchAutosaveTimerRef.current);
+    }
+    setResearchAutosaveActivityVisible("pending");
+    researchAutosaveTimerRef.current = setTimeout(() => {
+      researchAutosaveTimerRef.current = null;
+      void flushResearchAutosave();
+    }, TEXT_FIELD_AUTOSAVE_MS);
+  }
+
+  const handleResearchDraftChange = useCallback(
+    (draft: ResearchedCompany | ResearchedJobPosition, entityType: "company" | "job_position") => {
+      pendingResearchDraftRef.current = { draft, entityType };
+      scheduleResearchAutosave();
+    },
+    [],
+  );
 
   function setCompanyMetadataAutosaveActivityVisible(status: EditorAutosaveActivity): void {
     if (companyMetadataAutosaveActivityTimerRef.current) {
@@ -1358,12 +1615,119 @@ export function useComposerController() {
     return true;
   }
 
+  async function runPendingEditorFieldTranslations(generation: number): Promise<void> {
+    const pending = pendingTextFieldAutosaveRef.current;
+    if (!pending || editorViewRef.current !== "form") {
+      return;
+    }
+
+    const trimmed = pending.value.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const sourceLanguage = selectedLanguageRef.current;
+    const translateTargets = LANGUAGE_OPTIONS.map((entry) => entry.code).filter(
+      (code) => code !== sourceLanguage,
+    );
+    const variantMap = variantGroupRef.current;
+    const jobs = translateTargets
+      .map((code) => {
+        const variantId = variantMap?.[code]?.id;
+        if (!variantId) {
+          return null;
+        }
+        return { code, variantId };
+      })
+      .filter((entry): entry is { code: string; variantId: string } => entry !== null);
+
+    if (jobs.length === 0) {
+      return;
+    }
+
+    const fieldPath = serializeFieldPath(pending.path);
+    const results = await Promise.allSettled(
+      jobs.map(async (job) => {
+        const response = await fetch("/api/cvs/translate-field", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            sourceCvId: selectedCvIdRef.current,
+            targetCvId: job.variantId,
+            targetLanguage: job.code,
+            sectionPath: editorPathRef.current,
+            fieldPath,
+            text: trimmed,
+            fieldLabel: pending.fieldLabel,
+          }),
+        });
+        const payload = (await response.json()) as {
+          error?: string;
+          skipped?: boolean;
+          targetLanguageLabel?: string;
+        };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Translation failed.");
+        }
+        return { code: job.code, skipped: Boolean(payload.skipped) };
+      }),
+    );
+
+    if (generation !== textFieldAutosaveGenerationRef.current) {
+      return;
+    }
+
+    const completedLabels: string[] = [];
+    let failedCount = 0;
+    for (let index = 0; index < results.length; index += 1) {
+      const result = results[index];
+      const job = jobs[index];
+      if (result.status === "rejected") {
+        failedCount += 1;
+        console.error(
+          `[translate-field] ${job.code} failed:`,
+          result.reason instanceof Error ? result.reason.message : result.reason,
+        );
+        continue;
+      }
+      if (result.value.skipped) {
+        continue;
+      }
+      const label =
+        LANGUAGE_OPTIONS.find((entry) => entry.code === job.code)?.label ?? job.code.toUpperCase();
+      completedLabels.push(label);
+    }
+
+    if (completedLabels.length > 0) {
+      const labelList = completedLabels.join(", ");
+      showComposerToast(
+        selectedLanguageRef.current === "bg"
+          ? `Преводът на полето е готов: ${labelList}.`
+          : `Field translation complete: ${labelList}.`,
+      );
+    } else if (failedCount > 0) {
+      const firstError = results.find((entry) => entry.status === "rejected");
+      const detail =
+        firstError && firstError.status === "rejected" && firstError.reason instanceof Error
+          ? firstError.reason.message
+          : null;
+      showComposerToast(
+        selectedLanguageRef.current === "bg"
+          ? detail
+            ? `Преводът на полето не успя: ${detail}`
+            : "Преводът на полето не успя."
+          : detail
+            ? `Field translation failed: ${detail}`
+            : "Field translation failed.",
+      );
+    }
+  }
+
   async function flushTextFieldAutosave(): Promise<void> {
     if (!editorAutoSaveEnabledRef.current) {
       return;
     }
 
-    const pending = pendingTextFieldAutosaveRef.current;
     const generation = textFieldAutosaveGenerationRef.current + 1;
     textFieldAutosaveGenerationRef.current = generation;
 
@@ -1380,111 +1744,7 @@ export function useComposerController() {
       }
 
       setEditorAutosaveActivityVisible("saved");
-
-      if (!pending || editorViewRef.current !== "form") {
-        return;
-      }
-
-      const trimmed = pending.value.trim();
-      if (!trimmed) {
-        return;
-      }
-
-      const sourceLanguage = selectedLanguageRef.current;
-      const translateTargets = LANGUAGE_OPTIONS.map((entry) => entry.code).filter(
-        (code) => code !== sourceLanguage,
-      );
-      const variantMap = variantGroupRef.current;
-      const jobs = translateTargets
-        .map((code) => {
-          const variantId = variantMap?.[code]?.id;
-          if (!variantId) {
-            return null;
-          }
-          return { code, variantId };
-        })
-        .filter((entry): entry is { code: string; variantId: string } => entry !== null);
-
-      if (jobs.length === 0) {
-        return;
-      }
-
-      const fieldPath = serializeFieldPath(pending.path);
-      const results = await Promise.allSettled(
-        jobs.map(async (job) => {
-          const response = await fetch("/api/cvs/translate-field", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              sourceCvId: selectedCvIdRef.current,
-              targetCvId: job.variantId,
-              targetLanguage: job.code,
-              sectionPath: editorPathRef.current,
-              fieldPath,
-              text: trimmed,
-              fieldLabel: pending.fieldLabel,
-            }),
-          });
-          const payload = (await response.json()) as {
-            error?: string;
-            skipped?: boolean;
-            targetLanguageLabel?: string;
-          };
-          if (!response.ok) {
-            throw new Error(payload.error ?? "Translation failed.");
-          }
-          return { code: job.code, skipped: Boolean(payload.skipped) };
-        }),
-      );
-
-      if (generation !== textFieldAutosaveGenerationRef.current) {
-        return;
-      }
-
-      const completedLabels: string[] = [];
-      let failedCount = 0;
-      for (let index = 0; index < results.length; index += 1) {
-        const result = results[index];
-        const job = jobs[index];
-        if (result.status === "rejected") {
-          failedCount += 1;
-          console.error(
-            `[translate-field] ${job.code} failed:`,
-            result.reason instanceof Error ? result.reason.message : result.reason,
-          );
-          continue;
-        }
-        if (result.value.skipped) {
-          continue;
-        }
-        const label =
-          LANGUAGE_OPTIONS.find((entry) => entry.code === job.code)?.label ?? job.code.toUpperCase();
-        completedLabels.push(label);
-      }
-
-      if (completedLabels.length > 0) {
-        const labelList = completedLabels.join(", ");
-        showComposerToast(
-          selectedLanguageRef.current === "bg"
-            ? `Преводът на полето е готов: ${labelList}.`
-            : `Field translation complete: ${labelList}.`,
-        );
-      } else if (failedCount > 0) {
-        const firstError = results.find((entry) => entry.status === "rejected");
-        const detail =
-          firstError && firstError.status === "rejected" && firstError.reason instanceof Error
-            ? firstError.reason.message
-            : null;
-        showComposerToast(
-          selectedLanguageRef.current === "bg"
-            ? detail
-              ? `Преводът на полето не успя: ${detail}`
-              : "Преводът на полето не успя."
-            : detail
-              ? `Field translation failed: ${detail}`
-              : "Field translation failed.",
-        );
-      }
+      await runPendingEditorFieldTranslations(generation);
     } finally {
       if (generation === textFieldAutosaveGenerationRef.current) {
         setEditorSaving(false);
@@ -1505,14 +1765,14 @@ export function useComposerController() {
       setYamlDraft(yaml);
       return next;
     });
-    if (!editorAutoSaveEnabledRef.current) {
-      return;
-    }
     pendingTextFieldAutosaveRef.current = {
       path,
       fieldLabel: meta.fieldLabel,
       value,
     };
+    if (!editorAutoSaveEnabledRef.current) {
+      return;
+    }
     scheduleEditorAutosave();
   }
 
@@ -1760,6 +2020,10 @@ export function useComposerController() {
     companyMetadataDraft,
     analysisCompanySource,
     onCompanyMetadataNotice: setCompanyMetadataNotice,
+    editorWeightedKeywords,
+    editorAtsKeywords,
+    editorSubsectionIndentEnabled: !editorFlatSubsections,
+    selectedResearchJobPositionId,
   });
 
   async function persistCompanyMetadataDraft(): Promise<boolean> {
@@ -1961,9 +2225,258 @@ export function useComposerController() {
       setEditorCv(updated);
       setPreviewNonce(Date.now());
       syncEditorSavedFingerprintFromDraft();
+      const savedMessage =
+        selectedLanguage === "bg" ? "Шаблонът на CV е запазен." : "CV template saved.";
       setEditorNotice(selectedLanguage === "bg" ? "Секцията е запазена." : "Section saved.");
+      showComposerToast(savedMessage);
+      const generation = textFieldAutosaveGenerationRef.current + 1;
+      textFieldAutosaveGenerationRef.current = generation;
+      await runPendingEditorFieldTranslations(generation);
     } finally {
       setEditorSaving(false);
+    }
+  }
+
+  function selectResearchCompany(companyId: string) {
+    clearResearchAutosaveTimers();
+    setSelectedResearchCompanyId(companyId);
+    setSelectedResearchJobPositionId("");
+    setAnalysisCompanyIds(companyId ? [companyId] : []);
+  }
+
+  function selectResearchJob(jobId: string) {
+    clearResearchAutosaveTimers();
+    setSelectedResearchJobPositionId(jobId);
+    const job = researchJobPositions.find((entry) => entry.id === jobId);
+    if (job) {
+      setSelectedResearchCompanyId(job.company_id);
+    }
+  }
+
+  function setResearchSidebarTabPersisted(tab: ResearchSidebarTab) {
+    clearResearchAutosaveTimers();
+    setResearchSidebarTab(tab);
+  }
+
+  async function persistResearchCompany(company: ResearchedCompany): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/research/companies/${encodeURIComponent(company.id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ company }),
+      });
+      const body = (await response.json()) as { error?: string; companies?: ResearchedCompany[] };
+      if (!response.ok) {
+        setResearchNotice(body.error ?? "Could not save company.");
+        return false;
+      }
+      if (body.companies) {
+        setResearchCompanies(body.companies);
+      } else {
+        await loadResearchCatalog();
+      }
+      return true;
+    } catch {
+      setResearchNotice("Could not save company.");
+      return false;
+    }
+  }
+
+  async function persistResearchJob(job: ResearchedJobPosition): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/research/job-positions/${encodeURIComponent(job.id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ job_position: job }),
+      });
+      const body = (await response.json()) as {
+        error?: string;
+        job_positions?: ResearchedJobPosition[];
+      };
+      if (!response.ok) {
+        setResearchNotice(body.error ?? "Could not save job position.");
+        return false;
+      }
+      if (body.job_positions) {
+        setResearchJobPositions(body.job_positions);
+      } else {
+        await loadResearchCatalog();
+      }
+      return true;
+    } catch {
+      setResearchNotice("Could not save job position.");
+      return false;
+    }
+  }
+
+  async function flushResearchAutosave(): Promise<void> {
+    if (!researchAutoSaveEnabledRef.current) {
+      return;
+    }
+    const pending = pendingResearchDraftRef.current;
+    if (!pending) {
+      return;
+    }
+
+    setResearchAutosaveActivityVisible("saving");
+    setSavingResearch(true);
+    setResearchNotice("");
+    try {
+      const saved =
+        pending.entityType === "company"
+          ? await persistResearchCompany(pending.draft as ResearchedCompany)
+          : await persistResearchJob(pending.draft as ResearchedJobPosition);
+      if (!saved) {
+        setResearchAutosaveActivityVisible("idle");
+        return;
+      }
+      setResearchAutosaveActivityVisible("saved");
+    } finally {
+      setSavingResearch(false);
+    }
+  }
+
+  async function saveResearchCompany(company: ResearchedCompany): Promise<void> {
+    setSavingResearch(true);
+    setResearchNotice("");
+    try {
+      const saved = await persistResearchCompany(company);
+      if (saved) {
+        showComposerToast(selectedLanguage === "bg" ? "Компанията е запазена." : "Company saved.");
+      }
+    } finally {
+      setSavingResearch(false);
+    }
+  }
+
+  async function saveResearchJob(job: ResearchedJobPosition): Promise<void> {
+    setSavingResearch(true);
+    setResearchNotice("");
+    try {
+      const saved = await persistResearchJob(job);
+      if (saved) {
+        showComposerToast(selectedLanguage === "bg" ? "Позицията е запазена." : "Job position saved.");
+      }
+    } finally {
+      setSavingResearch(false);
+    }
+  }
+
+  async function researchCompanyOffice(payload: {
+    companyName: string;
+    officeCountry: string;
+    officeCity?: string;
+    officeLabel?: string;
+  }) {
+    setResearchingCompany(true);
+    setResearchNotice("");
+    try {
+      const response = await fetch("/api/research/companies/research", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await response.json()) as {
+        error?: string;
+        company?: ResearchedCompany;
+        companies?: ResearchedCompany[];
+      };
+      if (!response.ok || !body.company) {
+        setResearchNotice(body.error ?? "Company research failed.");
+        return;
+      }
+      await loadResearchCatalog();
+      selectResearchCompany(body.company.id);
+      setResearchSidebarTab("companies");
+      setResearchNotice(
+        selectedLanguage === "bg"
+          ? `Компанията „${body.company.name}“ е добавена.`
+          : `Researched company “${body.company.name}”.`,
+      );
+      showComposerToast(
+        selectedLanguage === "bg" ? "Компанията е проучена." : "Company researched.",
+      );
+    } catch {
+      setResearchNotice("Company research failed.");
+    } finally {
+      setResearchingCompany(false);
+    }
+  }
+
+  async function researchJobPosition(payload: {
+    companyId: string;
+    jobTitle: string;
+    jobDescription?: string;
+    linkedinUrl?: string;
+  }) {
+    setResearchingJob(true);
+    setResearchNotice("");
+    try {
+      const response = await fetch("/api/research/job-positions/research", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await response.json()) as {
+        error?: string;
+        job_position?: ResearchedJobPosition;
+      };
+      if (!response.ok || !body.job_position) {
+        setResearchNotice(body.error ?? "Job position research failed.");
+        return;
+      }
+      await loadResearchCatalog();
+      selectResearchCompany(payload.companyId);
+      selectResearchJob(body.job_position.id);
+      setResearchSidebarTab("job_positions");
+      setResearchNotice(
+        selectedLanguage === "bg"
+          ? `Позицията „${body.job_position.title}“ е добавена.`
+          : `Researched job “${body.job_position.title}”.`,
+      );
+      showComposerToast(
+        selectedLanguage === "bg" ? "Позицията е проучена." : "Job position researched.",
+      );
+    } catch {
+      setResearchNotice("Job position research failed.");
+    } finally {
+      setResearchingJob(false);
+    }
+  }
+
+  async function deleteResearchCompany(companyId: string) {
+    if (!companyId) {
+      return;
+    }
+    try {
+      await fetch(`/api/research/companies/${encodeURIComponent(companyId)}`, {
+        method: "DELETE",
+      });
+      await loadResearchCatalog();
+      if (selectedResearchCompanyId === companyId) {
+        selectResearchCompany("");
+      }
+      showComposerToast(selectedLanguage === "bg" ? "Компанията е изтрита." : "Company deleted.");
+    } catch {
+      setResearchNotice("Could not delete company.");
+    }
+  }
+
+  async function deleteResearchJob(jobId: string) {
+    if (!jobId) {
+      return;
+    }
+    try {
+      await fetch(`/api/research/job-positions/${encodeURIComponent(jobId)}`, {
+        method: "DELETE",
+      });
+      await loadResearchCatalog();
+      if (selectedResearchJobPositionId === jobId) {
+        setSelectedResearchJobPositionId("");
+      }
+      showComposerToast(selectedLanguage === "bg" ? "Позицията е изтрита." : "Job position deleted.");
+    } catch {
+      setResearchNotice("Could not delete job position.");
     }
   }
 
@@ -1983,7 +2496,7 @@ export function useComposerController() {
           templateId: selectedTemplateId,
           scope,
           sectionKey: editorPath,
-          companyIds: analysisCompanyIds.length > 0 ? analysisCompanyIds : undefined,
+          jobPositionId: selectedResearchJobPositionId || undefined,
         }),
       });
       const payload = (await response.json()) as {
@@ -2608,11 +3121,44 @@ export function useComposerController() {
     dismissComposerToast,
     editorAutoSaveEnabled,
     setEditorAutoSavePreference,
+    editorFlatSubsections,
+    setEditorFlatSubsectionsPreference,
+    editorAutosaveActivity,
     editorHasUnsavedChanges,
 
     companyMetadataAutoSaveEnabled,
     setCompanyMetadataAutoSavePreference,
+    companyMetadataAutosaveActivity,
     companyMetadataHasUnsavedChanges,
-
+    researchCompanies,
+    researchJobPositions,
+    selectedResearchCompanyId,
+    selectedResearchJobPositionId,
+    selectedResearchCompany,
+    selectedResearchJob,
+    researchJobsForCompany,
+    editorWeightedKeywords,
+    editorAtsKeywords,
+    researchCatalogLoading,
+    researchingCompany,
+    researchingJob,
+    researchNotice,
+    setResearchNotice,
+    loadResearchCatalog,
+    selectResearchCompany,
+    selectResearchJob,
+    researchCompanyOffice,
+    researchJobPosition,
+    deleteResearchCompany,
+    deleteResearchJob,
+    researchSidebarTab,
+    setResearchSidebarTab: setResearchSidebarTabPersisted,
+    savingResearch,
+    saveResearchCompany,
+    saveResearchJob,
+    researchAutoSaveEnabled,
+    setResearchAutoSavePreference,
+    researchAutosaveActivity,
+    handleResearchDraftChange,
   };
 }

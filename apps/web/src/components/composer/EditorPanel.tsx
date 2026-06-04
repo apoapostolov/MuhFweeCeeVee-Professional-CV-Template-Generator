@@ -9,13 +9,20 @@ import {
 } from "./editor-compact-form-layout";
 import { AiStarsIcon } from "./ai-stars-icon";
 import { scoreTone } from "./analysis-ui-utils";
+import {
+  EditorAutoSaveToggle,
+  EditorAutosaveStatusPill,
+  EditorFlatSubsectionsToggle,
+} from "./editor-autosave-ui";
 import type { useEditorFormRenderer } from "./useEditorFormRenderer";
+import { companyOfficeSummary } from "@/lib/research/research-normalize";
+import type { ResearchedCompany } from "@/lib/research/types";
 import type {
-  CompanyListResponse,
   CompanySource,
   CvPair,
   EditorTabKey,
   EditorViewMode,
+  EditorAutosaveActivity,
   FullAnalysis,
   SectionAnalysis,
 } from "./types";
@@ -39,13 +46,16 @@ export type EditorPanelProps = {
   editorTab: EditorTabKey;
   onEditorTabChange: (tab: EditorTabKey) => void;
   companyMetadataEditorOpen: boolean;
-  onToggleCompanyMetadataEditor: () => void;
   analysisCompanySource: CompanySource;
-  onAnalysisCompanySourceChange: (source: CompanySource) => void;
-  analysisCompanyIds: string[];
-  filteredAnalysisCompanies: NonNullable<CompanyListResponse["items"]>;
-  onClearAnalysisCompanyIds: () => void;
-  onToggleAnalysisCompanySelection: (companyId: string) => void;
+  onToggleCompanyMetadataEditor: () => void;
+  researchCompanies: ResearchedCompany[];
+  researchJobsForCompany: Array<{ id: string; title: string; company_id: string }>;
+  selectedResearchCompanyId: string;
+  selectedResearchJobPositionId: string;
+  onSelectResearchCompany: (companyId: string) => void;
+  onSelectResearchJob: (jobId: string) => void;
+  selectedResearchJobKeywordCount: number;
+  selectedResearchJobAtsKeywordCount: number;
   selectedTemplateId: string;
   editorLoading: boolean;
   companyMetadataNotice: string;
@@ -60,6 +70,7 @@ export type EditorPanelProps = {
   onResearchCompanies: () => void;
   companyMetadataAutoSaveEnabled: boolean;
   onCompanyMetadataAutoSaveChange: (enabled: boolean) => void;
+  companyMetadataAutosaveActivity: EditorAutosaveActivity;
   companyMetadataHasUnsavedChanges: boolean;
 
   onSaveCompanyMetadata: () => void;
@@ -75,6 +86,9 @@ export type EditorPanelProps = {
   editorSaving: boolean;
   editorAutoSaveEnabled: boolean;
   onEditorAutoSaveChange: (enabled: boolean) => void;
+  editorFlatSubsections: boolean;
+  onEditorFlatSubsectionsChange: (flat: boolean) => void;
+  editorAutosaveActivity: EditorAutosaveActivity;
   editorHasUnsavedChanges: boolean;
 
   onSaveEditor: () => void;
@@ -107,13 +121,16 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     editorTab,
     onEditorTabChange,
     companyMetadataEditorOpen,
-    onToggleCompanyMetadataEditor,
     analysisCompanySource,
-    onAnalysisCompanySourceChange,
-    analysisCompanyIds,
-    filteredAnalysisCompanies = [],
-    onClearAnalysisCompanyIds,
-    onToggleAnalysisCompanySelection,
+    onToggleCompanyMetadataEditor,
+    researchCompanies,
+    researchJobsForCompany,
+    selectedResearchCompanyId,
+    selectedResearchJobPositionId,
+    onSelectResearchCompany,
+    onSelectResearchJob,
+    selectedResearchJobKeywordCount,
+    selectedResearchJobAtsKeywordCount,
     selectedTemplateId,
     editorLoading,
     companyMetadataNotice,
@@ -128,6 +145,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onResearchCompanies,
     companyMetadataAutoSaveEnabled,
     onCompanyMetadataAutoSaveChange,
+    companyMetadataAutosaveActivity,
     companyMetadataHasUnsavedChanges,
 
     onSaveCompanyMetadata,
@@ -143,6 +161,9 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     editorSaving,
     editorAutoSaveEnabled,
     onEditorAutoSaveChange,
+    editorFlatSubsections,
+    onEditorFlatSubsectionsChange,
+    editorAutosaveActivity,
     editorHasUnsavedChanges,
 
     onSaveEditor,
@@ -260,58 +281,68 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                   </div>
 
                   <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-800">Target Companies</p>
-                      <button
-                        className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                        onClick={() => onToggleCompanyMetadataEditor()}
-                        type="button"
-                      >
-                        {companyMetadataEditorOpen ? "Hide Editor" : "Edit"}
-                      </button>
-                    </div>
+                    <p className="text-sm font-semibold text-slate-800">Job Targeting</p>
+                    <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                      Pick a researched company and job position from the Research tab. Keywords highlight in form fields.
+                    </p>
 
                     <label className="mt-3 block text-xs font-medium text-slate-700">
-                      Metadata Source
+                      Company
                       <select
                         className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
-                        onChange={(event) => onAnalysisCompanySourceChange(event.target.value as CompanySource)}
-                        value={analysisCompanySource}
+                        onChange={(event) => onSelectResearchCompany(event.target.value)}
+                        value={selectedResearchCompanyId}
                       >
-                        <option value="example">Example</option>
-                        <option value="personal">Personal</option>
+                        <option value="">None</option>
+                        {researchCompanies.map((company) => (
+                          <option key={company.id} value={company.id}>
+                            {company.name} ({companyOfficeSummary(company)})
+                          </option>
+                        ))}
                       </select>
                     </label>
 
+                    <label className="mt-3 block text-xs font-medium text-slate-700">
+                      Job position
+                      <select
+                        className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs disabled:opacity-60"
+                        disabled={!selectedResearchCompanyId}
+                        onChange={(event) => onSelectResearchJob(event.target.value)}
+                        value={selectedResearchJobPositionId}
+                      >
+                        <option value="">None</option>
+                        {researchJobsForCompany.map((job) => (
+                          <option key={job.id} value={job.id}>
+                            {job.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {selectedResearchJobPositionId ? (
+                      <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                        {selectedResearchJobKeywordCount} weighted keywords (bold, dotted underline, color by score).
+                        {selectedResearchJobAtsKeywordCount > 0
+                          ? ` ${selectedResearchJobAtsKeywordCount} ATS terms (cyan).`
+                          : ""}
+                      </p>
+                    ) : null}
+
                     <div className="mt-3">
-                      <p className="text-xs font-medium text-slate-700">Companies</p>
-                      <label className="mt-1 flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs text-slate-700">
-                        <input
-                          checked={analysisCompanyIds.length === 0}
-                          onChange={onClearAnalysisCompanyIds}
-                          type="checkbox"
-                        />
-                        <span>None</span>
-                      </label>
-                      <div className="mt-2 space-y-2">
-                        {filteredAnalysisCompanies.length === 0 ? (
-                          <p className="text-xs text-[var(--ink-muted)]">No companies in this metadata source.</p>
-                        ) : (
-                          filteredAnalysisCompanies.map((company) => (
-                            <label
-                              key={company.id}
-                              className="flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs text-slate-700"
-                            >
-                              <input
-                                checked={analysisCompanyIds.includes(company.id)}
-                                onChange={() => onToggleAnalysisCompanySelection(company.id)}
-                                type="checkbox"
-                              />
-                              <span>{company.name}</span>
-                            </label>
-                          ))
-                        )}
-                      </div>
+                      <EditorFlatSubsectionsToggle
+                        flat={editorFlatSubsections}
+                        language={selectedLanguage}
+                        onChange={onEditorFlatSubsectionsChange}
+                      />
+                      <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
+                        {editorFlatSubsections
+                          ? selectedLanguage === "bg"
+                            ? "Подсекциите са изравнени (без отстъп)."
+                            : "Subsections are flush (no indent)."
+                          : selectedLanguage === "bg"
+                            ? "Подсекциите са с отстъп по дълбочина."
+                            : "Subsections indent by nesting depth."}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -359,37 +390,17 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           />
                           {companyResearchLoading ? "Researching..." : "Research Company"}
                         </button>
-                        <div
-                          aria-label="Auto Save"
-                          className="inline-flex overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
-                          role="group"
-                        >
-                          <span className="border-r border-[var(--line)] bg-white px-2.5 py-1.5 text-slate-800">
-                            Auto Save
-                          </span>
-                          <button
-                            className={`px-2.5 py-1.5 ${
-                              companyMetadataAutoSaveEnabled
-                                ? "bg-[var(--accent)] text-white"
-                                : "bg-white text-slate-600 hover:bg-slate-50"
-                            }`}
-                            onClick={() => onCompanyMetadataAutoSaveChange(true)}
-                            type="button"
-                          >
-                            ON
-                          </button>
-                          <button
-                            className={`border-l border-[var(--line)] px-2.5 py-1.5 ${
-                              !companyMetadataAutoSaveEnabled
-                                ? "bg-[var(--accent)] text-white"
-                                : "bg-white text-slate-600 hover:bg-slate-50"
-                            }`}
-                            onClick={() => onCompanyMetadataAutoSaveChange(false)}
-                            type="button"
-                          >
-                            OFF
-                          </button>
-                        </div>
+                        <EditorAutoSaveToggle
+                          enabled={companyMetadataAutoSaveEnabled}
+                          language={selectedLanguage}
+                          onChange={onCompanyMetadataAutoSaveChange}
+                        />
+                        {companyMetadataAutoSaveEnabled ? (
+                          <EditorAutosaveStatusPill
+                            activity={companyMetadataAutosaveActivity}
+                            language={selectedLanguage}
+                          />
+                        ) : null}
                         {!companyMetadataAutoSaveEnabled ? (
                           <button
                             className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${
@@ -451,37 +462,17 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           />
                           Score Whole CV
                         </button>
-                        <div
-                          aria-label={selectedLanguage === "bg" ? "Автоматичен запис" : "Auto Save"}
-                          className="inline-flex overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
-                          role="group"
-                        >
-                          <span className="border-r border-[var(--line)] bg-white px-2.5 py-1.5 text-slate-800">
-                            {selectedLanguage === "bg" ? "Авто запис" : "Auto Save"}
-                          </span>
-                          <button
-                            className={`px-2.5 py-1.5 ${
-                              editorAutoSaveEnabled
-                                ? "bg-[var(--accent)] text-white"
-                                : "bg-white text-slate-600 hover:bg-slate-50"
-                            }`}
-                            onClick={() => onEditorAutoSaveChange(true)}
-                            type="button"
-                          >
-                            ON
-                          </button>
-                          <button
-                            className={`border-l border-[var(--line)] px-2.5 py-1.5 ${
-                              !editorAutoSaveEnabled
-                                ? "bg-[var(--accent)] text-white"
-                                : "bg-white text-slate-600 hover:bg-slate-50"
-                            }`}
-                            onClick={() => onEditorAutoSaveChange(false)}
-                            type="button"
-                          >
-                            OFF
-                          </button>
-                        </div>
+                        <EditorAutoSaveToggle
+                          enabled={editorAutoSaveEnabled}
+                          language={selectedLanguage}
+                          onChange={onEditorAutoSaveChange}
+                        />
+                        {editorAutoSaveEnabled ? (
+                          <EditorAutosaveStatusPill
+                            activity={editorAutosaveActivity}
+                            language={selectedLanguage}
+                          />
+                        ) : null}
                         {!editorAutoSaveEnabled ? (
                           <button
                             className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed ${
@@ -503,11 +494,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
 
                 {companyMetadataEditorOpen ? (
                   <p className="mt-2 text-xs text-[var(--ink-muted)]">
-                    Edit the selected metadata source in Form or YAML mode. Research Company uses web AI to fill empty fields
-                    {analysisCompanyIds.length > 0
-                      ? " for selected target companies"
-                      : " for all companies in this source"}
-                    .
+                    Edit the selected metadata source in Form or YAML mode. Research Company uses web AI to fill empty fields.
                   </p>
                 ) : (
                   <>
@@ -517,12 +504,11 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                         : "Edit the section in form or YAML mode. Save updates the YAML variant and snapshot history."}
                     </p>
                     <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                      {analysisCompanyIds.length > 0
-                        ? `AI analysis targets: ${filteredAnalysisCompanies
-                            .filter((item) => analysisCompanyIds.includes(item.id))
-                            .map((item) => item.name)
-                            .join(", ")}`
-                        : "AI analysis targets: None"}
+                      {selectedResearchJobPositionId
+                        ? `AI + field rewrite target: ${researchJobsForCompany.find((j) => j.id === selectedResearchJobPositionId)?.title ?? selectedResearchJobPositionId}`
+                        : selectedResearchCompanyId
+                          ? `Company selected; pick a job position for keyword highlighting and AI targeting.`
+                          : "AI analysis: generic (no job target selected)."}
                     </p>
                   </>
                 )}

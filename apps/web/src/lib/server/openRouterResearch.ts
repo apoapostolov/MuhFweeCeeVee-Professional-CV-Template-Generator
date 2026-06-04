@@ -1,6 +1,10 @@
+import {
+  DEFAULT_OPENROUTER_RESEARCH_MODEL,
+  resolveOpenRouterResearchModelId,
+} from "@/lib/openrouter-research-model";
 import { readOpenRouterSettings } from "./openRouterSettings";
 
-export const DEFAULT_OPENROUTER_RESEARCH_MODEL = "perplexity/sonar";
+export { DEFAULT_OPENROUTER_RESEARCH_MODEL };
 
 export function extractOpenRouterTextContent(input: string): string {
   const trimmed = input.trim();
@@ -12,15 +16,7 @@ export function extractOpenRouterTextContent(input: string): string {
 }
 
 export function resolveOpenRouterResearchModel(settingsModel: string): string {
-  const env = (process.env.OPENROUTER_COMPANY_RESEARCH_MODEL ?? "").trim();
-  if (env.length > 0) {
-    return env;
-  }
-  const normalized = settingsModel.toLowerCase();
-  if (normalized.includes("perplexity") || normalized.includes("sonar")) {
-    return settingsModel;
-  }
-  return DEFAULT_OPENROUTER_RESEARCH_MODEL;
+  return resolveOpenRouterResearchModelId(settingsModel);
 }
 
 export async function callOpenRouterResearchChat(prompt: string, systemContent: string): Promise<{

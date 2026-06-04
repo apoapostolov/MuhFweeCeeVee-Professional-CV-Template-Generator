@@ -7,23 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-04
+
 ### Added
 
-- Editor **Auto Save** toggle (persisted in browser storage): when ON, **Save Section** is hidden and the section debounces to disk with a saving/saved pill; when OFF, **Save Section** appears and turns accent blue only while the section has unsaved edits.
+- **Research** tab (flagship): build and maintain a local catalog of target **companies** and **job positions** with OpenRouter-backed research, autosave, and a sidebar + detail editor for company identity, offices, role content, skills, compensation, and job notes.
+- **Weighted keywords** per job (editable grid with score, category, and AI refine) plus **ATS helpers** (keywords and action verbs) stored on each researched position.
+- **Job Targeting** in the CV Editor: pick a researched company and job; weighted keywords and ATS terms **highlight live** in form fields (score-colored underlines for weighted terms, **cyan** for ATS).
+- Keyword matching uses **stem-aware** highlighting so inflected words (e.g. *monetizing* vs *monetization*) still count when a related keyword is in the profile.
+- Research APIs: catalog read/write, company research, job research, per-field refine, and persistence under `data/research/` (catalog gitignored for local data).
+- CV Editor **Flat sections** toggle (default **ON**, persisted): nested subsections render flush with no hierarchical left indent; turn **OFF** to restore tabulated 30px-per-depth indent for Experience, Education, and References.
+- Editor **Save Section** (when Auto Save is OFF) now shows the same save toast and runs **field translation** to your other language variants as autosave does.
+- Editor **Auto Save** toggle (persisted): when ON, **Save Section** is hidden and the section debounces to disk with a saving/saved pill; when OFF, **Save Section** appears and turns accent blue only while the section has unsaved edits.
 - **AI stars** on **Score Section** and **Score Whole CV**; field rewrite scores show as a number on the current pill and with `%` on proposals.
+- Job Targeting remembers your last selected **company** and **job position** in browser storage across reloads.
 - Photo Booth gallery API (`/api/photos`) and dark overlay action buttons on thumbnails.
 - OpenRouter **per-image** USD hints in Settings (from `data/settings/openrouter_image_pricing.yaml`).
 - `.gitignore` / `AGENTS.md` rules to block personal CV paths (`Apostol`, `ApoApostolov`, `alianz`).
 
 ### Changed
 
+- CV analysis and field rewrite prompts can include **researched job context** when a job position is selected in the Editor.
+- **Experiences/Jobs** shows its section header again (visibility, title, collapse/add actions); individual job cards stay flush under it when indent is off.
+- Subsection indent applies to the **visibility icon + title together** so the gap between eye and label matches the root section.
+- Long text fields **wrap** in the form (no horizontal scroll); textarea row height follows **on-screen** wrap width; multiline fields can share one border with trailing AI/remove actions.
 - Product branding: header **MuhFweeCeeVee**, document title, main panel title **CV Editor**.
-- Nav order: **Print Room → Photo Booth → Editor → Templates → Settings**.
+- Nav order: **Print Room → Photo Booth → Editor → Research → Templates → Settings**.
 - Settings **Approximate Cost per Check** lists each AI action with input/output token estimates and USD cost (not a single summary line).
 - Editor **Auto Save** control is a three-part pill: label | **ON** | **OFF**.
 
 ### Fixed
 
+- Single-line CV fields no longer show **invisible text** when keyword highlighting is active (opaque `bg-white` no longer overrides the highlight mirror layer).
+- Research company/job selection no longer **clears stored IDs** on first load before the catalog hydrates.
+- Keyword highlights keep **all non-overlapping matches** visible when multiple keywords hit the same field.
 - Compact editor rows keep the visibility eye, field name, and input on one grid line (subgrid + actions column width).
 - Professional Rewrite current-score pill shows **`%`** again.
 

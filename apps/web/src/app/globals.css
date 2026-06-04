@@ -247,4 +247,17 @@ h4 {
   margin: 0;
 }
 
+/* Research / compact forms: number fields without spinners or scroll chrome. */
+.app-shell input.composer-number-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  overflow: hidden;
+}
+
+.app-shell input.composer-number-input[type="number"]::-webkit-inner-spin-button,
+.app-shell input.composer-number-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 

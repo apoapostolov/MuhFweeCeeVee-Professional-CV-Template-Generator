@@ -1,3 +1,8 @@
+import {
+  DEFAULT_OPENROUTER_RESEARCH_MODEL,
+  resolveOpenRouterResearchModelId,
+} from "@/lib/openrouter-research-model";
+
 export type OpenRouterModelOption = {
   id: string;
   name: string;
@@ -33,12 +38,18 @@ export type AnalysisCostEstimate = {
   fieldShortenOutputTokens: number;
   fieldTranslateInputTokens: number;
   fieldTranslateOutputTokens: number;
+  researchCompanyInputTokens: number;
+  researchCompanyOutputTokens: number;
+  researchJobPositionInputTokens: number;
+  researchJobPositionOutputTokens: number;
   analysisCost: number | null;
   photoAnalysisCost: number | null;
   photoComparisonCost: number | null;
   fieldRewriteCost: number | null;
   fieldShortenCost: number | null;
   fieldTranslateCost: number | null;
+  researchCompanyCost: number | null;
+  researchJobPositionCost: number | null;
   lines: AnalysisCostLine[];
 };
 
@@ -60,6 +71,22 @@ export function modelOptionLabel(model: {
   return `${labelName}${model.isFree ? " FREE" : ""} • ${mixedLabel}`;
 }
 
+export function resolveResearchModelOption(
+  settingsModel: string,
+  modelOptions: OpenRouterModelOption[],
+): OpenRouterModelOption | null {
+  const researchModelId = resolveOpenRouterResearchModelId(settingsModel);
+  return (
+    modelOptions.find((item) => item.id === researchModelId) ??
+    modelOptions.find((item) => item.id === DEFAULT_OPENROUTER_RESEARCH_MODEL) ??
+    modelOptions.find(
+      (item) =>
+        item.id.toLowerCase().includes("sonar") || item.id.toLowerCase().includes("perplexity"),
+    ) ??
+    null
+  );
+}
+
 export function estimateOpenRouterCost(
   model: OpenRouterModelOption | null,
   inputTokens: number,
@@ -77,6 +104,7 @@ export function buildAnalysisCostEstimate(
   cvSizeTokenEstimate: number,
   fullCvOutputTokenEstimate: number,
   selectedAnalysisModel: OpenRouterModelOption | null,
+  selectedResearchModel: OpenRouterModelOption | null,
 ): AnalysisCostEstimate {
   const overhead = 1.4;
   const analysisInputTokens = Math.round((cvSizeTokenEstimate + 1100) * overhead);
@@ -91,6 +119,10 @@ export function buildAnalysisCostEstimate(
   const fieldShortenOutputTokens = Math.round(380 * overhead);
   const fieldTranslateInputTokens = Math.round((420 + 1100) * overhead);
   const fieldTranslateOutputTokens = Math.round(320 * overhead);
+  const researchCompanyInputTokens = Math.round((1500 + 1100) * overhead);
+  const researchCompanyOutputTokens = Math.round(3600 * overhead);
+  const researchJobPositionInputTokens = Math.round((2800 + 1100) * overhead);
+  const researchJobPositionOutputTokens = Math.round(6200 * overhead);
   const analysisCost = estimateOpenRouterCost(
     selectedAnalysisModel,
     analysisInputTokens,
@@ -120,6 +152,16 @@ export function buildAnalysisCostEstimate(
     selectedAnalysisModel,
     fieldTranslateInputTokens,
     fieldTranslateOutputTokens,
+  );
+  const researchCompanyCost = estimateOpenRouterCost(
+    selectedResearchModel,
+    researchCompanyInputTokens,
+    researchCompanyOutputTokens,
+  );
+  const researchJobPositionCost = estimateOpenRouterCost(
+    selectedResearchModel,
+    researchJobPositionInputTokens,
+    researchJobPositionOutputTokens,
   );
   const lines: AnalysisCostLine[] = [
     {
@@ -158,6 +200,18 @@ export function buildAnalysisCostEstimate(
       outputTokens: photoComparisonOutputTokens,
       cost: photoComparisonCost,
     },
+    {
+      label: "Research company (office catalog entry)",
+      inputTokens: researchCompanyInputTokens,
+      outputTokens: researchCompanyOutputTokens,
+      cost: researchCompanyCost,
+    },
+    {
+      label: "Research job position (weighted keywords profile)",
+      inputTokens: researchJobPositionInputTokens,
+      outputTokens: researchJobPositionOutputTokens,
+      cost: researchJobPositionCost,
+    },
   ];
   return {
     overhead,
@@ -173,12 +227,18 @@ export function buildAnalysisCostEstimate(
     fieldShortenOutputTokens,
     fieldTranslateInputTokens,
     fieldTranslateOutputTokens,
+    researchCompanyInputTokens,
+    researchCompanyOutputTokens,
+    researchJobPositionInputTokens,
+    researchJobPositionOutputTokens,
     analysisCost,
     photoAnalysisCost,
     photoComparisonCost,
     fieldRewriteCost,
     fieldShortenCost,
     fieldTranslateCost,
+    researchCompanyCost,
+    researchJobPositionCost,
     lines,
   };
 }

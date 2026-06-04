@@ -7,12 +7,25 @@ export function isTabulatedArrayEditorPath(editorPath: string): boolean {
 /** Vertical rhythm between all compact field rows (single source of row spacing). */
 export const EDITOR_COMPACT_FORM_ROW_GAP = "gap-y-2";
 
+/** Per visual depth level for tabulated subsections (experience jobs excepted at depth 1). */
+export const EDITOR_SUBSECTION_INDENT_PX = 30;
+
 /**
  * Only experience / education / references use tabulated subsections (array items).
  * Person, positioning, optional_sections, metadata keep nested groups flush (contact, residence, …).
  */
 export function compactSubsectionVisualDepth(editorPath: string, depth: number): number {
-  return isTabulatedArrayEditorPath(editorPath) ? depth : 0;
+  if (!isTabulatedArrayEditorPath(editorPath)) {
+    return 0;
+  }
+  /** Job cards sit flush under Experiences/Jobs; deeper fields (bullets, etc.) still tabulate. */
+  if (editorPath === "experience") {
+    if (depth <= 1) {
+      return 0;
+    }
+    return depth - 1;
+  }
+  return depth;
 }
 
 /** Top-level experience / education / references lists (tabulated array items). */
@@ -24,12 +37,22 @@ export function isTabulatedRootArraySection(editorPath: string, depth: number): 
 export const EDITOR_COMPACT_FORM_GRID_CLASS =
   `grid grid-cols-[1.5rem_8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
 
-/** Company metadata editor: no template visibility column. */
+/**
+ * Research / metadata editor: label + input/actions flex row (single ✨ per field).
+ * The second track is 1fr; rows use col-span-2 with flex so inputs reach the action button.
+ */
 export const EDITOR_COMPACT_METADATA_FORM_GRID_CLASS =
-  `grid grid-cols-[8rem_minmax(0,1fr)_3.5rem] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
+  `grid grid-cols-[8rem_minmax(0,1fr)] gap-x-2 ${EDITOR_COMPACT_FORM_ROW_GAP} content-start items-center`;
 
 export const EDITOR_COMPACT_FIELD_TRACKS_CLASS =
   "grid grid-cols-subgrid col-span-full col-start-1 col-end-[-1] gap-x-2 w-full";
+
+/** Toggle + label/title in one row; gap-x-2 matches the parent form grid column gap. */
+export const EDITOR_COMPACT_FIELD_LEADING_GROUP_CLASS =
+  "col-span-2 flex min-w-0 items-center gap-x-2";
+
+export const EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS =
+  "col-span-3 flex min-w-0 items-start gap-x-2";
 
 export const EDITOR_COMPACT_METADATA_FIELD_TRACKS_CLASS =
   "grid grid-cols-subgrid col-span-full col-start-1 col-end-[-1] gap-x-2 w-full";
@@ -140,9 +163,13 @@ export function compactSectionHeaderIndentPx(
   compact: boolean,
   editorPath: string,
   depth: number,
+  subsectionIndentEnabled = true,
 ): number {
+  if (!subsectionIndentEnabled) {
+    return 0;
+  }
   const visualDepth = compactSubsectionVisualDepth(editorPath, depth);
-  return compact && visualDepth > 0 ? visualDepth * 10 : 0;
+  return compact && visualDepth > 0 ? visualDepth * EDITOR_SUBSECTION_INDENT_PX : 0;
 }
 
 /** Stacked (non-compact) layout: indent whole subsection blocks. */
@@ -150,27 +177,36 @@ export function compactSectionIndentStyle(
   compact: boolean,
   editorPath: string,
   depth: number,
+  subsectionIndentEnabled = true,
 ): { paddingLeft: number } | undefined {
   if (compact) {
     return undefined;
   }
-  const px = compactSectionHeaderIndentPx(compact, editorPath, depth);
+  const px = compactSectionHeaderIndentPx(compact, editorPath, depth, subsectionIndentEnabled);
   return px > 0 ? { paddingLeft: px } : undefined;
 }
 
-/** Compact layout: indent toggle/label only — never shift the shared input column. */
-export function compactLeadingIndentStyle(
+/**
+ * Compact layout: indent the toggle+title group together (single paddingLeft).
+ * Internal gap-x-2 stays fixed so icon-to-title spacing matches the root section.
+ */
+export function compactLeadingGroupIndentStyle(
   compact: boolean,
   editorPath: string,
   depth: number,
+  subsectionIndentEnabled = true,
 ): { paddingLeft: number } | undefined {
-  const px = compactSectionHeaderIndentPx(compact, editorPath, depth);
+  const px = compactSectionHeaderIndentPx(compact, editorPath, depth, subsectionIndentEnabled);
   return px > 0 ? { paddingLeft: px } : undefined;
 }
 
 /** Shared compact single-line control metrics (text, number, date). */
 export const EDITOR_COMPACT_PRIMITIVE_INPUT_CLASS =
-  "w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs";
+  "w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs whitespace-pre-wrap break-words overflow-x-hidden";
+
+/** Text control inside a row-level bordered shell (input + trailing actions). */
+export const EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS =
+  "w-full min-w-0 border-0 bg-transparent px-2 py-1.5 text-xs leading-5 whitespace-pre-wrap break-words overflow-x-hidden shadow-none outline-none focus:ring-0";
 
 /** Date rows match text row height; min-h keeps native pickers from collapsing the grid row. */
 export const EDITOR_COMPACT_DATE_INPUT_CLASS =
