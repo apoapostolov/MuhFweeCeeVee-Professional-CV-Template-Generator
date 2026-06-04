@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-06-04
+
+### Added
+
+- **Print Room → Tweaks**: **Sidebar Text Size** and **Content Text Size** with a checkbox to turn each on, a compact **− | % | +** control on the same row (right-aligned), and a typable center value (**50–200%**; ± moves in **5%** steps). Scales the sidebar or main CV column in PDF preview—including headings, body text, and icons—so you can fit content to a target page count.
+- Settings **Research model** under **AI Provider** (recommended list, web-search status, and cost estimates tied to that model).
+- Research field **✨** runs AI refinement as soon as you open it; **Research More** requests another batch when you need alternatives. Up to three proposals with confidence and **Apply** render **inline below each field** (same pattern as Editor Professional Rewrite), not in a side drawer.
+- **Live web search** for company research, job research, and per-field refine (LinkedIn-first guidance; Perplexity Sonar and OpenRouter online search paths).
+
+### Changed
+
+- Settings **AI Provider**: Analysis, Research, and Image use the same neutral panel layout; **Base URL** is no longer shown in the UI; **Import / Export** section title matches the AI Provider heading style.
+- Approximate research costs in Settings follow your selected **research** model instead of the analysis model.
+- Image generation pricing line in Settings is shorter (compact per-image USD + token note).
+
 ## [1.2.1] - 2026-06-05
 
 ### Added

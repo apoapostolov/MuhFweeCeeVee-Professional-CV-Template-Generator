@@ -25,6 +25,7 @@ export type OpenRouterSettingsResponse = {
   hasApiKey: boolean;
   apiKeyMasked: string;
   model: string;
+  researchModel: string;
   baseUrl: string;
   updatedAt: string;
   models?: Array<{

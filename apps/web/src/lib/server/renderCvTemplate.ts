@@ -14,7 +14,9 @@ import {
   resolveRenderLanguage,
 } from "./render/shared";
 import {
+  buildPrintTextScaleCss,
   DEFAULT_RENDER_TWEAKS,
+  injectPrintTweakStyles,
   resolveEffectivePhotoMode,
   shouldMoveSkillsLeft,
 } from "./render/tweaks";
@@ -105,8 +107,10 @@ export async function buildCvTemplateHtml(
               ? renderEuropass(cv, template, slots, labels)
               : renderGeneric(cv, template, slots, labels);
 
+  const tweakCss = buildPrintTextScaleCss(input.templateId, tweaks);
+
   return {
-    html,
+    html: injectPrintTweakStyles(html, tweakCss),
     cvId: input.cvId,
     templateId: input.templateId,
   };

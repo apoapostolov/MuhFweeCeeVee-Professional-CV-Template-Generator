@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  compactImagePricingNote,
   formatImagePriceLabel,
   formatSelectedImageModelPricingLine,
   formatUsdPerImage,
@@ -44,6 +45,17 @@ describe("openrouter-image-pricing", () => {
         pricePerImageMaxUsd: null,
       }),
     ).toBe("$0.039 per image");
+  });
+
+  it("compacts verbose image pricing notes", () => {
+    expect(compactImagePricingNote("1K output (~1290 image tokens)")).toBe("(~1290 tokens)");
+    expect(
+      formatSelectedImageModelPricingLine({
+        isFree: false,
+        pricePerImageUsd: 0.039,
+        pricePerImageNote: "1K output (~1290 image tokens)",
+      }),
+    ).toBe("$0.039 per image • (~1290 tokens)");
   });
 
   it("formats selected image model pricing with min and max", () => {

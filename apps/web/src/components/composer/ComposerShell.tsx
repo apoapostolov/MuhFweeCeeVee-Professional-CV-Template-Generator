@@ -49,9 +49,16 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onRefreshPreview={c.refreshPreview}
               onSelectPhotoMode={c.setSelectedPhotoMode}
               onPrintTweakChange={c.setPrintTweakEnabled}
+              onPrintTextScaleEnabledChange={c.setPrintTextScaleEnabled}
+              onPrintTextScaleStep={c.adjustPrintTextScale}
+              onPrintTextScaleValueChange={c.setPrintTextScaleValue}
               printTweaks={{
                 removePhoto: c.printTweakRemovePhoto,
                 moveSkillsLeft: c.printTweakMoveSkillsLeft,
+                sidebarTextScaleEnabled: c.printTweakSidebarTextScaleEnabled,
+                sidebarTextScale: c.printTweakSidebarTextScale,
+                contentTextScaleEnabled: c.printTweakContentTextScaleEnabled,
+                contentTextScale: c.printTweakContentTextScale,
               }}
               onSelectTemplateId={c.setSelectedTemplateId}
               onSelectTemplateTheme={c.setSelectedTemplateTheme}
@@ -215,19 +222,20 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
             <SettingsPanel
               analysisCostEstimate={c.analysisCostEstimate}
               apiKeyInput={c.openRouter.apiKeyInput}
-              baseUrlInput={c.openRouter.baseUrlInput}
               creditStatus={c.openRouter.creditStatus}
               imageGenerationModelInput={c.openRouter.imageGenerationModelInput}
               imageGenerationModelOptions={c.openRouter.imageGenerationModelOptions}
               modelInput={c.openRouter.modelInput}
               modelOptions={c.openRouter.modelOptions}
+              researchModelInput={c.openRouter.researchModelInput}
               onApiKeyInputChange={c.openRouter.setApiKeyInput}
-              onBaseUrlInputChange={c.openRouter.setBaseUrlInput}
               onImageGenerationModelInputChange={c.openRouter.setImageGenerationModelInput}
               onModelInputChange={c.openRouter.setModelInput}
+              onResearchModelInputChange={c.openRouter.setResearchModelInput}
               onSave={() => void c.openRouter.saveAiSettings()}
               onToggleShow={() => c.openRouter.setShowAiSettings((value) => !value)}
               selectedAnalysisModelOption={c.openRouter.selectedAnalysisModelOption}
+              selectedResearchModelOption={c.openRouter.selectedResearchModelOption}
               selectedImageGenerationModelOption={c.openRouter.selectedImageGenerationModelOption}
               settings={c.openRouter.settings}
               settingsLoading={c.openRouter.settingsLoading}

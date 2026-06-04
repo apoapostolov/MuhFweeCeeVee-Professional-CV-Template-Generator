@@ -1,5 +1,6 @@
 import type { FieldRewriteProposal } from "./field-ai-rewrite";
 import { extractFirstJsonBlock } from "./field-ai-rewrite";
+import { researchWebSearchPromptBlock } from "./research/research-web-search";
 
 export type CompanyFieldResearchResult = {
   proposals: FieldRewriteProposal[];
@@ -39,8 +40,13 @@ export function buildCompanyFieldResearchPrompt(payload: {
     payload.currentText.trim().length > 0 ? payload.currentText.trim() : "(empty — research and suggest new content)";
 
   return [
+    researchWebSearchPromptBlock({
+      kind: "field_refine",
+      companyName: payload.companyName,
+      fieldPath: payload.fieldPath,
+      fieldLabel: payload.fieldLabel,
+    }),
     "You are a career-research assistant helping populate company targeting metadata for CV tailoring.",
-    "Use current, verifiable public information from the web about the company.",
     "Do not invent funding rounds, headcount, or product names unless you find them in reputable public sources.",
     "If information is uncertain, reflect that in lower confidence and cautious wording.",
     "",

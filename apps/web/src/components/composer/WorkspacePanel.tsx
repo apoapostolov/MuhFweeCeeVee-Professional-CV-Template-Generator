@@ -10,6 +10,7 @@ import {
   templateSupportsPrintTweaks,
   themeOptionsForTemplate,
 } from "./constants";
+import { PrintTextScaleRow } from "./print-text-scale-pill";
 import { templateDisplayName } from "./form-path-utils";
 import type { CvPair, PhotoModeOption, TemplateThemeOption } from "./types";
 
@@ -29,6 +30,9 @@ export type WorkspacePanelProps = {
   onSelectPhotoMode: (mode: PhotoModeOption["id"]) => void;
   printTweaks: PrintTweaksState;
   onPrintTweakChange: (tweakId: PrintTweakId, enabled: boolean) => void;
+  onPrintTextScaleEnabledChange: (target: "sidebar" | "content", enabled: boolean) => void;
+  onPrintTextScaleValueChange: (target: "sidebar" | "content", value: number) => void;
+  onPrintTextScaleStep: (target: "sidebar" | "content", direction: -1 | 1) => void;
   selectedCvId: string;
   loadingWorkspace: boolean;
   pdfUrl: string;
@@ -54,6 +58,9 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     onSelectPhotoMode,
     printTweaks,
     onPrintTweakChange,
+    onPrintTextScaleEnabledChange,
+    onPrintTextScaleValueChange,
+    onPrintTextScaleStep,
     selectedCvId,
     loadingWorkspace,
     pdfUrl,
@@ -160,7 +167,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
 
           <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
             <p className="text-sm font-medium text-slate-800">Tweaks</p>
-            <div className="mt-2 min-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
+            <div className="mt-2 space-y-2 overflow-y-auto pr-1">
               {PRINT_TWEAK_OPTIONS.map((option) => {
                 const checked = printTweaks[option.id];
                 const disabled =
@@ -186,6 +193,28 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
                   </label>
                 );
               })}
+              <PrintTextScaleRow
+                disabledTitle={
+                  !tweaksAvailable
+                    ? "This template has no left sidebar (for example Europass)."
+                    : undefined
+                }
+                enabled={printTweaks.sidebarTextScaleEnabled}
+                label="Sidebar Text Size"
+                onEnabledChange={(enabled) => onPrintTextScaleEnabledChange("sidebar", enabled)}
+                onStep={(direction) => onPrintTextScaleStep("sidebar", direction)}
+                onValueChange={(value) => onPrintTextScaleValueChange("sidebar", value)}
+                rowDisabled={!tweaksAvailable}
+                value={printTweaks.sidebarTextScale}
+              />
+              <PrintTextScaleRow
+                enabled={printTweaks.contentTextScaleEnabled}
+                label="Content Text Size"
+                onEnabledChange={(enabled) => onPrintTextScaleEnabledChange("content", enabled)}
+                onStep={(direction) => onPrintTextScaleStep("content", direction)}
+                onValueChange={(value) => onPrintTextScaleValueChange("content", value)}
+                value={printTweaks.contentTextScale}
+              />
             </div>
           </div>
         </div>

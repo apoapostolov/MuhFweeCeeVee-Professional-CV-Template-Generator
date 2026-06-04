@@ -66,9 +66,26 @@ export function templateSupportsPrintTweaks(templateId: string): boolean {
   return TEMPLATES_WITH_LEFT_SIDEBAR.has(templateId);
 }
 
+import {
+  clampPrintTextScale,
+  PRINT_TEXT_SCALE_DEFAULT,
+} from "@/lib/print-text-scale";
+
+export {
+  clampPrintTextScale,
+  PRINT_TEXT_SCALE_DEFAULT,
+  PRINT_TEXT_SCALE_MAX,
+  PRINT_TEXT_SCALE_MIN,
+  PRINT_TEXT_SCALE_STEP,
+} from "@/lib/print-text-scale";
+
 export type PrintTweaksState = {
   removePhoto: boolean;
   moveSkillsLeft: boolean;
+  sidebarTextScaleEnabled: boolean;
+  sidebarTextScale: number;
+  contentTextScaleEnabled: boolean;
+  contentTextScale: number;
 };
 
 export function appendPrintTweakParams(
@@ -81,6 +98,15 @@ export function appendPrintTweakParams(
   }
   if (tweaks.moveSkillsLeft && templateSupportsPrintTweaks(templateId)) {
     params.set("moveSkillsLeft", "1");
+  }
+  if (
+    tweaks.sidebarTextScaleEnabled &&
+    templateSupportsPrintTweaks(templateId)
+  ) {
+    params.set("sidebarTextScale", String(tweaks.sidebarTextScale));
+  }
+  if (tweaks.contentTextScaleEnabled) {
+    params.set("contentTextScale", String(tweaks.contentTextScale));
   }
 }
 
@@ -120,6 +146,10 @@ export const STORAGE_KEYS = {
   selectedPhotoMode: "mfcv_selected_photo_mode",
   printTweakRemovePhoto: "mfcv_print_tweak_remove_photo",
   printTweakMoveSkillsLeft: "mfcv_print_tweak_move_skills_left",
+  printTweakSidebarTextScale: "mfcv_print_tweak_sidebar_text_scale",
+  printTweakSidebarTextScaleEnabled: "mfcv_print_tweak_sidebar_text_scale_enabled",
+  printTweakContentTextScale: "mfcv_print_tweak_content_text_scale",
+  printTweakContentTextScaleEnabled: "mfcv_print_tweak_content_text_scale_enabled",
   approvedPhotoId: "mfcv_photo_booth_approved_id",
   imageGenerationModel: "mfcv_image_generation_model",
   fieldRewriteProposals: "mfcv_field_rewrite_proposals_v1",
@@ -132,6 +162,7 @@ export const STORAGE_KEYS = {
   selectedResearchCompanyId: "mfcv_selected_research_company_id",
   selectedResearchJobPositionId: "mfcv_selected_research_job_position_id",
   researchSidebarTab: "mfcv_research_sidebar_tab_v1",
+  researchFieldProposals: "mfcv_research_field_proposals_v1",
 } as const;
 export const LEGACY_PHOTO_STORAGE_KEYS = [
   "mfcv_photo_booth_gallery_v1",

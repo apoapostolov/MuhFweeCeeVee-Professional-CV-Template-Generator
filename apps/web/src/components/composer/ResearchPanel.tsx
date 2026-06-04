@@ -169,7 +169,7 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
         sidebarTab={sidebarTab}
       />
 
-      <div className="flex min-h-0 flex-col gap-2">
+      <div className="flex min-h-0 min-w-0 flex-col gap-2">
         {notice ? (
           <p className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 text-xs text-slate-800">
             {notice}

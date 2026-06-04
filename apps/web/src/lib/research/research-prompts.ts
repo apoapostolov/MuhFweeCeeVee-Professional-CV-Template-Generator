@@ -6,6 +6,7 @@ import {
 } from "./research-normalize";
 import type { ResearchedCompany, ResearchedJobPosition } from "./types";
 import { slugifyResearchId } from "./research-slug";
+import { researchWebSearchPromptBlock } from "./research-web-search";
 import { WEIGHTED_KEYWORD_AI_INSTRUCTIONS } from "./weighted-keywords";
 
 export { slugifyResearchId };
@@ -55,10 +56,15 @@ export function buildOfficeCompanyResearchPrompt(payload: {
   officeLabel?: string;
 }): string {
   return [
+    researchWebSearchPromptBlock({
+      kind: "company_office",
+      companyName: payload.companyName,
+      officeCountry: payload.officeCountry,
+      officeCity: payload.officeCity,
+    }),
     "You are a career research assistant gathering public information about a specific company office.",
-    "Use verifiable public web sources (company site, LinkedIn company page, news, careers pages).",
-    "Do not invent contacts or people; if LinkedIn people cannot be verified, return an empty people array.",
-    "linkedin_jobs should list plausible open roles at that office when discoverable from public listings.",
+    "linkedin_jobs must list roles discovered on LinkedIn or the company careers site — not guessed titles.",
+    "people must be real LinkedIn profiles found in search; otherwise return an empty people array.",
     "",
     `Company: ${payload.companyName}`,
     `Office country: ${payload.officeCountry}`,
@@ -145,7 +151,16 @@ export function buildJobPositionResearchPrompt(payload: {
 }): string {
   const office = payload.company.office;
   return [
+    researchWebSearchPromptBlock({
+      kind: "job_position",
+      companyName: payload.company.name,
+      officeCountry: office.country,
+      officeCity: office.city,
+      jobTitle: payload.jobTitle,
+      linkedinUrl: payload.linkedinUrl,
+    }),
     "You are a job-market research assistant building a weighted keyword profile for CV tailoring and ATS alignment.",
+    "Derive responsibilities, skills, and keywords from the live LinkedIn job posting or careers page when available.",
     WEIGHTED_KEYWORD_AI_INSTRUCTIONS,
     "",
     `Company: ${payload.company.name} (${office.label ?? office.city ?? ""}, ${office.country})`,

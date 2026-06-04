@@ -20,6 +20,7 @@ export async function GET(): Promise<NextResponse> {
     hasApiKey: settings.apiKey.length > 0,
     apiKeyMasked: maskApiKey(settings.apiKey),
     model: settings.model,
+    researchModel: settings.researchModel,
     baseUrl: settings.baseUrl,
     updatedAt: settings.updatedAt,
     models: models.models,
@@ -37,12 +38,14 @@ export async function PUT(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as {
     apiKey?: unknown;
     model?: unknown;
+    researchModel?: unknown;
     baseUrl?: unknown;
   };
 
   const updated = await writeOpenRouterSettings({
     apiKey: typeof body.apiKey === "string" ? body.apiKey : undefined,
     model: typeof body.model === "string" ? body.model : undefined,
+    researchModel: typeof body.researchModel === "string" ? body.researchModel : undefined,
     baseUrl: typeof body.baseUrl === "string" ? body.baseUrl : undefined,
   });
   const models = await getOpenRouterModels({
@@ -59,6 +62,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
     hasApiKey: updated.apiKey.length > 0,
     apiKeyMasked: maskApiKey(updated.apiKey),
     model: updated.model,
+    researchModel: updated.researchModel,
     baseUrl: updated.baseUrl,
     updatedAt: updated.updatedAt,
     models: models.models,

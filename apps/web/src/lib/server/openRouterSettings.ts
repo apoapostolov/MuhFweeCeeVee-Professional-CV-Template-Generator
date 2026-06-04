@@ -3,11 +3,14 @@ import path from "node:path";
 
 import { parse, stringify } from "yaml";
 
+import { RESEARCH_WEB_MODEL_DEFAULT } from "@/lib/research/research-web-search";
+
 import { repoPath } from "./repoPaths";
 
 export type OpenRouterSettings = {
   apiKey: string;
   model: string;
+  researchModel: string;
   baseUrl: string;
   updatedAt: string;
 };
@@ -19,6 +22,7 @@ const ENV_FILE = repoPath(".env");
 const DEFAULT_SETTINGS: OpenRouterSettings = {
   apiKey: "",
   model: "openai/gpt-4o-mini",
+  researchModel: RESEARCH_WEB_MODEL_DEFAULT,
   baseUrl: "https://openrouter.ai/api/v1/chat/completions",
   updatedAt: "",
 };
@@ -71,6 +75,10 @@ export async function readOpenRouterSettings(): Promise<OpenRouterSettings> {
         typeof value.model === "string" && value.model.trim().length > 0
           ? value.model.trim()
           : DEFAULT_SETTINGS.model,
+      researchModel:
+        typeof value.researchModel === "string" && value.researchModel.trim().length > 0
+          ? value.researchModel.trim()
+          : DEFAULT_SETTINGS.researchModel,
       baseUrl:
         typeof value.baseUrl === "string" && value.baseUrl.trim().length > 0
           ? value.baseUrl.trim()
@@ -89,7 +97,7 @@ export async function readOpenRouterSettings(): Promise<OpenRouterSettings> {
 }
 
 export async function writeOpenRouterSettings(
-  input: Partial<Pick<OpenRouterSettings, "apiKey" | "model" | "baseUrl">>,
+  input: Partial<Pick<OpenRouterSettings, "apiKey" | "model" | "researchModel" | "baseUrl">>,
 ): Promise<OpenRouterSettings> {
   const current = await readOpenRouterSettings();
   const nextApiKey =
@@ -100,6 +108,10 @@ export async function writeOpenRouterSettings(
       typeof input.model === "string" && input.model.trim().length > 0
         ? input.model.trim()
         : current.model,
+    researchModel:
+      typeof input.researchModel === "string" && input.researchModel.trim().length > 0
+        ? input.researchModel.trim()
+        : current.researchModel,
     baseUrl:
       typeof input.baseUrl === "string" && input.baseUrl.trim().length > 0
         ? input.baseUrl.trim()
@@ -112,6 +124,7 @@ export async function writeOpenRouterSettings(
     SETTINGS_FILE,
     stringify({
       model: merged.model,
+      researchModel: merged.researchModel,
       baseUrl: merged.baseUrl,
       updatedAt: merged.updatedAt,
     }),

@@ -1,6 +1,6 @@
 "use client";
 
-import type { JSX } from "react";
+import { useMemo, type JSX, type ReactNode } from "react";
 
 import {
   formatSelectedImageModelPricingLine,
@@ -8,10 +8,15 @@ import {
 } from "@/lib/openrouter-image-pricing";
 import {
   formatUsd,
+  groupResearchModelOptions,
   modelOptionLabel,
+  researchModelUsesWebSearch,
   type OpenRouterModelOption,
 } from "./openrouter-utils";
 import type { OpenRouterCreditResponse, OpenRouterSettingsResponse } from "./types";
+
+const SETTINGS_CONTROL_CLASS =
+  "mt-1.5 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs text-slate-800";
 
 export type OpenRouterSettingsCardProps = {
   settings: OpenRouterSettingsResponse | null;
@@ -25,16 +30,66 @@ export type OpenRouterSettingsCardProps = {
   onApiKeyInputChange: (value: string) => void;
   modelInput: string;
   onModelInputChange: (value: string) => void;
+  researchModelInput: string;
+  onResearchModelInputChange: (value: string) => void;
   modelOptions: OpenRouterModelOption[];
   selectedAnalysisModelOption: OpenRouterModelOption | null;
+  selectedResearchModelOption: OpenRouterModelOption | null;
   imageGenerationModelInput: string;
   onImageGenerationModelInputChange: (value: string) => void;
   imageGenerationModelOptions: OpenRouterModelOption[];
   selectedImageGenerationModelOption: OpenRouterModelOption | null;
-  baseUrlInput: string;
-  onBaseUrlInputChange: (value: string) => void;
   onSave: () => void;
 };
+
+function ModelPricingInline({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}): JSX.Element {
+  return (
+    <div className="mt-2 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-2">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{title}</p>
+      <div className="mt-1 text-xs text-slate-700">{children}</div>
+    </div>
+  );
+}
+
+function AiProviderModelSection({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}): JSX.Element {
+  return (
+    <section className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-2.5">
+      <p className="text-xs font-semibold text-slate-800">
+        {title}
+        {subtitle ? <span className="ml-1 font-normal text-slate-600">{subtitle}</span> : null}
+      </p>
+      <div className="mt-1">{children}</div>
+    </section>
+  );
+}
+
+function formatTokenPricing(model: OpenRouterModelOption | null): string {
+  if (!model) {
+    return "Model pricing unavailable.";
+  }
+  if (model.isFree) {
+    return "FREE model";
+  }
+  const input =
+    model.promptPricePer1M !== null ? `${formatUsd(model.promptPricePer1M)}/1M` : "N/A";
+  const output =
+    model.completionPricePer1M !== null ? `${formatUsd(model.completionPricePer1M)}/1M` : "N/A";
+  return `Input ${input} • Output ${output}`;
+}
 
 export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.Element {
   const {
@@ -49,23 +104,38 @@ export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.
     onApiKeyInputChange,
     modelInput,
     onModelInputChange,
+    researchModelInput,
+    onResearchModelInputChange,
     modelOptions,
     selectedAnalysisModelOption,
+    selectedResearchModelOption,
     imageGenerationModelInput,
     onImageGenerationModelInputChange,
     imageGenerationModelOptions,
     selectedImageGenerationModelOption,
-    baseUrlInput,
-    onBaseUrlInputChange,
     onSave,
   } = props;
+
+  const { recommended: researchRecommended, other: researchOther } = useMemo(
+    () => groupResearchModelOptions(modelOptions),
+    [modelOptions],
+  );
+
+  const researchWebSearchActive = researchModelUsesWebSearch(researchModelInput);
+
+  const renderModelOptions = (items: OpenRouterModelOption[]) =>
+    items.map((item) => (
+      <option key={item.id} value={item.id}>
+        {modelOptionLabel(item)}
+      </option>
+    ));
 
   return (
     <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-slate-800">OpenRouter Settings</p>
         <button
-          className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+          className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-[var(--surface-2)]"
           onClick={onToggleShow}
           type="button"
         >
@@ -89,46 +159,75 @@ export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.
           <label className="block text-xs font-medium text-slate-700">
             API Key
             <input
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
+              className={`${SETTINGS_CONTROL_CLASS} mt-1`}
               onChange={(event) => onApiKeyInputChange(event.target.value)}
               placeholder={settings?.hasApiKey ? "Configured. Enter new key to replace." : "or-..."}
               type="password"
               value={apiKeyInput}
             />
           </label>
-          <label className="block text-xs font-medium text-slate-700">
-            Analysis Model
+
+          <AiProviderModelSection subtitle="CV scoring, rewrite, translate" title="Analysis Model">
             <select
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
+              className={SETTINGS_CONTROL_CLASS}
               onChange={(event) => onModelInputChange(event.target.value)}
               value={modelInput}
             >
               {!modelOptions.some((item) => item.id === modelInput) ? (
                 <option value={modelInput}>{modelInput}</option>
               ) : null}
-              {modelOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {modelOptionLabel(item)}
-                </option>
-              ))}
+              {renderModelOptions(modelOptions)}
             </select>
-          </label>
-          <div className="rounded-md border border-[var(--line)] bg-white p-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-              Selected Analysis Model Pricing
-            </p>
-            <p className="mt-1 text-xs text-slate-700">
-              {selectedAnalysisModelOption
-                ? selectedAnalysisModelOption.isFree
-                  ? "FREE model"
-                  : `Input ${selectedAnalysisModelOption.promptPricePer1M !== null ? `${formatUsd(selectedAnalysisModelOption.promptPricePer1M)}/1M` : "N/A"} • Output ${selectedAnalysisModelOption.completionPricePer1M !== null ? `${formatUsd(selectedAnalysisModelOption.completionPricePer1M)}/1M` : "N/A"}`
-                : "Model pricing unavailable."}
-            </p>
-          </div>
-          <label className="block text-xs font-medium text-slate-700">
-            Image Generation Model
+            <ModelPricingInline title="Selected Analysis Model Pricing">
+              {formatTokenPricing(selectedAnalysisModelOption)}
+            </ModelPricingInline>
+          </AiProviderModelSection>
+
+          <AiProviderModelSection subtitle="company/job catalog, field ✨" title="Research Model">
             <select
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
+              className={SETTINGS_CONTROL_CLASS}
+              onChange={(event) => onResearchModelInputChange(event.target.value)}
+              value={researchModelInput}
+            >
+              {!modelOptions.some((item) => item.id === researchModelInput) ? (
+                <option value={researchModelInput}>{researchModelInput}</option>
+              ) : null}
+              {researchRecommended.length > 0 ? (
+                <optgroup label="Recommended — live web search (LinkedIn-first)">
+                  {renderModelOptions(researchRecommended)}
+                </optgroup>
+              ) : null}
+              {researchOther.length > 0 ? (
+                <optgroup label="Other models (may use :online web plugin)">
+                  {renderModelOptions(researchOther)}
+                </optgroup>
+              ) : null}
+            </select>
+            <p className="mt-2 text-[11px] leading-snug text-slate-600">
+              Research tab and field ✨. Prefer Perplexity Sonar; others use :online web search.
+            </p>
+            <p
+              className={`mt-1.5 text-[11px] font-semibold ${
+                researchWebSearchActive ? "text-emerald-800" : "text-amber-800"
+              }`}
+            >
+              {researchWebSearchActive
+                ? "Live web search: enabled for this model"
+                : "Live web search: will use :online plugin fallback"}
+            </p>
+            <ModelPricingInline title="Selected Research Model Pricing">
+              {selectedResearchModelOption ? (
+                <span className="block font-medium text-slate-800">
+                  {modelOptionLabel(selectedResearchModelOption)}
+                </span>
+              ) : null}
+              {formatTokenPricing(selectedResearchModelOption)}
+            </ModelPricingInline>
+          </AiProviderModelSection>
+
+          <AiProviderModelSection subtitle="CV photo booth" title="Image Generation Model">
+            <select
+              className={SETTINGS_CONTROL_CLASS}
               onChange={(event) => onImageGenerationModelInputChange(event.target.value)}
               value={imageGenerationModelInput}
             >
@@ -141,12 +240,7 @@ export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.
                 </option>
               ))}
             </select>
-          </label>
-          <div className="rounded-md border border-[var(--line)] bg-white p-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-              Selected Image Model Pricing
-            </p>
-            <p className="mt-1 text-xs text-slate-700">
+            <ModelPricingInline title="Selected Image Model Pricing">
               {selectedImageGenerationModelOption
                 ? formatSelectedImageModelPricingLine({
                     isFree: selectedImageGenerationModelOption.isFree,
@@ -155,16 +249,9 @@ export function OpenRouterSettingsCard(props: OpenRouterSettingsCardProps): JSX.
                     pricePerImageNote: selectedImageGenerationModelOption.pricePerImageNote ?? null,
                   })
                 : "Model pricing unavailable."}
-            </p>
-          </div>
-          <label className="block text-xs font-medium text-slate-700">
-            Base URL
-            <input
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
-              onChange={(event) => onBaseUrlInputChange(event.target.value)}
-              value={baseUrlInput}
-            />
-          </label>
+            </ModelPricingInline>
+          </AiProviderModelSection>
+
           <button
             className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
             disabled={settingsSaving}

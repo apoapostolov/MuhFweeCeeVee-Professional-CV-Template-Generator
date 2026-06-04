@@ -1,4 +1,5 @@
 import { extractFirstJsonBlock } from "./field-ai-rewrite";
+import { researchWebSearchPromptBlock } from "./research/research-web-search";
 
 /** Shape used as the research output template (matches companies[] items). */
 export const COMPANY_RESEARCH_RECORD_TEMPLATE = {
@@ -99,8 +100,11 @@ export function buildCompanyResearchPrompt(payload: {
   const existingJson = JSON.stringify(payload.existingRecord, null, 2);
 
   return [
+    researchWebSearchPromptBlock({
+      kind: "company_office",
+      companyName: payload.companyName,
+    }),
     "You are a career-research assistant populating company targeting metadata for CV tailoring.",
-    "Use current, verifiable public information from the web about the company.",
     "Do not invent facts; if uncertain, use cautious wording and leave fields empty rather than guessing.",
     "",
     `Company to research: ${payload.companyName}`,

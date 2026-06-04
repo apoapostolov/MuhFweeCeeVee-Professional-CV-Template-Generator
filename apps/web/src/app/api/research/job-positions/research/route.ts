@@ -4,6 +4,7 @@ import {
   buildJobPositionResearchPrompt,
   parseJobPositionResearchResponse,
 } from "@/lib/research/research-prompts";
+import { researchWebSearchSystemMessage } from "@/lib/research/research-web-search";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { callOpenRouterResearchChat } from "@/lib/server/openRouterResearch";
 import { allocateResearchedJobPositionId } from "@/lib/research/research-ids";
@@ -52,7 +53,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   const result = await callOpenRouterResearchChat(
     prompt,
-    "You research job positions and return JSON only. weighted_keywords must be a large, deduplicated, canonical list per the prompt (45–90 concepts).",
+    researchWebSearchSystemMessage(
+      "Research a job position from live web sources (LinkedIn job posting first) and return JSON only. weighted_keywords must be a large, deduplicated, canonical list per the prompt (45–90 concepts).",
+    ),
   );
 
   if (!result.ok) {

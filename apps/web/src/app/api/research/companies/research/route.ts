@@ -4,6 +4,7 @@ import {
   buildOfficeCompanyResearchPrompt,
   parseOfficeCompanyResearchResponse,
 } from "@/lib/research/research-prompts";
+import { researchWebSearchSystemMessage } from "@/lib/research/research-web-search";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { callOpenRouterResearchChat } from "@/lib/server/openRouterResearch";
 import {
@@ -49,7 +50,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   const result = await callOpenRouterResearchChat(
     prompt,
-    "You research companies using public web information and return JSON only.",
+    researchWebSearchSystemMessage(
+      "Research a company office from live web sources (LinkedIn-first) and return JSON only.",
+    ),
   );
 
   if (!result.ok) {

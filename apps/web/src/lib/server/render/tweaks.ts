@@ -1,15 +1,39 @@
 import type { PhotoMode } from "./types";
 import { normalizePhotoMode } from "./themes";
 
+import {
+  clampPrintTextScale,
+  PRINT_TEXT_SCALE_DEFAULT,
+} from "../../print-text-scale";
+
 export type RenderTweaks = {
   removePhoto: boolean;
   moveSkillsLeft: boolean;
+  sidebarTextScale: number;
+  sidebarTextScaleActive: boolean;
+  contentTextScale: number;
+  contentTextScaleActive: boolean;
 };
 
 export const DEFAULT_RENDER_TWEAKS: RenderTweaks = {
   removePhoto: false,
   moveSkillsLeft: false,
+  sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
+  sidebarTextScaleActive: false,
+  contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
+  contentTextScaleActive: false,
 };
+
+export function parsePrintTextScaleParam(
+  searchParams: Pick<URLSearchParams, "get">,
+  key: "sidebarTextScale" | "contentTextScale",
+): number {
+  const raw = searchParams.get(key);
+  if (!raw) {
+    return PRINT_TEXT_SCALE_DEFAULT;
+  }
+  return clampPrintTextScale(Number(raw));
+}
 
 export const TEMPLATES_WITH_LEFT_SIDEBAR = new Set([
   "cambridge-v1",
@@ -36,7 +60,49 @@ export function parseRenderTweaks(
   return {
     removePhoto: readTruthyFlag(searchParams, "removePhoto"),
     moveSkillsLeft: readTruthyFlag(searchParams, "moveSkillsLeft"),
+    sidebarTextScale: parsePrintTextScaleParam(searchParams, "sidebarTextScale"),
+    sidebarTextScaleActive: searchParams.get("sidebarTextScale") !== null,
+    contentTextScale: parsePrintTextScaleParam(searchParams, "contentTextScale"),
+    contentTextScaleActive: searchParams.get("contentTextScale") !== null,
   };
+}
+
+export function buildPrintTextScaleCss(
+  templateId: string,
+  tweaks: RenderTweaks,
+): string {
+  const rules: string[] = [];
+  const sidebarZoom = tweaks.sidebarTextScale / 100;
+  const contentZoom = tweaks.contentTextScale / 100;
+
+  if (tweaks.sidebarTextScaleActive && templateHasLeftSidebar(templateId)) {
+    rules.push(
+      `aside.sidebar, .sidebar, aside.left, .left { zoom: ${sidebarZoom}; }`,
+    );
+  }
+
+  if (tweaks.contentTextScaleActive) {
+    if (templateId === "europass-v1") {
+      rules.push(`body > .page { zoom: ${contentZoom}; }`);
+    } else if (templateHasLeftSidebar(templateId)) {
+      rules.push(`main.content, .content, main.right, .right { zoom: ${contentZoom}; }`);
+    } else {
+      rules.push(`main.right, .right, .page { zoom: ${contentZoom}; }`);
+    }
+  }
+
+  return rules.join("\n");
+}
+
+export function injectPrintTweakStyles(html: string, tweakCss: string): string {
+  if (!tweakCss.trim()) {
+    return html;
+  }
+  const styleTag = `<style id="mfcv-print-tweaks">\n${tweakCss}\n</style>`;
+  if (html.includes("</head>")) {
+    return html.replace("</head>", `${styleTag}\n</head>`);
+  }
+  return `${styleTag}\n${html}`;
 }
 
 export function resolveEffectivePhotoMode(

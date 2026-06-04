@@ -10,6 +10,16 @@ export function formatUsdPerImage(value: number): string {
   return `$${value.toFixed(3)}`;
 }
 
+/** Shorten catalog notes for settings labels (drop redundant "1K output" / "image"). */
+export function compactImagePricingNote(note: string): string {
+  return note
+    .replace(/^1K output\s*/i, "")
+    .replace(/~1K image/gi, "~1K")
+    .replace(/image tokens/gi, "tokens")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function formatImagePriceLabel(pricing: ImagePerUnitPricing): string | null {
   const { pricePerImageUsd, pricePerImageMaxUsd, pricePerImageNote } = pricing;
   if (pricePerImageUsd === null) return null;
@@ -21,7 +31,7 @@ export function formatImagePriceLabel(pricing: ImagePerUnitPricing): string | nu
   ) {
     return `from ${minLabel}/img`;
   }
-  const noteSuffix = pricePerImageNote ? ` (${pricePerImageNote})` : "";
+  const noteSuffix = pricePerImageNote ? ` (${compactImagePricingNote(pricePerImageNote)})` : "";
   return `~${minLabel}/img${noteSuffix}`;
 }
 
@@ -68,10 +78,12 @@ export function formatSelectedImageModelPricingLine(
     pricePerImageMaxUsd > pricePerImageUsd
   ) {
     const maxLabel = formatUsdPerImage(pricePerImageMaxUsd);
-    const noteSuffix = pricePerImageNote ? ` • ${pricePerImageNote}` : "";
+    const noteSuffix = pricePerImageNote
+      ? ` • ${compactImagePricingNote(pricePerImageNote)}`
+      : "";
     return `From ${minLabel} per image • Up to ${maxLabel} per image${noteSuffix}`;
   }
-  const noteSuffix = pricePerImageNote ? ` • ${pricePerImageNote}` : "";
+  const noteSuffix = pricePerImageNote ? ` • ${compactImagePricingNote(pricePerImageNote)}` : "";
   return `${minLabel} per image${noteSuffix}`;
 }
 

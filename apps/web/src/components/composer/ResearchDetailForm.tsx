@@ -28,9 +28,15 @@ import { EditorAutoSaveToggle, EditorAutosaveStatusPill } from "./editor-autosav
 import {
   EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS,
   EDITOR_COMPACT_METADATA_FORM_GRID_CLASS,
+  EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS,
 } from "./editor-compact-form-layout";
 import { EditorCompactFieldRow } from "./editor-compact-field-row";
-import { ResearchFieldAi } from "./research-field-ai";
+import {
+  ResearchFieldAiInputChrome,
+  ResearchFieldAiPanel,
+  ResearchFieldAiProvider,
+  ResearchFieldAiTrigger,
+} from "./research-field-ai";
 
 const INPUT_CLASS =
   `w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1.5 text-xs leading-5 text-slate-800 ${WRAPPING_TEXT_CONTROL_CLASS}`;
@@ -124,19 +130,48 @@ export function ResearchDetailForm({
   const entityId = entityType === "company" ? company?.id ?? "" : job?.id ?? "";
 
   const updateAt = (path: PathSegment[], value: unknown) => {
+    let nextForAutosave: ResearchedCompany | ResearchedJobPosition | null = null;
     setDraft((current: unknown) => {
       const next = setAtPath(current, path, value);
-      if (researchAutoSaveEnabled && onDraftChange && current) {
-        onDraftChange(next as ResearchedCompany | ResearchedJobPosition, entityType);
+      if (current) {
+        nextForAutosave = next as ResearchedCompany | ResearchedJobPosition;
       }
       return next;
     });
     setDirty(true);
+    if (researchAutoSaveEnabled && onDraftChange && nextForAutosave) {
+      onDraftChange(nextForAutosave, entityType);
+    }
   };
 
   const applyRefined = (path: PathSegment[], current: unknown, proposal: unknown) => {
     updateAt(path, parseFieldValueFromProposal(current, proposal));
   };
+
+  const wrapResearchFieldWithAi = (
+    fieldPath: string,
+    fieldLabel: string,
+    currentValue: string,
+    path: PathSegment[],
+    current: unknown,
+    shell: JSX.Element,
+    onApplyOverride?: (next: unknown) => void,
+  ): JSX.Element => (
+    <ResearchFieldAiProvider
+      key={fieldPath}
+      currentValue={currentValue}
+      entityId={entityId}
+      entityType={entityType}
+      fieldLabel={fieldLabel}
+      fieldPath={fieldPath}
+      language={language}
+      onApply={onApplyOverride ?? ((next) => applyRefined(path, current, next))}
+      onNotice={onNotice}
+      resolvedTheme={resolvedTheme}
+    >
+      {shell}
+    </ResearchFieldAiProvider>
+  );
 
   const renderScalar = (def: ScalarFieldDef): JSX.Element => {
     const value = getAtPath(draft, def.path);
@@ -170,31 +205,29 @@ export function ResearchDetailForm({
         />
       );
 
-    return (
-      <EditorCompactFieldRow
-        alignTop={useTextarea}
-        control={control}
-        includeAiActionSlot={false}
-        key={fieldPath}
-        label={def.label}
-        reserveLeadingColumn={false}
-        trailing={
-          <ResearchFieldAi
-            currentValue={stringValue}
-            entityId={entityId}
-            entityType={entityType}
-            fieldLabel={def.label}
-            fieldPath={fieldPath}
-            language={language}
-            onApply={(proposal) => applyRefined(def.path, value, proposal)}
-            onNotice={onNotice}
-            resolvedTheme={resolvedTheme}
-          />
-        }
-        unifiedControlBorder={useTextarea}
-        useFormGrid
-      />
+    const wrappedControl = (
+      <ResearchFieldAiInputChrome multiline={useTextarea}>{control}</ResearchFieldAiInputChrome>
     );
+
+    const fieldShell = (
+      <>
+        <EditorCompactFieldRow
+          alignTop={useTextarea}
+          control={wrappedControl}
+          includeAiActionSlot={false}
+          label={def.label}
+          reserveLeadingColumn={false}
+          trailing={<ResearchFieldAiTrigger />}
+          unifiedControlBorder={useTextarea}
+          useFormGrid
+        />
+        <div className={EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS}>
+          <ResearchFieldAiPanel />
+        </div>
+      </>
+    );
+
+    return wrapResearchFieldWithAi(fieldPath, def.label, stringValue, def.path, value, fieldShell);
   };
 
   const renderStringList = (label: string, path: PathSegment[]): JSX.Element => {
@@ -203,46 +236,42 @@ export function ResearchDetailForm({
     const fieldPath = path.join(".");
     const wrapAt = defaultWrapCharsPerLine(language);
     const rows = estimateTextareaRows(lines, wrapAt);
-    return (
-      <EditorCompactFieldRow
-        alignTop
-        control={
-          <textarea
-            className={`${EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS} resize-y`}
-            onChange={(event) =>
-              updateAt(
-                path,
-                event.target.value
-                  .split("\n")
-                  .map((line) => line.trim())
-                  .filter(Boolean),
-              )
-            }
-            rows={Math.max(3, rows)}
-            value={lines}
-          />
+    const listControl = (
+      <textarea
+        className={`${EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS} resize-y`}
+        onChange={(event) =>
+          updateAt(
+            path,
+            event.target.value
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean),
+          )
         }
-        includeAiActionSlot={false}
-        key={fieldPath}
-        label={label}
-        unifiedControlBorder
-        reserveLeadingColumn={false}
-        trailing={
-          <ResearchFieldAi
-            currentValue={lines}
-            entityId={entityId}
-            entityType={entityType}
-            fieldLabel={label}
-            fieldPath={fieldPath}
-            language={language}
-            onApply={(proposal) => applyRefined(path, value, proposal)}
-            onNotice={onNotice}
-            resolvedTheme={resolvedTheme}
-          />
-        }
-        useFormGrid
+        rows={Math.max(3, rows)}
+        value={lines}
       />
     );
+
+    const fieldShell = (
+      <>
+        <EditorCompactFieldRow
+          alignTop
+          control={<ResearchFieldAiInputChrome multiline>{listControl}</ResearchFieldAiInputChrome>}
+          includeAiActionSlot={false}
+          label={label}
+          reserveLeadingColumn={false}
+          trailing={<ResearchFieldAiTrigger />}
+          unifiedControlBorder
+          useFormGrid
+        />
+        <div className={EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS}>
+          <ResearchFieldAiPanel />
+        </div>
+      </>
+    );
+
+    return wrapResearchFieldWithAi(fieldPath, label, lines, path, value, fieldShell);
   };
 
   const companyFields = useMemo((): ScalarFieldDef[] => {
@@ -358,8 +387,11 @@ export function ResearchDetailForm({
     .map((entry) => `${entry.keyword} (weight ${entry.weight})`)
     .join("\n");
 
+  const weightedKeywordsLabel =
+    language === "bg" ? "Тегловни ключови думи" : "Weighted keywords";
+
   return (
-    <article className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-white">
+    <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-white">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3">
         <div>
           <h3 className="text-lg font-bold text-slate-900">
@@ -496,30 +528,18 @@ export function ResearchDetailForm({
               {renderStringList("Certifications", ["skills", "certifications"])}
               {renderStringList("Languages", ["skills", "languages"])}
               {jobScalarFields.slice(17, 18).map((field) => renderScalar(field))}
-              <SectionHeaderWithAction
-                action={
-                  <ResearchFieldAi
-                    currentValue={weightedKeywordsSummary}
-                    entityId={entityId}
-                    entityType="job_position"
-                    fieldLabel={
-                      language === "bg" ? "Тегловни ключови думи" : "Weighted keywords"
-                    }
-                    fieldPath="weighted_keywords"
-                    language={language}
-                    onApply={(proposal) => {
-                      const next = parseWeightedKeywordsFromProposal(proposal);
-                      if (next.length > 0) {
-                        updateAt(["weighted_keywords"], next);
-                      }
-                    }}
-                    onNotice={onNotice}
-                    resolvedTheme={resolvedTheme}
+              {wrapResearchFieldWithAi(
+                "weighted_keywords",
+                weightedKeywordsLabel,
+                weightedKeywordsSummary,
+                ["weighted_keywords"],
+                keywords,
+                <>
+                  <SectionHeaderWithAction
+                    action={<ResearchFieldAiTrigger />}
+                    title={weightedKeywordsLabel}
                   />
-                }
-                title={language === "bg" ? "Тегловни ключови думи" : "Weighted keywords"}
-              />
-              <div className={WEIGHTED_KEYWORDS_GRID_CLASS}>
+                  <div className={WEIGHTED_KEYWORDS_GRID_CLASS}>
                 {keywords.length === 0 ? (
                   <p className="col-span-2 text-xs text-[var(--ink-muted)]">
                     {language === "bg"
@@ -590,7 +610,18 @@ export function ResearchDetailForm({
                     })}
                   </>
                 )}
-              </div>
+                  </div>
+                  <div className={EDITOR_METADATA_FIELD_AI_PANEL_WRAP_CLASS}>
+                    <ResearchFieldAiPanel />
+                  </div>
+                </>,
+                (next) => {
+                  const parsed = parseWeightedKeywordsFromProposal(next);
+                  if (parsed.length > 0) {
+                    updateAt(["weighted_keywords"], parsed);
+                  }
+                },
+              )}
               <SectionHeader title="ATS helpers" />
               {renderStringList("ATS keywords", ["ats", "keywords"])}
               {renderStringList("Action verbs", ["ats", "action_verbs"])}

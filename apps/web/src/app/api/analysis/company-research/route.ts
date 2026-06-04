@@ -4,6 +4,7 @@ import {
   buildCompanyResearchPrompt,
   parseCompanyResearchResponse,
 } from "@/lib/company-research";
+import { researchWebSearchSystemMessage } from "@/lib/research/research-web-search";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { callOpenRouterResearchChat } from "@/lib/server/openRouterResearch";
 
@@ -34,7 +35,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   const prompt = buildCompanyResearchPrompt({ companyName, existingRecord });
   const result = await callOpenRouterResearchChat(
     prompt,
-    "You research companies using public web information and return JSON only with a company metadata object.",
+    researchWebSearchSystemMessage(
+      "Research a company from live web sources (LinkedIn-first) and return JSON only with a company metadata object.",
+    ),
   );
 
   if (!result.ok) {

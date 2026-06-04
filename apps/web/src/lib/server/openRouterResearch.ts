@@ -2,6 +2,7 @@ import {
   DEFAULT_OPENROUTER_RESEARCH_MODEL,
   resolveOpenRouterResearchModelId,
 } from "@/lib/openrouter-research-model";
+import { buildResearchOpenRouterRequestExtras } from "@/lib/research/research-web-search";
 import { readOpenRouterSettings } from "./openRouterSettings";
 
 export { DEFAULT_OPENROUTER_RESEARCH_MODEL };
@@ -15,8 +16,8 @@ export function extractOpenRouterTextContent(input: string): string {
   return trimmed;
 }
 
-export function resolveOpenRouterResearchModel(settingsModel: string): string {
-  return resolveOpenRouterResearchModelId(settingsModel);
+export function resolveOpenRouterResearchModel(researchModel: string): string {
+  return resolveOpenRouterResearchModelId(researchModel);
 }
 
 export async function callOpenRouterResearchChat(prompt: string, systemContent: string): Promise<{
@@ -35,7 +36,10 @@ export async function callOpenRouterResearchChat(prompt: string, systemContent: 
     return { ok: false, error: "OpenRouter API key is not configured." };
   }
 
-  const model = resolveOpenRouterResearchModel(settings.model || DEFAULT_OPENROUTER_RESEARCH_MODEL);
+  const model = resolveOpenRouterResearchModel(
+    settings.researchModel || DEFAULT_OPENROUTER_RESEARCH_MODEL,
+  );
+  const searchExtras = buildResearchOpenRouterRequestExtras(model);
 
   const response = await fetch(settings.baseUrl, {
     method: "POST",
@@ -50,6 +54,7 @@ export async function callOpenRouterResearchChat(prompt: string, systemContent: 
         { role: "user", content: prompt },
       ],
       temperature: 0.25,
+      ...searchExtras,
     }),
   });
 

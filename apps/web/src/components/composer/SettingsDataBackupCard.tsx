@@ -103,12 +103,12 @@ export function SettingsDataBackupCard(): JSX.Element {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      <h3 className="shrink-0 text-sm font-semibold text-slate-900">Import / Export Data</h3>
-      <p className="mt-1 shrink-0 text-xs text-[var(--ink-muted)]">
+      <h2 className="shrink-0 text-xl font-bold text-slate-900">Import / Export Data</h2>
+      <p className="mt-2 shrink-0 text-sm text-[var(--ink-muted)]">
         Full session backup: browser preferences (localStorage), researched companies and job
         positions, job-targeting metadata, and CV YAML files stored on this dev server.
       </p>
-      <div className="mt-3 grid w-full shrink-0 grid-cols-2 gap-2">
+      <div className="mt-4 grid w-full shrink-0 grid-cols-2 gap-2">
         <button
           className="w-full rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-[var(--surface-2)] disabled:opacity-60"
           disabled={busy}
@@ -126,7 +126,7 @@ export function SettingsDataBackupCard(): JSX.Element {
           Copy to Clipboard
         </button>
       </div>
-      <label className="mt-3 flex min-h-0 flex-1 flex-col text-xs font-medium text-slate-700">
+      <label className="mt-4 flex min-h-0 flex-1 flex-col text-xs font-medium text-slate-700">
         Paste to Import Data
         <div className="relative mt-1 flex min-h-0 flex-1 flex-col">
           <textarea

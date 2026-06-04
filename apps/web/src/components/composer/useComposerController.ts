@@ -11,9 +11,13 @@ import {
   LANGUAGE_OPTIONS,
   appendPrintTweakParams,
   LEGACY_PHOTO_STORAGE_KEYS,
+  clampPrintTextScale,
+  PRINT_TEXT_SCALE_DEFAULT,
   STORAGE_KEYS,
   themeOptionsForTemplate,
 } from "@/components/composer/constants";
+import { readStoredPrintTextScale } from "@/lib/print-text-scale";
+import { stepPrintTextScale } from "@/components/composer/print-text-scale-pill";
 import {
   isTemplatePathVisible,
   readTemplateVisibility,
@@ -133,6 +137,16 @@ export function useComposerController() {
   >("default");
   const [printTweakRemovePhoto, setPrintTweakRemovePhoto] = useState(false);
   const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
+  const [printTweakSidebarTextScaleEnabled, setPrintTweakSidebarTextScaleEnabled] =
+    useState(false);
+  const [printTweakSidebarTextScale, setPrintTweakSidebarTextScale] = useState(
+    PRINT_TEXT_SCALE_DEFAULT,
+  );
+  const [printTweakContentTextScaleEnabled, setPrintTweakContentTextScaleEnabled] =
+    useState(false);
+  const [printTweakContentTextScale, setPrintTweakContentTextScale] = useState(
+    PRINT_TEXT_SCALE_DEFAULT,
+  );
   const [photoBoothItems, setPhotoBoothItems] = useState<PhotoBoothItem[]>([]);
   const [approvedPhotoId, setApprovedPhotoId] = useState("");
   const [photoBoothNotice, setPhotoBoothNotice] = useState("");
@@ -370,6 +384,10 @@ export function useComposerController() {
       {
         removePhoto: printTweakRemovePhoto,
         moveSkillsLeft: printTweakMoveSkillsLeft,
+        sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
+        sidebarTextScale: printTweakSidebarTextScale,
+        contentTextScaleEnabled: printTweakContentTextScaleEnabled,
+        contentTextScale: printTweakContentTextScale,
       },
       selectedTemplateId,
     );
@@ -383,6 +401,10 @@ export function useComposerController() {
     selectedPhotoMode,
     printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
+    printTweakSidebarTextScaleEnabled,
+    printTweakSidebarTextScale,
+    printTweakContentTextScaleEnabled,
+    printTweakContentTextScale,
     approvedPhotoId,
     photoBoothItems,
   ]);
@@ -393,8 +415,8 @@ export function useComposerController() {
   );
 
   const selectedResearchModelOption = useMemo(
-    () => resolveResearchModelOption(openRouter.modelInput, openRouter.modelOptions),
-    [openRouter.modelInput, openRouter.modelOptions],
+    () => resolveResearchModelOption(openRouter.researchModelInput, openRouter.modelOptions),
+    [openRouter.researchModelInput, openRouter.modelOptions],
   );
 
   const analysisCostEstimate = useMemo(
@@ -619,6 +641,38 @@ export function useComposerController() {
 
   useEffect(() => {
     try {
+      if (printTweakSidebarTextScaleEnabled) {
+        window.localStorage.setItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled, "1");
+      } else {
+        window.localStorage.removeItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled);
+      }
+      window.localStorage.setItem(
+        STORAGE_KEYS.printTweakSidebarTextScale,
+        String(printTweakSidebarTextScale),
+      );
+    } catch {
+      // no-op
+    }
+  }, [printTweakSidebarTextScaleEnabled, printTweakSidebarTextScale]);
+
+  useEffect(() => {
+    try {
+      if (printTweakContentTextScaleEnabled) {
+        window.localStorage.setItem(STORAGE_KEYS.printTweakContentTextScaleEnabled, "1");
+      } else {
+        window.localStorage.removeItem(STORAGE_KEYS.printTweakContentTextScaleEnabled);
+      }
+      window.localStorage.setItem(
+        STORAGE_KEYS.printTweakContentTextScale,
+        String(printTweakContentTextScale),
+      );
+    } catch {
+      // no-op
+    }
+  }, [printTweakContentTextScaleEnabled, printTweakContentTextScale]);
+
+  useEffect(() => {
+    try {
       const storedApprovedId = window.localStorage.getItem(STORAGE_KEYS.approvedPhotoId) ?? "";
       if (storedApprovedId) {
         setApprovedPhotoId(storedApprovedId);
@@ -770,6 +824,24 @@ export function useComposerController() {
             );
             setPrintTweakMoveSkillsLeft(
               window.localStorage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1",
+            );
+            setPrintTweakSidebarTextScaleEnabled(
+              window.localStorage.getItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled) ===
+                "1",
+            );
+            setPrintTweakSidebarTextScale(
+              readStoredPrintTextScale(
+                window.localStorage.getItem(STORAGE_KEYS.printTweakSidebarTextScale),
+              ),
+            );
+            setPrintTweakContentTextScaleEnabled(
+              window.localStorage.getItem(STORAGE_KEYS.printTweakContentTextScaleEnabled) ===
+                "1",
+            );
+            setPrintTweakContentTextScale(
+              readStoredPrintTextScale(
+                window.localStorage.getItem(STORAGE_KEYS.printTweakContentTextScale),
+              ),
             );
           } catch {
             // no-op
@@ -2689,6 +2761,10 @@ export function useComposerController() {
       {
         removePhoto: printTweakRemovePhoto,
         moveSkillsLeft: printTweakMoveSkillsLeft,
+        sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
+        sidebarTextScale: printTweakSidebarTextScale,
+        contentTextScaleEnabled: printTweakContentTextScaleEnabled,
+        contentTextScale: printTweakContentTextScale,
       },
       selectedTemplateId,
     );
@@ -2703,6 +2779,40 @@ export function useComposerController() {
       setPrintTweakRemovePhoto(enabled);
     } else {
       setPrintTweakMoveSkillsLeft(enabled);
+    }
+    setPreviewNonce(Date.now());
+  }
+
+  function setPrintTextScaleEnabled(
+    target: "sidebar" | "content",
+    enabled: boolean,
+  ): void {
+    if (target === "sidebar") {
+      setPrintTweakSidebarTextScaleEnabled(enabled);
+    } else {
+      setPrintTweakContentTextScaleEnabled(enabled);
+    }
+    setPreviewNonce(Date.now());
+  }
+
+  function setPrintTextScaleValue(target: "sidebar" | "content", value: number): void {
+    const clamped = clampPrintTextScale(value);
+    if (target === "sidebar") {
+      setPrintTweakSidebarTextScale(clamped);
+    } else {
+      setPrintTweakContentTextScale(clamped);
+    }
+    setPreviewNonce(Date.now());
+  }
+
+  function adjustPrintTextScale(
+    target: "sidebar" | "content",
+    direction: -1 | 1,
+  ): void {
+    if (target === "sidebar") {
+      setPrintTweakSidebarTextScale((current) => stepPrintTextScale(current, direction));
+    } else {
+      setPrintTweakContentTextScale((current) => stepPrintTextScale(current, direction));
     }
     setPreviewNonce(Date.now());
   }
@@ -3022,7 +3132,14 @@ export function useComposerController() {
     setSelectedPhotoMode,
     printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
+    printTweakSidebarTextScaleEnabled,
+    printTweakSidebarTextScale,
+    printTweakContentTextScaleEnabled,
+    printTweakContentTextScale,
     setPrintTweakEnabled,
+    setPrintTextScaleEnabled,
+    setPrintTextScaleValue,
+    adjustPrintTextScale,
     photoBoothItems,
     approvedPhotoId,
     photoBoothNotice,

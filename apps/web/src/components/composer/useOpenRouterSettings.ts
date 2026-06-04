@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { STORAGE_KEYS } from "./constants";
 import type { OpenRouterCreditResponse, OpenRouterSettingsResponse } from "./types";
-import type { OpenRouterModelOption } from "./openrouter-utils";
+import { DEFAULT_OPENROUTER_RESEARCH_MODEL } from "@/lib/openrouter-research-model";
+
+import { resolveResearchModelOption, type OpenRouterModelOption } from "./openrouter-utils";
 
 export function useOpenRouterSettings() {
   const [settings, setSettings] = useState<OpenRouterSettingsResponse | null>(null);
@@ -15,8 +17,8 @@ export function useOpenRouterSettings() {
   const [creditStatus, setCreditStatus] = useState<OpenRouterCreditResponse | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [modelInput, setModelInput] = useState("openai/gpt-4o-mini");
+  const [researchModelInput, setResearchModelInput] = useState(DEFAULT_OPENROUTER_RESEARCH_MODEL);
   const [imageGenerationModelInput, setImageGenerationModelInput] = useState("");
-  const [baseUrlInput, setBaseUrlInput] = useState("https://openrouter.ai/api/v1/chat/completions");
   const [modelOptions, setModelOptions] = useState<OpenRouterModelOption[]>([]);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export function useOpenRouterSettings() {
         if (cancelled) return;
         setSettings(payload);
         setModelInput(payload.model || "openai/gpt-4o-mini");
-        setBaseUrlInput(payload.baseUrl || "https://openrouter.ai/api/v1/chat/completions");
+        setResearchModelInput(payload.researchModel || DEFAULT_OPENROUTER_RESEARCH_MODEL);
         const incomingModels = (payload.models ?? []) as OpenRouterModelOption[];
         setModelOptions(incomingModels);
         try {
@@ -113,6 +115,11 @@ export function useOpenRouterSettings() {
     [modelOptions, modelInput],
   );
 
+  const selectedResearchModelOption = useMemo(
+    () => resolveResearchModelOption(researchModelInput, modelOptions),
+    [modelOptions, researchModelInput],
+  );
+
   const imageGenerationModelOptions = useMemo(
     () => modelOptions.filter((item) => item.supportsImageGeneration),
     [modelOptions],
@@ -142,7 +149,7 @@ export function useOpenRouterSettings() {
         body: JSON.stringify({
           apiKey: apiKeyInput,
           model: modelInput,
-          baseUrl: baseUrlInput,
+          researchModel: researchModelInput,
         }),
       });
       const payload = (await response.json()) as OpenRouterSettingsResponse & { error?: string };
@@ -152,6 +159,7 @@ export function useOpenRouterSettings() {
       }
       setSettings(payload);
       setApiKeyInput("");
+      setResearchModelInput(payload.researchModel || DEFAULT_OPENROUTER_RESEARCH_MODEL);
       const updatedModels = (payload.models ?? []) as OpenRouterModelOption[];
       setModelOptions(updatedModels);
       if (!updatedModels.some((item) => item.id === imageGenerationModelInput && item.supportsImageGeneration)) {
@@ -170,7 +178,7 @@ export function useOpenRouterSettings() {
     } finally {
       setSettingsSaving(false);
     }
-  }, [apiKeyInput, baseUrlInput, imageGenerationModelInput, modelInput]);
+  }, [apiKeyInput, imageGenerationModelInput, modelInput, researchModelInput]);
 
   return {
     settings,
@@ -184,10 +192,11 @@ export function useOpenRouterSettings() {
     setApiKeyInput,
     modelInput,
     setModelInput,
+    researchModelInput,
+    setResearchModelInput,
+    selectedResearchModelOption,
     imageGenerationModelInput,
     setImageGenerationModelInput,
-    baseUrlInput,
-    setBaseUrlInput,
     modelOptions,
     selectedAnalysisModelOption,
     imageGenerationModelOptions,

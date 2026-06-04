@@ -5,7 +5,7 @@ updatedAt: "2026-06-02"
 models:
   google/gemini-2.5-flash-image:
     usdPerImage: 0.039
-    note: "1K output (~1290 image tokens)"
+    note: "(~1290 tokens)"
     source: https://developers.googleblog.com/en/introducing-gemini-2-5-flash-image/
   google/gemini-3.1-flash-image-preview:
     usdPerImage: 0.067

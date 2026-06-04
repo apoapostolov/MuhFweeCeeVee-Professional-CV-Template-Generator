@@ -1,7 +1,10 @@
 import {
   DEFAULT_OPENROUTER_RESEARCH_MODEL,
+  isWebCapableModelId,
   resolveOpenRouterResearchModelId,
 } from "@/lib/openrouter-research-model";
+
+export { isWebCapableModelId };
 
 export type OpenRouterModelOption = {
   id: string;
@@ -71,11 +74,27 @@ export function modelOptionLabel(model: {
   return `${labelName}${model.isFree ? " FREE" : ""} • ${mixedLabel}`;
 }
 
+export function groupResearchModelOptions(modelOptions: OpenRouterModelOption[]): {
+  recommended: OpenRouterModelOption[];
+  other: OpenRouterModelOption[];
+} {
+  const recommended = modelOptions.filter((item) => isWebCapableModelId(item.id));
+  const recommendedIds = new Set(recommended.map((item) => item.id));
+  const other = modelOptions.filter((item) => !recommendedIds.has(item.id));
+  return { recommended, other };
+}
+
 export function resolveResearchModelOption(
-  settingsModel: string,
+  researchModelInput: string,
   modelOptions: OpenRouterModelOption[],
 ): OpenRouterModelOption | null {
-  const researchModelId = resolveOpenRouterResearchModelId(settingsModel);
+  const trimmed = researchModelInput.trim();
+  const exact = trimmed.length > 0 ? modelOptions.find((item) => item.id === trimmed) : undefined;
+  if (exact) {
+    return exact;
+  }
+
+  const researchModelId = resolveOpenRouterResearchModelId(researchModelInput);
   return (
     modelOptions.find((item) => item.id === researchModelId) ??
     modelOptions.find((item) => item.id === DEFAULT_OPENROUTER_RESEARCH_MODEL) ??
@@ -85,6 +104,10 @@ export function resolveResearchModelOption(
     ) ??
     null
   );
+}
+
+export function researchModelUsesWebSearch(modelId: string): boolean {
+  return isWebCapableModelId(resolveOpenRouterResearchModelId(modelId));
 }
 
 export function estimateOpenRouterCost(
