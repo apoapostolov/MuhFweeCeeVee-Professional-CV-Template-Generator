@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-06-04
+
+### Added
+
+- **`@muhfweeceevee/mcp-wrapper` v0.2.0**: MCP tools for Research (catalog CRUD, company/job research, field refine), CV analysis (`analysis_cv`, `analysis_field`), CV workflow (`create_cv`, `cv_history`, `cv_sync`, `translate_field`), company metadata, session backup export/import (server data), and render URL builders (`export_pdf_url`, `export_image_url`) with **print tweak** query params.
+- **`GET /api/health`**: lightweight readiness payload (`ok`, `apiAuthRequired`, version).
+- OpenRouter **`imageModel`** persisted in `data/settings/openrouter.yaml` and exposed on **GET/PUT** `/api/settings/openrouter` (Settings save includes image model).
+
+### Changed
+
+- MCP wrapper sends **`MFCV_API_TOKEN`** (or `CV_API_TOKEN`) on every API call when configured; [`mcp.md`](mcp.md) documents the full tool catalog and auth.
+- [`docs/API.md`](docs/API.md) updated for v1.2.x Research APIs, print-tweak params, health, and retired Keyword Studio routes.
+- **`PUT /api/companies`** requires API token when `MFCV_API_TOKEN` is set (aligned with other mutations).
+
+### Removed
+
+- Keyword Studio MCP tools (`keyword_*`) now return a clear **retired in v1.1.0** error instead of calling removed HTTP routes.
+
 ## [1.2.2] - 2026-06-04
 
 ### Added

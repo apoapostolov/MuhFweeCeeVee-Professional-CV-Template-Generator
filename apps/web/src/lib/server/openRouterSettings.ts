@@ -11,6 +11,7 @@ export type OpenRouterSettings = {
   apiKey: string;
   model: string;
   researchModel: string;
+  imageModel: string;
   baseUrl: string;
   updatedAt: string;
 };
@@ -23,6 +24,7 @@ const DEFAULT_SETTINGS: OpenRouterSettings = {
   apiKey: "",
   model: "openai/gpt-4o-mini",
   researchModel: RESEARCH_WEB_MODEL_DEFAULT,
+  imageModel: "",
   baseUrl: "https://openrouter.ai/api/v1/chat/completions",
   updatedAt: "",
 };
@@ -79,6 +81,10 @@ export async function readOpenRouterSettings(): Promise<OpenRouterSettings> {
         typeof value.researchModel === "string" && value.researchModel.trim().length > 0
           ? value.researchModel.trim()
           : DEFAULT_SETTINGS.researchModel,
+      imageModel:
+        typeof value.imageModel === "string" && value.imageModel.trim().length > 0
+          ? value.imageModel.trim()
+          : DEFAULT_SETTINGS.imageModel,
       baseUrl:
         typeof value.baseUrl === "string" && value.baseUrl.trim().length > 0
           ? value.baseUrl.trim()
@@ -97,7 +103,7 @@ export async function readOpenRouterSettings(): Promise<OpenRouterSettings> {
 }
 
 export async function writeOpenRouterSettings(
-  input: Partial<Pick<OpenRouterSettings, "apiKey" | "model" | "researchModel" | "baseUrl">>,
+  input: Partial<Pick<OpenRouterSettings, "apiKey" | "model" | "researchModel" | "imageModel" | "baseUrl">>,
 ): Promise<OpenRouterSettings> {
   const current = await readOpenRouterSettings();
   const nextApiKey =
@@ -112,6 +118,10 @@ export async function writeOpenRouterSettings(
       typeof input.researchModel === "string" && input.researchModel.trim().length > 0
         ? input.researchModel.trim()
         : current.researchModel,
+    imageModel:
+      typeof input.imageModel === "string"
+        ? input.imageModel.trim()
+        : current.imageModel,
     baseUrl:
       typeof input.baseUrl === "string" && input.baseUrl.trim().length > 0
         ? input.baseUrl.trim()
@@ -125,6 +135,7 @@ export async function writeOpenRouterSettings(
     stringify({
       model: merged.model,
       researchModel: merged.researchModel,
+      imageModel: merged.imageModel,
       baseUrl: merged.baseUrl,
       updatedAt: merged.updatedAt,
     }),

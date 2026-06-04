@@ -1,8 +1,62 @@
 # API Reference
 
-This document summarizes the web API surface and highlights what was added/changed after `1.0.0`.
+Internal HTTP API used by the web UI and `@muhfweeceevee/mcp-wrapper` (v0.2.0).
 
 Base path: `/api`
+
+## Health
+
+- `GET /health` — `{ ok, service, version, apiAuthRequired, timestamp }`
+
+## Authentication
+
+When `MFCV_API_TOKEN` is set in the server environment, mutation and cost-bearing routes require:
+
+- `Authorization: Bearer <token>`, or
+- `x-mfcv-api-token: <token>`
+
+When unset, auth is disabled (local dev default).
+
+## Since 1.2.2
+
+### Print tweak query params (preview + export)
+
+On `GET /preview/html`, `GET /export/pdf`, and `GET /export/image`:
+
+| Param | Type | Notes |
+|-------|------|--------|
+| `removePhoto` | `1` / `true` | Forces photo off |
+| `moveSkillsLeft` | `1` / `true` | Sidebar templates only |
+| `sidebarTextScale` | `50`–`200` | Integer percent; active when param present |
+| `contentTextScale` | `50`–`200` | Integer percent; active when param present |
+
+Scaling uses CSS `zoom` on sidebar vs main content regions.
+
+### OpenRouter `imageModel`
+
+- `GET /settings/openrouter` includes `imageModel` (persisted in `data/settings/openrouter.yaml`).
+- `PUT /settings/openrouter` accepts `imageModel` (image-generation-capable model id).
+
+### Research APIs
+
+- `GET /research/catalog` — list companies + job positions
+- `PUT /research/catalog` — replace catalog (auth when token set)
+- `GET|PUT|DELETE /research/companies/:companyId`
+- `POST /research/companies/research` — web-backed company research (`companyName`, `officeCountry`, …)
+- `GET|PUT|DELETE /research/job-positions/:jobId`
+- `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, …)
+- `POST /research/field-refine` — per-field AI proposals (`entityType`, `entityId`, `fieldPath`, …)
+
+### Analysis (Editor + metadata)
+
+- `POST /analysis/cv` — optional `jobPositionId`, `companyIds`
+- `POST /analysis/field` — `professional_rewrite` / `shorten`; optional `jobPositionId`
+- `POST /analysis/company-research` — Editor company metadata (not Research catalog)
+- `POST /analysis/company-field` — metadata field refine with web search
+
+### Company metadata auth
+
+- `PUT /companies?source=example|personal` now requires API token when `MFCV_API_TOKEN` is set.
 
 ## Since 1.0.0
 
@@ -174,20 +228,13 @@ Optional cache controls:
 
 ## 7) OpenRouter Settings + Credit
 
-- `GET /settings/openrouter`
-- `PUT /settings/openrouter`
-  - saving API key writes local `.env` key `OPENROUTER_API_KEY`
-- `GET /settings/openrouter/credit`
-  - returns credit/prepaid status payload from OpenRouter
+- `GET /settings/openrouter` — `model`, `researchModel`, `imageModel`, model catalog
+- `PUT /settings/openrouter` — `apiKey`, `model`, `researchModel`, `imageModel`, `baseUrl` (auth when token set); saving API key writes `.env` `OPENROUTER_API_KEY`
+- `GET /settings/openrouter/credit` — credit/prepaid status from OpenRouter
 
-## 8) Keywords Data APIs
+## 8) Keywords Data APIs (retired in v1.1.0)
 
-- `GET /analysis/keywords`
-  - now returns role-aware weighted keywords and supplemental DB integration metadata
-- `GET|POST /analysis/keywords/datasets`
-  - core dataset lifecycle (`Core Database`)
-- `GET|POST /analysis/keywords/manage`
-  - management stats and collection-run lifecycle/progress
+Routes removed from the app; use **Research** weighted keywords and Editor Job Targeting instead.
 
 ## 9) CV AI Analysis
 

@@ -34,23 +34,35 @@ export function useOpenRouterSettings() {
         setResearchModelInput(payload.researchModel || DEFAULT_OPENROUTER_RESEARCH_MODEL);
         const incomingModels = (payload.models ?? []) as OpenRouterModelOption[];
         setModelOptions(incomingModels);
-        try {
-          const persistedImageModelId = window.localStorage.getItem(STORAGE_KEYS.imageGenerationModel) ?? "";
-          const hasPersistedModel = incomingModels.some(
-            (item) => item.id === persistedImageModelId && item.supportsImageGeneration,
-          );
-          if (hasPersistedModel) {
-            setImageGenerationModelInput(persistedImageModelId);
-          } else {
-            setImageGenerationModelInput(
-              incomingModels.find((item) => item.supportsImageGeneration)?.id ?? "",
-            );
+        const serverImageModel = (payload.imageModel ?? "").trim();
+        let resolvedImageModel = "";
+        if (
+          serverImageModel &&
+          incomingModels.some(
+            (item) => item.id === serverImageModel && item.supportsImageGeneration,
+          )
+        ) {
+          resolvedImageModel = serverImageModel;
+        } else {
+          try {
+            const persistedImageModelId =
+              window.localStorage.getItem(STORAGE_KEYS.imageGenerationModel) ?? "";
+            if (
+              incomingModels.some(
+                (item) => item.id === persistedImageModelId && item.supportsImageGeneration,
+              )
+            ) {
+              resolvedImageModel = persistedImageModelId;
+            }
+          } catch {
+            // no-op
           }
-        } catch {
-          setImageGenerationModelInput(
-            incomingModels.find((item) => item.supportsImageGeneration)?.id ?? "",
-          );
         }
+        setImageGenerationModelInput(
+          resolvedImageModel ||
+            incomingModels.find((item) => item.supportsImageGeneration)?.id ||
+            "",
+        );
       } catch {
         if (!cancelled) {
           setSettings(null);
@@ -150,6 +162,7 @@ export function useOpenRouterSettings() {
           apiKey: apiKeyInput,
           model: modelInput,
           researchModel: researchModelInput,
+          imageModel: imageGenerationModelInput,
         }),
       });
       const payload = (await response.json()) as OpenRouterSettingsResponse & { error?: string };

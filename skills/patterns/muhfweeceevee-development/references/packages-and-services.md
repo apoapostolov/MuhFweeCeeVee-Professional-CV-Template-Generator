@@ -21,9 +21,10 @@ in `apps/web/src/lib/server/render/`.
 
 ## `@muhfweeceevee/mcp-wrapper`
 
-Path: `packages/mcp-wrapper/`
+Path: `packages/mcp-wrapper/` (v0.2.0)
 
-- `npm run mcp:api` → stdio MCP server
+- `npm run mcp:api` → stdio MCP server (Research, analysis, CV sync, session backup, print-tweak URLs)
+- Set `MFCV_API_TOKEN` when the web API requires auth
 - HTTP client to web API (`CV_API_BASE_URL`, default `http://127.0.0.1:3000/api`)
 - Tools: `list_cvs`, `save_cv`, `preview_html_url`, `photo_*`, `openrouter_*`, etc.
 

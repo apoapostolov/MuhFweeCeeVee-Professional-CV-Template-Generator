@@ -26,6 +26,7 @@ export type OpenRouterSettingsResponse = {
   apiKeyMasked: string;
   model: string;
   researchModel: string;
+  imageModel: string;
   baseUrl: string;
   updatedAt: string;
   models?: Array<{

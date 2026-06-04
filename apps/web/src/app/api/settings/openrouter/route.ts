@@ -21,6 +21,7 @@ export async function GET(): Promise<NextResponse> {
     apiKeyMasked: maskApiKey(settings.apiKey),
     model: settings.model,
     researchModel: settings.researchModel,
+    imageModel: settings.imageModel,
     baseUrl: settings.baseUrl,
     updatedAt: settings.updatedAt,
     models: models.models,
@@ -39,6 +40,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
     apiKey?: unknown;
     model?: unknown;
     researchModel?: unknown;
+    imageModel?: unknown;
     baseUrl?: unknown;
   };
 
@@ -46,6 +48,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
     apiKey: typeof body.apiKey === "string" ? body.apiKey : undefined,
     model: typeof body.model === "string" ? body.model : undefined,
     researchModel: typeof body.researchModel === "string" ? body.researchModel : undefined,
+    imageModel: typeof body.imageModel === "string" ? body.imageModel : undefined,
     baseUrl: typeof body.baseUrl === "string" ? body.baseUrl : undefined,
   });
   const models = await getOpenRouterModels({
@@ -63,6 +66,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
     apiKeyMasked: maskApiKey(updated.apiKey),
     model: updated.model,
     researchModel: updated.researchModel,
+    imageModel: updated.imageModel,
     baseUrl: updated.baseUrl,
     updatedAt: updated.updatedAt,
     models: models.models,

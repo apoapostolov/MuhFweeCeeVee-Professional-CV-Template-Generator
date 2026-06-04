@@ -1,8 +1,8 @@
 # MCP Wrapper (`@muhfweeceevee/mcp-wrapper`)
 
-This project includes an MCP server wrapper around the internal web API.
+MCP stdio server that proxies the MuhFweeCeeVee web API (`/api/*`).
 
-It exposes CV, template, keywords, photo booth, and OpenRouter settings tools over MCP stdio.
+**Version:** 0.2.0
 
 ## Install
 
@@ -18,37 +18,25 @@ npm install
 npm run mcp:api
 ```
 
-Optional API base override:
+Set the API base (include `/api`):
 
 ```bash
-CV_API_BASE_URL=http://127.0.0.1:3001/api npm run mcp:api
+CV_API_BASE_URL=http://127.0.0.1:3005/api npm run mcp:api
 ```
 
-Default is `http://127.0.0.1:3000/api`.
+Default: `http://127.0.0.1:3000/api`
 
-## Exposed MCP Tools
+## Authentication
 
-- `api_info`
-- `list_cvs`
-- `get_cv`
-- `save_cv`
-- `create_cv_variant`
-- `list_templates`
-- `preview_html_url`
-- `keyword_analysis`
-- `keyword_datasets`
-- `keyword_datasets_rebuild`
-- `keyword_manage`
-- `photo_list`
-- `photo_upload_base64`
-- `photo_delete`
-- `photo_analyze`
-- `photo_compare`
-- `openrouter_settings_get`
-- `openrouter_settings_update`
-- `openrouter_credit`
+When the web app has `MFCV_API_TOKEN` set, configure the same value for MCP:
 
-## Client Config Example (MCP stdio)
+```bash
+MFCV_API_TOKEN=your-token CV_API_BASE_URL=http://127.0.0.1:3005/api npm run mcp:api
+```
+
+(`CV_API_TOKEN` is accepted as an alias.) MCP sends `Authorization: Bearer …` and `x-mfcv-api-token` on every request.
+
+## Client config (stdio)
 
 ```json
 {
@@ -56,17 +44,119 @@ Default is `http://127.0.0.1:3000/api`.
     "muhfweeceevee-api": {
       "command": "npm",
       "args": ["run", "mcp:api"],
-      "cwd": "/home/apoapostolov/git-public/MyFreeCeeVee-Professional CV Template Generator",
+      "cwd": "/path/to/MuhFweeCeeVee-Professional-CV-Template-Generator",
       "env": {
-        "CV_API_BASE_URL": "http://127.0.0.1:3000/api"
+        "CV_API_BASE_URL": "http://127.0.0.1:3005/api",
+        "MFCV_API_TOKEN": "optional-when-server-requires-auth"
       }
     }
   }
 }
 ```
 
+## Tool catalog
+
+### Meta
+
+| Tool | Description |
+|------|-------------|
+| `api_info` | Wrapper version, API base, auth status, tool groups |
+
+### CVs
+
+| Tool | API |
+|------|-----|
+| `list_cvs` | `GET /cvs` |
+| `get_cv` | `GET /cvs/:id` |
+| `create_cv` | `POST /cvs` |
+| `save_cv` | `PUT /cvs/:id` |
+| `cv_history` | `GET /cvs/:id/history` |
+| `create_cv_variant` | `POST /cvs/variant` |
+| `cv_sync_status` | `POST /cvs/sync/status` |
+| `cv_sync` | `POST /cvs/sync` |
+| `translate_field` | `POST /cvs/translate-field` |
+
+### Templates & render
+
+| Tool | API |
+|------|-----|
+| `list_templates` | `GET /templates` |
+| `preview_html_url` | Builds `GET /preview/html?…` URL |
+| `export_pdf_url` | Builds `GET /export/pdf?…` URL |
+| `export_image_url` | Builds `GET /export/image?…` URL |
+
+Print tweak query params (optional on URL tools): `removePhoto`, `moveSkillsLeft`, `sidebarTextScale`, `contentTextScale`.
+
+### Research (v1.2+)
+
+| Tool | API |
+|------|-----|
+| `research_catalog_get` | `GET /research/catalog` |
+| `research_catalog_put` | `PUT /research/catalog` |
+| `research_company_get` | `GET /research/companies/:id` |
+| `research_company_put` | `PUT /research/companies/:id` |
+| `research_company_delete` | `DELETE /research/companies/:id` |
+| `research_company_run` | `POST /research/companies/research` |
+| `research_job_get` | `GET /research/job-positions/:id` |
+| `research_job_put` | `PUT /research/job-positions/:id` |
+| `research_job_delete` | `DELETE /research/job-positions/:id` |
+| `research_job_run` | `POST /research/job-positions/research` |
+| `research_field_refine` | `POST /research/field-refine` |
+
+### Analysis
+
+| Tool | API |
+|------|-----|
+| `analysis_cv` | `POST /analysis/cv` |
+| `analysis_field` | `POST /analysis/field` |
+| `company_metadata_research` | `POST /analysis/company-research` |
+| `company_metadata_field_research` | `POST /analysis/company-field` |
+
+### Photos
+
+| Tool | API |
+|------|-----|
+| `photo_list` | `GET /photos` |
+| `photo_upload_base64` | `POST /photos` |
+| `photo_delete` | `DELETE /photos?id=` |
+| `photo_analyze` | `POST /analysis/photo` |
+| `photo_compare` | `POST /analysis/photo/compare` |
+
+### Company metadata files
+
+| Tool | API |
+|------|-----|
+| `companies_metadata_get` | `GET /companies` or `?source=example\|personal` |
+| `companies_metadata_put` | `PUT /companies?source=` |
+
+### OpenRouter settings
+
+| Tool | API |
+|------|-----|
+| `openrouter_settings_get` | `GET /settings/openrouter` |
+| `openrouter_settings_update` | `PUT /settings/openrouter` (`model`, `researchModel`, `imageModel`, …) |
+| `openrouter_credit` | `GET /settings/openrouter/credit` |
+
+### Session backup
+
+| Tool | Description |
+|------|-------------|
+| `session_backup_export` | Server data only (catalog, metadata, CVs) |
+| `session_backup_import` | Restore from `{ server: { … } }` or full backup object |
+
+Browser `localStorage` is not available over MCP; use the web **Settings → Import / Export** UI for full session JSON.
+
+### Retired (Keyword Studio)
+
+These tools remain registered but **always error** with a retirement message:
+
+- `keyword_analysis`
+- `keyword_datasets`
+- `keyword_datasets_rebuild`
+- `keyword_manage`
+
 ## Notes
 
-- The wrapper does not replace the web app; it calls existing `/api/*` endpoints.
-- The web app/server must be running for MCP tools to work.
-- Photo compare supports multi-image ranking via `photo_compare.images[]`.
+- The web dev server must be running.
+- Full HTTP reference: [`docs/API.md`](docs/API.md)
+- Health check: `GET /api/health`

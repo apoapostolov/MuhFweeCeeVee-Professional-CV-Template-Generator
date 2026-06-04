@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
   readCompanyMetadata,
   readCompanyMetadataDocument,
@@ -41,6 +42,11 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 export async function PUT(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const url = new URL(request.url);
   const source = parseSource(url.searchParams.get("source"));
   if (!source) {
