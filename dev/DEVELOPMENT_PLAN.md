@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-**Quality refactor epic** (audit items 1, 2, 4, 5, 6, 8, 9). Track progress in [`TODO.md`](TODO.md).
+**Quality refactor epic** (audit items 1, 2, 4, 5, 6, 8, 9). Track progress in [`TODO.md`](../TODO.md).
 
 ## Execution Sequence (multi-session)
 

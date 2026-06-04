@@ -158,5 +158,5 @@ These tools remain registered but **always error** with a retirement message:
 ## Notes
 
 - The web dev server must be running.
-- Full HTTP reference: [`docs/API.md`](docs/API.md)
+- Full HTTP reference: [`docs/API.md`](../docs/API.md)
 - Health check: `GET /api/health`

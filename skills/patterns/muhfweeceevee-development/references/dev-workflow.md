@@ -1,6 +1,6 @@
 # Dev Workflow
 
-Full policy: [`DEV_SERVER_WORKFLOW.md`](../../../../DEV_SERVER_WORKFLOW.md).
+Full policy: [`DEV_SERVER_WORKFLOW.md`](../../../../dev/DEV_SERVER_WORKFLOW.md).
 
 ## Commands (repo root)
 
@@ -71,6 +71,6 @@ this project conventionally uses **3005** for daily dev.
 
 ## Changelog / API docs
 
-- User-visible changes → `CHANGELOG.md` per `CHANGELOG_GUIDE.md`
+- User-visible changes → `CHANGELOG.md` per `dev/CHANGELOG_GUIDE.md`
 - New routes → `docs/API.md`
 - Markdown edits → `npm run lint:md`

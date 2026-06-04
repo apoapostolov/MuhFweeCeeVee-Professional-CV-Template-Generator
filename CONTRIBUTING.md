@@ -68,7 +68,7 @@ docs/              — Project documentation
 
 ### Making Changes
 
-1. **Plan first** — Check `TODO.md` and `DEVELOPMENT_PLAN.md` for active work.
+1. **Plan first** — Check `TODO.md` and `dev/DEVELOPMENT_PLAN.md` for active work.
 2. **Keep changes scoped** — One feature or fix per branch.
 3. **Update the changelog** — User-visible changes go in `CHANGELOG.md`.
 4. **Test** — Run relevant tests before opening a PR.
@@ -86,7 +86,7 @@ docs/              — Project documentation
 
 ## Changelog Rules
 
-- See [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md) for the overwrite-first
+- See [`CHANGELOG_GUIDE.md`](dev/CHANGELOG_GUIDE.md) for the overwrite-first
   principle, writing style, and category rules.
 - Only user-visible changes get entries. Internal refactors, tests, and linting
   do not.

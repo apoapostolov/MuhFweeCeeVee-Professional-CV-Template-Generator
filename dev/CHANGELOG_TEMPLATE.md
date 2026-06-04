@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Writing rules live in [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md). Copy this file
+Writing rules live in [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md) (same folder). Copy this file
 into `CHANGELOG.md` only when bootstrapping a new repo; otherwise edit
 `CHANGELOG.md` in place.
 

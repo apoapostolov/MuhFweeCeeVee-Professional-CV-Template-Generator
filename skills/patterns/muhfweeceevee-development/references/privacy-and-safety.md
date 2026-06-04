@@ -1,6 +1,6 @@
 # Privacy and Repository Safety
 
-Mandatory reading before commits or public push: [`SECURITY.md`](../../../../SECURITY.md),
+Mandatory reading before commits or public push: [`SECURITY.md`](../../../../dev/SECURITY.md),
 [`AGENTS.md`](../../../../AGENTS.md) (Public Repository Safety).
 
 ## Never commit
@@ -42,6 +42,6 @@ Do not commit CVs whose `metadata.internal_name` is **Apostol Apostolov CV** (an
 
 May exist on disk but are often gitignored or personal copies:
 
-- `TODO.md`, `DEVELOPMENT_PLAN.md`, `DEVELOPMENT_LOG.md`, `VIBECHECK.md`
+- `TODO.md`, `dev/DEVELOPMENT_PLAN.md`, `dev/DEVELOPMENT_LOG.md`, `dev/VIBECHECK.md`
 
 `AGENTS.md` is tracked in this repo as the AI contract.

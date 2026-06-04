@@ -46,8 +46,8 @@ npm run check    # eslint + tsc before declaring done
 
 Canonical docs outside this skill: [`docs/API.md`](../../../docs/API.md),
 [`docs/CV_YAML_STANDARD.md`](../../../docs/CV_YAML_STANDARD.md),
-[`PROJECT_CONVENTIONS.md`](../../../PROJECT_CONVENTIONS.md),
-[`DEV_SERVER_WORKFLOW.md`](../../../DEV_SERVER_WORKFLOW.md).
+[`PROJECT_CONVENTIONS.md`](../../../dev/PROJECT_CONVENTIONS.md),
+[`DEV_SERVER_WORKFLOW.md`](../../../dev/DEV_SERVER_WORKFLOW.md).
 
 ## Mental model (30 seconds)
 
@@ -73,7 +73,7 @@ Render path
 - **Privacy**: only fictional sample CVs belong in git (`cv_en_john_doe.yaml`). See
   [`references/privacy-and-safety.md`](references/privacy-and-safety.md).
 - **API auth**: when `MFCV_API_TOKEN` is set, mutations need Bearer or `x-mfcv-api-token`.
-- **After code changes**: restart dev server per [`DEV_SERVER_WORKFLOW.md`](../../../DEV_SERVER_WORKFLOW.md).
+- **After code changes**: restart dev server per [`DEV_SERVER_WORKFLOW.md`](../../../dev/DEV_SERVER_WORKFLOW.md).
 - **Sync `docs/API.md`** when adding or changing route handlers.
 
 ## Common edit map
@@ -95,5 +95,5 @@ Render path
 ## Skill maintenance
 
 When you discover durable project knowledge, add a focused skill under `skills/<category>/`
-per [`SKILLS_GUIDE.md`](../../../SKILLS_GUIDE.md). Update this skill’s references if the
+per [`SKILLS_GUIDE.md`](../../../dev/SKILLS_GUIDE.md). Update this skill’s references if the
 architecture shifts (new package, retired subsystem, port change).

@@ -26,4 +26,4 @@ Editor-focused release: per-field AI rewrite with proposals, autosave with cross
 - Workspace hydration mismatch for template/theme selectors.
 - Subsection indent applies to full blocks, not titles only.
 
-See [CHANGELOG.md](./CHANGELOG.md) for full details.
+See [CHANGELOG.md](../CHANGELOG.md) for full details.

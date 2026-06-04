@@ -28,7 +28,7 @@ Path: `packages/mcp-wrapper/` (v0.2.0)
 - HTTP client to web API (`CV_API_BASE_URL`, default `http://127.0.0.1:3000/api`)
 - Tools: `list_cvs`, `save_cv`, `preview_html_url`, `photo_*`, `openrouter_*`, etc.
 
-See [`mcp.md`](../../../../mcp.md). When dev server uses port **3005**:
+See [`MCP.md`](../../../../dev/MCP.md). When dev server uses port **3005**:
 
 ```bash
 CV_API_BASE_URL=http://127.0.0.1:3005/api npm run mcp:api

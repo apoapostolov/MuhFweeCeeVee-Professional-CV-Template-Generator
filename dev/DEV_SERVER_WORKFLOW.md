@@ -54,7 +54,7 @@ module graphs or `.next` cache entries.
 ### Stale UI Recovery (Next.js)
 
 If the UI still looks wrong after restart, follow
-[`skills/tools/next-dev-workflow/SKILL.md`](skills/tools/next-dev-workflow/SKILL.md):
+[`skills/tools/next-dev-workflow/SKILL.md`](../skills/tools/next-dev-workflow/SKILL.md):
 
 1. Confirm the browser URL uses the live dev port (not an old tab or `npm start`
    production port).

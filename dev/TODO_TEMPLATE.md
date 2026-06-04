@@ -31,7 +31,7 @@ a single deliverable needs to be split without hiding partial completion.
   user must decide.
 - **Subagents:** propose when work parallelizes safely; default 1 coordinator +
   1–3 workers (max ~4). See
-  [`skills/patterns/subagent-delegation/SKILL.md`](skills/patterns/subagent-delegation/SKILL.md).
+  [`skills/patterns/subagent-delegation/SKILL.md`](../skills/patterns/subagent-delegation/SKILL.md).
 - **Canonical sources:** CV YAML in `data/cvs/`, templates in `templates/`, API in
   `apps/web/src/app/api/`, keywords in `keywords/`.
 - **Derived artifacts:** regenerate per [`GENERATED_FILES.md`](GENERATED_FILES.md).

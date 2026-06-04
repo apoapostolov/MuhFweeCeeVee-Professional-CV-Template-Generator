@@ -13,8 +13,8 @@ Use this order when instructions conflict:
 
 1. explicit user instruction in the current session
 2. this `AGENTS.md` file
-3. project `README.md`, `TODO.md`, `DEVELOPMENT_PLAN.md`, `DEVELOPMENT_LOG.md`,
-   and `CHANGELOG.md`
+3. project `README.md`, `TODO.md`, `CHANGELOG.md`, `dev/DEVELOPMENT_PLAN.md`, `dev/DEVELOPMENT_LOG.md`,
+   and `dev/CHANGELOG_GUIDE.md` for details
 4. `docs/` specifications (`docs/API.md`, `docs/CV_YAML_STANDARD.md`, etc.)
 5. surrounding code and documentation patterns
 6. shared defaults in `/mnt/c/git/defaults` when refreshing templates only
@@ -29,7 +29,7 @@ the tradeoff in the development log if needed.
 
 - Keep canonical files authoritative.
 - Regenerate derived files instead of hand-editing generated output. See
-  [`GENERATED_FILES.md`](GENERATED_FILES.md).
+  [`GENERATED_FILES.md`](dev/GENERATED_FILES.md).
 - Keep sensitive data out of docs, prompts, public repos, and changelogs.
 - Use absolute dates in logs, release notes, and decision records.
 - Prefer explicit file paths, commands, output paths, and validation checks.
@@ -55,12 +55,12 @@ the tradeoff in the development log if needed.
 
 ## Learning Artifacts
 
-- [`HARD_PROBLEMS.md`](HARD_PROBLEMS.md) — recurring blockers and root causes.
-- [`SELF_REVIEW.md`](SELF_REVIEW.md) — mistaken approaches and better defaults.
-- [`skills/`](skills/) — repeatable techniques (see [`SKILLS_GUIDE.md`](SKILLS_GUIDE.md)).
-- [`VIBECHECK.md`](VIBECHECK.md) — developer interaction profile (read at session
+- [`HARD_PROBLEMS.md`](dev/HARD_PROBLEMS.md) — recurring blockers and root causes.
+- [`SELF_REVIEW.md`](dev/SELF_REVIEW.md) — mistaken approaches and better defaults.
+- [`skills/`](skills/) — repeatable techniques (see [`SKILLS_GUIDE.md`](dev/SKILLS_GUIDE.md)).
+- [`VIBECHECK.md`](dev/VIBECHECK.md) — developer interaction profile (read at session
   start when working with the same user).
-- [`AGENT_ISSUES.md`](AGENT_ISSUES.md) — subagent/coordination failures (not user
+- [`AGENT_ISSUES.md`](dev/AGENT_ISSUES.md) — subagent/coordination failures (not user
   interaction patterns).
 
 After non-trivial work, ask: *"Will another agent need this again?"* If yes,
@@ -70,14 +70,14 @@ write or update a skill while context is fresh.
 
 ### 1. Orient
 
-- Read this `AGENTS.md` and [`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md)
+- Read this `AGENTS.md` and the **Documentation Map** in [`README.md`](README.md)
   when unsure where a rule lives.
 - Identify canonical source files for the subsystem being changed.
-- Inspect `TODO.md`, `DEVELOPMENT_PLAN.md`, `DEVELOPMENT_LOG.md`, and
+- Inspect `TODO.md`, `dev/DEVELOPMENT_PLAN.md`, `dev/DEVELOPMENT_LOG.md`, and
   `CHANGELOG.md` before changing behavior.
 - Check the working tree and avoid touching unrelated user changes.
 - Start the dev server before code changes. See
-  [`DEV_SERVER_WORKFLOW.md`](DEV_SERVER_WORKFLOW.md).
+  [`DEV_SERVER_WORKFLOW.md`](dev/DEV_SERVER_WORKFLOW.md).
 
 ```bash
 npm run dev                    # Next.js, default port 3000
@@ -88,7 +88,7 @@ npm run dev:parser             # optional FastAPI on 8001
 ### 2. Plan at the Right Level
 
 - Use `TODO.md` for executable work queues (copy structure from
-  [`TODO_TEMPLATE.md`](TODO_TEMPLATE.md)).
+  [`TODO_TEMPLATE.md`](dev/TODO_TEMPLATE.md)).
 - Put design specs, architecture notes, and API contracts in `docs/`.
 - Keep each TODO file focused on one active epic.
 - Write prompts so a capable executor can run them without hidden planner
@@ -99,18 +99,18 @@ npm run dev:parser             # optional FastAPI on 8001
 
 ### 2a. Maintain the Plan
 
-- [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) — forward-looking execution map.
+- [`DEVELOPMENT_PLAN.md`](dev/DEVELOPMENT_PLAN.md) — forward-looking execution map.
 - Update when scope, sequencing, or ownership changes.
 
 ### 2b. Maintain the Learning Base
 
 - Add or update `skills/` notes for repeatable wins or failures.
-- Update `HARD_PROBLEMS.md` when a problem stumps the team multiple times.
-- Update `SELF_REVIEW.md` when a mistake is worth preserving.
+- Update `dev/HARD_PROBLEMS.md` when a problem stumps the team multiple times.
+- Update `dev/SELF_REVIEW.md` when a mistake is worth preserving.
 
 ### 3. Execute
 
-- Follow [`PROJECT_CONVENTIONS.md`](PROJECT_CONVENTIONS.md) before new patterns.
+- Follow [`PROJECT_CONVENTIONS.md`](dev/PROJECT_CONVENTIONS.md) before new patterns.
 - Keep edits scoped to the request.
 - Run `npm run bootstrap` after dependency changes.
 - Do not revert another agent's or user's changes unless explicitly asked.
@@ -127,15 +127,15 @@ npm run dev:parser             # optional FastAPI on 8001
 
 - Run the narrowest relevant check first.
 - Node `>= 22`, Python `3.12.x` for parser/keywords.
-- Restart dev servers after code changes per `DEV_SERVER_WORKFLOW.md`.
+- Restart dev servers after code changes per `dev/DEV_SERVER_WORKFLOW.md`.
 - PDF export: confirm Playwright can launch and `/api/export/pdf` returns bytes.
-- Keywords: set `SQLITE_BIN` when JD cache appears empty (see `HARD_PROBLEMS.md`).
+- Keywords: set `SQLITE_BIN` when JD cache appears empty (see `dev/HARD_PROBLEMS.md`).
 
 ### 5. Record
 
-- Update `DEVELOPMENT_PLAN.md`, `DEVELOPMENT_LOG.md`, `TODO.md` as applicable.
+- Update `dev/DEVELOPMENT_PLAN.md`, `dev/DEVELOPMENT_LOG.md`, `TODO.md` as applicable.
 - Update `CHANGELOG.md` only for user-visible changes per
-  [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md).
+  [`CHANGELOG_GUIDE.md`](dev/CHANGELOG_GUIDE.md).
 - Sync `docs/API.md` when API routes change.
 
 ## When to Ask the User
@@ -176,8 +176,8 @@ When committing:
 
 ## Changelog Governance
 
-See [`CHANGELOG_GUIDE.md`](CHANGELOG_GUIDE.md). Skeleton for new releases:
-[`CHANGELOG_TEMPLATE.md`](CHANGELOG_TEMPLATE.md).
+See [`CHANGELOG_GUIDE.md`](dev/CHANGELOG_GUIDE.md). Skeleton for new releases:
+[`CHANGELOG_TEMPLATE.md`](dev/CHANGELOG_TEMPLATE.md).
 
 Summary:
 
@@ -190,14 +190,14 @@ Summary:
 - `TODO.md` is the active execution queue when in use.
 - Specs and rationale belong in `docs/`, linked from TODO.
 - Remove completed prompt sections when nothing actionable remains.
-- See [`TODO_TEMPLATE.md`](TODO_TEMPLATE.md) for prompt structure and working rules.
+- See [`TODO_TEMPLATE.md`](dev/TODO_TEMPLATE.md) for prompt structure and working rules.
 
 ## Documentation Quality
 
 - Use exact paths and commands.
 - Run `npm run lint:md` (or `npm run lint:md:fix`) after editing markdown. See
-  [`MARKDOWN_LINT.md`](MARKDOWN_LINT.md).
-- Naming and layout: [`PROJECT_CONVENTIONS.md`](PROJECT_CONVENTIONS.md).
+  [`MARKDOWN_LINT.md`](dev/MARKDOWN_LINT.md).
+- Naming and layout: [`PROJECT_CONVENTIONS.md`](dev/PROJECT_CONVENTIONS.md).
 
 ## Public Repository Safety
 
@@ -208,7 +208,7 @@ Before push or public sync:
 - Confirm only fictional sample data (`cv_en_john_doe.yaml`) is tracked — no paths
   matching `*Apostol*` / `*ApoApostolov*` (case-insensitive) and no **Apostol
   Apostolov CV** internal names.
-- Review [`SECURITY.md`](SECURITY.md).
+- Review [`SECURITY.md`](dev/SECURITY.md).
 
 ## Dependency and Runtime Changes
 
@@ -216,7 +216,7 @@ When dependencies change:
 
 - Update manifests and lockfiles; run `npm run bootstrap`.
 - Update `README.md` / `CONTRIBUTING.md` if install steps change.
-- Record validation in `DEVELOPMENT_LOG.md`.
+- Record validation in `dev/DEVELOPMENT_LOG.md`.
 - Changelog only for user-visible behavior changes.
 
 ## Subagent and Delegation Flow
@@ -225,8 +225,8 @@ Use subagents only when phases are separable and parallel work saves time. The
 main agent owns integration and quality.
 
 - Full rules: [`skills/patterns/subagent-delegation/SKILL.md`](skills/patterns/subagent-delegation/SKILL.md)
-- Failures: [`AGENT_ISSUES.md`](AGENT_ISSUES.md)
-- User delegation preferences: [`VIBECHECK.md`](VIBECHECK.md)
+- Failures: [`AGENT_ISSUES.md`](dev/AGENT_ISSUES.md)
+- User delegation preferences: [`VIBECHECK.md`](dev/VIBECHECK.md)
 
 ## Definition of Done
 
@@ -241,5 +241,5 @@ A task is done only when:
 
 ## Related Documentation
 
-See [`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md) for the full map
-of templates, checklists, and product specs.
+See [`README.md`](README.md#documentation-map) and `dev/` for workflow docs;
+`docs/` for product specs and API reference.

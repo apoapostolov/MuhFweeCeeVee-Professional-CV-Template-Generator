@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- MCP wrapper sends **`MFCV_API_TOKEN`** (or `CV_API_TOKEN`) on every API call when configured; [`mcp.md`](mcp.md) documents the full tool catalog and auth.
+- MCP wrapper sends **`MFCV_API_TOKEN`** (or `CV_API_TOKEN`) on every API call when configured; [`MCP.md`](dev/MCP.md) documents the full tool catalog and auth.
 - [`docs/API.md`](docs/API.md) updated for v1.2.x Research APIs, print-tweak params, health, and retired Keyword Studio routes.
 - **`PUT /api/companies`** requires API token when `MFCV_API_TOKEN` is set (aligned with other mutations).
 

@@ -4,7 +4,7 @@
 
 **Index:** 1 = ComposerClient split · 2 = CI · 4 = tests · 5 = npm audit · 6 = render split · 8 = parser · 9 = API token
 
-Rules: [`TODO_TEMPLATE.md`](TODO_TEMPLATE.md) · Plan: [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)
+Rules: [`TODO_TEMPLATE.md`](dev/TODO_TEMPLATE.md) · Plan: [`DEVELOPMENT_PLAN.md`](dev/DEVELOPMENT_PLAN.md)
 
 ## Current Focus
 
