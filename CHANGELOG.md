@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-05
+
+### Added
+
+- **Settings → Import / Export Data**: full **session backup** JSON—browser `localStorage`, researched **companies and job positions** (`data/research/catalog.json`), **company metadata** files, and all **CV YAML** on the dev server. Import restores each layer (new `PUT /api/research/catalog`) and reloads the app.
+- Research catalog list **two-click delete** (compact ✕, red confirm) for companies and job positions, with stable row height in the sidebar.
+
+### Changed
+
+- **Settings** layout: four responsive columns (stacked on mobile); **Import / Export** first, **AI Provider** (OpenRouter + cost estimates) second—no separate wide detail pane.
+- Import / Export UI: side-by-side **Export JSON** and **Copy to Clipboard**, tall **Paste to Import Data** field with **Import JSON** in the bottom-right corner; empty import opens a file picker.
+- Re-running **Research Company** on a **selected** catalog row **updates that company** instead of creating a duplicate entry.
+
+### Fixed
+
+- Research sidebar delete control no longer **jumps row height** when entering the red confirm state (matched box size idle vs armed).
+
 ## [1.2.0] - 2026-06-04
 
 ### Added

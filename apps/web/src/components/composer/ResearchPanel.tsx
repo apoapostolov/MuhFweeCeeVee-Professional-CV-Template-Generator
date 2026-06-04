@@ -39,6 +39,7 @@ export type ResearchPanelProps = {
   resolvedTheme: "light" | "dark";
   language: string;
   onResearchCompany: (payload: {
+    companyId?: string;
     companyName: string;
     officeCountry: string;
     officeCity?: string;
@@ -141,6 +142,9 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
         onOfficeLabelChange={setOfficeLabel}
         onResearchCompany={() =>
           onResearchCompany({
+            ...(sidebarTab === "companies" && selectedCompanyId
+              ? { companyId: selectedCompanyId }
+              : {}),
             companyName: companyName.trim(),
             officeCountry: officeCountry.trim(),
             officeCity: officeCity.trim() || undefined,

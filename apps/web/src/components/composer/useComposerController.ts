@@ -2363,6 +2363,7 @@ export function useComposerController() {
   }
 
   async function researchCompanyOffice(payload: {
+    companyId?: string;
     companyName: string;
     officeCountry: string;
     officeCity?: string;
@@ -2388,13 +2389,24 @@ export function useComposerController() {
       await loadResearchCatalog();
       selectResearchCompany(body.company.id);
       setResearchSidebarTab("companies");
+      const updatedExisting = Boolean(payload.companyId);
       setResearchNotice(
         selectedLanguage === "bg"
-          ? `Компанията „${body.company.name}“ е добавена.`
-          : `Researched company “${body.company.name}”.`,
+          ? updatedExisting
+            ? `Компанията „${body.company.name}“ е обновена.`
+            : `Компанията „${body.company.name}“ е добавена.`
+          : updatedExisting
+            ? `Updated company “${body.company.name}”.`
+            : `Researched company “${body.company.name}”.`,
       );
       showComposerToast(
-        selectedLanguage === "bg" ? "Компанията е проучена." : "Company researched.",
+        selectedLanguage === "bg"
+          ? updatedExisting
+            ? "Компанията е обновена."
+            : "Компанията е проучена."
+          : updatedExisting
+            ? "Company updated."
+            : "Company researched.",
       );
     } catch {
       setResearchNotice("Company research failed.");

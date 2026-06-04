@@ -6,6 +6,7 @@ import { companyOfficeSummary } from "@/lib/research/research-normalize";
 import type { ResearchedCompany, ResearchedJobPosition, ResearchSidebarTab } from "@/lib/research/types";
 
 import { AiStarsIcon } from "./ai-stars-icon";
+import { ConfirmRemoveButton } from "./confirm-remove-button";
 
 export type ResearchSidebarProps = {
   sidebarTab: ResearchSidebarTab;
@@ -208,13 +209,13 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                             {companyOfficeSummary(company)}
                           </span>
                         </button>
-                        <button
-                          className="shrink-0 rounded border border-red-300 px-1.5 py-0.5 text-[10px] text-red-700"
-                          onClick={() => onDeleteCompany(company.id)}
-                          type="button"
-                        >
-                          ×
-                        </button>
+                        <ConfirmRemoveButton
+                          appearance="catalog"
+                          catalogSelected={selectedCompanyId === company.id}
+                          kind="company"
+                          language={language}
+                          onConfirm={() => onDeleteCompany(company.id)}
+                        />
                       </div>
                     </li>
                   ))}
@@ -336,13 +337,13 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                             ({job.weighted_keywords.length} kw)
                           </span>
                         </button>
-                        <button
-                          className="shrink-0 rounded border border-red-300 px-1.5 py-0.5 text-[10px] text-red-700"
-                          onClick={() => onDeleteJob(job.id)}
-                          type="button"
-                        >
-                          ×
-                        </button>
+                        <ConfirmRemoveButton
+                          appearance="catalog"
+                          catalogSelected={selectedJobId === job.id}
+                          kind="job"
+                          language={language}
+                          onConfirm={() => onDeleteJob(job.id)}
+                        />
                       </div>
                     </li>
                   ))}

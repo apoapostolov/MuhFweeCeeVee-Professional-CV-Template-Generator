@@ -1,6 +1,6 @@
 {
   "name": "@muhfweeceevee/web",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "dev": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev --webpack -p 3005 -H 127.0.0.1",

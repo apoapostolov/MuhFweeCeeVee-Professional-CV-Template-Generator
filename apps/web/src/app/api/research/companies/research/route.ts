@@ -6,7 +6,11 @@ import {
 } from "@/lib/research/research-prompts";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { callOpenRouterResearchChat } from "@/lib/server/openRouterResearch";
-import { upsertResearchedCompany } from "@/lib/server/researchStore";
+import {
+  findResearchedCompany,
+  readResearchCatalog,
+  upsertResearchedCompany,
+} from "@/lib/server/researchStore";
 
 export const runtime = "nodejs";
 
@@ -17,12 +21,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const body = (await request.json()) as {
+    companyId?: unknown;
     companyName?: unknown;
     officeCountry?: unknown;
     officeCity?: unknown;
     officeLabel?: unknown;
   };
 
+  const companyId = typeof body.companyId === "string" ? body.companyId.trim() : "";
   const companyName = typeof body.companyName === "string" ? body.companyName.trim() : "";
   const officeCountry = typeof body.officeCountry === "string" ? body.officeCountry.trim() : "";
   const officeCity = typeof body.officeCity === "string" ? body.officeCity.trim() : undefined;
@@ -59,6 +65,15 @@ export async function POST(request: Request): Promise<NextResponse> {
       { error: "Could not parse company research from model response." },
       { status: 502 },
     );
+  }
+
+  if (companyId) {
+    const catalog = await readResearchCatalog();
+    const existing = findResearchedCompany(catalog, companyId);
+    if (!existing) {
+      return NextResponse.json({ error: `Company '${companyId}' not found.` }, { status: 404 });
+    }
+    company.id = existing.id;
   }
 
   company.research_model = result.model;
