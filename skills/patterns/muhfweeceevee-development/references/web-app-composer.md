@@ -74,6 +74,9 @@ Shared response shapes: `components/composer/types.ts` (`CvListResponse`, `SyncR
 - `composer-ui.tsx`, `analysis-ui-utils.ts` — shared chips, toggles
 - Theme mode: `light` | `dark` | `system` on shell
 
+**Full design system** (tokens, grids, control catalog, feature checklist):
+[`ui-ux-design-system.md`](ui-ux-design-system.md).
+
 ## Client-only constraints
 
 - All composer panels are under `"use client"` tree

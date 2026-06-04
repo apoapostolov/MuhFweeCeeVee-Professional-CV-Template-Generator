@@ -3,10 +3,11 @@ name: muhfweeceevee-development
 description: |
   Use when developing, debugging, or extending MuhFweeCeeVee (MyFreeCeeVee) —
   the local-first CV composer at C:\git-public\MuhFweeCeeVee-Professional-CV-Template-Generator.
-  Covers monorepo layout, Next.js composer UI, YAML CV storage, template rendering,
-  PDF export, OpenRouter AI, company metadata, Photo Booth, and WSL dev workflow.
-  Triggers: MuhFweeCeeVee, MFCV, CV template generator, composer, Print Room, cv_en_john_doe,
-  harvard-v1, stanford-v1, port 3005, /api/cvs, /api/export/pdf.
+  Covers monorepo layout, Next.js composer UI, design system and UX patterns (theme tokens,
+  form grid, controls), YAML CV storage, template rendering, PDF export, OpenRouter AI,
+  company metadata, Photo Booth, and WSL dev workflow.
+  Triggers: MuhFweeCeeVee, MFCV, CV template generator, composer, Print Room, editor form,
+  UI component, design tokens, dark mode, cv_en_john_doe, harvard-v1, port 3005.
 ---
 
 # MuhFweeCeeVee — Development Skill
@@ -34,6 +35,7 @@ npm run check    # eslint + tsc before declaring done
 |-----------|---------------------|
 | First time on repo / “how does this work?” | [`references/architecture-overview.md`](references/architecture-overview.md) |
 | UI panels, editor form, autosave, localStorage | [`references/web-app-composer.md`](references/web-app-composer.md) |
+| Theme, design tokens, controls, new UI features | [`references/ui-ux-design-system.md`](references/ui-ux-design-system.md) |
 | API routes, `cvStore`, companies, photos, auth | [`references/server-api-data.md`](references/server-api-data.md) |
 | Templates, mappings, HTML render, PDF/Playwright | [`references/rendering-pipeline.md`](references/rendering-pipeline.md) |
 | CV YAML shape, variant IDs, sync, validation | [`references/cv-yaml-variants.md`](references/cv-yaml-variants.md) |
@@ -78,8 +80,8 @@ Render path
 
 | Change | Start here |
 |--------|------------|
-| New form field / editor UX | `apps/web/src/components/composer/useEditorFormRenderer.tsx`, `editor-form-fields.tsx` |
-| Panel layout / nav | `ComposerShell.tsx`, `ComposerNav.tsx`, `*Panel.tsx` |
+| New form field / editor UX | `useEditorFormRenderer.tsx`, `editor-compact-field-row.tsx`, `editor-compact-form-layout.ts` — see [`references/ui-ux-design-system.md`](references/ui-ux-design-system.md) |
+| Panel layout / nav | `ComposerShell.tsx`, `ComposerNav.tsx`, `*Panel.tsx` — reuse nav/button tokens from UI reference |
 | Client orchestration | `useComposerController.ts` (large — search before editing) |
 | New API endpoint | `apps/web/src/app/api/**/route.ts` + `docs/API.md` |
 | CV read/write/history | `apps/web/src/lib/server/cvStore.ts` |
