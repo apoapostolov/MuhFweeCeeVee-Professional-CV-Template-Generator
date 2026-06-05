@@ -45,7 +45,7 @@ const COMPANY_JSON_SHAPE = `{
       "open_roles_count_estimate": "", "typical_role_families": [],
       "employee_count_at_office": "", "employee_count_company": "", "glassdoor_rating": ""
     },
-    "research": { "notes": "", "sources": [] }
+    "research": { "notes": "", "sources": ["https://www.linkedin.com/company/example", "https://example.com"] }
   }
 }`;
 
@@ -139,7 +139,7 @@ const JOB_JSON_SHAPE = (companyId: string) => `{
     },
     "weighted_keywords": [{ "keyword": "string", "weight": 0, "category": "position|seniority|industry|skill|tool|domain|soft|certification|methodology", "rationale": "" }],
     "ats": { "keywords": [], "action_verbs": [] },
-    "research": { "notes": "", "sources": [] }
+    "research": { "notes": "", "sources": ["https://www.linkedin.com/company/example", "https://example.com"] }
   }
 }`;
 

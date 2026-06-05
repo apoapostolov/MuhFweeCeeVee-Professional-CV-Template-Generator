@@ -15,6 +15,7 @@ logs/
 .env
 .env.*
 !.env.example
+!.env.test.example
 # /work
 # Agent/planning docs (AGENTS.md, TODO.md, DEVELOPMENT_*.md) are tracked.
 # Keep only personal runtime journals local if you add them later.

@@ -1,3 +1,7 @@
+import {
+  backfillCompanyResearchSources,
+  backfillJobResearchSources,
+} from "./research-source-backfill";
 import { mergeWeightedKeywords } from "./weighted-keywords";
 import type {
   CompanyContacts,
@@ -89,7 +93,7 @@ export function normalizeResearchedCompany(input: unknown): ResearchedCompany | 
   const hiringRecord = asRecord(record.hiring);
   const researchRecord = asRecord(record.research);
 
-  return {
+  return backfillCompanyResearchSources({
     id,
     name,
     office,
@@ -145,7 +149,7 @@ export function normalizeResearchedCompany(input: unknown): ResearchedCompany | 
       researched_at: pickString(researchRecord ?? {}, "researched_at") ?? pickString(record, "researched_at"),
       research_model: pickString(researchRecord ?? {}, "research_model") ?? pickString(record, "research_model"),
     },
-  };
+  });
 }
 
 function parseWeightedKeywords(input: unknown): WeightedKeyword[] {
@@ -200,7 +204,7 @@ export function normalizeResearchedJobPosition(input: unknown): ResearchedJobPos
       ? record.skills_required.map((v) => String(v).trim()).filter(Boolean)
       : undefined;
 
-  return {
+  return backfillJobResearchSources({
     id,
     company_id,
     title,
@@ -285,7 +289,7 @@ export function normalizeResearchedJobPosition(input: unknown): ResearchedJobPos
       researched_at: pickString(researchRecord ?? {}, "researched_at") ?? pickString(record, "researched_at"),
       research_model: pickString(researchRecord ?? {}, "research_model") ?? pickString(record, "research_model"),
     },
-  };
+  });
 }
 
 export function normalizeResearchCatalog(input: unknown): ResearchCatalog {

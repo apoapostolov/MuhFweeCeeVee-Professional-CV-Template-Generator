@@ -72,7 +72,7 @@ export function researchWebSearchPromptBlock(hints: ResearchWebSearchQueryHints)
     "- Use only linkedin.com URLs you discover in search; never invent slugs or job IDs.",
     "- Do not invent people, emails, phone numbers, or headcount.",
     "- If a fact cannot be verified, leave the field empty and explain briefly in research.notes.",
-    "- Populate research.sources with full https URLs you actually used (LinkedIn URLs first when available).",
+    "- research.sources is REQUIRED: include at least one full https URL (LinkedIn first when available). Never leave sources empty when website or LinkedIn URLs are present in the JSON.",
     ...(suggested.length > 0
       ? ["", "Suggested search queries (run these or equivalent):", ...suggested.map((q) => `- ${q}`)]
       : []),
