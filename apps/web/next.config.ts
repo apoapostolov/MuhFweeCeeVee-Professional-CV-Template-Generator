@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     "localhost:3005",
     "127.0.0.1:3005",
     "192.168.1.217:3005",
+    "localhost:10003",
+    "127.0.0.1:10003",
   ],
   turbopack: {
     resolveAlias: {

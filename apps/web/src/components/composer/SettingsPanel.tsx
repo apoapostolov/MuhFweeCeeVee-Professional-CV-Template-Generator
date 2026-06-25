@@ -3,11 +3,15 @@
 import type { JSX } from "react";
 
 import { SettingsDataBackupCard } from "./SettingsDataBackupCard";
+import { SettingsInterfaceLanguageCard } from "./SettingsInterfaceLanguageCard";
 import { OpenRouterSettingsCard, type OpenRouterSettingsCardProps } from "./OpenRouterSettingsCard";
 import { formatUsd, type AnalysisCostEstimate } from "./openrouter-utils";
+import { uiIsBg, type UiLanguageCode } from "./ui-language";
 
 export type SettingsPanelProps = OpenRouterSettingsCardProps & {
   analysisCostEstimate: AnalysisCostEstimate;
+  uiLanguage: UiLanguageCode;
+  onUiLanguageChange: (language: UiLanguageCode) => void;
 };
 
 const SETTINGS_COLUMN_CLASS =
@@ -38,50 +42,60 @@ function CostEstimateCard({
 }
 
 export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
-  const { analysisCostEstimate, creditStatus, ...cardProps } = props;
+  const { analysisCostEstimate, creditStatus, uiLanguage, onUiLanguageChange, ...cardProps } =
+    props;
+  const bg = uiIsBg(uiLanguage);
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-4 lg:overflow-hidden">
-        <article className={`${SETTINGS_COLUMN_CLASS} lg:overflow-hidden`}>
-          <SettingsDataBackupCard />
-        </article>
+      <article className={SETTINGS_COLUMN_CLASS}>
+        <SettingsInterfaceLanguageCard
+          onUiLanguageChange={onUiLanguageChange}
+          uiLanguage={uiLanguage}
+        />
+      </article>
 
-        <article className={SETTINGS_COLUMN_CLASS}>
-          <h2 className="text-xl font-bold text-slate-900">AI Provider</h2>
-          <p className="mt-2 text-sm text-[var(--ink-muted)]">
-            Configure external model access and monitor remaining OpenRouter credit.
+      <article className={`${SETTINGS_COLUMN_CLASS} lg:overflow-hidden`}>
+        <SettingsDataBackupCard />
+      </article>
+
+      <article className={SETTINGS_COLUMN_CLASS}>
+        <h2 className="text-xl font-bold text-slate-900">{bg ? "AI доставчик" : "AI Provider"}</h2>
+        <p className="mt-2 text-sm text-[var(--ink-muted)]">
+          {bg
+            ? "Конфигурирайте достъп до модели и следете оставащия кредит в OpenRouter."
+            : "Configure external model access and monitor remaining OpenRouter credit."}
+        </p>
+        <div className="mt-4">
+          <OpenRouterSettingsCard {...cardProps} creditStatus={creditStatus} />
+        </div>
+        <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
+          <p className="text-sm font-semibold text-slate-800">
+            {bg ? "Приблизителна цена на проверка" : "Approximate Cost per Check"}
           </p>
-          <div className="mt-4">
-            <OpenRouterSettingsCard {...cardProps} creditStatus={creditStatus} />
+          <p className="mt-1 text-[11px] text-slate-600">
+            {bg
+              ? "Груби токени и USD според размера на CV и тарифите на OpenRouter. Редовете за проучване на компания/позиция използват Research модела по-горе (живо търсене). Реалните разходи може да се различават."
+              : "Rough tokens and USD from CV size and OpenRouter model rates. Research company/job lines use the Research model selected above (live web search). Actual spend may differ."}
+          </p>
+          <div className="mt-2 grid gap-2">
+            {analysisCostEstimate.lines.map((line) => (
+              <CostEstimateCard
+                key={line.label}
+                cost={line.cost}
+                inputTokens={line.inputTokens}
+                label={line.label}
+                outputTokens={line.outputTokens}
+              />
+            ))}
           </div>
-          <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-            <p className="text-sm font-semibold text-slate-800">Approximate Cost per Check</p>
-            <p className="mt-1 text-[11px] text-slate-600">
-              Rough tokens and USD from CV size and OpenRouter model rates. Research company/job lines
-              use the Research model selected above (live web search). Actual spend may differ.
-            </p>
-            <div className="mt-2 grid gap-2">
-              {analysisCostEstimate.lines.map((line) => (
-                <CostEstimateCard
-                  key={line.label}
-                  cost={line.cost}
-                  inputTokens={line.inputTokens}
-                  label={line.label}
-                  outputTokens={line.outputTokens}
-                />
-              ))}
-            </div>
-          </div>
-        </article>
+        </div>
+      </article>
 
-        <article
-          aria-hidden
-          className={`${SETTINGS_COLUMN_CLASS} hidden bg-[var(--surface-1)] lg:flex`}
-        />
-        <article
-          aria-hidden
-          className={`${SETTINGS_COLUMN_CLASS} hidden bg-[var(--surface-1)] lg:flex`}
-        />
+      <article
+        aria-hidden
+        className={`${SETTINGS_COLUMN_CLASS} hidden bg-[var(--surface-1)] lg:flex`}
+      />
     </div>
   );
 }

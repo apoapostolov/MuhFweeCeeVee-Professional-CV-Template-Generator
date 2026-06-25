@@ -141,6 +141,7 @@ export const STORAGE_KEYS = {
   selectedCvId: "mfcv_selected_cv_id",
   selectedCvPairKey: "mfcv_selected_cv_pair_key",
   selectedLanguage: "mfcv_selected_language",
+  uiLanguage: "mfcv_ui_language",
   selectedTemplateId: "mfcv_selected_template_id",
   selectedTemplateTheme: "mfcv_selected_template_theme",
   selectedPhotoMode: "mfcv_selected_photo_mode",

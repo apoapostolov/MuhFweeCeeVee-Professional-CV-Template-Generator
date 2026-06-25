@@ -34,6 +34,7 @@ export type EditorPanelProps = {
   formRenderer: FormRenderer;
   availableLanguages: string[];
   selectedLanguage: string;
+  uiLanguage: string;
   onSwitchLanguage: (language: string) => void;
   onOpenLanguageModal: () => void;
   syncing: boolean;
@@ -109,6 +110,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     formRenderer,
     availableLanguages,
     selectedLanguage,
+    uiLanguage,
     onSwitchLanguage,
     onOpenLanguageModal,
     syncing,
@@ -331,15 +333,15 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     <div className="mt-3">
                       <EditorFlatSubsectionsToggle
                         flat={editorFlatSubsections}
-                        language={selectedLanguage}
+                        language={uiLanguage}
                         onChange={onEditorFlatSubsectionsChange}
                       />
                       <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
                         {editorFlatSubsections
-                          ? selectedLanguage === "bg"
+                          ? uiLanguage === "bg"
                             ? "Подсекциите са изравнени (без отстъп)."
                             : "Subsections are flush (no indent)."
-                          : selectedLanguage === "bg"
+                          : uiLanguage === "bg"
                             ? "Подсекциите са с отстъп по дълбочина."
                             : "Subsections indent by nesting depth."}
                       </p>
@@ -392,13 +394,13 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                         </button>
                         <EditorAutoSaveToggle
                           enabled={companyMetadataAutoSaveEnabled}
-                          language={selectedLanguage}
+                          language={uiLanguage}
                           onChange={onCompanyMetadataAutoSaveChange}
                         />
                         {companyMetadataAutoSaveEnabled ? (
                           <EditorAutosaveStatusPill
                             activity={companyMetadataAutosaveActivity}
-                            language={selectedLanguage}
+                            language={uiLanguage}
                           />
                         ) : null}
                         {!companyMetadataAutoSaveEnabled ? (
@@ -464,13 +466,13 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                         </button>
                         <EditorAutoSaveToggle
                           enabled={editorAutoSaveEnabled}
-                          language={selectedLanguage}
+                          language={uiLanguage}
                           onChange={onEditorAutoSaveChange}
                         />
                         {editorAutoSaveEnabled ? (
                           <EditorAutosaveStatusPill
                             activity={editorAutosaveActivity}
-                            language={selectedLanguage}
+                            language={uiLanguage}
                           />
                         ) : null}
                         {!editorAutoSaveEnabled ? (
@@ -499,7 +501,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                 ) : (
                   <>
                     <p className="mt-2 text-xs text-[var(--ink-muted)]">
-                      {selectedLanguage === "bg"
+                      {uiLanguage === "bg"
                         ? "Редактирайте секцията във форма или YAML. Записът обновява YAML варианта и snapshot историята."
                         : "Edit the section in form or YAML mode. Save updates the YAML variant and snapshot history."}
                     </p>

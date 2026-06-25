@@ -79,6 +79,7 @@ export type EditorFormRendererContext = {
   resolvedTheme: "light" | "dark";
   selectedCvId: string;
   selectedLanguage: string;
+  uiLanguage: string;
   editorPath: string;
   selectedTemplateId: string;
   onEditorNotice: (message: string) => void;
@@ -138,6 +139,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     resolvedTheme,
     selectedCvId,
     selectedLanguage,
+    uiLanguage,
     editorPath,
     selectedTemplateId,
     onEditorNotice,
@@ -438,13 +440,13 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       return { title, subtitle };
     }
 
-    const copy = resolveFieldCopy(pathLabel, keyName, selectedLanguage);
+    const copy = resolveFieldCopy(pathLabel, keyName, uiLanguage);
     const visibilityKey = pathSegmentsToVisibilityKey(path, editorPath);
     const templateVisible = isTemplatePathVisible(visibilityKey, templateVisibility);
     const visibilityToggle = (
       <VisibilityToggleButton
         label={options?.headingTitle ?? copy.label}
-        language={selectedLanguage}
+        language={uiLanguage}
         onToggle={() => onToggleTemplateVisibility(visibilityKey)}
         visible={templateVisible}
       />
@@ -483,7 +485,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           editorPath={editorPath}
           fieldLabel={fieldLabel}
           fieldLayout={compactFieldLayout ? "compact" : "stacked"}
-          language={selectedLanguage}
+          language={uiLanguage}
           onApply={(next) => applyEditorFieldText(fieldPath, next, { fieldLabel })}
           onNotice={onEditorNotice}
           pathLabel={fieldPathLabel}
@@ -498,7 +500,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     }
 
     const removeButton = options?.onRemove ? (
-      <ConfirmRemoveButton kind="field" language={selectedLanguage} onConfirm={options.onRemove} />
+      <ConfirmRemoveButton kind="field" language={uiLanguage} onConfirm={options.onRemove} />
     ) : null;
 
     if (Array.isArray(node)) {
@@ -527,10 +529,10 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         <div className="flex shrink-0 gap-2">
           <button
             aria-expanded={expanded}
-            aria-label={expanded ? (selectedLanguage === "bg" ? "Свий секцията" : "Collapse section") : (selectedLanguage === "bg" ? "Разгъни секцията" : "Expand section")}
+            aria-label={expanded ? (uiLanguage === "bg" ? "Свий секцията" : "Collapse section") : (uiLanguage === "bg" ? "Разгъни секцията" : "Expand section")}
             className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-[var(--line)] bg-white px-1 text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
             onClick={() => setFormNodeExpanded(path, !expanded)}
-            title={expanded ? (selectedLanguage === "bg" ? "Свий" : "Collapse") : (selectedLanguage === "bg" ? "Разгъни" : "Expand")}
+            title={expanded ? (uiLanguage === "bg" ? "Свий" : "Collapse") : (uiLanguage === "bg" ? "Разгъни" : "Expand")}
             type="button"
           >
             {expanded ? "▾" : "▸"}
@@ -540,10 +542,10 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               aria-expanded={!allSubsectionsCollapsed}
               aria-label={
                 allSubsectionsCollapsed
-                  ? selectedLanguage === "bg"
+                  ? uiLanguage === "bg"
                     ? "Разгъни всички подсекции"
                     : "Expand all subsections"
-                  : selectedLanguage === "bg"
+                  : uiLanguage === "bg"
                     ? "Свий всички подсекции"
                     : "Collapse all subsections"
               }
@@ -551,10 +553,10 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               onClick={toggleAllTabulatedSubsections}
               title={
                 allSubsectionsCollapsed
-                  ? selectedLanguage === "bg"
+                  ? uiLanguage === "bg"
                     ? "Разгъни всички подсекции"
                     : "Expand all subsections"
-                  : selectedLanguage === "bg"
+                  : uiLanguage === "bg"
                     ? "Свий всички подсекции"
                     : "Collapse all subsections"
               }
@@ -565,19 +567,19 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           ) : null}
           {removeButton}
           <button
-            aria-label={selectedLanguage === "bg" ? "Добави елемент" : "Add item"}
+            aria-label={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
             onClick={() => addArrayEntry(path, defaultFromSample(node[0]))}
-            title={selectedLanguage === "bg" ? "Добави елемент" : "Add item"}
+            title={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             type="button"
           >
             +
           </button>
           <button
-            aria-label={selectedLanguage === "bg" ? "Добави custom елемент" : "Add custom item"}
+            aria-label={uiLanguage === "bg" ? "Добави custom елемент" : "Add custom item"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
             onClick={() => addCustomArrayEntry(path)}
-            title={selectedLanguage === "bg" ? "Добави custom елемент" : "Add custom item"}
+            title={uiLanguage === "bg" ? "Добави custom елемент" : "Add custom item"}
             type="button"
           >
             ✎
@@ -624,7 +626,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                       : "text-xs text-[var(--ink-muted)]"
                   }
                 >
-                  {selectedLanguage === "bg" ? "Празен списък." : "Empty list."}
+                  {uiLanguage === "bg" ? "Празен списък." : "Empty list."}
                 </p>
               )}
               {node.map((item, index) => {
@@ -640,7 +642,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                   const childToggle = (
                     <VisibilityToggleButton
                       label={`${copy.label} ${index + 1}`}
-                      language={selectedLanguage}
+                      language={uiLanguage}
                       onToggle={() => onToggleTemplateVisibility(childVisibilityKey)}
                       visible={childVisible}
                     />
@@ -648,7 +650,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                   const removeItemButton = (
                     <ConfirmRemoveButton
                       kind="item"
-                      language={selectedLanguage}
+                      language={uiLanguage}
                       onConfirm={() => removeDraftAt(childPath)}
                     />
                   );
@@ -797,20 +799,20 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         <div className="flex shrink-0 gap-2">
           <button
             aria-expanded={expanded}
-            aria-label={expanded ? (selectedLanguage === "bg" ? "Свий секцията" : "Collapse section") : (selectedLanguage === "bg" ? "Разгъни секцията" : "Expand section")}
+            aria-label={expanded ? (uiLanguage === "bg" ? "Свий секцията" : "Collapse section") : (uiLanguage === "bg" ? "Разгъни секцията" : "Expand section")}
             className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-[var(--line)] bg-white px-1 text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
             onClick={() => setFormNodeExpanded(path, !expanded)}
-            title={expanded ? (selectedLanguage === "bg" ? "Свий" : "Collapse") : (selectedLanguage === "bg" ? "Разгъни" : "Expand")}
+            title={expanded ? (uiLanguage === "bg" ? "Свий" : "Collapse") : (uiLanguage === "bg" ? "Разгъни" : "Expand")}
             type="button"
           >
             {expanded ? "▾" : "▸"}
           </button>
           {removeButton}
           <button
-            aria-label={selectedLanguage === "bg" ? "Добави custom поле" : "Add custom field"}
+            aria-label={uiLanguage === "bg" ? "Добави custom поле" : "Add custom field"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
             onClick={() => addCustomObjectField(path)}
-            title={selectedLanguage === "bg" ? "Добави custom поле" : "Add custom field"}
+            title={uiLanguage === "bg" ? "Добави custom поле" : "Add custom field"}
             type="button"
           >
             +
@@ -826,7 +828,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       const experienceCurrentRoleControl = experienceItem
         ? renderIsCurrentHeaderControl({
             checked: isCurrentValue,
-            language: selectedLanguage,
+            language: uiLanguage,
             onChange: (next) => updateDraftAt([...path, "is_current"], next),
           })
         : null;
@@ -930,7 +932,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       ) : (
         <CustomFieldControl
           definition={customFieldDef}
-          language={selectedLanguage}
+          language={uiLanguage}
           onChange={(next) => updateDraftAt(path, next)}
           useCompactMetrics={compactFieldLayout}
           value={primitive}
@@ -938,7 +940,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       )
     ) : isEmploymentTypeField ? (
       renderEmploymentTypeSelect({
-        language: selectedLanguage,
+        language: uiLanguage,
         onChange: (next) => updateDraftAt(path, next),
         value: primitive === undefined || primitive === null || primitive === "" ? "full_time" : primitive,
       })
@@ -949,7 +951,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           onChange={(event) => updateDraftAt(path, event.target.checked)}
           type="checkbox"
         />
-        {selectedLanguage === "bg" ? "Да/Не" : "True/False"}
+        {uiLanguage === "bg" ? "Да/Не" : "True/False"}
       </label>
     ) : isDate ? (
       <input
@@ -1161,9 +1163,9 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const depth = options?.depth ?? 0;
     const childDepth = depth + 1;
     const compactFieldLayout = true;
-    const copy = resolveFieldCopy(pathLabel, keyName, "en");
+    const copy = resolveFieldCopy(pathLabel, keyName, uiLanguage);
     const removeButton = options?.onRemove ? (
-      <ConfirmRemoveButton kind="field" language="en" onConfirm={options.onRemove} />
+      <ConfirmRemoveButton kind="field" language={uiLanguage} onConfirm={options.onRemove} />
     ) : null;
     const isContainer = Array.isArray(node) || (node !== null && typeof node === "object");
     const expanded = isContainer ? isMetadataFormNodeExpanded(path) : true;
@@ -1258,7 +1260,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                   const removeItemButton = (
                     <ConfirmRemoveButton
                       kind="item"
-                      language="en"
+                      language={uiLanguage}
                       onConfirm={() => removeCompanyMetadataDraftAt(childPath)}
                     />
                   );
@@ -1416,7 +1418,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const valueControl = customFieldDef ? (
       <CustomFieldControl
         definition={customFieldDef}
-        language="en"
+        language={uiLanguage}
         onChange={(next) => updateCompanyMetadataDraftAt(path, next)}
         useCompactMetrics={compactFieldLayout}
         value={primitive}

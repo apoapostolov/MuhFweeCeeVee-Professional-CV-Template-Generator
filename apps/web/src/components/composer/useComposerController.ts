@@ -54,6 +54,14 @@ import {
   sectionDraftNeedsSync,
 } from "@/components/composer/section-draft";
 import {
+  DEFAULT_UI_LANGUAGE,
+  normalizeUiLanguage,
+  readUiLanguage,
+  uiIsBg,
+  writeUiLanguage,
+  type UiLanguageCode,
+} from "@/components/composer/ui-language";
+import {
   readPersistedWorkspacePrefs,
   resolveCvItemFromPersistedPrefs,
   resolveTemplateSelection,
@@ -162,6 +170,7 @@ export function useComposerController() {
   const [previewNonce, setPreviewNonce] = useState(0);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [uiLanguage, setUiLanguageState] = useState<UiLanguageCode>(() => readUiLanguage());
   const [addCustomFieldTarget, setAddCustomFieldTarget] = useState<
     { scope: "section" | "company-metadata"; path: PathSegment[] } | null
   >(null);
@@ -186,6 +195,7 @@ export function useComposerController() {
   const editorCvRef = useRef<Record<string, unknown> | null>(null);
   const selectedCvIdRef = useRef("");
   const selectedLanguageRef = useRef("en");
+  const uiLanguageRef = useRef<UiLanguageCode>(DEFAULT_UI_LANGUAGE);
   const editorPathRef = useRef("person");
   const editorViewRef = useRef<EditorViewMode>("form");
   const variantGroupRef = useRef<Record<string, CvListResponse["items"][number]> | null>(null);
@@ -921,6 +931,15 @@ export function useComposerController() {
   useEffect(() => {
     selectedLanguageRef.current = selectedLanguage;
   }, [selectedLanguage]);
+  useEffect(() => {
+    uiLanguageRef.current = uiLanguage;
+  }, [uiLanguage]);
+
+  function setUiLanguage(language: string): void {
+    const normalized = normalizeUiLanguage(language);
+    setUiLanguageState(normalized);
+    writeUiLanguage(normalized);
+  }
   useEffect(() => {
     editorPathRef.current = editorPath;
   }, [editorPath]);
@@ -1678,7 +1697,7 @@ export function useComposerController() {
     });
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
-      setEditorNotice(payload.error ?? (selectedLanguageRef.current === "bg" ? "Грешка при запис." : "Save failed."));
+      setEditorNotice(payload.error ?? (uiIsBg(uiLanguageRef.current) ? "Грешка при запис." : "Save failed."));
       return false;
     }
     setEditorCv(updated);
@@ -1773,7 +1792,7 @@ export function useComposerController() {
     if (completedLabels.length > 0) {
       const labelList = completedLabels.join(", ");
       showComposerToast(
-        selectedLanguageRef.current === "bg"
+        uiIsBg(uiLanguageRef.current)
           ? `Преводът на полето е готов: ${labelList}.`
           : `Field translation complete: ${labelList}.`,
       );
@@ -1784,7 +1803,7 @@ export function useComposerController() {
           ? firstError.reason.message
           : null;
       showComposerToast(
-        selectedLanguageRef.current === "bg"
+        uiIsBg(uiLanguageRef.current)
           ? detail
             ? `Преводът на полето не успя: ${detail}`
             : "Преводът на полето не успя."
@@ -1933,7 +1952,7 @@ export function useComposerController() {
   }
 
   function addCustomArrayEntry(path: PathSegment[]) {
-    const value = window.prompt(selectedLanguage === "bg" ? "Стойност за нов запис" : "Value for new entry", "");
+    const value = window.prompt(uiIsBg(uiLanguage) ? "Стойност за нов запис" : "Value for new entry", "");
     if (value === null) return;
     setSectionDraft((current: unknown) => {
       const next = appendToArrayAtPath(current, path, value);
@@ -2043,12 +2062,12 @@ export function useComposerController() {
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setEditorNotice(payload.error ?? (selectedLanguage === "bg" ? "Грешка при запис." : "Save failed."));
+        setEditorNotice(payload.error ?? (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."));
         return;
       }
       setPreviewNonce(Date.now());
     } catch {
-      setEditorNotice(selectedLanguage === "bg" ? "Грешка при запис на видимост." : "Failed to save visibility.");
+      setEditorNotice(uiIsBg(uiLanguage) ? "Грешка при запис на видимост." : "Failed to save visibility.");
     }
   }
 
@@ -2062,6 +2081,7 @@ export function useComposerController() {
     resolvedTheme,
     selectedCvId,
     selectedLanguage,
+    uiLanguage,
     editorPath,
     selectedTemplateId,
     onEditorNotice: setEditorNotice,
@@ -2269,7 +2289,7 @@ export function useComposerController() {
       try {
         parsedSection = coerceSectionDraftForEditorPath(editorPath, parseYaml(yamlDraft));
       } catch {
-        setEditorNotice(selectedLanguage === "bg" ? "Невалиден YAML." : "Invalid YAML.");
+        setEditorNotice(uiIsBg(uiLanguage) ? "Невалиден YAML." : "Invalid YAML.");
         return;
       }
     }
@@ -2291,15 +2311,15 @@ export function useComposerController() {
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setEditorNotice(payload.error ?? (selectedLanguage === "bg" ? "Грешка при запис." : "Save failed."));
+        setEditorNotice(payload.error ?? (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."));
         return;
       }
       setEditorCv(updated);
       setPreviewNonce(Date.now());
       syncEditorSavedFingerprintFromDraft();
       const savedMessage =
-        selectedLanguage === "bg" ? "Шаблонът на CV е запазен." : "CV template saved.";
-      setEditorNotice(selectedLanguage === "bg" ? "Секцията е запазена." : "Section saved.");
+        uiIsBg(uiLanguage) ? "Шаблонът на CV е запазен." : "CV template saved.";
+      setEditorNotice(uiIsBg(uiLanguage) ? "Секцията е запазена." : "Section saved.");
       showComposerToast(savedMessage);
       const generation = textFieldAutosaveGenerationRef.current + 1;
       textFieldAutosaveGenerationRef.current = generation;
@@ -2414,7 +2434,7 @@ export function useComposerController() {
     try {
       const saved = await persistResearchCompany(company);
       if (saved) {
-        showComposerToast(selectedLanguage === "bg" ? "Компанията е запазена." : "Company saved.");
+        showComposerToast(uiIsBg(uiLanguage) ? "Компанията е запазена." : "Company saved.");
       }
     } finally {
       setSavingResearch(false);
@@ -2427,7 +2447,7 @@ export function useComposerController() {
     try {
       const saved = await persistResearchJob(job);
       if (saved) {
-        showComposerToast(selectedLanguage === "bg" ? "Позицията е запазена." : "Job position saved.");
+        showComposerToast(uiIsBg(uiLanguage) ? "Позицията е запазена." : "Job position saved.");
       }
     } finally {
       setSavingResearch(false);
@@ -2463,7 +2483,7 @@ export function useComposerController() {
       setResearchSidebarTab("companies");
       const updatedExisting = Boolean(payload.companyId);
       setResearchNotice(
-        selectedLanguage === "bg"
+        uiIsBg(uiLanguage)
           ? updatedExisting
             ? `Компанията „${body.company.name}“ е обновена.`
             : `Компанията „${body.company.name}“ е добавена.`
@@ -2472,7 +2492,7 @@ export function useComposerController() {
             : `Researched company “${body.company.name}”.`,
       );
       showComposerToast(
-        selectedLanguage === "bg"
+        uiIsBg(uiLanguage)
           ? updatedExisting
             ? "Компанията е обновена."
             : "Компанията е проучена."
@@ -2514,12 +2534,12 @@ export function useComposerController() {
       selectResearchJob(body.job_position.id);
       setResearchSidebarTab("job_positions");
       setResearchNotice(
-        selectedLanguage === "bg"
+        uiIsBg(uiLanguage)
           ? `Позицията „${body.job_position.title}“ е добавена.`
           : `Researched job “${body.job_position.title}”.`,
       );
       showComposerToast(
-        selectedLanguage === "bg" ? "Позицията е проучена." : "Job position researched.",
+        uiIsBg(uiLanguage) ? "Позицията е проучена." : "Job position researched.",
       );
     } catch {
       setResearchNotice("Job position research failed.");
@@ -2540,7 +2560,7 @@ export function useComposerController() {
       if (selectedResearchCompanyId === companyId) {
         selectResearchCompany("");
       }
-      showComposerToast(selectedLanguage === "bg" ? "Компанията е изтрита." : "Company deleted.");
+      showComposerToast(uiIsBg(uiLanguage) ? "Компанията е изтрита." : "Company deleted.");
     } catch {
       setResearchNotice("Could not delete company.");
     }
@@ -2558,7 +2578,7 @@ export function useComposerController() {
       if (selectedResearchJobPositionId === jobId) {
         setSelectedResearchJobPositionId("");
       }
-      showComposerToast(selectedLanguage === "bg" ? "Позицията е изтрита." : "Job position deleted.");
+      showComposerToast(uiIsBg(uiLanguage) ? "Позицията е изтрита." : "Job position deleted.");
     } catch {
       setResearchNotice("Could not delete job position.");
     }
@@ -3159,6 +3179,8 @@ export function useComposerController() {
     previewNonce,
     loadingWorkspace,
     selectedLanguage,
+    uiLanguage,
+    setUiLanguage,
     languageModalOpen,
     setLanguageModalOpen,
     languageModalSelection,

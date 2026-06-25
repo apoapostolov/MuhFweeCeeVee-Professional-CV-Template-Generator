@@ -12,7 +12,7 @@ export function ComposerOverlays({ controller: c }: ComposerOverlaysProps) {
   return (
     <>
           <AddCustomFieldModal
-            language={c.selectedLanguage}
+            language={c.uiLanguage}
             onClose={() => c.setAddCustomFieldTarget(null)}
             onSubmit={c.submitAddCustomObjectField}
             open={c.addCustomFieldTarget !== null}

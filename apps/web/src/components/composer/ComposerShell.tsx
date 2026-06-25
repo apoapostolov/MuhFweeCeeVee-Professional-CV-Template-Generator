@@ -81,7 +81,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               companyDetail={c.selectedResearchCompany}
               jobDetail={c.selectedResearchJob}
               jobPositions={c.researchJobPositions}
-              language={c.selectedLanguage}
+              language={c.uiLanguage}
               loadingCatalog={c.researchCatalogLoading}
               notice={c.researchNotice}
               onDeleteCompany={(id) => void c.deleteResearchCompany(id)}
@@ -172,6 +172,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               sectionDraft={c.sectionDraft}
               selectedCvId={c.selectedCvId}
               selectedLanguage={c.selectedLanguage}
+              uiLanguage={c.uiLanguage}
               selectedPairKey={c.selectedPairKey}
               syncModalLoading={c.syncModalLoading}
               syncing={c.syncing}
@@ -221,6 +222,8 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
           {c.activePanel === "settings" && (
             <SettingsPanel
               analysisCostEstimate={c.analysisCostEstimate}
+              onUiLanguageChange={c.setUiLanguage}
+              uiLanguage={c.uiLanguage}
               apiKeyInput={c.openRouter.apiKeyInput}
               creditStatus={c.openRouter.creditStatus}
               imageGenerationModelInput={c.openRouter.imageGenerationModelInput}
