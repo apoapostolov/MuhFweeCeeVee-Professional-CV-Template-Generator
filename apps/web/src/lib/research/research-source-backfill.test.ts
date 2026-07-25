@@ -43,6 +43,7 @@ describe("research source backfill", () => {
       title: "Software Engineer",
       weighted_keywords: [{ keyword: "typescript", weight: 80 }],
       identity: {
+        title: "Software Engineer",
         linkedin_url: "https://www.linkedin.com/jobs/view/123",
       },
     };

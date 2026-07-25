@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { listCvVariants, readCv } from "@/lib/server/cvStore";
 import { parseCvVariantId } from "@/lib/server/cvVariants";
 
@@ -24,6 +25,11 @@ function resolveLastEditedAt(cv: unknown): string {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as StatusRequest;
   const cvId = typeof payload.cvId === "string" ? payload.cvId.trim() : "";
   if (!cvId) {

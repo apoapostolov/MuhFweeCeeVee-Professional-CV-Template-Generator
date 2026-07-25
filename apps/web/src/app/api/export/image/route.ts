@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { buildCvTemplateHtml } from "@/lib/server/renderCvTemplate";
 import { parseRenderTweaks } from "@/lib/server/render/tweaks";
+import { withExportSlot } from "@/lib/server/renderConcurrency";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const url = new URL(request.url);
   const cvId = url.searchParams.get("cvId");
   const templateId = url.searchParams.get("templateId");
@@ -20,47 +27,52 @@ export async function GET(request: Request): Promise<NextResponse> {
     );
   }
 
-  let browser: Awaited<ReturnType<(typeof import("playwright"))["chromium"]["launch"]>> | null =
-    null;
   try {
-    const { html } = await buildCvTemplateHtml({
-      cvId,
-      templateId,
-      theme,
-      photoMode,
-      profilePhotoId,
-      tweaks: parseRenderTweaks(url.searchParams),
-    });
-    const { chromium } = await import("playwright");
-    browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({
-      viewport: { width: 1242, height: 1755 },
-      deviceScaleFactor: 1,
-    });
-    await page.setContent(html, { waitUntil: "networkidle" });
-    const image = await page.screenshot({
-      type: "png",
-      fullPage: false,
-      clip: { x: 0, y: 0, width: 1242, height: 1755 },
-    });
-    await page.close();
+    return await withExportSlot(async () => {
+      let browser: Awaited<
+        ReturnType<(typeof import("playwright"))["chromium"]["launch"]>
+      > | null = null;
+      try {
+        const { html } = await buildCvTemplateHtml({
+          cvId,
+          templateId,
+          theme,
+          photoMode,
+          profilePhotoId,
+          tweaks: parseRenderTweaks(url.searchParams),
+        });
+        const { chromium } = await import("playwright");
+        browser = await chromium.launch({ headless: true });
+        const page = await browser.newPage({
+          viewport: { width: 1242, height: 1755 },
+          deviceScaleFactor: 1,
+        });
+        await page.setContent(html, { waitUntil: "networkidle" });
+        const image = await page.screenshot({
+          type: "png",
+          fullPage: false,
+          clip: { x: 0, y: 0, width: 1242, height: 1755 },
+        });
+        await page.close();
 
-    const fileName = `${cvId}__${templateId}.png`;
-    return new NextResponse(new Uint8Array(image), {
-      headers: {
-        "content-type": "image/png",
-        "content-disposition": `inline; filename="${fileName}"`,
-        "cache-control": "no-store",
-      },
+        const fileName = `${cvId}__${templateId}.png`;
+        return new NextResponse(new Uint8Array(image), {
+          headers: {
+            "content-type": "image/png",
+            "content-disposition": `inline; filename="${fileName}"`,
+            "cache-control": "no-store",
+          },
+        });
+      } finally {
+        if (browser) {
+          await browser.close();
+        }
+      }
     });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to generate image." },
       { status: 500 },
     );
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { appendPhotoComparison, getPhotoComparisonHistory } from "@/lib/server/photoAnalysisStore";
 import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
@@ -138,6 +139,11 @@ function normalizeCompare(raw: unknown, model: string): CompareAnalysis {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as CompareRequest;
   const lookupOnly = payload.lookupOnly === true;
   const forceNew = payload.forceNew === true;

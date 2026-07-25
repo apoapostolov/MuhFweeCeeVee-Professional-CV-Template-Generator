@@ -141,8 +141,11 @@ describe.skipIf(!HAS_OPENROUTER_KEY)("Perplexity live research quality", () => {
       const parsed = parseResearchFieldRefineProposals(result.content);
       expect(parsed).not.toBeNull();
       expect(parsed?.proposals.length).toBeGreaterThanOrEqual(1);
-      expect(parsed?.proposals[0].value.length).toBeGreaterThan(40);
-      expect(parsed?.proposals[0].confidence).toBeGreaterThanOrEqual(50);
+      const firstValue = parsed?.proposals[0]?.value;
+      const valueText =
+        typeof firstValue === "string" ? firstValue : JSON.stringify(firstValue ?? "");
+      expect(valueText.length).toBeGreaterThan(40);
+      expect(parsed?.proposals[0]?.confidence).toBeGreaterThanOrEqual(50);
     },
     LIVE_TIMEOUT_MS,
   );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { readCv, writeCv } from "@/lib/server/cvStore";
 import {
   isSupportedLanguage,
@@ -261,6 +262,11 @@ async function translateFragment(
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as SyncRequest;
   const cvId = typeof payload.cvId === "string" ? payload.cvId.trim() : "";
   if (!cvId) {

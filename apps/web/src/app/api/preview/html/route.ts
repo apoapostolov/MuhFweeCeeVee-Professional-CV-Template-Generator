@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { buildCvTemplateHtml } from "@/lib/server/renderCvTemplate";
 import { parseRenderTweaks } from "@/lib/server/render/tweaks";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const url = new URL(request.url);
   const cvId = url.searchParams.get("cvId");
   const templateId = url.searchParams.get("templateId");

@@ -108,8 +108,10 @@ Optional parser service (second terminal; **scaffold only**, see
 npm run dev:parser
 ```
 
-When exposing the app beyond localhost, set `MFCV_API_TOKEN` in `.env` and send it
-as `Authorization: Bearer …` or `x-mfcv-api-token` on mutation/analysis routes.
+When exposing the app beyond localhost, set `MFCV_API_TOKEN` in `.env`. Non-loopback
+clients must send it as `Authorization: Bearer …` or `x-mfcv-api-token` on
+mutation/analysis/export routes. The local browser UI on `localhost` stays trusted
+without embedding the secret. Production non-loopback access without a token is denied.
 
 Quality checks:
 

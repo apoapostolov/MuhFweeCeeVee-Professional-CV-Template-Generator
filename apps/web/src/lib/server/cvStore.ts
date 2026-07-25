@@ -254,7 +254,10 @@ export async function writeCv(
     ...payload,
     id: cvId,
   });
-  await fs.writeFile(destination, stringify(normalized), "utf-8");
+  // Atomic replace: avoid truncated YAML on concurrent saves / process crash mid-write.
+  const tempPath = `${destination}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tempPath, stringify(normalized), "utf-8");
+  await fs.rename(tempPath, destination);
 }
 
 export async function deleteCv(cvId: string): Promise<boolean> {

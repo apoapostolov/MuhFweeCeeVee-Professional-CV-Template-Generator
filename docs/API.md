@@ -10,12 +10,18 @@ Base path: `/api`
 
 ## Authentication
 
-When `MFCV_API_TOKEN` is set in the server environment, mutation and cost-bearing routes require:
+Mutation, analysis, sync, export, and other cost-bearing routes call `assertApiAuthorized`.
 
-- `Authorization: Bearer <token>`, or
-- `x-mfcv-api-token: <token>`
+| Situation | Behavior |
+| --- | --- |
+| Host is loopback (`localhost` / `127.0.0.1`) | Trusted (browser UI works without injecting the token) |
+| `MFCV_API_TOKEN` set + non-loopback | Require `Authorization: Bearer <token>` or `x-mfcv-api-token` |
+| Token unset + `NODE_ENV=production` + non-loopback | **401** — set `MFCV_API_TOKEN` before exposing the host |
+| `MFCV_REQUIRE_API_TOKEN=true` and token missing | **503** |
 
-When unset, auth is disabled (local dev default).
+OpenRouter `baseUrl` is allowlisted to `https://openrouter.ai` (SSRF protection). PDF/PNG export is serialized via `MFCV_EXPORT_CONCURRENCY` (default `1`).
+
+`GET /cvs/:id?autoTranslate=true` is rejected (**405**). Create translated variants with `POST /cvs/variant` (`aiTranslate: true`).
 
 ## Since 1.2.2
 

@@ -30,6 +30,8 @@ Do not commit CVs whose `metadata.internal_name` is **Apostol Apostolov CV** (an
 - Use John Doe for repro steps in PRs and docs
 - Ask user before batch OpenRouter calls that spend credits
 - When `MFCV_API_TOKEN` is set, never log the token
+- Loopback hosts are trusted for the browser UI; non-loopback mutations need the token
+- Production non-loopback without a token is denied; OpenRouter `baseUrl` is host-allowlisted
 
 ## Pre-push checklist
 

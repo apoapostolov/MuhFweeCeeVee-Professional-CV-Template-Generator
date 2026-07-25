@@ -44,33 +44,39 @@ export async function PUT(request: Request): Promise<NextResponse> {
     baseUrl?: unknown;
   };
 
-  const updated = await writeOpenRouterSettings({
-    apiKey: typeof body.apiKey === "string" ? body.apiKey : undefined,
-    model: typeof body.model === "string" ? body.model : undefined,
-    researchModel: typeof body.researchModel === "string" ? body.researchModel : undefined,
-    imageModel: typeof body.imageModel === "string" ? body.imageModel : undefined,
-    baseUrl: typeof body.baseUrl === "string" ? body.baseUrl : undefined,
-  });
-  const models = await getOpenRouterModels({
-    apiKey: updated.apiKey,
-    forceRefresh: true,
-  });
+  try {
+    const updated = await writeOpenRouterSettings({
+      apiKey: typeof body.apiKey === "string" ? body.apiKey : undefined,
+      model: typeof body.model === "string" ? body.model : undefined,
+      researchModel: typeof body.researchModel === "string" ? body.researchModel : undefined,
+      imageModel: typeof body.imageModel === "string" ? body.imageModel : undefined,
+      baseUrl: typeof body.baseUrl === "string" ? body.baseUrl : undefined,
+    });
+    const models = await getOpenRouterModels({
+      apiKey: updated.apiKey,
+      forceRefresh: true,
+    });
 
-  return NextResponse.json({
-    ok: true,
-    note:
-      typeof body.apiKey === "string" && body.apiKey.trim().length > 0
-        ? "API key saved to .env as OPENROUTER_API_KEY."
-        : undefined,
-    hasApiKey: updated.apiKey.length > 0,
-    apiKeyMasked: maskApiKey(updated.apiKey),
-    model: updated.model,
-    researchModel: updated.researchModel,
-    imageModel: updated.imageModel,
-    baseUrl: updated.baseUrl,
-    updatedAt: updated.updatedAt,
-    models: models.models,
-    modelsFetchedAt: models.fetchedAt,
-    modelsFromCache: models.fromCache,
-  });
+    return NextResponse.json({
+      ok: true,
+      note:
+        typeof body.apiKey === "string" && body.apiKey.trim().length > 0
+          ? "API key saved to .env as OPENROUTER_API_KEY."
+          : undefined,
+      hasApiKey: updated.apiKey.length > 0,
+      apiKeyMasked: maskApiKey(updated.apiKey),
+      model: updated.model,
+      researchModel: updated.researchModel,
+      imageModel: updated.imageModel,
+      baseUrl: updated.baseUrl,
+      updatedAt: updated.updatedAt,
+      models: models.models,
+      modelsFetchedAt: models.fetchedAt,
+      modelsFromCache: models.fromCache,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to save settings.";
+    const status = /baseUrl|https|openrouter|SSRF/i.test(message) ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }

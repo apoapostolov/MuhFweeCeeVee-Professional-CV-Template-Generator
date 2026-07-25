@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { isSupportedLanguage } from "@/lib/server/cvVariants";
 import { ensureLanguageVariant } from "@/lib/server/cvStore";
 
@@ -12,6 +13,11 @@ type CreateVariantRequest = {
 };
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as CreateVariantRequest;
 
   const sourceCvId =

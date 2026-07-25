@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
+
 export const runtime = "nodejs";
 
 type IngestMode = "pdf" | "image";
@@ -15,6 +17,11 @@ function templateIdSuggestion(sourceName: string): string {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const body = (await request.json()) as {
     mode?: unknown;
     sourceName?: unknown;

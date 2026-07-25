@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { appendPhotoAnalysis } from "@/lib/server/photoAnalysisStore";
 import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
@@ -75,6 +76,11 @@ function normalizeAnalysis(raw: unknown, model: string): PhotoAnalysis {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) {
+    return denied;
+  }
+
   const payload = (await request.json()) as PhotoAnalysisRequest;
   const imageDataUrl =
     typeof payload.imageDataUrl === "string" ? payload.imageDataUrl.trim() : "";

@@ -5,6 +5,11 @@ import { parse, stringify } from "yaml";
 
 import { RESEARCH_WEB_MODEL_DEFAULT } from "@/lib/research/research-web-search";
 
+import {
+  OPENROUTER_CHAT_COMPLETIONS_DEFAULT,
+  resolveOpenRouterBaseUrl,
+  normalizeOpenRouterBaseUrl,
+} from "./openRouterBaseUrl";
 import { repoPath } from "./repoPaths";
 
 export type OpenRouterSettings = {
@@ -25,7 +30,7 @@ const DEFAULT_SETTINGS: OpenRouterSettings = {
   model: "openai/gpt-4o-mini",
   researchModel: RESEARCH_WEB_MODEL_DEFAULT,
   imageModel: "",
-  baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+  baseUrl: OPENROUTER_CHAT_COMPLETIONS_DEFAULT,
   updatedAt: "",
 };
 
@@ -85,10 +90,11 @@ export async function readOpenRouterSettings(): Promise<OpenRouterSettings> {
         typeof value.imageModel === "string" && value.imageModel.trim().length > 0
           ? value.imageModel.trim()
           : DEFAULT_SETTINGS.imageModel,
-      baseUrl:
+      baseUrl: resolveOpenRouterBaseUrl(
         typeof value.baseUrl === "string" && value.baseUrl.trim().length > 0
           ? value.baseUrl.trim()
           : DEFAULT_SETTINGS.baseUrl,
+      ),
       updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
     };
   } catch (error) {
@@ -108,6 +114,16 @@ export async function writeOpenRouterSettings(
   const current = await readOpenRouterSettings();
   const nextApiKey =
     typeof input.apiKey === "string" ? input.apiKey.trim() : current.apiKey;
+
+  let nextBaseUrl = current.baseUrl;
+  if (typeof input.baseUrl === "string" && input.baseUrl.trim().length > 0) {
+    const validated = normalizeOpenRouterBaseUrl(input.baseUrl);
+    if (!validated.ok) {
+      throw new Error(validated.error);
+    }
+    nextBaseUrl = validated.url;
+  }
+
   const merged: OpenRouterSettings = {
     apiKey: nextApiKey,
     model:
@@ -122,10 +138,7 @@ export async function writeOpenRouterSettings(
       typeof input.imageModel === "string"
         ? input.imageModel.trim()
         : current.imageModel,
-    baseUrl:
-      typeof input.baseUrl === "string" && input.baseUrl.trim().length > 0
-        ? input.baseUrl.trim()
-        : current.baseUrl,
+    baseUrl: nextBaseUrl,
     updatedAt: new Date().toISOString(),
   };
 

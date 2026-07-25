@@ -26,14 +26,24 @@ export async function GET(
   const { cvId: initialCvId } = await context.params;
   const url = new URL(request.url);
   const requestedLanguage = url.searchParams.get("language");
-  const autoTranslate = url.searchParams.get("autoTranslate") === "true";
+  // Side-effecting AI translation is not allowed on GET.
+  // Use POST /api/cvs/variant with aiTranslate: true instead.
+  if (url.searchParams.get("autoTranslate") === "true") {
+    return NextResponse.json(
+      {
+        error:
+          "autoTranslate is not supported on GET. Use POST /api/cvs/variant with aiTranslate: true.",
+      },
+      { status: 405 },
+    );
+  }
 
   let resolvedCvId = initialCvId;
   let variantCreated = false;
   if (requestedLanguage && isSupportedLanguage(requestedLanguage)) {
     try {
       const resolved = await ensureLanguageVariant(initialCvId, requestedLanguage, {
-        autoTranslate,
+        autoTranslate: false,
       });
       resolvedCvId = resolved.cvId;
       variantCreated = resolved.created;
