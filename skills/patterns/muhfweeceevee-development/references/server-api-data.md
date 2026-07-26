@@ -39,8 +39,8 @@ All listed routes use `export const runtime = "nodejs"` unless noted.
 
 **Removed:** `/api/prototype` (dead scaffold, deleted).
 
-**Retired (docs only):** `/api/analysis/keywords*` — implementation lives under
-`backup/retired-keywords/`, not in active `apps/web`.
+**Removed (v1.1+):** `/api/analysis/keywords*` (Keyword Studio) — recover from git
+history if needed; product path is Research job weighted keywords.
 
 ## API authentication
 

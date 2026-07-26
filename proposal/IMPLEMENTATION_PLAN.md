@@ -201,7 +201,7 @@ Modify heavily:
 - Create: `proposal/PROGRESS.md`
 
 - [ ] **Step 1:** Remove or rewrite README lines that imply a live Keywords tab / `SQLITE_BIN` keyword troubleshooting as primary product (search `Keywords workspace`, `SQLITE_BIN`, `Keyword Studio`).
-- [ ] **Step 2:** State clearly: keywords live under **Research → job positions → weighted keywords**; Keyword Studio is retired to `backup/retired-keywords/`.
+- [ ] **Step 2:** State clearly: keywords live under **Research → job positions → weighted keywords**; Keyword Studio is gone (git history only).
 - [ ] **Step 3:** Add link to `proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md` and this plan under Documentation.
 - [ ] **Step 4:** Create `proposal/PROGRESS.md` with workstream checklist mirroring this plan.
 - [ ] **Step 5:** Commit

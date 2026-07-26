@@ -37,7 +37,7 @@ This proposal lists **what is still left feature-wise**, then goes deep on a red
 
 | Area | Reality |
 |------|---------|
-| **Keyword Studio** | Retired to `backup/retired-keywords/` (v1.1). README still mentions “Keywords workspace” / sqlite tips in places — **docs drift**. |
+| **Keyword Studio** | Retired in v1.1; archive removed from tree (git history only). |
 | **Weighted keywords** | Exist as a grid + AI refine, but categories are soft, weights are model-guessed, no grounding contract (JD quote / source URL / frequency). |
 | **Company research** | Single OpenRouter **web-search** call with a **monolithic JSON shape** (identity, office, contacts, people, linkedin_jobs, hiring, sources). Expensive models (e.g. Perplexity Sonar), high token count, one failure wastes a full run. |
 | **Field refine (✨)** | Prompt says “match field type” but **proposal `value` is `unknown`**. Only `weighted_keywords` is post-normalized. Other fields accept freeform strings/objects. Live web search on **every field** multiplies cost. |
@@ -412,7 +412,7 @@ Do not add cover letters or tracker until that slice feels correct in daily use.
 | `apps/web/src/lib/research/research-field-refine.ts` | Freeform `value: unknown` |
 | `apps/web/src/lib/research/weighted-keywords.ts` | Partial normalize/merge |
 | `apps/web/src/lib/research/research-quality.ts` | Coarse post-checks only |
-| `backup/retired-keywords/` | Old Keyword Studio / JD corpus |
+| (git history) | Old Keyword Studio / JD corpus (removed from tree) |
 | `docs/RESEARCH_LINKEDIN_LIBRARIES.md` | Integration caution |
 | `TODO.md` | Older refactor queue (partially stale) |
 | `CHANGELOG.md` | Research + keyword history |

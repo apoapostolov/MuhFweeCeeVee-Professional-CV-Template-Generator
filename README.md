@@ -64,7 +64,7 @@ Version **`1.3.0`** is the current release — research → tailored CV → lett
 
 Also: field contracts (no inventable emails/phones), lighter photo gallery payloads, dark-mode scrollbar polish.
 
-**Note:** The old **Keyword Studio** tab and sqlite JD corpus were retired to `backup/retired-keywords/`. Keywords live on **Research → job positions**.
+**Note:** The old **Keyword Studio** tab / sqlite JD corpus were removed in v1.1 (recover from git history if needed). Keywords live on **Research → job positions**.
 
 Full notes: [`CHANGELOG.md`](CHANGELOG.md) · tag `v1.3.0`.
 

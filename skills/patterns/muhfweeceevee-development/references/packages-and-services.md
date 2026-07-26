@@ -40,22 +40,12 @@ CV_API_BASE_URL=http://127.0.0.1:3005/api npm run mcp:api
 - **Scaffold** — PDF parsing experiments; **production PDF uses Playwright in Next.js**
 - Not on critical path for Composer UI
 
-## Keywords subsystem (retired)
+## Keywords subsystem (removed)
 
-Active web app **does not** include `/api/analysis/keywords` routes.
+Keyword Studio (`/api/analysis/keywords*`, sqlite JD corpus) was retired in **v1.1** and
+the archive tree was deleted from the tree (recover from git history if needed).
 
-Legacy code + tests + sqlite JD cache:
-
-- `backup/retired-keywords/keywords/`
-- `backup/retired-keywords/apps-web/src/app/api/analysis/keywords/`
-
-`docs/API.md` still documents keywords APIs for historical releases. Before re-enabling:
-
-1. Restore routes into `apps/web`
-2. Set `SQLITE_BIN` to sqlite3 executable
-3. See archived skill: `backup/retired-keywords/skills-sqlite-binary-path/SKILL.md`
-
-Root `package.json` may lack `test:keywords` — verify before running pytest.
+Product path: **Research → job positions → weighted keywords** (+ Editor gap/ATS).
 
 ## Vitest
 

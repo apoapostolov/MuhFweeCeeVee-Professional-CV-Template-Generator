@@ -40,7 +40,6 @@ Map of product and process docs for MuhFweeCeeVee.
 
 | Path | Notes |
 |------|--------|
-| `backup/retired-keywords/` | Pre-v1.1 Keyword Studio + sqlite corpus (archive only) |
 | `services/parser/` | FastAPI scaffold, not production |
 | `packages/render-core/` | Type stub; live render is under `apps/web/src/lib/server/render/` |
 | `exports/`, `work/`, `photos/`, personal CVs | Local/runtime; gitignored |

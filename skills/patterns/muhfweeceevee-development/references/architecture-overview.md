@@ -14,7 +14,7 @@
 | `data/template_mappings/` | One mapping file per template id (slot bindings) |
 | `data/settings/` | OpenRouter YAML, company metadata JSON |
 | `photos/` | Runtime photo gallery (gitignored) |
-| `keywords/` | **Retired** — moved to `backup/retired-keywords/` (see packages reference) |
+| `ai-skills/` | Runtime product AI skills (e.g. humanizer on cover letters) |
 | `deploy/` | nginx + systemd unit examples |
 
 **Package manager:** npm workspaces at repo root (`package.json` workspaces: `apps/*`, `packages/*`).
@@ -80,7 +80,8 @@ flowchart LR
 | `templates` | Templates | Catalog browse |
 | `settings` | Settings | OpenRouter key, models, credit |
 
-Companies / Keywords / Cover Letters tabs are planned or retired — do not assume routes exist without checking `apps/web/src/app/api/`.
+Active panels also include Research, Letters, and Board — check `apps/web/src/app/api/`
+before assuming a route exists.
 
 ## TypeScript paths
 

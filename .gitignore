@@ -35,15 +35,6 @@ data/template_mappings/cv_*_private__*.yaml
 .vscode/
 examples/
 
-# Keyword analysis local artifacts
-keywords/__pycache__/
-keywords/tests/__pycache__/
-keywords/outputs/*
-!keywords/outputs/.gitkeep
-backup/retired-keywords/**/__pycache__/
-backup/retired-keywords/**/outputs/*
-!backup/retired-keywords/**/outputs/.gitkeep
-
 # Runtime caches
 data/settings/openrouter_models.yaml
 data/settings/openrouter.yaml
