@@ -39,10 +39,6 @@ import {
   setAtPath,
   setByPath,
 } from "@/components/composer/form-path-utils";
-import {
-  mergeResearchedCompanyRecord,
-  resolveCompanyIdsToResearch,
-} from "@/lib/company-research";
 import { collectEditorAtsTerms } from "@/lib/research/editor-ats-keywords";
 import { computeKeywordGap, type KeywordGapReport } from "@/lib/research/keywordGap";
 import { readCvTargeting, writeCvTargeting } from "@/lib/research/cvTargeting";
@@ -226,7 +222,6 @@ export function useComposerController() {
   const [companyMetadataDraft, setCompanyMetadataDraft] = useState<unknown>({ companies: [] });
   const [companyMetadataYamlDraft, setCompanyMetadataYamlDraft] = useState("");
   const [companyMetadataSaving, setCompanyMetadataSaving] = useState(false);
-  const [companyResearchLoading, setCompanyResearchLoading] = useState(false);
   const [companyMetadataNotice, setCompanyMetadataNotice] = useState("");
   const [companyMetadataYamlLintIssues, setCompanyMetadataYamlLintIssues] = useState<string[]>([]);
   const companyMetadataAutoSaveEnabledRef = useRef(true);
@@ -2215,13 +2210,42 @@ export function useComposerController() {
     }
   }
 
-  async function researchCompaniesMetadata(): Promise<void> {
-    // D1: metadata company AI research is retired — use Research tab + staged enrich
-    setCompanyMetadataNotice(
-      uiIsBg(uiLanguage)
-        ? "Проучването на компании от метаданни е спряно. Ползвайте таб Research (компании/позиции)."
-        : "Company metadata AI research is retired. Use the Research tab (companies/jobs) instead.",
-    );
+  async function importCompanyMetadataToResearchCatalog(): Promise<void> {
+    setResearchCatalogLoading(true);
+    setResearchNotice("");
+    try {
+      const response = await fetch("/api/research/catalog/import-metadata", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ source: "both", skipExisting: true, importJobs: true }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        companies_added?: number;
+        companies_skipped?: number;
+        jobs_added?: number;
+        companies?: ResearchedCompany[];
+        job_positions?: ResearchedJobPosition[];
+      };
+      if (!response.ok) {
+        setResearchNotice(
+          payload.error ??
+            (uiIsBg(uiLanguage) ? "Импортът не успя." : "Import failed."),
+        );
+        return;
+      }
+      if (payload.companies) setResearchCompanies(payload.companies);
+      if (payload.job_positions) setResearchJobPositions(payload.job_positions);
+      setResearchNotice(
+        uiIsBg(uiLanguage)
+          ? `Импорт: +${payload.companies_added ?? 0} компании, +${payload.jobs_added ?? 0} позиции (пропуснати ${payload.companies_skipped ?? 0}).`
+          : `Imported +${payload.companies_added ?? 0} companies, +${payload.jobs_added ?? 0} jobs (skipped ${payload.companies_skipped ?? 0} existing).`,
+      );
+    } catch {
+      setResearchNotice(uiIsBg(uiLanguage) ? "Импортът не успя." : "Import failed.");
+    } finally {
+      setResearchCatalogLoading(false);
+    }
   }
 
   async function saveEditorSection() {
@@ -3258,7 +3282,6 @@ export function useComposerController() {
     setCompanyMetadataYamlDraft: handleCompanyMetadataYamlDraftChange,
     handleCompanyMetadataEditorViewChange,
     companyMetadataSaving,
-    companyResearchLoading,
     companyMetadataNotice,
     companyMetadataYamlLintIssues,
     analysisDrawerCollapsed,
@@ -3303,7 +3326,7 @@ export function useComposerController() {
     analyzePhotoBoothItem,
     comparePhotoBoothPair,
     saveCompanyMetadataSource,
-    researchCompaniesMetadata,
+    importCompanyMetadataToResearchCatalog,
     saveEditorSection,
     runAnalysis,
     runAtsCheck,

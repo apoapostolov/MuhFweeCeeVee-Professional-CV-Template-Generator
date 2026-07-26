@@ -49,6 +49,7 @@ export type ResearchSidebarProps = {
   onResearchJob: () => void;
   onDeleteCompany: (id: string) => void;
   onDeleteJob: (id: string) => void;
+  onImportMetadata: () => void;
   language: string;
 };
 
@@ -93,6 +94,7 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
     onResearchJob,
     onDeleteCompany,
     onDeleteJob,
+    onImportMetadata,
     language,
   } = props;
 
@@ -152,6 +154,21 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                 ? "Попълнете компанията евтино по подразбиране. Отметнете Research само за уеб търсене."
                 : "Fill company cheaply by default. Check Include Research only for web search."}
             </p>
+            <button
+              className="w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+              disabled={loadingCatalog}
+              onClick={onImportMetadata}
+              title={
+                language === "bg"
+                  ? "Внася компании от Editor метаданни (example + personal) като обвивки в каталога"
+                  : "Import Editor company-metadata (example + personal) as catalog shells"
+              }
+              type="button"
+            >
+              {language === "bg"
+                ? "Импорт от company metadata"
+                : "Import from company metadata"}
+            </button>
             <div className="space-y-2">
               <label className="block text-xs font-medium text-slate-800">
                 {language === "bg" ? "Име на компания" : "Company name"}

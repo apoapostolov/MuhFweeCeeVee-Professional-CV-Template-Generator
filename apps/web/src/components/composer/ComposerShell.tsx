@@ -88,6 +88,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               notice={c.researchNotice}
               onDeleteCompany={(id) => void c.deleteResearchCompany(id)}
               onDeleteJob={(id) => void c.deleteResearchJob(id)}
+              onImportMetadata={() => void c.importCompanyMetadataToResearchCatalog()}
               onNotice={c.setResearchNotice}
               onResearchCompany={(payload) => void c.researchCompanyOffice(payload)}
               onResearchJob={(payload) => void c.researchJobPosition(payload)}
@@ -137,7 +138,6 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               companyMetadataEditorOpen={c.companyMetadataEditorOpen}
               companyMetadataEditorView={c.companyMetadataEditorView}
               companyMetadataSaving={c.companyMetadataSaving}
-              companyResearchLoading={c.companyResearchLoading}
               companyMetadataAutoSaveEnabled={c.companyMetadataAutoSaveEnabled}
               companyMetadataAutosaveActivity={c.companyMetadataAutosaveActivity}
               companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
@@ -165,7 +165,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onOpenSyncModal={c.openSyncModal}
               onRunAnalysisFull={() => void c.runAnalysis("full")}
               onRunAnalysisSection={() => void c.runAnalysis("section")}
-              onResearchCompanies={() => void c.researchCompaniesMetadata()}
+              onGoToResearch={() => c.setActivePanel("research")}
               onSaveCompanyMetadata={() => void c.saveCompanyMetadataSource()}
               onSaveEditor={() => void c.saveEditorSection()}
               onSwitchCvPair={c.switchCvPair}

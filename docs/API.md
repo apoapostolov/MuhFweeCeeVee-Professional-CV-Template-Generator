@@ -61,7 +61,8 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `POST /analysis/cv` — optional `jobPositionId`, `companyIds`
 - `POST /analysis/field` — `professional_rewrite` / `shorten`; optional `jobPositionId`
 - `POST /analysis/ats-check` — deterministic ATS rules (`cvId`, optional `jobId`); no LLM
-- `POST /analysis/company-research` — **retired in product UI** (prefer Research enrich)
+- `POST /analysis/company-research` — **removed** (use Research staged enrich / `POST /research/catalog/import-metadata`)
+- `POST /research/catalog/import-metadata` — import legacy Editor company-metadata shells into Research catalog (no AI)
 - `POST /analysis/company-field` — metadata field refine (legacy)
 - `GET|POST /cover-letters` — list/save/delete; `draftWithAi: true` uses analysis model (no web) then **humanizer** skill postprocess; `humanize: true` rewrites existing `body` via `ai-skills/humanizer`
 - `GET /api/ai-skills` — list product AI skills + hooks (metadata only)

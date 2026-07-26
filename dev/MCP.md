@@ -109,7 +109,8 @@ Print tweak query params (optional on URL tools): `removePhoto`, `moveSkillsLeft
 |------|-----|
 | `analysis_cv` | `POST /analysis/cv` |
 | `analysis_field` | `POST /analysis/field` |
-| `company_metadata_research` | `POST /analysis/company-research` |
+| `company_metadata_research` | **RETIRED** — use `research_company_enrich` / `research_catalog_import_metadata` |
+| `research_catalog_import_metadata` | `POST /research/catalog/import-metadata` |
 | `company_metadata_field_research` | `POST /analysis/company-field` |
 
 ### Photos

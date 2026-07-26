@@ -25,8 +25,8 @@ All listed routes use `export const runtime = "nodejs"` unless noted.
 | POST/DELETE | `/api/photos` | yes | multipart upload / delete |
 | POST | `/api/analysis/cv` | yes | OpenRouter scoring |
 | POST | `/api/analysis/field` | yes | field rewrite |
-| POST | `/api/analysis/company-research` | yes | company record AI fill |
-| POST | `/api/analysis/company-field` | yes | single company field |
+| POST | `/api/analysis/company-field` | yes | single company metadata field (legacy Editor) |
+| POST | `/api/research/catalog/import-metadata` | yes | metadata → Research catalog shells (no AI) |
 | POST | `/api/analysis/photo` | yes | portrait analysis |
 | POST | `/api/analysis/photo/compare` | yes | multi-image ranking |
 | GET | `/api/preview/html` | — | `buildCvTemplateHtml` |

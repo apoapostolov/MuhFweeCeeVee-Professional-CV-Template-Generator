@@ -38,8 +38,8 @@ Plan: `IMPLEMENTATION_PLAN.md` (historical)
 - [x] Analysis uses jobPositionId from Research selection
 - [x] Metadata company AI research shows retired notice (→ Research tab)
 - [x] Keyword gap panel in Editor Job Targeting
-- [ ] Optional: import metadata → catalog shells
-- [ ] Optional: remove `/api/analysis/company-research` routes entirely
+- [x] Optional: import metadata → catalog shells (`POST /research/catalog/import-metadata`)
+- [x] Optional: remove `/api/analysis/company-research` routes entirely
 
 ## WS1–WS6 detail
 

@@ -69,8 +69,7 @@ export type EditorPanelProps = {
   onCompanyMetadataYamlDraftChange: (value: string) => void;
   companyMetadataYamlLintIssues: string[];
   companyMetadataSaving: boolean;
-  companyResearchLoading: boolean;
-  onResearchCompanies: () => void;
+  onGoToResearch: () => void;
   companyMetadataAutoSaveEnabled: boolean;
   onCompanyMetadataAutoSaveChange: (enabled: boolean) => void;
   companyMetadataAutosaveActivity: EditorAutosaveActivity;
@@ -149,8 +148,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onCompanyMetadataYamlDraftChange,
     companyMetadataYamlLintIssues,
     companyMetadataSaving,
-    companyResearchLoading,
-    onResearchCompanies,
+    onGoToResearch,
     companyMetadataAutoSaveEnabled,
     onCompanyMetadataAutoSaveChange,
     companyMetadataAutosaveActivity,
@@ -432,20 +430,16 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           </button>
                         </div>
                         <button
-                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-transparent px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={companyResearchLoading || companyMetadataSaving}
-                          onClick={onResearchCompanies}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-transparent px-3 py-1.5 text-xs font-semibold text-slate-800"
+                          onClick={onGoToResearch}
+                          title={
+                            uiLanguage === "bg"
+                              ? "Отвори Research за компании и позиции"
+                              : "Open Research for companies and jobs"
+                          }
                           type="button"
                         >
-                          <AiStarsIcon
-                            className={`h-3.5 w-3.5 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
-                            variant={resolvedTheme === "dark" ? "default" : "on-light"}
-                          />
-                          {companyResearchLoading
-                            ? "…"
-                            : uiLanguage === "bg"
-                              ? "→ Research таб"
-                              : "→ Use Research tab"}
+                          {uiLanguage === "bg" ? "→ Research" : "→ Research"}
                         </button>
                         <EditorAutoSaveToggle
                           enabled={companyMetadataAutoSaveEnabled}

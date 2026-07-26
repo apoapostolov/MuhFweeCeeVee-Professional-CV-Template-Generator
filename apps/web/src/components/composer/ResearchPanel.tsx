@@ -61,6 +61,8 @@ export type ResearchPanelProps = {
   onSaveJob: (job: ResearchedJobPosition) => void;
   onDeleteCompany: (companyId: string) => void;
   onDeleteJob: (jobId: string) => void;
+  /** Import legacy Editor company-metadata files into Research catalog shells. */
+  onImportMetadata: () => void;
   onNotice: (message: string) => void;
 };
 
@@ -93,6 +95,7 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
     onSaveJob,
     onDeleteCompany,
     onDeleteJob,
+    onImportMetadata,
     onNotice,
   } = props;
 
@@ -165,6 +168,7 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
         onCompanyWebsiteChange={setCompanyWebsite}
         onDeleteCompany={onDeleteCompany}
         onDeleteJob={onDeleteJob}
+        onImportMetadata={onImportMetadata}
         onJobDescriptionChange={setJobDescription}
         onJobTitleChange={setJobTitle}
         onLinkedinUrlChange={setLinkedinUrl}

@@ -25,8 +25,8 @@ before large runs (`AGENTS.md` approval rules).
 |-------|---------|----------|
 | `POST /api/analysis/cv` | Section or full CV scoring vs companies | scoring in `packages/schemas`, prompts in server |
 | `POST /api/analysis/field` | Rewrite single YAML path | `lib/field-ai-rewrite.ts` |
-| `POST /api/analysis/company-research` | Fill company metadata record | `lib/company-research.ts`, `openRouterResearch.ts` |
-| `POST /api/analysis/company-field` | One field on company doc | `lib/company-field-ai.ts` |
+| `POST /api/analysis/company-field` | One field on legacy company metadata doc | `lib/company-field-ai.ts` |
+| `POST /api/research/companies/enrich` | Staged Research catalog company fill | `runCompanyEnrich.ts` |
 | `POST /api/analysis/photo` | Portrait quality + clothing tips | persists to photo metadata |
 | `POST /api/analysis/photo/compare` | Rank 2+ images; cache by id set | `lookupOnly`, `forceNew` flags |
 
@@ -42,7 +42,7 @@ Client AI UX:
 Request includes optional `companyIds: string[]` from metadata store.
 Empty list → generic analysis.
 
-Company research merge: `mergeResearchedCompanyRecord()` in `lib/company-research.ts`.
+Legacy `/api/analysis/company-research` removed (v1.3 D1). Use Research enrich + import-metadata.
 
 ## Field path keys
 

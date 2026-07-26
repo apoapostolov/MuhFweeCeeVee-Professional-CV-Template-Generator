@@ -21,6 +21,9 @@ const printTweakSchema = {
 const RETIRED_KEYWORDS_MESSAGE =
   "Keyword Studio was retired in v1.1.0. Use Research job weighted keywords and Editor Job Targeting instead.";
 
+const RETIRED_COMPANY_METADATA_RESEARCH_MESSAGE =
+  "Editor company-metadata AI research was retired in v1.3. Use research_company_enrich on the Research catalog (or import metadata shells via research_catalog_import_metadata).";
+
 async function fetchSessionServerSnapshot() {
   const [catalogPayload, personalPayload, examplePayload, cvListPayload] = await Promise.all([
     requestJson("GET", "/research/catalog").catch(() => null),
@@ -578,9 +581,25 @@ export function registerTools(server) {
 
   server.tool(
     "company_metadata_research",
-    "LEGACY: Editor metadata research. Prefer research_company_enrich on the Research catalog.",
+    `[RETIRED] ${RETIRED_COMPANY_METADATA_RESEARCH_MESSAGE}`,
     { companyName: z.string().min(1), existingRecord: z.record(z.any()).optional() },
-    async (body) => toTextContent(await requestJson("POST", "/analysis/company-research", { body })),
+    async () => {
+      throw new Error(RETIRED_COMPANY_METADATA_RESEARCH_MESSAGE);
+    },
+  );
+
+  server.tool(
+    "research_catalog_import_metadata",
+    "Import legacy Editor company-metadata files into Research catalog shells (no AI).",
+    {
+      source: z.enum(["example", "personal", "both"]).optional(),
+      skipExisting: z.boolean().optional(),
+      importJobs: z.boolean().optional(),
+    },
+    async (body) =>
+      toTextContent(
+        await requestJson("POST", "/research/catalog/import-metadata", { body }),
+      ),
   );
 
   server.tool(

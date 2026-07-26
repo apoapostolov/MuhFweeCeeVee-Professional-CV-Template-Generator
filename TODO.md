@@ -5,8 +5,6 @@ Post-**v1.3.0** follow-ups only. Shipped research/letters/board work is in
 
 ## Open (optional)
 
-- [ ] **D1 cleanup:** remove or hard-retire `POST /api/analysis/company-research` (UI already points at Research tab; MCP still has a legacy tool).
-- [ ] **D1 cleanup:** optional import of legacy company-metadata shells into Research catalog.
 - [ ] **Tests:** API route tests for CV POST validation / bad `cvId`.
 - [ ] **Tests:** smoke fixture from `data/cvs/cv_en_john_doe.yaml` in CI if not already covered.
 - [ ] **Engineering:** further split of `useComposerController` if it remains a pain point.
@@ -20,6 +18,7 @@ Post-**v1.3.0** follow-ups only. Shipped research/letters/board work is in
 - Deterministic ATS check
 - API auth / SSRF / export concurrency (v1.2.4)
 - ComposerClient panel extract; render split per template
+- **D1 cleanup:** removed `/api/analysis/company-research`; metadata → catalog import; MCP retired
 
 ## Process templates
 
