@@ -66,12 +66,32 @@ function emptyDraft(): Omit<Application, "id" | "created_at" | "updated_at"> & {
   };
 }
 
+const STATUS_LABELS: Record<
+  ApplicationStatus,
+  { en: string; bg: string }
+> = {
+  wishlist: { en: "Wishlist", bg: "Желани" },
+  applied: { en: "Applied", bg: "Подадени" },
+  interview: { en: "Interview", bg: "Интервю" },
+  offer: { en: "Offer", bg: "Оферта" },
+  rejected: { en: "Rejected", bg: "Отказани" },
+  ghosted: { en: "Ghosted", bg: "Без отговор" },
+};
+
+function statusLabel(status: ApplicationStatus, bg: boolean): string {
+  return bg ? STATUS_LABELS[status].bg : STATUS_LABELS[status].en;
+}
+
 function Chip({
   label,
   ok,
+  titleOk,
+  titleMissing,
 }: {
   label: string;
   ok: boolean;
+  titleOk: string;
+  titleMissing: string;
 }): JSX.Element {
   return (
     <span
@@ -80,7 +100,7 @@ function Chip({
           ? "bg-[var(--accent-soft)] text-slate-800"
           : "bg-[var(--surface-2)] text-[var(--ink-muted)]"
       }`}
-      title={ok ? `${label} linked` : `${label} missing`}
+      title={ok ? titleOk : titleMissing}
     >
       {label}
       {ok ? " ✓" : ""}
@@ -114,6 +134,80 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const bg = language === "bg";
+  const t = {
+    pageTitle: bg ? "Кандидатствания" : "Job applications",
+    pageSubtitle: bg
+      ? "Дъска по статус. Всяка карта е пакет: CV, снимка, компания и писмо."
+      : "Status board. Each card is a pack: CV, photo, company, and cover letter.",
+    newApplication: bg ? "Ново кандидатстване" : "New application",
+    addFromResearch: bg ? "От Research цел" : "Add from Research",
+    addFromResearchTitle: bg
+      ? "Попълва компания/позиция от Research плюс текущото CV и одобрената снимка"
+      : "Fills company/role from Research plus the current CV and approved photo",
+    importPacket: bg ? "Отвори пакет…" : "Open packet…",
+    importPacketTitle: bg
+      ? "Импортира JSON пакет като ново кандидатстване"
+      : "Import a saved packet file as a new application",
+    exportPacket: bg ? "Изтегли пакет" : "Download pack",
+    exportPacketTitle: bg
+      ? "Запазва CV, писмо и връзки във файл"
+      : "Save CV, letter, and links to a file",
+    reuseForSimilar: bg ? "Копирай за друга фирма" : "Copy for similar role",
+    reuseTitle: bg
+      ? "Нова карта със същото CV и снимка — сменете компанията"
+      : "New card with the same CV and photo — change the company",
+    open: bg ? "Отвори" : "Open",
+    delete: bg ? "Изтрий" : "Delete",
+    stage: bg ? "Етап" : "Stage",
+    editorIdleTitle: bg ? "Детайли" : "Details",
+    editorIdleHint: bg
+      ? "Изберете карта от дъската или създайте ново кандидатстване."
+      : "Select a card on the board or create a new application.",
+    editorNew: bg ? "Ново кандидатстване" : "New application",
+    editorEdit: bg ? "Редакция" : "Edit application",
+    editorHint: bg
+      ? "Свържете CV, снимка, компания и писмо. Може да променяте по всяко време."
+      : "Link a CV, photo, company, and cover letter. Editable anytime.",
+    applicationName: bg ? "Име на картата" : "Card name",
+    applicationNameHint: bg
+      ? "Кратко име за дъската (напр. „Acme — Senior FE“)"
+      : "Short board label (e.g. “Acme — Senior FE”)",
+    resumeCv: bg ? "CV / автобиография" : "Resume (CV)",
+    noneSelected: bg ? "— не е избрано —" : "— none selected —",
+    profilePhoto: bg ? "Профилна снимка" : "Profile photo",
+    researchCompany: bg ? "Компания от Research" : "Company from Research",
+    typeCompanyBelow: bg ? "— въведете име по-долу —" : "— type name below —",
+    companyDisplayName: bg ? "Име на компанията" : "Company name",
+    researchRole: bg ? "Позиция от Research" : "Role from Research",
+    typeRoleBelow: bg ? "— въведете позиция по-долу —" : "— type role below —",
+    roleTitle: bg ? "Позиция (заглавие)" : "Role title",
+    coverLetter: bg ? "Мотивационно писмо" : "Cover letter",
+    jobPostUrl: bg ? "Линк към обявата" : "Job post URL",
+    notes: bg ? "Бележки" : "Notes",
+    save: bg ? "Запази" : "Save",
+    cancel: bg ? "Отказ" : "Cancel",
+    chipCv: "CV",
+    chipPhoto: bg ? "Снимка" : "Photo",
+    chipCompany: bg ? "Фирма" : "Company",
+    chipLetter: bg ? "Писмо" : "Letter",
+    chipOk: bg ? "свързано" : "linked",
+    chipMissing: bg ? "липсва" : "missing",
+    needCompanyRole: bg
+      ? "Попълнете име на компания и позиция."
+      : "Enter a company name and role title.",
+    saved: bg ? "Запазено." : "Saved.",
+    exported: bg ? "Пакетът е изтеглен." : "Packet downloaded.",
+    imported: bg ? "Пакетът е отворен." : "Packet opened.",
+    restored: bg ? "Възстановено" : "Restored",
+    invalidPacket: bg ? "Невалиден JSON пакет." : "Invalid packet file.",
+    reused: bg
+      ? "Копие със същото CV и снимка — сменете компанията."
+      : "Copy with the same CV and photo — update the company.",
+    failedSave: bg ? "Записът не успя." : "Could not save.",
+    failedExport: bg ? "Изтеглянето не успя." : "Could not download.",
+    failedImport: bg ? "Отварянето не успя." : "Could not open packet.",
+    failedReuse: bg ? "Копирането не успя." : "Could not copy.",
+  };
 
   const loadBoard = useCallback(async () => {
     const response = await fetch("/api/applications");
@@ -212,11 +306,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
   async function saveDraft() {
     if (!draft.company_name.trim() || !draft.job_title.trim()) {
-      setNotice(
-        bg
-          ? "Име на компания и позиция са задължителни."
-          : "Company name and job title are required.",
-      );
+      setNotice(t.needCompanyRole);
       return;
     }
     setBusy(true);
@@ -246,14 +336,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         applications?: Application[];
       };
       if (!response.ok) {
-        setNotice(payload.error ?? "Save failed.");
+        setNotice(payload.error ?? t.failedSave);
         return;
       }
       setApplications(payload.applications ?? []);
       setEditorOpen(false);
-      setNotice(bg ? "Пакетът е записан." : "Packet saved.");
+      setNotice(t.saved);
     } catch {
-      setNotice("Save failed.");
+      setNotice(t.failedSave);
     } finally {
       setBusy(false);
     }
@@ -309,7 +399,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         packet?: unknown;
       };
       if (!response.ok || !payload.packet) {
-        setNotice(payload.error ?? "Export failed.");
+        setNotice(payload.error ?? t.failedExport);
         return;
       }
       const blob = new Blob([JSON.stringify(payload.packet, null, 2)], {
@@ -326,9 +416,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       anchor.download = `mfcv-packet-${slug || id}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
-      setNotice(bg ? "Пакетът е експортиран." : "Packet exported.");
+      setNotice(t.exported);
     } catch {
-      setNotice("Export failed.");
+      setNotice(t.failedExport);
     } finally {
       setBusy(false);
     }
@@ -368,7 +458,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         restored?: string[];
       };
       if (!response.ok) {
-        setNotice(payload.error ?? "Import failed.");
+        setNotice(payload.error ?? t.failedImport);
         return;
       }
       setApplications(payload.applications ?? []);
@@ -376,14 +466,12 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         openEdit(payload.application);
       }
       const restored = payload.restored?.length
-        ? ` Restored: ${payload.restored.join(", ")}.`
+        ? ` ${t.restored}: ${payload.restored.join(", ")}.`
         : "";
-      setNotice(
-        (bg ? "Пакетът е импортиран." : "Packet imported.") + restored,
-      );
+      setNotice(t.imported + restored);
       void loadLookups();
     } catch {
-      setNotice(bg ? "Невалиден JSON пакет." : "Invalid packet JSON.");
+      setNotice(t.invalidPacket);
     } finally {
       setBusy(false);
       if (importInputRef.current) {
@@ -409,8 +497,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             cover_letter_id: "",
             status: "wishlist",
             packet_title: app.packet_title
-              ? `${app.packet_title} (reuse)`
-              : `${app.job_title} @ ${app.company_name} (reuse)`,
+              ? `${app.packet_title} (copy)`
+              : `${app.job_title} @ ${app.company_name} (copy)`,
           },
         }),
       });
@@ -420,20 +508,16 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         application?: Application;
       };
       if (!response.ok) {
-        setNotice(payload.error ?? "Reuse failed.");
+        setNotice(payload.error ?? t.failedReuse);
         return;
       }
       setApplications(payload.applications ?? []);
       if (payload.application) {
         openEdit(payload.application);
       }
-      setNotice(
-        bg
-          ? "Нов пакет с същите CV/снимка — редактирайте компанията."
-          : "New packet with same CV/photo — edit company for the new target.",
-      );
+      setNotice(t.reused);
     } catch {
-      setNotice("Reuse failed.");
+      setNotice(t.failedReuse);
     } finally {
       setBusy(false);
     }
@@ -466,14 +550,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-3">
         <div className="min-w-0">
-          <h3 className="text-lg font-bold text-slate-900">
-            {bg ? "Кандидатствания · пакети" : "Applications · packets"}
-          </h3>
-          <p className="text-xs text-[var(--ink-muted)]">
-            {bg
-              ? "Пакет = CV + снимка + компания + писмо. Редактирайте, експорт, импорт, преизползване."
-              : "Packet = CV + photo + company + letter. Edit anytime, export, import, reuse."}
-          </p>
+          <h3 className="text-lg font-bold text-slate-900">{t.pageTitle}</h3>
+          <p className="text-xs text-[var(--ink-muted)]">{t.pageSubtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -482,7 +560,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             onClick={openNew}
             type="button"
           >
-            {bg ? "Нов пакет" : "New packet"}
+            {t.newApplication}
           </button>
           <button
             className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
@@ -490,22 +568,19 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             onClick={() => {
               openNew();
             }}
-            title={
-              bg
-                ? "Попълва от Research цел + текущо CV/снимка"
-                : "Prefills from Research target + current CV/photo"
-            }
+            title={t.addFromResearchTitle}
             type="button"
           >
-            {bg ? "От текущата цел" : "From current target"}
+            {t.addFromResearch}
           </button>
           <button
             className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
             disabled={busy}
             onClick={() => importInputRef.current?.click()}
+            title={t.importPacketTitle}
             type="button"
           >
-            {bg ? "Импорт…" : "Import…"}
+            {t.importPacket}
           </button>
           <input
             accept="application/json,.json"
@@ -533,8 +608,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               className="flex min-h-[12rem] min-w-0 flex-col rounded-xl border border-[var(--line)] bg-white p-2"
               key={status}
             >
-              <p className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                {status}
+              <p className="px-1 text-xs font-semibold tracking-wide text-slate-700">
+                {statusLabel(status, bg)}
               </p>
               <ul className="mt-2 flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
                 {(byStatus.get(status) ?? []).map((app) => {
@@ -564,14 +639,34 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           {app.packet_title ? ` · ${app.job_title}` : ""}
                         </p>
                         <div className="mt-1.5 flex flex-wrap gap-1">
-                          <Chip label="CV" ok={hasCv} />
-                          <Chip label="Photo" ok={hasPhoto} />
-                          <Chip label="Co" ok={hasCompany} />
-                          <Chip label="Letter" ok={hasLetter} />
+                          <Chip
+                            label={t.chipCv}
+                            ok={hasCv}
+                            titleMissing={`${t.chipCv}: ${t.chipMissing}`}
+                            titleOk={`${t.chipCv}: ${t.chipOk}`}
+                          />
+                          <Chip
+                            label={t.chipPhoto}
+                            ok={hasPhoto}
+                            titleMissing={`${t.chipPhoto}: ${t.chipMissing}`}
+                            titleOk={`${t.chipPhoto}: ${t.chipOk}`}
+                          />
+                          <Chip
+                            label={t.chipCompany}
+                            ok={hasCompany}
+                            titleMissing={`${t.chipCompany}: ${t.chipMissing}`}
+                            titleOk={`${t.chipCompany}: ${t.chipOk}`}
+                          />
+                          <Chip
+                            label={t.chipLetter}
+                            ok={hasLetter}
+                            titleMissing={`${t.chipLetter}: ${t.chipMissing}`}
+                            titleOk={`${t.chipLetter}: ${t.chipOk}`}
+                          />
                         </div>
                       </button>
                       <label className="mt-2 block text-[10px] font-medium text-slate-600">
-                        Status
+                        {t.stage}
                         <select
                           className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-1 py-1 text-xs"
                           disabled={busy}
@@ -582,7 +677,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         >
                           {APPLICATION_STATUSES.map((option) => (
                             <option key={option} value={option}>
-                              {option}
+                              {statusLabel(option, bg)}
                             </option>
                           ))}
                         </select>
@@ -594,28 +689,25 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           onClick={() => openEdit(app)}
                           type="button"
                         >
-                          {bg ? "Редакция" : "Edit"}
+                          {t.open}
                         </button>
                         <button
                           className="text-[10px] font-semibold text-slate-800 underline"
                           disabled={busy}
                           onClick={() => void exportPacket(app.id)}
+                          title={t.exportPacketTitle}
                           type="button"
                         >
-                          {bg ? "Експорт" : "Export"}
+                          {t.exportPacket}
                         </button>
                         <button
                           className="text-[10px] font-semibold text-slate-800 underline"
                           disabled={busy}
                           onClick={() => void reusePacket(app)}
-                          title={
-                            bg
-                              ? "Нов пакет със същите CV и снимка"
-                              : "New packet reusing CV and photo"
-                          }
+                          title={t.reuseTitle}
                           type="button"
                         >
-                          {bg ? "Преизползвай" : "Reuse"}
+                          {t.reuseForSimilar}
                         </button>
                         <button
                           className="text-[10px] font-semibold text-rose-700"
@@ -623,7 +715,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           onClick={() => void remove(app.id)}
                           type="button"
                         >
-                          {bg ? "Премахни" : "Remove"}
+                          {t.delete}
                         </button>
                       </div>
                     </li>
@@ -634,63 +726,50 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           ))}
         </div>
 
-        {/* Always-available packet editor */}
         <aside className="flex min-h-0 min-w-0 flex-col rounded-xl border border-[var(--line)] bg-white p-3">
           <p className="text-sm font-semibold text-slate-900">
             {editorOpen
               ? draft.id
-                ? bg
-                  ? "Редакция на пакет"
-                  : "Edit packet"
-                : bg
-                  ? "Нов пакет"
-                  : "New packet"
-              : bg
-                ? "Пакет"
-                : "Packet"}
+                ? t.editorEdit
+                : t.editorNew
+              : t.editorIdleTitle}
           </p>
           <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
-            {bg
-              ? "CV · снимка · компания · писмо — винаги редактируеми."
-              : "CV · photo · company · letter — always editable."}
+            {editorOpen ? t.editorHint : t.editorIdleHint}
           </p>
 
           {!editorOpen ? (
             <div className="mt-4 flex flex-1 flex-col items-start justify-center gap-2 text-xs text-[var(--ink-muted)]">
-              <p>
-                {bg
-                  ? "Изберете карта или създайте нов пакет."
-                  : "Select a card or create a new packet."}
-              </p>
               <button
                 className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white"
                 onClick={openNew}
                 type="button"
               >
-                {bg ? "Нов пакет" : "New packet"}
+                {t.newApplication}
               </button>
             </div>
           ) : (
             <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto">
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Заглавие на пакет" : "Packet title"}
+                {t.applicationName}
                 <input
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
                     setDraft((d) => ({ ...d, packet_title: e.target.value }))
                   }
+                  placeholder={t.applicationNameHint}
                   value={draft.packet_title || ""}
                 />
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                CV
+                {t.resumeCv}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) => setDraft((d) => ({ ...d, cv_id: e.target.value }))}
                   value={draft.cv_id || ""}
                 >
-                  <option value="">—</option>
+                  <option value="">{t.noneSelected}</option>
                   {cvOptions.map((cv) => (
                     <option key={cv.id} value={cv.id}>
                       {cv.displayName || cv.id}
@@ -700,7 +779,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Снимка" : "Photo"}
+                {t.profilePhoto}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
@@ -708,7 +787,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   }
                   value={draft.photo_id || ""}
                 >
-                  <option value="">—</option>
+                  <option value="">{t.noneSelected}</option>
                   {photoOptions.map((photo) => (
                     <option key={photo.id} value={photo.id}>
                       {photo.name || photo.id}
@@ -730,13 +809,13 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               ) : null}
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Компания (Research)" : "Company (Research)"}
+                {t.researchCompany}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) => onCompanySelect(e.target.value)}
                   value={draft.company_id || ""}
                 >
-                  <option value="">— {bg ? "ръчно име" : "manual name"} —</option>
+                  <option value="">{t.typeCompanyBelow}</option>
                   {companyOptions.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -746,7 +825,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Име на компания" : "Company name"}
+                {t.companyDisplayName}
                 <input
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
@@ -757,13 +836,13 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Позиция (Research)" : "Job (Research)"}
+                {t.researchRole}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) => onJobSelect(e.target.value)}
                   value={draft.job_id || ""}
                 >
-                  <option value="">— {bg ? "ръчно" : "manual"} —</option>
+                  <option value="">{t.typeRoleBelow}</option>
                   {jobsForCompany.map((j) => (
                     <option key={j.id} value={j.id}>
                       {j.title}
@@ -773,7 +852,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Заглавие на позиция" : "Job title"}
+                {t.roleTitle}
                 <input
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
@@ -784,7 +863,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Писмо" : "Cover letter"}
+                {t.coverLetter}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
@@ -792,7 +871,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   }
                   value={draft.cover_letter_id || ""}
                 >
-                  <option value="">—</option>
+                  <option value="">{t.noneSelected}</option>
                   {letterOptions.map((letter) => (
                     <option key={letter.id} value={letter.id}>
                       {letter.title || letter.id}
@@ -802,7 +881,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                Status
+                {t.stage}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
@@ -815,14 +894,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 >
                   {APPLICATION_STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {s}
+                      {statusLabel(s, bg)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                URL
+                {t.jobPostUrl}
                 <input
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) => setDraft((d) => ({ ...d, url: e.target.value }))}
@@ -831,7 +910,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Бележки" : "Notes"}
+                {t.notes}
                 <textarea
                   className="mt-0.5 min-h-[4rem] w-full resize-y rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
@@ -848,16 +927,17 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   onClick={() => void saveDraft()}
                   type="button"
                 >
-                  {bg ? "Запази пакет" : "Save packet"}
+                  {t.save}
                 </button>
                 {draft.id ? (
                   <button
                     className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
                     disabled={busy}
                     onClick={() => void exportPacket(draft.id!)}
+                    title={t.exportPacketTitle}
                     type="button"
                   >
-                    {bg ? "Експорт" : "Export"}
+                    {t.exportPacket}
                   </button>
                 ) : null}
                 <button
@@ -869,7 +949,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   }}
                   type="button"
                 >
-                  {bg ? "Затвори" : "Close"}
+                  {t.cancel}
                 </button>
               </div>
             </div>

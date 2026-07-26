@@ -71,9 +71,10 @@ export function ComposerNav({
             activePanel === "applications" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
           }`}
           onClick={() => onPanelChange("applications")}
+          title="Job applications board"
           type="button"
         >
-          Apps
+          Board
         </button>
         <button
           className={`rounded-md px-4 py-2 text-sm font-semibold ${
