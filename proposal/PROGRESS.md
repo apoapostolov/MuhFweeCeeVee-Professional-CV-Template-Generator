@@ -18,7 +18,7 @@ Plan: `IMPLEMENTATION_PLAN.md`
 - [x] WS0 Docs drift (README + proposal links)
 - [x] WS1 Field contracts (types, catalogs, validate, envelope, merge, sanitize, enum UI)
 - [x] WS2 Field refine typed + Include Research checkbox (D2/D5)
-- [ ] WS3 Staged company research
+- [x] WS3 Staged company research (`/enrich`, cache, stages UI, cheap default)
 - [ ] WS4 JD text + slim job research (partial: `raw_jd_text` field in form + type)
 - [ ] WS5 Keyword extract
 - [ ] WS6 Editor targeting + gap (implements D1 in product)

@@ -5,11 +5,6 @@ import { runCompanyEnrich } from "@/lib/server/runCompanyEnrich";
 
 export const runtime = "nodejs";
 
-/**
- * Legacy full-web company research.
- * Prefer POST /api/research/companies/enrich.
- * Wrapper: all stages + useWebSearch true.
- */
 export async function POST(request: Request): Promise<NextResponse> {
   const denied = assertApiAuthorized(request);
   if (denied) {
@@ -22,6 +17,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     officeCountry?: unknown;
     officeCity?: unknown;
     officeLabel?: unknown;
+    website?: unknown;
+    linkedinCompanyUrl?: unknown;
+    aboutText?: unknown;
+    stages?: unknown;
+    useWebSearch?: unknown;
     forceRefresh?: unknown;
   };
 
@@ -31,20 +31,26 @@ export async function POST(request: Request): Promise<NextResponse> {
     officeCountry: typeof body.officeCountry === "string" ? body.officeCountry : "",
     officeCity: typeof body.officeCity === "string" ? body.officeCity : undefined,
     officeLabel: typeof body.officeLabel === "string" ? body.officeLabel : undefined,
-    stages: ["identity", "office", "hiring", "people", "linkedin_jobs"],
-    useWebSearch: true,
+    website: typeof body.website === "string" ? body.website : undefined,
+    linkedinCompanyUrl:
+      typeof body.linkedinCompanyUrl === "string" ? body.linkedinCompanyUrl : undefined,
+    aboutText: typeof body.aboutText === "string" ? body.aboutText : undefined,
+    stages: body.stages,
+    useWebSearch: body.useWebSearch === true,
     forceRefresh: body.forceRefresh === true,
   });
 
   if (!result.ok) {
     return NextResponse.json(
-      { error: result.error, status: result.status, raw: result.raw },
+      {
+        error: result.error,
+        stage: result.stage,
+        raw: result.raw,
+        partialCompany: result.partialCompany,
+      },
       { status: result.status },
     );
   }
 
-  return NextResponse.json({
-    ...result,
-    deprecated: "Use POST /api/research/companies/enrich with stages and useWebSearch.",
-  });
+  return NextResponse.json(result);
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type JSX } from "react";
 
+import type { CompanyEnrichStage } from "@/lib/research/companyEnrich";
 import type {
   ResearchedCompany,
   ResearchedJobPosition,
@@ -44,6 +45,11 @@ export type ResearchPanelProps = {
     officeCountry: string;
     officeCity?: string;
     officeLabel?: string;
+    website?: string;
+    linkedinCompanyUrl?: string;
+    aboutText?: string;
+    stages?: CompanyEnrichStage[];
+    useWebSearch?: boolean;
   }) => void;
   onResearchJob: (payload: {
     companyId: string;
@@ -94,6 +100,11 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
   const [officeCountry, setOfficeCountry] = useState("");
   const [officeCity, setOfficeCity] = useState("");
   const [officeLabel, setOfficeLabel] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [companyLinkedinUrl, setCompanyLinkedinUrl] = useState("");
+  const [companyAboutText, setCompanyAboutText] = useState("");
+  const [companyUseWebSearch, setCompanyUseWebSearch] = useState(false);
+  const [companyStages, setCompanyStages] = useState<CompanyEnrichStage[]>(["identity"]);
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -104,8 +115,18 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
       setOfficeCountry(companyDetail.office.country);
       setOfficeCity(companyDetail.office.city ?? "");
       setOfficeLabel(companyDetail.office.label ?? "");
+      setCompanyWebsite(companyDetail.identity?.website ?? "");
+      setCompanyLinkedinUrl(companyDetail.identity?.linkedin_company_url ?? "");
     }
   }, [sidebarTab, companyDetail]);
+
+  useEffect(() => {
+    if (!companyUseWebSearch) {
+      setCompanyStages((prev) =>
+        prev.filter((s) => s !== "people" && s !== "linkedin_jobs"),
+      );
+    }
+  }, [companyUseWebSearch]);
 
   useEffect(() => {
     if (sidebarTab === "job_positions" && jobDetail) {
@@ -131,7 +152,17 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
         officeCity={officeCity}
         officeCountry={officeCountry}
         officeLabel={officeLabel}
+        companyAboutText={companyAboutText}
+        companyLinkedinUrl={companyLinkedinUrl}
+        companyStages={companyStages}
+        companyUseWebSearch={companyUseWebSearch}
+        companyWebsite={companyWebsite}
+        onCompanyAboutTextChange={setCompanyAboutText}
+        onCompanyLinkedinUrlChange={setCompanyLinkedinUrl}
         onCompanyNameChange={setCompanyName}
+        onCompanyStagesChange={setCompanyStages}
+        onCompanyUseWebSearchChange={setCompanyUseWebSearch}
+        onCompanyWebsiteChange={setCompanyWebsite}
         onDeleteCompany={onDeleteCompany}
         onDeleteJob={onDeleteJob}
         onJobDescriptionChange={setJobDescription}
@@ -149,6 +180,11 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
             officeCountry: officeCountry.trim(),
             officeCity: officeCity.trim() || undefined,
             officeLabel: officeLabel.trim() || undefined,
+            website: companyWebsite.trim() || undefined,
+            linkedinCompanyUrl: companyLinkedinUrl.trim() || undefined,
+            aboutText: companyAboutText.trim() || undefined,
+            stages: companyStages,
+            useWebSearch: companyUseWebSearch,
           })
         }
         onResearchJob={() =>

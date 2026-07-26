@@ -2460,19 +2460,38 @@ export function useComposerController() {
     officeCountry: string;
     officeCity?: string;
     officeLabel?: string;
+    website?: string;
+    linkedinCompanyUrl?: string;
+    aboutText?: string;
+    stages?: string[];
+    useWebSearch?: boolean;
   }) {
     setResearchingCompany(true);
     setResearchNotice("");
     try {
-      const response = await fetch("/api/research/companies/research", {
+      const response = await fetch("/api/research/companies/enrich", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          companyId: payload.companyId,
+          companyName: payload.companyName,
+          officeCountry: payload.officeCountry,
+          officeCity: payload.officeCity,
+          officeLabel: payload.officeLabel,
+          website: payload.website,
+          linkedinCompanyUrl: payload.linkedinCompanyUrl,
+          aboutText: payload.aboutText,
+          stages: payload.stages ?? ["identity"],
+          useWebSearch: payload.useWebSearch === true,
+        }),
       });
       const body = (await response.json()) as {
         error?: string;
         company?: ResearchedCompany;
         companies?: ResearchedCompany[];
+        cached?: boolean;
+        useWebSearch?: boolean;
+        stages?: string[];
       };
       if (!response.ok || !body.company) {
         setResearchNotice(body.error ?? "Company research failed.");
@@ -2482,23 +2501,29 @@ export function useComposerController() {
       selectResearchCompany(body.company.id);
       setResearchSidebarTab("companies");
       const updatedExisting = Boolean(payload.companyId);
+      const viaWeb = body.useWebSearch === true;
+      const cachedNote = body.cached
+        ? uiIsBg(uiLanguage)
+          ? " (кеш)"
+          : " (cached)"
+        : "";
       setResearchNotice(
         uiIsBg(uiLanguage)
           ? updatedExisting
-            ? `Компанията „${body.company.name}“ е обновена.`
-            : `Компанията „${body.company.name}“ е добавена.`
+            ? `Компанията „${body.company.name}“ е обновена${viaWeb ? " с Research" : ""}${cachedNote}.`
+            : `Компанията „${body.company.name}“ е попълнена${viaWeb ? " с Research" : ""}${cachedNote}.`
           : updatedExisting
-            ? `Updated company “${body.company.name}”.`
-            : `Researched company “${body.company.name}”.`,
+            ? `Updated company “${body.company.name}”${viaWeb ? " via Research" : ""}${cachedNote}.`
+            : `Filled company “${body.company.name}”${viaWeb ? " via Research" : ""}${cachedNote}.`,
       );
       showComposerToast(
         uiIsBg(uiLanguage)
           ? updatedExisting
             ? "Компанията е обновена."
-            : "Компанията е проучена."
+            : "Компанията е попълнена."
           : updatedExisting
             ? "Company updated."
-            : "Company researched.",
+            : "Company filled.",
       );
     } catch {
       setResearchNotice("Company research failed.");

@@ -48,7 +48,8 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `GET /research/catalog` — list companies + job positions
 - `PUT /research/catalog` — replace catalog (auth when token set)
 - `GET|PUT|DELETE /research/companies/:companyId`
-- `POST /research/companies/research` — web-backed company research (`companyName`, `officeCountry`, …)
+- `POST /research/companies/enrich` — staged company fill (`companyName`, `officeCountry`, `stages?`, `useWebSearch?` default false, optional website/linkedin/aboutText). Default stage: `identity`. Cache 7d unless `forceRefresh`.
+- `POST /research/companies/research` — **deprecated** wrapper: all stages + `useWebSearch: true`
 - `GET|PUT|DELETE /research/job-positions/:jobId`
 - `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, …)
 - `POST /research/field-refine` — per-field AI (`entityType`, `entityId`, `fieldPath`, `useWebSearch?: boolean` default false). Unknown paths 400; proposals validated against field contracts.

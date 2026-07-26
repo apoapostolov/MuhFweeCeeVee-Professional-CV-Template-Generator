@@ -2,6 +2,7 @@
 
 import { useMemo, type JSX } from "react";
 
+import type { CompanyEnrichStage } from "@/lib/research/companyEnrich";
 import { companyOfficeSummary } from "@/lib/research/research-normalize";
 import type { ResearchedCompany, ResearchedJobPosition, ResearchSidebarTab } from "@/lib/research/types";
 
@@ -24,6 +25,11 @@ export type ResearchSidebarProps = {
   officeCountry: string;
   officeCity: string;
   officeLabel: string;
+  companyWebsite: string;
+  companyLinkedinUrl: string;
+  companyAboutText: string;
+  companyUseWebSearch: boolean;
+  companyStages: CompanyEnrichStage[];
   jobTitle: string;
   jobDescription: string;
   linkedinUrl: string;
@@ -31,6 +37,11 @@ export type ResearchSidebarProps = {
   onOfficeCountryChange: (value: string) => void;
   onOfficeCityChange: (value: string) => void;
   onOfficeLabelChange: (value: string) => void;
+  onCompanyWebsiteChange: (value: string) => void;
+  onCompanyLinkedinUrlChange: (value: string) => void;
+  onCompanyAboutTextChange: (value: string) => void;
+  onCompanyUseWebSearchChange: (value: boolean) => void;
+  onCompanyStagesChange: (stages: CompanyEnrichStage[]) => void;
   onJobTitleChange: (value: string) => void;
   onJobDescriptionChange: (value: string) => void;
   onLinkedinUrlChange: (value: string) => void;
@@ -58,6 +69,11 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
     officeCountry,
     officeCity,
     officeLabel,
+    companyWebsite,
+    companyLinkedinUrl,
+    companyAboutText,
+    companyUseWebSearch,
+    companyStages,
     jobTitle,
     jobDescription,
     linkedinUrl,
@@ -65,6 +81,11 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
     onOfficeCountryChange,
     onOfficeCityChange,
     onOfficeLabelChange,
+    onCompanyWebsiteChange,
+    onCompanyLinkedinUrlChange,
+    onCompanyAboutTextChange,
+    onCompanyUseWebSearchChange,
+    onCompanyStagesChange,
     onJobTitleChange,
     onJobDescriptionChange,
     onLinkedinUrlChange,
@@ -74,6 +95,15 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
     onDeleteJob,
     language,
   } = props;
+
+  const toggleStage = (stage: CompanyEnrichStage) => {
+    if (companyStages.includes(stage)) {
+      if (stage === "identity") return; // always keep identity
+      onCompanyStagesChange(companyStages.filter((s) => s !== stage));
+    } else {
+      onCompanyStagesChange([...companyStages, stage]);
+    }
+  };
 
   const jobsForCompany = useMemo(
     () => jobPositions.filter((job) => job.company_id === selectedCompanyId),
@@ -119,8 +149,8 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
           <>
             <p className="text-xs text-[var(--ink-muted)]">
               {language === "bg"
-                ? "Проучете офис на компания: адрес, контакти, хора и отворени роли в LinkedIn."
-                : "Research a company office: address, contacts, people, and LinkedIn open roles."}
+                ? "Попълнете компанията евтино по подразбиране. Отметнете Research само за уеб търсене."
+                : "Fill company cheaply by default. Check Include Research only for web search."}
             </p>
             <div className="space-y-2">
               <label className="block text-xs font-medium text-slate-800">
@@ -159,6 +189,80 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                   />
                 </label>
               </div>
+              <label className="block text-xs font-medium text-slate-800">
+                Website
+                <input
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                  onChange={(event) => onCompanyWebsiteChange(event.target.value)}
+                  placeholder="https://"
+                  type="url"
+                  value={companyWebsite}
+                />
+              </label>
+              <label className="block text-xs font-medium text-slate-800">
+                LinkedIn company URL
+                <input
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                  onChange={(event) => onCompanyLinkedinUrlChange(event.target.value)}
+                  placeholder="https://www.linkedin.com/company/..."
+                  type="url"
+                  value={companyLinkedinUrl}
+                />
+              </label>
+              <label className="block text-xs font-medium text-slate-800">
+                {language === "bg" ? "About текст (по избор)" : "About text (optional paste)"}
+                <textarea
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                  onChange={(event) => onCompanyAboutTextChange(event.target.value)}
+                  rows={2}
+                  value={companyAboutText}
+                />
+              </label>
+              <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                  {language === "bg" ? "Етапи" : "Stages"}
+                </p>
+                <div className="mt-1 flex flex-col gap-1">
+                  {(
+                    [
+                      ["identity", "Identity"],
+                      ["office", "Office"],
+                      ["hiring", "Hiring"],
+                      ["people", "People (web)"],
+                      ["linkedin_jobs", "Jobs sample (web)"],
+                    ] as const
+                  ).map(([stage, label]) => {
+                    const webOnly = stage === "people" || stage === "linkedin_jobs";
+                    const disabled = webOnly && !companyUseWebSearch;
+                    return (
+                      <label
+                        className={`inline-flex items-center gap-1.5 text-xs ${disabled ? "opacity-50" : ""}`}
+                        key={stage}
+                      >
+                        <input
+                          checked={companyStages.includes(stage)}
+                          disabled={disabled || stage === "identity"}
+                          onChange={() => toggleStage(stage)}
+                          type="checkbox"
+                        />
+                        {label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-700">
+                <input
+                  checked={companyUseWebSearch}
+                  onChange={(event) => onCompanyUseWebSearchChange(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  {language === "bg"
+                    ? "Включи Research (уеб — по-скъпо)"
+                    : "Include Research (search web — costs more)"}
+                </span>
+              </label>
               <button
                 className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
                 disabled={researchingCompany || !companyName.trim() || !officeCountry.trim()}
@@ -168,11 +272,15 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                 <AiStarsIcon className="h-3.5 w-3.5" variant="default" />
                 {researchingCompany
                   ? language === "bg"
-                    ? "Проучване..."
-                    : "Researching..."
-                  : language === "bg"
-                    ? "Проучи компания"
-                    : "Research Company"}
+                    ? "Попълване..."
+                    : "Filling..."
+                  : companyUseWebSearch
+                    ? language === "bg"
+                      ? "Research компания (уеб)"
+                      : "Research company (web)"
+                    : language === "bg"
+                      ? "Попълни identity (евтино)"
+                      : "Fill identity (cheap)"}
               </button>
             </div>
 

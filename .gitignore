@@ -48,6 +48,7 @@ data/settings/openrouter_models.yaml
 data/settings/openrouter.yaml
 data/settings/companies.personal.json
 data/research/catalog.json
+data/research/cache/
 /photos/
 /photos/metadata.json
 
