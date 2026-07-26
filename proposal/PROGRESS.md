@@ -16,10 +16,10 @@ Plan: `IMPLEMENTATION_PLAN.md`
 ## Workstreams
 
 - [x] WS0 Docs drift (README + proposal links)
-- [x] WS1 Field contracts (types, catalogs, validate, envelope, merge, sanitize on normalize) — core lib done; enum UI (1.7) deferred to next pass
-- [ ] WS2 Field refine typed
+- [x] WS1 Field contracts (types, catalogs, validate, envelope, merge, sanitize, enum UI)
+- [x] WS2 Field refine typed + Include Research checkbox (D2/D5)
 - [ ] WS3 Staged company research
-- [ ] WS4 JD text + slim job research
+- [ ] WS4 JD text + slim job research (partial: `raw_jd_text` field in form + type)
 - [ ] WS5 Keyword extract
 - [ ] WS6 Editor targeting + gap (implements D1 in product)
 - [ ] WS7 Cover letters
@@ -35,8 +35,14 @@ Plan: `IMPLEMENTATION_PLAN.md`
 - [x] Weighted keyword evidence + D3 soft cap
 - [x] Envelope parse + merge
 - [x] sanitize on normalizeResearchedCompany/Job
-- [ ] Contract-aware enum selects in ResearchDetailForm (1.7)
-- [ ] Wire field-refine API to envelope (WS2)
+- [x] Contract-aware enum selects + url/email inputs in ResearchDetailForm
+
+## WS2 detail
+
+- [x] `callOpenRouterResearchChat({ useWebSearch })` — analysis model when false
+- [x] Contract-driven refine prompts + truncated context
+- [x] Field-refine API validates proposals; unknown path 400
+- [x] UI checkbox “Include Research (search web — costs more)”
 
 ## D1 migration checklist (UI)
 

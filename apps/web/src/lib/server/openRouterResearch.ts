@@ -20,26 +20,60 @@ export function resolveOpenRouterResearchModel(researchModel: string): string {
   return resolveOpenRouterResearchModelId(researchModel);
 }
 
-export async function callOpenRouterResearchChat(prompt: string, systemContent: string): Promise<{
-  ok: true;
-  content: string;
-  model: string;
-} | {
-  ok: false;
-  error: string;
-  status?: number;
-  raw?: string;
-}> {
+export type OpenRouterChatOptions = {
+  /** D2: when true, use research model + web search extras. Default false. */
+  useWebSearch?: boolean;
+  /** Override model id (optional). */
+  model?: string;
+  temperature?: number;
+};
+
+/**
+ * OpenRouter chat for research/analysis paths.
+ * D2: useWebSearch false → analysis model, no web extras.
+ * useWebSearch true → research model + web search extras when supported.
+ */
+export async function callOpenRouterResearchChat(
+  prompt: string,
+  systemContent: string,
+  options?: OpenRouterChatOptions,
+): Promise<
+  | {
+      ok: true;
+      content: string;
+      model: string;
+      useWebSearch: boolean;
+    }
+  | {
+      ok: false;
+      error: string;
+      status?: number;
+      raw?: string;
+    }
+> {
   const settings = await readOpenRouterSettings();
   const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
   if (!apiKey) {
     return { ok: false, error: "OpenRouter API key is not configured." };
   }
 
-  const model = resolveOpenRouterResearchModel(
+  // Legacy callers (company/job research) omit options → keep web research model.
+  // Field refine / staged cheap fill pass useWebSearch: false explicitly (D2).
+  const useWebSearch =
+    options && Object.prototype.hasOwnProperty.call(options, "useWebSearch")
+      ? options.useWebSearch === true
+      : true;
+  const analysisModel =
+    (settings.model && settings.model.trim()) || "openai/gpt-4o-mini";
+  const researchModel = resolveOpenRouterResearchModel(
     settings.researchModel || DEFAULT_OPENROUTER_RESEARCH_MODEL,
   );
-  const searchExtras = buildResearchOpenRouterRequestExtras(model);
+  const model =
+    (options?.model && options.model.trim()) ||
+    (useWebSearch ? researchModel : analysisModel);
+
+  const searchExtras = useWebSearch ? buildResearchOpenRouterRequestExtras(model) : {};
+  const temperature = options?.temperature ?? (useWebSearch ? 0.25 : 0.2);
 
   const response = await fetch(settings.baseUrl, {
     method: "POST",
@@ -53,7 +87,7 @@ export async function callOpenRouterResearchChat(prompt: string, systemContent: 
         { role: "system", content: systemContent },
         { role: "user", content: prompt },
       ],
-      temperature: 0.25,
+      temperature,
       ...searchExtras,
     }),
   });
@@ -62,7 +96,9 @@ export async function callOpenRouterResearchChat(prompt: string, systemContent: 
     const raw = await response.text();
     return {
       ok: false,
-      error: "OpenRouter research request failed.",
+      error: useWebSearch
+        ? "OpenRouter research request failed."
+        : "OpenRouter analysis request failed.",
       status: response.status,
       raw,
     };
@@ -76,5 +112,5 @@ export async function callOpenRouterResearchChat(prompt: string, systemContent: 
     return { ok: false, error: "Empty model response." };
   }
 
-  return { ok: true, content, model };
+  return { ok: true, content, model, useWebSearch };
 }

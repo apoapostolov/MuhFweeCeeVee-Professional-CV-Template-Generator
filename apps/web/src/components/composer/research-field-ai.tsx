@@ -62,6 +62,9 @@ type ResearchFieldAiContextValue = {
   showSeparatorBelow: boolean;
   researchSession: PersistedResearchFieldSession | null;
   undoBeforeApply: string | null;
+  /** D2/D5: include Research model + web search */
+  useWebSearch: boolean;
+  setUseWebSearch: (value: boolean) => void;
   runResearch: () => Promise<void>;
   applyProposal: (proposal: ResearchFieldProposal) => void;
   undoApply: () => void;
@@ -111,6 +114,7 @@ export function ResearchFieldAiProvider({
 
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [useWebSearch, setUseWebSearch] = useState(false);
   const [researchSession, setResearchSession] = useState<PersistedResearchFieldSession | null>(null);
   const [undoBeforeApply, setUndoBeforeApply] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -166,15 +170,24 @@ export function ResearchFieldAiProvider({
           fieldPath,
           fieldLabel,
           currentValue,
+          useWebSearch,
         }),
       });
       const payload = (await response.json()) as {
         error?: string;
         currentScore?: number;
         proposals?: ResearchFieldProposal[];
+        rejected?: string[];
       };
       if (!response.ok) {
-        onNotice?.(payload.error ?? (language === "bg" ? "AI заявката не успя." : "AI request failed."));
+        const detail =
+          Array.isArray(payload.rejected) && payload.rejected.length > 0
+            ? ` ${payload.rejected[0]}`
+            : "";
+        onNotice?.(
+          (payload.error ?? (language === "bg" ? "AI заявката не успя." : "AI request failed.")) +
+            detail,
+        );
         return;
       }
       const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
@@ -196,7 +209,16 @@ export function ResearchFieldAiProvider({
     } finally {
       setBusy(false);
     }
-  }, [currentValue, entityId, entityType, fieldLabel, fieldPath, language, onNotice]);
+  }, [
+    currentValue,
+    entityId,
+    entityType,
+    fieldLabel,
+    fieldPath,
+    language,
+    onNotice,
+    useWebSearch,
+  ]);
 
   const ctxValue = useMemo<ResearchFieldAiContextValue>(
     () => ({
@@ -208,6 +230,8 @@ export function ResearchFieldAiProvider({
       showSeparatorBelow,
       researchSession,
       undoBeforeApply,
+      useWebSearch,
+      setUseWebSearch,
       runResearch,
       applyProposal,
       undoApply,
@@ -220,6 +244,7 @@ export function ResearchFieldAiProvider({
       showSeparatorBelow,
       researchSession,
       undoBeforeApply,
+      useWebSearch,
       runResearch,
       applyProposal,
       undoApply,
@@ -277,27 +302,30 @@ export function ResearchFieldAiInputChrome({
 }
 
 export function ResearchFieldAiTrigger(): JSX.Element {
-  const { expanded, setExpanded, busy, language, resolvedTheme, runResearch } =
+  const { expanded, setExpanded, busy, language, resolvedTheme, researchSession, runResearch } =
     useResearchFieldAiContext();
 
   return (
     <button
       aria-expanded={expanded}
-      aria-label={language === "bg" ? "Проучи полето с AI" : "Research field with AI"}
+      aria-label={language === "bg" ? "Подобри полето с AI" : "Improve field with AI"}
       className={`${iconButtonClass} ${expanded ? "bg-[var(--surface-2)] ring-1 ring-[var(--line)]" : ""}`}
       disabled={busy}
       onClick={() => {
         setExpanded(true);
-        void runResearch();
+        // D5: cheap path by default (useWebSearch state starts false). Re-run only if no session yet.
+        if (!researchSession) {
+          void runResearch();
+        }
       }}
       title={
         busy
           ? language === "bg"
-            ? "Проучване..."
-            : "Researching..."
+            ? "Генериране..."
+            : "Generating..."
           : language === "bg"
-            ? "Проучи полето"
-            : "Research field"
+            ? "Подобри полето (евтино; отметни Research за уеб)"
+            : "Improve field (cheap; check Include Research for web)"
       }
       type="button"
     >
@@ -368,14 +396,18 @@ function ResearchFieldAiProposals(): JSX.Element | null {
 }
 
 export function ResearchFieldAiPanel(): JSX.Element | null {
-  const { expanded, busy, language, showSeparatorBelow, researchSession, runResearch } =
-    useResearchFieldAiContext();
+  const {
+    expanded,
+    busy,
+    language,
+    showSeparatorBelow,
+    researchSession,
+    useWebSearch,
+    setUseWebSearch,
+    runResearch,
+  } = useResearchFieldAiContext();
 
   if (!expanded) {
-    return null;
-  }
-
-  if (!busy && !researchSession) {
     return null;
   }
 
@@ -387,24 +419,40 @@ export function ResearchFieldAiPanel(): JSX.Element | null {
 
   return (
     <>
-      {researchSession ? (
-        <div className={EDITOR_METADATA_FIELD_AI_ROW_CLASS}>
-          <button
-            className={`${actionButtonClass} bg-[var(--accent)] text-white hover:opacity-90`}
+      <div className={`${EDITOR_METADATA_FIELD_AI_ROW_CLASS} flex flex-wrap items-center gap-2`}>
+        <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-700">
+          <input
+            checked={useWebSearch}
+            className="rounded border-[var(--line)]"
             disabled={busy}
-            onClick={() => void runResearch()}
-            type="button"
-          >
-            {busy
+            onChange={(event) => setUseWebSearch(event.target.checked)}
+            type="checkbox"
+          />
+          <span>
+            {language === "bg"
+              ? "Включи Research (уеб — по-скъпо)"
+              : "Include Research (search web — costs more)"}
+          </span>
+        </label>
+        <button
+          className={`${actionButtonClass} bg-[var(--accent)] text-white hover:opacity-90`}
+          disabled={busy}
+          onClick={() => void runResearch()}
+          type="button"
+        >
+          {busy
+            ? language === "bg"
+              ? "Генериране..."
+              : "Generating..."
+            : researchSession
               ? language === "bg"
-                ? "Проучване..."
-                : "Researching..."
+                ? "Генерирай отново"
+                : "Run again"
               : language === "bg"
-                ? "Проучи още"
-                : "Research More"}
-          </button>
-        </div>
-      ) : null}
+                ? "Подобри"
+                : "Improve"}
+        </button>
+      </div>
       <ResearchFieldAiProposals />
       {separator}
     </>

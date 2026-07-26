@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { callOpenRouterResearchChat } from "@/lib/server/openRouterResearch";
+import { getCompanyFieldContract } from "./contracts";
 import { buildResearchFieldRefinePrompt, parseResearchFieldRefineProposals } from "./research-field-refine";
 import {
   buildJobPositionResearchPrompt,
@@ -111,12 +112,16 @@ describe.skipIf(!HAS_OPENROUTER_KEY)("Perplexity live research quality", () => {
         research: { sources: ["https://www.microsoft.com"] },
       });
 
+      const contract = getCompanyFieldContract("identity.description");
+      expect(contract).not.toBeNull();
       const prompt = buildResearchFieldRefinePrompt({
         entityType: "company",
         fieldPath: "identity.description",
         fieldLabel: "Company description",
         currentValue: "Technology company.",
         entityJson,
+        contract: contract!,
+        useWebSearch: true,
         searchHints: {
           kind: "field_refine",
           companyName: "Microsoft",

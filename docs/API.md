@@ -51,7 +51,7 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `POST /research/companies/research` — web-backed company research (`companyName`, `officeCountry`, …)
 - `GET|PUT|DELETE /research/job-positions/:jobId`
 - `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, …)
-- `POST /research/field-refine` — per-field AI proposals (`entityType`, `entityId`, `fieldPath`, …)
+- `POST /research/field-refine` — per-field AI (`entityType`, `entityId`, `fieldPath`, `useWebSearch?: boolean` default false). Unknown paths 400; proposals validated against field contracts.
 
 ### Analysis (Editor + metadata)
 

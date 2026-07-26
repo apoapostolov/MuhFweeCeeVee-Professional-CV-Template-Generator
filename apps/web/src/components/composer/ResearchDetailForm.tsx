@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState, type JSX } from "react";
 
 import {
+  COMPANY_SIZE_VALUES,
+  EMPLOYMENT_TYPE_VALUES,
+  HIRING_STATUS_VALUES,
+  OFFICE_TYPE_VALUES,
+  REMOTE_POLICY_VALUES,
+} from "@/lib/research/contracts";
+import {
   getAtPath,
   parseFieldValueFromProposal,
   setAtPath,
@@ -78,7 +85,9 @@ type ScalarFieldDef = {
   label: string;
   path: PathSegment[];
   multiline?: boolean;
-  inputType?: "text" | "number";
+  inputType?: "text" | "number" | "url" | "email";
+  /** Closed enum (D1 contracts) — renders <select> */
+  enumValues?: readonly string[];
 };
 
 function SectionHeader({ title }: { title: string }): JSX.Element {
@@ -179,31 +188,45 @@ export function ResearchDetailForm({
     const fieldPath = def.path.join(".");
     const wrapAt = defaultWrapCharsPerLine(language);
     const useTextarea =
-      def.multiline || (def.inputType !== "number" && shouldUseTextarea(stringValue, language, wrapAt));
+      !def.enumValues &&
+      (def.multiline ||
+        (def.inputType !== "number" && shouldUseTextarea(stringValue, language, wrapAt)));
     const rows = estimateTextareaRows(stringValue, wrapAt);
-    const control =
-      def.inputType === "number" ? (
-        <input
-          className={NUMBER_INPUT_CLASS}
-          onChange={(event) => updateAt(def.path, Number(event.target.value))}
-          type="number"
-          value={stringValue}
-        />
-      ) : useTextarea ? (
-        <textarea
-          className={`${EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS} resize-y`}
-          onChange={(event) => updateAt(def.path, event.target.value)}
-          rows={Math.max(def.multiline ? 3 : 1, rows)}
-          value={stringValue}
-        />
-      ) : (
-        <input
-          className={INPUT_CLASS}
-          onChange={(event) => updateAt(def.path, event.target.value)}
-          type="text"
-          value={stringValue}
-        />
-      );
+    const control = def.enumValues ? (
+      <select
+        className={INPUT_CLASS}
+        onChange={(event) => updateAt(def.path, event.target.value)}
+        value={stringValue}
+      >
+        <option value="">{language === "bg" ? "— избери —" : "— select —"}</option>
+        {def.enumValues.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    ) : def.inputType === "number" ? (
+      <input
+        className={NUMBER_INPUT_CLASS}
+        onChange={(event) => updateAt(def.path, Number(event.target.value))}
+        type="number"
+        value={stringValue}
+      />
+    ) : useTextarea ? (
+      <textarea
+        className={`${EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS} resize-y`}
+        onChange={(event) => updateAt(def.path, event.target.value)}
+        rows={Math.max(def.multiline ? 3 : 1, rows)}
+        value={stringValue}
+      />
+    ) : (
+      <input
+        className={INPUT_CLASS}
+        onChange={(event) => updateAt(def.path, event.target.value)}
+        type={def.inputType === "url" || def.inputType === "email" ? def.inputType : "text"}
+        value={stringValue}
+      />
+    );
 
     const wrappedControl = (
       <ResearchFieldAiInputChrome multiline={useTextarea}>{control}</ResearchFieldAiInputChrome>
@@ -284,34 +307,34 @@ export function ResearchDetailForm({
       { label: "Brand name", path: ["identity", "brand_name"] },
       { label: "Industry", path: ["identity", "industry"] },
       { label: "Sub-industry", path: ["identity", "sub_industry"] },
-      { label: "Company size", path: ["identity", "company_size"] },
+      { label: "Company size", path: ["identity", "company_size"], enumValues: COMPANY_SIZE_VALUES },
       { label: "Founded year", path: ["identity", "founded_year"] },
-      { label: "Website", path: ["identity", "website"] },
+      { label: "Website", path: ["identity", "website"], inputType: "url" },
       { label: "Company description", path: ["identity", "description"], multiline: true },
-      { label: "LinkedIn company URL", path: ["identity", "linkedin_company_url"] },
+      { label: "LinkedIn company URL", path: ["identity", "linkedin_company_url"], inputType: "url" },
       { label: "LinkedIn company ID", path: ["identity", "linkedin_company_id"] },
       { label: "Office country", path: ["office", "country"] },
       { label: "Office city", path: ["office", "city"] },
       { label: "Office label", path: ["office", "label"] },
-      { label: "Office type", path: ["office", "office_type"] },
+      { label: "Office type", path: ["office", "office_type"], enumValues: OFFICE_TYPE_VALUES },
       { label: "Timezone", path: ["office", "timezone"] },
       { label: "Street address", path: ["office", "street_address"] },
       { label: "Address line 2", path: ["office", "address_line_2"] },
       { label: "Postal code", path: ["office", "postal_code"] },
       { label: "Region / state", path: ["office", "region_state"] },
       { label: "Formatted address", path: ["office", "formatted_address"], multiline: true },
-      { label: "Maps URL", path: ["office", "maps_url"] },
-      { label: "General email", path: ["contacts", "general_email"] },
-      { label: "HR email", path: ["contacts", "hr_email"] },
-      { label: "Recruitment email", path: ["contacts", "recruitment_email"] },
+      { label: "Maps URL", path: ["office", "maps_url"], inputType: "url" },
+      { label: "General email", path: ["contacts", "general_email"], inputType: "email" },
+      { label: "HR email", path: ["contacts", "hr_email"], inputType: "email" },
+      { label: "Recruitment email", path: ["contacts", "recruitment_email"], inputType: "email" },
       { label: "Phone", path: ["contacts", "phone"] },
       { label: "Secondary phone", path: ["contacts", "phone_secondary"] },
-      { label: "Careers page", path: ["contacts", "careers_page_url"] },
-      { label: "Press email", path: ["contacts", "press_email"] },
-      { label: "LinkedIn page URL", path: ["linkedin", "company_page_url"] },
+      { label: "Careers page", path: ["contacts", "careers_page_url"], inputType: "url" },
+      { label: "Press email", path: ["contacts", "press_email"], inputType: "email" },
+      { label: "LinkedIn page URL", path: ["linkedin", "company_page_url"], inputType: "url" },
       { label: "LinkedIn follower count", path: ["linkedin", "follower_count"] },
       { label: "LinkedIn posts summary", path: ["linkedin", "recent_posts_summary"], multiline: true },
-      { label: "Hiring status", path: ["hiring", "hiring_status"] },
+      { label: "Hiring status", path: ["hiring", "hiring_status"], enumValues: HIRING_STATUS_VALUES },
       { label: "Open roles estimate", path: ["hiring", "open_roles_count_estimate"] },
       { label: "Employees at office", path: ["hiring", "employee_count_at_office"] },
       { label: "Company headcount", path: ["hiring", "employee_count_company"] },
@@ -329,16 +352,29 @@ export function ResearchDetailForm({
       { label: "Normalized title", path: ["identity", "normalized_title"] },
       { label: "Department", path: ["identity", "department"] },
       { label: "Seniority", path: ["identity", "seniority_level"] },
-      { label: "Employment type", path: ["identity", "employment_type"] },
-      { label: "Remote policy", path: ["identity", "remote_policy"] },
+      {
+        label: "Employment type",
+        path: ["identity", "employment_type"],
+        enumValues: EMPLOYMENT_TYPE_VALUES,
+      },
+      {
+        label: "Remote policy",
+        path: ["identity", "remote_policy"],
+        enumValues: REMOTE_POLICY_VALUES,
+      },
       { label: "Source", path: ["identity", "source"] },
-      { label: "LinkedIn job URL", path: ["identity", "linkedin_url"] },
+      { label: "LinkedIn job URL", path: ["identity", "linkedin_url"], inputType: "url" },
       { label: "LinkedIn job ID", path: ["identity", "linkedin_job_id"] },
       { label: "Location country", path: ["location", "country"] },
       { label: "Location city", path: ["location", "city"] },
       { label: "Salary range", path: ["compensation", "salary_range_text"] },
       { label: "Currency", path: ["compensation", "currency"] },
       { label: "Benefits summary", path: ["compensation", "benefits_summary"], multiline: true },
+      {
+        label: "Job description (paste JD)",
+        path: ["role", "raw_jd_text"],
+        multiline: true,
+      },
       { label: "Role summary", path: ["role", "description_summary"], multiline: true },
       { label: "Reports to", path: ["role", "reporting_to"] },
       { label: "Team size", path: ["role", "team_size"] },

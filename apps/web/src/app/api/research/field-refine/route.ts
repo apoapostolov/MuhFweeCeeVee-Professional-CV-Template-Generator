@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
 import {
+  getResearchFieldContract,
+  validateFieldValue,
+} from "@/lib/research/contracts";
+import {
   buildResearchFieldRefinePrompt,
   parseResearchFieldRefineProposals,
   type ResearchFieldProposal,
@@ -18,19 +22,40 @@ import {
 
 export const runtime = "nodejs";
 
-function normalizeProposalValue(fieldPath: string, proposal: ResearchFieldProposal): ResearchFieldProposal {
-  if (fieldPath !== "weighted_keywords") {
-    return proposal;
+function normalizeProposalValue(
+  fieldPath: string,
+  proposal: ResearchFieldProposal,
+  entityType: ResearchFieldRefineEntity,
+): { proposal: ResearchFieldProposal | null; error?: string } {
+  const contract = getResearchFieldContract(entityType, fieldPath);
+  if (!contract) {
+    return { proposal: null, error: "Unknown field path." };
   }
-  const keywords = parseWeightedKeywordsFromProposal(proposal.value);
-  return {
+
+  let value = proposal.value;
+  if (fieldPath === "weighted_keywords") {
+    value = parseWeightedKeywordsFromProposal(proposal.value);
+  }
+
+  const validated = validateFieldValue(contract, value, {
+    sources: proposal.sources,
+    status: proposal.status ?? "found",
+  });
+  if (!validated.ok) {
+    return { proposal: null, error: validated.error };
+  }
+
+  const next: ResearchFieldProposal = {
     ...proposal,
-    value: keywords,
+    value: validated.value,
     preview:
-      keywords.length > 0
-        ? keywords.map((entry) => `${entry.keyword} (${entry.weight})`).join("\n")
+      fieldPath === "weighted_keywords" && Array.isArray(validated.value)
+        ? (validated.value as Array<{ keyword: string; weight: number }>)
+            .map((entry) => `${entry.keyword} (${entry.weight})`)
+            .join("\n") || proposal.preview
         : proposal.preview,
   };
+  return { proposal: next };
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -45,9 +70,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     fieldPath?: unknown;
     fieldLabel?: unknown;
     currentValue?: unknown;
+    useWebSearch?: unknown;
   };
 
-  const entityType = body.entityType === "job_position" ? "job_position" : "company";
+  const entityType: ResearchFieldRefineEntity =
+    body.entityType === "job_position" ? "job_position" : "company";
   const entityId = typeof body.entityId === "string" ? body.entityId.trim() : "";
   const fieldPath = typeof body.fieldPath === "string" ? body.fieldPath.trim() : "";
   const fieldLabel = typeof body.fieldLabel === "string" ? body.fieldLabel.trim() : "Field";
@@ -57,9 +84,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       : body.currentValue !== undefined
         ? JSON.stringify(body.currentValue)
         : "";
+  const useWebSearch = body.useWebSearch === true;
 
   if (!entityId || !fieldPath) {
     return NextResponse.json({ error: "entityId and fieldPath are required." }, { status: 400 });
+  }
+
+  const contract = getResearchFieldContract(entityType, fieldPath);
+  if (!contract) {
+    return NextResponse.json(
+      { error: `Unknown field path "${fieldPath}" for ${entityType}.` },
+      { status: 400 },
+    );
   }
 
   const catalog = await readResearchCatalog();
@@ -75,7 +111,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!company) {
       return NextResponse.json({ error: "Company not found." }, { status: 404 });
     }
-    entityJson = JSON.stringify(company, null, 2);
+    entityJson = JSON.stringify(
+      {
+        id: company.id,
+        name: company.name,
+        identity: company.identity,
+        office: company.office,
+        contacts: {
+          careers_page_url: company.contacts?.careers_page_url,
+          website: company.contacts?.website,
+        },
+        hiring: company.hiring,
+        research: { notes: company.research?.notes, sources: company.research?.sources },
+      },
+      null,
+      2,
+    );
     companyName = company.name;
     officeCountry = company.office?.country ?? "";
     officeCity = company.office?.city ?? "";
@@ -86,7 +137,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Job position not found." }, { status: 404 });
     }
     const company = findResearchedCompany(catalog, job.company_id);
-    entityJson = JSON.stringify(job, null, 2);
+    entityJson = JSON.stringify(
+      {
+        id: job.id,
+        company_id: job.company_id,
+        title: job.title,
+        identity: job.identity,
+        location: job.location,
+        role: {
+          description_summary: job.role?.description_summary,
+          raw_jd_text: job.role?.raw_jd_text?.slice(0, 4000),
+        },
+        skills: job.skills,
+        weighted_keywords: job.weighted_keywords?.slice(0, 30),
+        research: { notes: job.research?.notes, sources: job.research?.sources },
+      },
+      null,
+      2,
+    );
     jobTitle = job.title;
     linkedinUrl = job.identity?.linkedin_url ?? job.linkedin_url ?? "";
     if (company) {
@@ -97,11 +165,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const prompt = buildResearchFieldRefinePrompt({
-    entityType: entityType as ResearchFieldRefineEntity,
+    entityType,
     fieldPath,
     fieldLabel,
     currentValue,
     entityJson,
+    contract,
+    useWebSearch,
     searchHints: {
       kind: "field_refine",
       companyName,
@@ -114,12 +184,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     },
   });
 
-  const result = await callOpenRouterResearchChat(
-    prompt,
-    researchWebSearchSystemMessage(
-      "Refine one career research field using live web search (LinkedIn-first). Return JSON only with current_score and 1-3 proposals.",
-    ),
-  );
+  const system = useWebSearch
+    ? researchWebSearchSystemMessage(
+        "Refine one career research field. Prefer LinkedIn/public sources. Return JSON only.",
+      )
+    : "You refine one career research field from provided context only. No web search. Return JSON only. Prefer not_found over inventing contacts.";
+
+  const result = await callOpenRouterResearchChat(prompt, system, { useWebSearch });
 
   if (!result.ok) {
     return NextResponse.json(
@@ -136,14 +207,37 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const proposals = parsed.proposals.map((entry) => normalizeProposalValue(fieldPath, entry));
+  const maxProposals =
+    contract.kind === "string" && (contract.maxLength ?? 0) >= 500 ? 3 : 1;
+  const validated: ResearchFieldProposal[] = [];
+  const rejected: string[] = [];
+  for (const entry of parsed.proposals.slice(0, maxProposals)) {
+    const next = normalizeProposalValue(fieldPath, entry, entityType);
+    if (next.proposal) {
+      validated.push(next.proposal);
+    } else if (next.error) {
+      rejected.push(next.error);
+    }
+  }
+
+  if (validated.length === 0) {
+    return NextResponse.json(
+      {
+        error: "Model proposals failed field contract validation.",
+        rejected,
+      },
+      { status: 502 },
+    );
+  }
 
   return NextResponse.json({
     ok: true,
     currentScore: parsed.currentScore,
-    proposals,
+    proposals: validated,
+    rejected: rejected.length > 0 ? rejected : undefined,
+    useWebSearch: result.useWebSearch,
     /** @deprecated Use proposals[0].value */
-    proposal: proposals[0]?.value,
+    proposal: validated[0]?.value,
     model: result.model,
   });
 }
