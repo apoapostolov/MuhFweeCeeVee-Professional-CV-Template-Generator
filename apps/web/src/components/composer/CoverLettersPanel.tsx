@@ -55,10 +55,16 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
     }
   }, [items, selectedId]);
 
-  async function save(draftWithAi: boolean) {
+  async function save(options: { draftWithAi?: boolean; humanize?: boolean } = {}) {
     if (!selectedCvId) {
       setNotice(
         language === "bg" ? "Изберете CV в Editor." : "Select a CV in the Editor first.",
+      );
+      return;
+    }
+    if (options.humanize && !body.trim()) {
+      setNotice(
+        language === "bg" ? "Няма текст за humanize." : "Nothing to humanize yet.",
       );
       return;
     }
@@ -76,12 +82,19 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
           jobId: selectedJobId || undefined,
           title: title || undefined,
           body,
-          draftWithAi,
+          draftWithAi: options.draftWithAi === true,
+          humanize: options.humanize === true,
         }),
       });
       const payload = (await response.json()) as {
         error?: string;
         item?: CoverLetterItem;
+        skill?: {
+          skillId?: string;
+          skillName?: string;
+          applied?: boolean;
+          warning?: string;
+        };
       };
       if (!response.ok || !payload.item) {
         setNotice(payload.error ?? "Save failed.");
@@ -91,15 +104,31 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
       setTitle(payload.item.title);
       setBody(payload.item.body);
       await load();
-      setNotice(
-        draftWithAi
-          ? language === "bg"
-            ? "Черновата е генерирана (без уеб)."
-            : "Draft generated (no web)."
-          : language === "bg"
-            ? "Запазено."
-            : "Saved.",
-      );
+      if (options.draftWithAi) {
+        const skillBit =
+          payload.skill?.applied === true
+            ? language === "bg"
+              ? ` + ${payload.skill.skillName ?? "humanizer"}`
+              : ` + ${payload.skill.skillName ?? "humanizer"}`
+            : payload.skill?.warning
+              ? language === "bg"
+                ? ` (humanizer пропуснат: ${payload.skill.warning})`
+                : ` (humanizer skipped: ${payload.skill.warning})`
+              : "";
+        setNotice(
+          language === "bg"
+            ? `Черновата е генерирана (без уеб)${skillBit}.`
+            : `Draft generated (no web)${skillBit}.`,
+        );
+      } else if (options.humanize) {
+        setNotice(
+          language === "bg"
+            ? `Humanizer приложен (${payload.skill?.skillName ?? "humanizer"}).`
+            : `Humanizer applied (${payload.skill?.skillName ?? "humanizer"}).`,
+        );
+      } else {
+        setNotice(language === "bg" ? "Запазено." : "Saved.");
+      }
     } catch {
       setNotice("Save failed.");
     } finally {
@@ -201,7 +230,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
           <button
             className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
             disabled={busy || !selectedCvId}
-            onClick={() => void save(false)}
+            onClick={() => void save({})}
             type="button"
           >
             {language === "bg" ? "Запази" : "Save"}
@@ -209,10 +238,23 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
           <button
             className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
             disabled={busy || !selectedCvId}
-            onClick={() => void save(true)}
+            onClick={() => void save({ draftWithAi: true })}
             type="button"
           >
-            {language === "bg" ? "AI чернова (евтино)" : "AI draft (cheap)"}
+            {language === "bg" ? "AI чернова + humanizer" : "AI draft + humanizer"}
+          </button>
+          <button
+            className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+            disabled={busy || !selectedCvId || !body.trim()}
+            onClick={() => void save({ humanize: true })}
+            type="button"
+            title={
+              language === "bg"
+                ? "Прилага skill humanizer към текущия текст"
+                : "Run the humanizer skill on the current body"
+            }
+          >
+            {language === "bg" ? "Humanize" : "Humanize"}
           </button>
           {selectedId ? (
             <button
@@ -227,7 +269,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
         </div>
         <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
           CV: {selectedCvId || "—"} · Company: {selectedCompanyId || "—"} · Job:{" "}
-          {selectedJobId || "—"}
+          {selectedJobId || "—"} · Skill: humanizer (ai-skills/)
         </p>
       </section>
     </div>

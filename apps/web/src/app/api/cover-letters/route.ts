@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { applyAiSkillPostprocess } from "@/lib/server/aiSkills/applyAiSkill";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
   buildCoverLetterId,
@@ -38,6 +39,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     body?: unknown;
     language?: unknown;
     draftWithAi?: unknown;
+    humanize?: unknown;
   };
 
   const action = typeof body.action === "string" ? body.action : "save";
@@ -65,18 +67,36 @@ export async function POST(request: Request): Promise<NextResponse> {
       ? body.title.trim()
       : "Cover letter";
 
+  const catalog = await readResearchCatalog();
+  const job = jobId ? findResearchedJobPosition(catalog, jobId) : null;
+  const company = companyId
+    ? findResearchedCompany(catalog, companyId)
+    : job
+      ? findResearchedCompany(catalog, job.company_id)
+      : null;
+
+  let skillMeta:
+    | {
+        skillId: string;
+        skillName: string;
+        hook: string;
+        model?: string;
+        applied: boolean;
+        warning?: string;
+      }
+    | undefined;
+
+  const personName = async (): Promise<string | undefined> => {
+    const cv = await readCv(cvId);
+    if (!cv) return undefined;
+    return (cv as { person?: { full_name?: string } }).person?.full_name;
+  };
+
   if (body.draftWithAi === true) {
     const cv = await readCv(cvId);
     if (!cv) {
       return NextResponse.json({ error: "CV not found." }, { status: 404 });
     }
-    const catalog = await readResearchCatalog();
-    const job = jobId ? findResearchedJobPosition(catalog, jobId) : null;
-    const company = companyId
-      ? findResearchedCompany(catalog, companyId)
-      : job
-        ? findResearchedCompany(catalog, job.company_id)
-        : null;
     const keywords = (job?.weighted_keywords ?? [])
       .slice(0, 20)
       .map((k) => k.keyword)
@@ -87,6 +107,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       "Write a concise professional cover letter body (3 short paragraphs).",
       "No web search. Use only the CV and job context below.",
       "Do not invent employers or degrees not in the CV.",
+      "Avoid generic AI openers and empty corporate buzzwords; prefer concrete fit.",
       "",
       `Applicant: ${person?.full_name ?? "Candidate"}`,
       person?.contact?.email ? `Email: ${person.contact.email}` : "",
@@ -114,6 +135,65 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (company || job) {
       title = `Cover letter — ${job?.title ?? "Role"} @ ${company?.name ?? "Company"}`;
     }
+
+    // Product skill: humanizer postprocess (soft-fail keeps raw draft).
+    const humanized = await applyAiSkillPostprocess({
+      hook: "cover_letter_draft",
+      text: letterBody,
+      context: {
+        applicantName: person?.full_name,
+        companyName: company?.name,
+        jobTitle: job?.title,
+      },
+    });
+    if (humanized.ok) {
+      letterBody = humanized.text;
+      skillMeta = {
+        skillId: humanized.skill.skillId,
+        skillName: humanized.skill.skillName,
+        hook: humanized.skill.hook,
+        model: humanized.model,
+        applied: true,
+      };
+    } else {
+      skillMeta = {
+        skillId: humanized.skill?.skillId ?? "humanizer",
+        skillName: humanized.skill?.skillName ?? "Humanizer",
+        hook: humanized.skill?.hook ?? "cover_letter_draft",
+        applied: false,
+        warning: humanized.error,
+      };
+    }
+  } else if (body.humanize === true) {
+    if (!letterBody.trim()) {
+      return NextResponse.json(
+        { error: "body is required to humanize." },
+        { status: 400 },
+      );
+    }
+    const humanized = await applyAiSkillPostprocess({
+      hook: "cover_letter_humanize",
+      text: letterBody,
+      context: {
+        applicantName: await personName(),
+        companyName: company?.name,
+        jobTitle: job?.title,
+      },
+    });
+    if (!humanized.ok) {
+      return NextResponse.json(
+        { error: humanized.error, skill: humanized.skill },
+        { status: 502 },
+      );
+    }
+    letterBody = humanized.text;
+    skillMeta = {
+      skillId: humanized.skill.skillId,
+      skillName: humanized.skill.skillName,
+      hook: humanized.skill.hook,
+      model: humanized.model,
+      applied: true,
+    };
   }
 
   const id =
@@ -135,5 +215,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   };
 
   const saved = await writeCoverLetter(doc);
-  return NextResponse.json({ ok: true, item: saved });
+  return NextResponse.json({
+    ok: true,
+    item: saved,
+    skill: skillMeta,
+  });
 }

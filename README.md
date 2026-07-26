@@ -14,11 +14,11 @@ In short: why rent your resume workflow forever, when you can own it and make it
 
 | Service | Typical Paid Cost | Paid Features | Vs MuhFweeCeeVee |
 | --- | ---: | --- | --- |
-| Resume.io | $29.95 / 4 weeks (after $2.95 7-day trial) | Resume builder, cover letters, templates, PDF downloads | MuhFweeCeeVee has local-first CV editing/export; cover letters are **Coming Soon** |
-| Kickresume | $24/mo monthly, $18/mo quarterly, $8/mo yearly | Resume + cover letter templates, ATS checker, AI writer | MuhFweeCeeVee has AI analysis and template workflow; ATS-style checker polish is **Coming Soon** |
+| Resume.io | $29.95 / 4 weeks (after $2.95 7-day trial) | Resume builder, cover letters, templates, PDF downloads | MuhFweeCeeVee has local-first CV editing/export + cover letters with **humanizer** skill |
+| Kickresume | $24/mo monthly, $18/mo quarterly, $8/mo yearly | Resume + cover letter templates, ATS checker, AI writer | MuhFweeCeeVee has AI analysis, deterministic ATS check, and humanized cover-letter drafts |
 | VisualCV | $16/mo billed quarterly | Resume templates, unlimited resumes, PDFs, share links, website profile | MuhFweeCeeVee has customizable local workflow; public profile website flow is **Coming Soon** |
-| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has Research job keywords + Editor targeting; integrated job-tracker is **Coming Soon** |
-| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, templates, PDF export, AI scoring, Research catalog (companies/jobs/keywords), photo analysis | Built to be owned + customized; cover letters / tracker polish **Coming Soon** |
+| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has Research job keywords + Editor targeting + Apps tracker |
+| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, templates, PDF export, AI scoring, Research catalog, Letters/Apps, product AI skills | Owned + customized; cover letters use **ai-skills/humanizer** |
 
 ## Features
 
@@ -74,6 +74,8 @@ Version `1.0.2` is the current public release with a stable user-facing workflow
 ## Repository Layout
 
 - `apps/web/`: Next.js web application
+- `ai-skills/`: **product** AI skills injected at runtime (e.g. `humanizer` on cover letters) — not agent-dev skills
+- `skills/patterns/`: agent/dev workflow skills for contributors
 - `services/parser/`: FastAPI parser service scaffold
 - `packages/schemas/`: shared schema/constants
 - `packages/render-core/`: shared rendering primitives

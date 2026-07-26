@@ -449,7 +449,7 @@ export function registerTools(server) {
 
   server.tool(
     "cover_letter_save",
-    "Save or AI-draft a cover letter (draftWithAi uses analysis model, no web).",
+    "Save or AI-draft a cover letter. draftWithAi uses analysis model (no web) then humanizer skill postprocess; humanize rewrites body via ai-skills/humanizer.",
     {
       id: z.string().optional(),
       cvId: z.string().min(1),
@@ -458,8 +458,16 @@ export function registerTools(server) {
       title: z.string().optional(),
       body: z.string().optional(),
       draftWithAi: z.boolean().optional(),
+      humanize: z.boolean().optional(),
     },
     async (body) => toTextContent(await requestJson("POST", "/cover-letters", { body })),
+  );
+
+  server.tool(
+    "ai_skills_list",
+    "List product AI skills (ai-skills/) and hooks used for prompt injection / output repair.",
+    {},
+    async () => toTextContent(await requestJson("GET", "/ai-skills")),
   );
 
   server.tool(

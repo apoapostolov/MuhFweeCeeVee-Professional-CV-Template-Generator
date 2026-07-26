@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Product AI skills** (`ai-skills/`): runtime skill registry loaded by the web app for prompt injection / output repair. First skill: **humanizer** (vendored from [apoapostolov/humanizer](https://github.com/apoapostolov/humanizer)).
+- Cover letters: AI draft runs a **humanizer postprocess** pass; manual **Humanize** button rewrites the current body.
+- `GET /api/ai-skills` — list enabled product skills and hooks.
+
 ## [1.3.0] - 2026-07-26
 
 ### Added

@@ -63,7 +63,8 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `POST /analysis/ats-check` — deterministic ATS rules (`cvId`, optional `jobId`); no LLM
 - `POST /analysis/company-research` — **retired in product UI** (prefer Research enrich)
 - `POST /analysis/company-field` — metadata field refine (legacy)
-- `GET|POST /cover-letters` — list/save/delete; `draftWithAi: true` uses analysis model (no web)
+- `GET|POST /cover-letters` — list/save/delete; `draftWithAi: true` uses analysis model (no web) then **humanizer** skill postprocess; `humanize: true` rewrites existing `body` via `ai-skills/humanizer`
+- `GET /api/ai-skills` — list product AI skills + hooks (metadata only)
 - `GET|POST /applications` — application board CRUD (`wishlist|applied|interview|offer|rejected|ghosted`)
 
 ### Company metadata auth

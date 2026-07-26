@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "description": "Product AI skills loaded by MuhFweeCeeVee at runtime for prompt injection and output repair.",
+  "skills": [
+    {
+      "id": "humanizer",
+      "name": "Humanizer",
+      "description": "Detect and rewrite AI-isms while preserving meaning, facts, and voice.",
+      "source": {
+        "repo": "https://github.com/apoapostolov/humanizer",
+        "path": "skills/humanizer",
+        "license": "see SOURCE.md"
+      },
+      "enabled": true,
+      "hooks": {
+        "cover_letter_draft": {
+          "mode": "postprocess",
+          "depth": "rewrite",
+          "files": ["SKILL.md", "cover-letter.md", "references/humanizing-text.md"]
+        },
+        "cover_letter_humanize": {
+          "mode": "postprocess",
+          "depth": "cleanup",
+          "files": ["SKILL.md", "cover-letter.md", "references/humanizing-text.md"]
+        }
+      }
+    }
+  ]
+}
