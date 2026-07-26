@@ -65,6 +65,12 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `POST /analysis/company-field` — metadata field refine (legacy)
 - `GET|POST /cover-letters` — list/save/delete; `draftWithAi: true` uses analysis model (no web) then **humanizer** skill postprocess; `humanize: true` rewrites existing `body` via `ai-skills/humanizer`
 - `GET /api/ai-skills` — list product AI skills + hooks (metadata only)
+- `GET|POST /applications` — kanban board of **application packets** (CV + photo + company + letter refs)
+  - packet fields: `cv_id`, `photo_id`, `cover_letter_id`, `packet_title`, company/job, status, notes
+  - `GET ?export=<id>` or `POST { action: "export", id }` → portable `muhfweeceevee.application_packet` JSON (embeds CV + letter body; photo re-link by id)
+  - `POST { action: "import", packet, restoreCv?, restoreLetter? }` → new card (+ restore embeds)
+  - `POST { action: "duplicate", id, overrides? }` → reuse CV/photo for a similar company (clears letter by default)
+
 - `GET|POST /applications` — application board CRUD (`wishlist|applied|interview|offer|rejected|ghosted`)
 
 ### Company metadata auth

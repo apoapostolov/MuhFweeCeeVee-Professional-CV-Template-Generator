@@ -213,8 +213,10 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
             <ApplicationsPanel
               defaultCompanyId={c.selectedResearchCompanyId}
               defaultCompanyName={c.selectedResearchCompany?.name}
+              defaultCvId={c.selectedCvId}
               defaultJobId={c.selectedResearchJobPositionId}
               defaultJobTitle={c.selectedResearchJob?.title}
+              defaultPhotoId={c.approvedPhotoId || undefined}
               language={c.uiLanguage}
             />
           )}

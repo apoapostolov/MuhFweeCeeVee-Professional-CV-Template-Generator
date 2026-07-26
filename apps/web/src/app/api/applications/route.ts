@@ -2,8 +2,16 @@ import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
+  buildApplicationPacketFile,
+  restorePacketEmbeds,
+} from "@/lib/server/applicationPacket";
+import {
   APPLICATION_STATUSES,
   deleteApplication,
+  duplicateApplication,
+  importApplicationPacket,
+  isApplicationPacketFile,
+  packetCompleteness,
   readApplicationBoard,
   upsertApplication,
   type ApplicationStatus,
@@ -11,12 +19,29 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const exportId = url.searchParams.get("export")?.trim() ?? "";
+  if (exportId) {
+    try {
+      const packet = await buildApplicationPacketFile(exportId);
+      return NextResponse.json({ ok: true, packet });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Export failed." },
+        { status: 404 },
+      );
+    }
+  }
+
   const board = await readApplicationBoard();
   return NextResponse.json({
     ok: true,
     applications: board.applications,
     statuses: APPLICATION_STATUSES,
+    completeness: Object.fromEntries(
+      board.applications.map((app) => [app.id, packetCompleteness(app)]),
+    ),
   });
 }
 
@@ -35,6 +60,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     url?: unknown;
     applied_at?: unknown;
     notes?: unknown;
+    cv_id?: unknown;
+    photo_id?: unknown;
+    cover_letter_id?: unknown;
+    packet_title?: unknown;
+    packet?: unknown;
+    restoreCv?: unknown;
+    restoreLetter?: unknown;
+    overrides?: unknown;
   };
 
   const action = typeof body.action === "string" ? body.action : "upsert";
@@ -46,6 +79,102 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     const board = await deleteApplication(id);
     return NextResponse.json({ ok: true, applications: board.applications });
+  }
+
+  if (action === "export") {
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    if (!id) {
+      return NextResponse.json({ error: "id is required." }, { status: 400 });
+    }
+    try {
+      const packet = await buildApplicationPacketFile(id);
+      return NextResponse.json({ ok: true, packet });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Export failed." },
+        { status: 404 },
+      );
+    }
+  }
+
+  if (action === "duplicate") {
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    if (!id) {
+      return NextResponse.json({ error: "id is required." }, { status: 400 });
+    }
+    try {
+      const overrides =
+        body.overrides && typeof body.overrides === "object"
+          ? (body.overrides as Record<string, unknown>)
+          : {};
+      const { board, application } = await duplicateApplication(id, {
+        company_name:
+          typeof overrides.company_name === "string"
+            ? overrides.company_name
+            : undefined,
+        job_title:
+          typeof overrides.job_title === "string" ? overrides.job_title : undefined,
+        company_id:
+          typeof overrides.company_id === "string" ? overrides.company_id : undefined,
+        job_id: typeof overrides.job_id === "string" ? overrides.job_id : undefined,
+        cv_id: typeof overrides.cv_id === "string" ? overrides.cv_id : undefined,
+        photo_id:
+          typeof overrides.photo_id === "string" ? overrides.photo_id : undefined,
+        cover_letter_id:
+          typeof overrides.cover_letter_id === "string"
+            ? overrides.cover_letter_id
+            : undefined,
+        packet_title:
+          typeof overrides.packet_title === "string"
+            ? overrides.packet_title
+            : undefined,
+        status:
+          typeof overrides.status === "string" &&
+          (APPLICATION_STATUSES as readonly string[]).includes(overrides.status)
+            ? (overrides.status as ApplicationStatus)
+            : undefined,
+      });
+      return NextResponse.json({
+        ok: true,
+        applications: board.applications,
+        application,
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Duplicate failed." },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (action === "import") {
+    if (!isApplicationPacketFile(body.packet)) {
+      return NextResponse.json(
+        {
+          error:
+            'packet must be a muhfweeceevee.application_packet v1 file (or wrap as { packet: ... }).',
+        },
+        { status: 400 },
+      );
+    }
+    try {
+      const resolved = await restorePacketEmbeds(body.packet, {
+        restoreCv: body.restoreCv !== false,
+        restoreLetter: body.restoreLetter !== false,
+      });
+      const { board, application } = await importApplicationPacket(body.packet, resolved);
+      return NextResponse.json({
+        ok: true,
+        applications: board.applications,
+        application,
+        restored: resolved.restored,
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Import failed." },
+        { status: 400 },
+      );
+    }
   }
 
   const company_name =
@@ -73,6 +202,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     url: typeof body.url === "string" ? body.url : undefined,
     applied_at: typeof body.applied_at === "string" ? body.applied_at : undefined,
     notes: typeof body.notes === "string" ? body.notes : undefined,
+    cv_id: typeof body.cv_id === "string" ? body.cv_id : undefined,
+    photo_id: typeof body.photo_id === "string" ? body.photo_id : undefined,
+    cover_letter_id:
+      typeof body.cover_letter_id === "string" ? body.cover_letter_id : undefined,
+    packet_title: typeof body.packet_title === "string" ? body.packet_title : undefined,
   });
 
   return NextResponse.json({ ok: true, applications: board.applications });

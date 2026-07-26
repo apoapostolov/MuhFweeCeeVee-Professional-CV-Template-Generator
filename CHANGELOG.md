@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cover letters: AI draft runs a **humanizer postprocess** pass; manual **Humanize** button rewrites the current body.
 - `GET /api/ai-skills` — list enabled product skills and hooks.
 
+### Added
+
+- **Application packets** on Apps kanban: each card binds **CV + photo + company + cover letter**, always editable.
+  - Export / import portable JSON (`muhfweeceevee.application_packet`) with CV + letter embeds.
+  - **Reuse** clones a packet keeping CV/photo for a similar company (new letter).
+
 ### Fixed
 
 - Dark mode: theme-aware **vertical** scrollbars; horizontal scrollbar chrome suppressed app-wide.

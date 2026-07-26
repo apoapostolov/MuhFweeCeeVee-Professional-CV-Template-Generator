@@ -479,11 +479,15 @@ export function registerTools(server) {
 
   server.tool(
     "application_upsert",
-    "Create/update an application card.",
+    "Create/update an application packet (CV + photo + company + letter refs on the kanban card).",
     {
       id: z.string().optional(),
       company_id: z.string().optional(),
       job_id: z.string().optional(),
+      cv_id: z.string().optional(),
+      photo_id: z.string().optional(),
+      cover_letter_id: z.string().optional(),
+      packet_title: z.string().optional(),
       company_name: z.string().min(1),
       job_title: z.string().min(1),
       status: z
@@ -494,6 +498,50 @@ export function registerTools(server) {
     },
     async (body) =>
       toTextContent(await requestJson("POST", "/applications", { body: { action: "upsert", ...body } })),
+  );
+
+  server.tool(
+    "application_export_packet",
+    "Export an application packet JSON (CV + letter embeds; photo re-link by id).",
+    { id: z.string().min(1) },
+    async ({ id }) =>
+      toTextContent(await requestJson("POST", "/applications", { body: { action: "export", id } })),
+  );
+
+  server.tool(
+    "application_import_packet",
+    "Import a muhfweeceevee.application_packet JSON as a new kanban card.",
+    {
+      packet: z.record(z.string(), z.unknown()),
+      restoreCv: z.boolean().optional(),
+      restoreLetter: z.boolean().optional(),
+    },
+    async (body) =>
+      toTextContent(await requestJson("POST", "/applications", { body: { action: "import", ...body } })),
+  );
+
+  server.tool(
+    "application_reuse_packet",
+    "Duplicate a packet reusing CV/photo (optionally override company) for a similar application.",
+    {
+      id: z.string().min(1),
+      overrides: z
+        .object({
+          company_name: z.string().optional(),
+          job_title: z.string().optional(),
+          company_id: z.string().optional(),
+          job_id: z.string().optional(),
+          cv_id: z.string().optional(),
+          photo_id: z.string().optional(),
+          cover_letter_id: z.string().optional(),
+          packet_title: z.string().optional(),
+        })
+        .optional(),
+    },
+    async (body) =>
+      toTextContent(
+        await requestJson("POST", "/applications", { body: { action: "duplicate", ...body } }),
+      ),
   );
 
   server.tool(
