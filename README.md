@@ -17,8 +17,8 @@ In short: why rent your resume workflow forever, when you can own it and make it
 | Resume.io | $29.95 / 4 weeks (after $2.95 7-day trial) | Resume builder, cover letters, templates, PDF downloads | MuhFweeCeeVee has local-first CV editing/export + cover letters with **humanizer** skill |
 | Kickresume | $24/mo monthly, $18/mo quarterly, $8/mo yearly | Resume + cover letter templates, ATS checker, AI writer | MuhFweeCeeVee has AI analysis, deterministic ATS check, and humanized cover-letter drafts |
 | VisualCV | $16/mo billed quarterly | Resume templates, unlimited resumes, PDFs, share links, website profile | MuhFweeCeeVee has customizable local workflow; public profile website flow is **Coming Soon** |
-| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has Research job keywords + Editor targeting + Apps tracker |
-| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, templates, PDF export, AI scoring, Research catalog, Letters/Apps, product AI skills | Owned + customized; cover letters use **ai-skills/humanizer** |
+| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has Research keywords, Editor gap, and **Board** application packets |
+| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, Research, Letters, Board packets, ATS check, PDF print | Owned + customized; cover letters use **humanizer**; packs export/import |
 
 ## Features
 
@@ -49,27 +49,24 @@ Review available CV templates side-by-side, then finalize profile-photo quality 
   <img src="images/SCREENSHOT_06.png" width="49%" />
 </p>
 
-## 1.0.2 Release Scope
+## 1.3.0 Release Scope
 
-Version `1.0.2` is the current public release with a stable user-facing workflow:
+Version **`1.3.0`** is the current release — research → tailored CV → letter → application pack → print:
 
-- Print Room (preview + export)
-- Editor (Form/YAML)
-- Editor Form View includes collapsible nested containers (collapsed by default for deep structures) with compact summary metadata for faster navigation.
-- Experience entries in Form View are labeled with role-first titles and period/company subtitles instead of generic numbered labels.
-- Settings (OpenRouter login, Analysis Model, Image Generation Model for future use, base URL, credit status, and per-check cost estimates)
-- **Research** tab: local catalog of companies + job positions, weighted keywords, field AI (see roadmap in `proposal/`)
-- Editor job targeting from Research (keyword highlight); legacy company-metadata multi-select is being retired (D1)
-- Dynamic language variants in Editor (add language + optional AI translation)
-- Variant auto-resolution supports both id styles:
-  `cv_<language>_<target>` and `cv_<language>_<iteration>_<target>`.
-- Language sync modal in Editor (pick source/target language pair with timestamp visibility)
-- Theme support (light/dark/system + template themes)
-- Print Room photo customization modes (default/circle/square/original-ratio/off)
-- Public fictional sample profile (`John Doe`)
-- Privacy hardening for local/private artifacts (personal CVs, research catalog, photos) to keep them out of git by default
+| Area | What you get |
+| --- | --- |
+| **Research** | Single company/job catalog; staged company enrich; **Include Research** (pay for web only when you want it); local JD keyword extract |
+| **Editor** | Target a Research company + job; keyword highlight + gap; deterministic **ATS check** (no LLM) |
+| **Letters** | Cover letters bound to CV + target; cheap AI draft + **humanizer** pass to strip AI-isms |
+| **Board** | Kanban by stage; each card is a **packet** (CV + photo + company + letter); download / open packet files; copy pack for a similar role |
+| **Print Room** | Template PDF preview/export, photo modes, text-scale tweaks |
+| **MCP** | Agent tools for enrich, keywords, gap, ATS, letters, packets |
 
-**Note:** The old **Keyword Studio** tab and sqlite JD corpus were retired to `backup/retired-keywords/`. Keywords now live on **Research → job positions**.
+Also: field contracts (no inventable emails/phones), lighter photo gallery payloads, dark-mode scrollbar polish.
+
+**Note:** The old **Keyword Studio** tab and sqlite JD corpus were retired to `backup/retired-keywords/`. Keywords live on **Research → job positions**.
+
+Full notes: [`CHANGELOG.md`](CHANGELOG.md) · tag `v1.3.0`.
 
 ## Repository Layout
 
