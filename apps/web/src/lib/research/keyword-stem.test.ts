@@ -18,9 +18,9 @@ describe("keywordCanonicalKey", () => {
 describe("mergeWeightedKeywords", () => {
   it("collapses duplicate stems and keeps max weight", () => {
     const merged = mergeWeightedKeywords([
-      { keyword: "integrating", weight: 70 },
-      { keyword: "integration", weight: 90 },
-      { keyword: "Kubernetes", weight: 80 },
+      { keyword: "integrating", weight: 70, source: "user" },
+      { keyword: "integration", weight: 90, source: "user" },
+      { keyword: "Kubernetes", weight: 80, source: "user" },
     ]);
     expect(merged).toHaveLength(2);
     expect(merged.find((k) => keywordCanonicalKey(k.keyword) === "integr")).toMatchObject({
@@ -32,7 +32,7 @@ describe("mergeWeightedKeywords", () => {
 describe("findKeywordHighlightSpans", () => {
   it("highlights stem-equivalent words in text", () => {
     const spans = findKeywordHighlightSpans("Led system integration and integrating APIs.", [
-      { keyword: "integrate", weight: 85 },
+      { keyword: "integrate", weight: 85, source: "user" },
     ]);
     expect(spans.length).toBeGreaterThanOrEqual(2);
     expect(spans.some((s) => s.weight === 85)).toBe(true);
@@ -40,9 +40,9 @@ describe("findKeywordHighlightSpans", () => {
 
   it("keeps partial highlights when keyword spans overlap", () => {
     const spans = findKeywordHighlightSpans("Senior software engineer with Python and Django.", [
-      { keyword: "software engineer", weight: 90 },
-      { keyword: "Python", weight: 80 },
-      { keyword: "Django", weight: 75 },
+      { keyword: "software engineer", weight: 90, source: "user" },
+      { keyword: "Python", weight: 80, source: "user" },
+      { keyword: "Django", weight: 75, source: "user" },
     ]);
     const text = "Senior software engineer with Python and Django.";
     const highlighted = spans.map((span) => text.slice(span.start, span.end)).join("|");

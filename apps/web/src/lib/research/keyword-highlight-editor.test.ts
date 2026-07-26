@@ -27,7 +27,7 @@ describe("findEditorKeywordHighlightSpans", () => {
   it("prefers weighted styling when ATS and weighted overlap", () => {
     const spans = findEditorKeywordHighlightSpans(
       "Senior Python engineer.",
-      [{ keyword: "Python", weight: 90 }],
+      [{ keyword: "Python", weight: 90, source: "user" }],
       ["Python"],
     );
     expect(spans.some((span) => span.kind === "weighted" && span.weight === 90)).toBe(true);

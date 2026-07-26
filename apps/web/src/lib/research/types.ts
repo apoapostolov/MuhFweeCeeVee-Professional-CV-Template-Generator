@@ -3,6 +3,13 @@ export type ResearchMeta = {
   sources?: string[];
   researched_at?: string;
   research_model?: string;
+  last_operation?: string;
+  stages_completed?: string[];
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    estimated_usd?: number;
+  };
 };
 
 export type CompanyIdentity = {
@@ -113,11 +120,22 @@ export type ResearchedCompany = {
   research_model?: string;
 };
 
+export type KeywordEvidence = {
+  kind: "jd_quote" | "title" | "source_url" | "manual";
+  text?: string;
+  url?: string;
+  count?: number;
+};
+
 export type WeightedKeyword = {
   keyword: string;
   weight: number;
   category?: "skill" | "tool" | "domain" | "soft" | string;
+  role?: "must" | "should" | "nice";
   rationale?: string;
+  evidence?: KeywordEvidence[];
+  source?: "extract" | "ai" | "user";
+  canonical_key?: string;
 };
 
 export type JobIdentity = {
@@ -145,6 +163,8 @@ export type JobCompensation = {
 };
 
 export type JobRoleContent = {
+  /** User-pasted full job description (D3 evidence source). */
+  raw_jd_text?: string;
   description_summary?: string;
   responsibilities?: string[];
   qualifications?: string[];

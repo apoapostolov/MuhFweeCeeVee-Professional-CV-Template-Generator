@@ -77,19 +77,21 @@ There is **no tiered research** (cheap shell → fill gaps), **no cache of publi
 
 **Desired:** Every research field has a **Field Contract** (JSON Schema or shared schema module). Model output is **validated and coerced**; invalid proposals never apply. UI controls match the contract (select, URL input, chip list, not free textarea for enums).
 
-### P2 — Expensive company research
+### P2 — Expensive company research — **D2 UX LOCKED (2026-07-26)**
 
 **Today:** One shot “research the whole company office” with live web search.
 
 **Desired:**
 
 1. **Manual/seed first** — name, country, city, LinkedIn URL, website (user paste) costs $0.
-2. **Cheap structured fill** — small model, **no web search**, fill only empty fields from known URLs or pasted “About” text.
-3. **Targeted web enrich** — only for chosen field groups (`identity`, `office`, `hiring`, `people`) with small response schemas.
+2. **Cheap structured fill** — **Analysis model**, **no web search**, fill only empty fields from known URLs or pasted “About” text.
+3. **Targeted web enrich** — only when user checks **Include Research (search web — costs more)**; then **Research model** + web; optional field groups.
 4. **Hard cost caps** — max tokens, max web calls per entity, show estimate before run, store `research.cost_usd` / token usage.
 5. **Cache** — by `linkedin_company_url` / domain so re-open does not re-burn.
 
-### P3 — Keyword research quality
+**UI (agreed):** Checkbox default **off**. Unchecked → analysis path. Checked → research/web path. Same pattern for company fill and field ✨.
+
+### P3 — Keyword research quality — **D3 LOCKED (2026-07-26)**
 
 **Today after Keyword Studio retirement:**
 
@@ -97,6 +99,8 @@ There is **no tiered research** (cheap shell → fill gaps), **no cache of publi
 - Extraction is AI-driven from job research or field refine.
 - Editor highlighting is better than the underlying **keyword quality**.
 - No JD text store, no term frequency, no gap analysis pipeline in-app (old sqlite JD corpus is in backup).
+
+**D3 (agreed):** Unverified AI keywords soft-capped at weight **40**; evidence from JD/title or user override; UI badges; prefer paste-JD extract over freeform AI scores.
 
 **Desired:** Keywords are **derived artifacts**, not freeform essays:
 
@@ -122,14 +126,26 @@ weight = clamp(0–100,
 
 LLM may **propose candidates**; a local normalizer **scores and dedupes**. User can override.
 
-### P4 — Dual company systems
+### P4 — Dual company systems — **DECIDED (2026-07-26)**
 
-Editor company metadata vs Research catalog duplicates mental model and API surface.
+**North star A (locked):** Research catalog is the **only** living company/job list.
 
-**Desired (choose one north star):**
+**UI contract:**
 
-- **A (recommended):** Research catalog is source of truth for “targets”; Editor targeting only picks `company_id` + `job_id` from catalog; thin metadata file becomes import/export or retires.
-- **B:** Metadata remains for scoring labels; Research is optional enrichment — then UI must never mix “Research company” and “metadata company” without labels.
+- **Research tab** — add/edit companies and jobs; research; JD/keywords.
+- **Editor tab** — only **select** target company + job from that catalog (no second company list).
+- **Drop** Editor metadata AI: `/analysis/company-research`, `/analysis/company-field`.
+- Metadata files may remain briefly as **import seed / backup**, not a second targeting product.
+- Pitch lines → user **Notes** on catalog company/job; keywords → job weighted keywords/ATS only.
+- Analysis scores against the **selected job**, not multi-select metadata cards.
+
+See `IMPLEMENTATION_PLAN.md` § Locked product decisions → D1.
+
+---
+
+### PII / contacts — **D4 LOCKED (2026-07-26)**
+
+AI must not invent emails, phones, or people without proof. Email/phone only with real source URL; people only with LinkedIn URL; user-entered contacts always allowed; empty preferred over fake.
 
 ---
 
@@ -187,13 +203,14 @@ Server pipeline:
 4. Merge only into empty or user-flagged “overwrite” fields.  
 5. Persist `research.last_operation`, sources, usage.
 
-### 4.3 Field refine without freeform chaos
+### 4.3 Field refine without freeform chaos — **D5 LOCKED (2026-07-26)**
 
 Per-field ✨:
 
 - Load contract for `fieldPath`.
 - Prompt includes **exact JSON Schema snippet** for that field only (not whole entity as write target).
-- Default **no web search** unless contract marks `requires_web: true` or user toggles “Search web”.
+- Default **no web search**; same **Include Research** checkbox as D2 (Research model + web only when checked).
+- No auto-run web refine on field open.
 - Response: single typed `value` + confidence + sources — not 3 prose variants by default (optional “alternatives” only for free-text narrative fields).
 
 ### 4.4 Company research: staged jobs

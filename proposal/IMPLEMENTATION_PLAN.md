@@ -13,17 +13,114 @@
 
 ---
 
-## Locked product decisions (defaults)
+## Locked product decisions
 
-Resolve these unless the owner overrides before coding:
+Owner-confirmed **2026-07-26** for **D1–D5** (all locked).
 
-| # | Decision | Default |
-|---|----------|---------|
-| D1 | Research catalog vs companies metadata | **A:** Research catalog is source of truth for job targeting. Metadata file remains for legacy analysis labels only; UI labels “Research targets” vs “Legacy company labels”. No merge migration in 1.3. |
-| D2 | Cheap model for non-web stages | Use **analysis model** (Settings `model`) for `seed_fill` / no-web stages; use **research model** only when `useWebSearch: true`. |
-| D3 | Keyword weight without evidence | **Soft cap:** `weight = min(weight, 40)` unless `evidence.length > 0` or `source === "user"`. |
-| D4 | Inventable PII | **Hard:** empty `contacts.*_email` / phone unless `status === "found"` **and** `sources.length >= 1`. People rows require `linkedin_url`. |
-| D5 | Field refine defaults | **No web search** unless user toggles or contract `requiresWeb: true`. Single primary proposal; alternatives only for narrative string fields. |
+| # | Decision | Locked meaning |
+|---|----------|----------------|
+| **D1** | **One company/job list in the UI** | **Research catalog only.** Editor does **not** keep a second live “company metadata” targeting list. |
+| **D2** | **Checkbox gates expensive Research AI** | Default actions use **Analysis model**, **no web**. Only when user checks **include Research / search the web** use **Research model** + web. |
+| **D3** | **Keyword scores need proof** | **Soft cap:** `weight = min(weight, 40)` unless evidence (JD/title/…) or `source === "user"`. UI badge: from JD / unverified / you set. |
+| **D4** | **No inventable contacts** | Emails/phones stay empty unless found + real source URL. People rows require `linkedin_url`. User-typed values always allowed. |
+| **D5** | **Field ✨ same as D2** | Web **off by default**; same Include Research checkbox; one main proposal (multi only for long narrative fields); no auto web on open. |
+
+### D2 — UI contract (agreed)
+
+```text
+Default (checkbox OFF):
+  [ Fill / Improve / Extract … ]  →  Analysis model, no web search
+
+Optional (checkbox ON):
+  [x] Include Research (search web — costs more)
+  [ Fill / Improve … ]            →  Research model + web search
+```
+
+| Do | Don’t |
+|----|--------|
+| Visible checkbox before cost-bearing research runs | Silently call Research/web model on normal fill |
+| Default **unchecked** | Default on (burns credits) |
+| Label makes cost obvious (“search web — costs more”) | Vague “enhanced” with no cost hint |
+| Analysis model when unchecked | Research model when unchecked |
+| Research model **only** when checked | Two different secret code paths with no UI |
+| Same pattern on company fill **and** field ✨ (D5) | Checkbox only on one screen |
+
+**API shape:** `useWebSearch: boolean` (default `false`). When false → analysis model, no web extras. When true → research model + web search options.
+
+### D3 — UI contract (agreed)
+
+```text
+Keyword table:
+  TypeScript   88   from JD ✓
+  synergy      40   unverified   ← AI guess, capped
+  clearance    95   you set ✓
+```
+
+| Do | Don’t |
+|----|--------|
+| Cap unverified AI keywords at **40** | Let AI invent 90+ with no JD quote |
+| Show badge: from JD / title / you set / unverified | Silent high scores |
+| Allow full score when user edits | Let AI claim `source: "user"` |
+| Prefer extract-from-JD as main keyword path | Web refine every keyword cell |
+| Soft-keep unverified rows (visible but weak) | Must delete all guesses (unless we change later) |
+
+**API/normalize:** strip fake user source from AI; verify JD quotes against `raw_jd_text` when present; apply soft cap on write.
+
+### D4 — UI contract (agreed)
+
+```text
+Contacts: careers URL OK · fake jobs@ email rejected · empty is fine
+People:   only rows with LinkedIn URL kept · you can always type contacts yourself
+```
+
+| Do | Don’t |
+|----|--------|
+| Leave email/phone blank without a source link | Invent HR emails / phones to “look complete” |
+| Require LinkedIn URL on AI-added people | Save name-only people from the model |
+| Always allow user paste/type | Block the user from entering a real email |
+| Prefer careers page URL over private contact guess | Scrape personal inboxes as a product feature |
+| Empty people section if web finds nothing solid | Pad with fictional staff |
+
+**API/normalize:** drop contact values without sources; drop people without `linkedin_url` when `source !== "user"`.
+
+### D5 — UI contract (agreed)
+
+```text
+Field ✨ panel:
+  [ ] Include Research (search web — costs more)   ← default OFF
+  Suggestion: …
+  [ Apply ]  [ Dismiss ]
+```
+
+| Do | Don’t |
+|----|--------|
+| Default ✨ = Analysis model, no web | Auto web-search when opening ✨ |
+| Same checkbox label/cost hint as D2 | Different secret behavior vs company fill |
+| One primary proposal for enums/URLs/short fields | Three freeform variants for every field |
+| Optional 2–3 alts only for long narrative text | Force multi-proposal UX everywhere |
+| Require explicit click to run | Fire refine-on-focus with Research model |
+
+**API:** same `useWebSearch` default `false` as company enrich; validate proposal via field contracts before Apply.
+
+### D1 — UI contract (agreed)
+
+```text
+Research tab  →  manage companies + jobs (+ JD / keywords / optional web research)
+Editor tab    →  Targeting: pick [Company] + [Job] from that same Research list only
+Analyze / highlight / gap  →  use that job only
+```
+
+| Do | Don’t |
+|----|--------|
+| One list of employers: **Research catalog** | Two parallel “company” UIs that don’t sync |
+| Editor **dropdowns** for company + job | Multi-check metadata companies for scoring |
+| Pitch notes as user **Notes** on catalog company/job | Second AI “research company” on metadata |
+| Keywords on the **Research job** (JD pipeline) | Metadata `keywords_to_echo` as a second keyword brain |
+| Remove/hard-deprecate `/analysis/company-research` and `/analysis/company-field` | Keep metadata AI research as a product path |
+| Optional: import example/personal metadata **into** catalog once | Keep `/api/companies` as live targeting source after migration |
+| Persist `metadata.targeting = { company_id, job_id }` on the CV | Score against N freeform metadata cards without a job |
+
+**Migration (UI order):** hide/label metadata as legacy → ship targeting from Research (WS6) → import notes into catalog → remove metadata multi-select + analysis company AI routes → example JSON only as seed/import.
 
 ---
 

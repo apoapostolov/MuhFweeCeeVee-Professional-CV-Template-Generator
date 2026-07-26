@@ -1,8 +1,12 @@
 import {
+  sanitizeResearchedCompany,
+  sanitizeResearchedJobPosition,
+} from "./contracts/sanitize";
+import {
   backfillCompanyResearchSources,
   backfillJobResearchSources,
 } from "./research-source-backfill";
-import { mergeWeightedKeywords } from "./weighted-keywords";
+import { parseWeightedKeywordsFromProposal } from "./weighted-keywords";
 import type {
   CompanyContacts,
   CompanyOffice,
@@ -93,7 +97,7 @@ export function normalizeResearchedCompany(input: unknown): ResearchedCompany | 
   const hiringRecord = asRecord(record.hiring);
   const researchRecord = asRecord(record.research);
 
-  return backfillCompanyResearchSources({
+  const draft = backfillCompanyResearchSources({
     id,
     name,
     office,
@@ -150,31 +154,11 @@ export function normalizeResearchedCompany(input: unknown): ResearchedCompany | 
       research_model: pickString(researchRecord ?? {}, "research_model") ?? pickString(record, "research_model"),
     },
   });
+  return sanitizeResearchedCompany(draft).company;
 }
 
 function parseWeightedKeywords(input: unknown): WeightedKeyword[] {
-  if (!Array.isArray(input)) {
-    return [];
-  }
-  const out: WeightedKeyword[] = [];
-  for (const entry of input) {
-    const record = asRecord(entry);
-    if (!record) {
-      continue;
-    }
-    const keyword = pickString(record, "keyword") ?? "";
-    const weightRaw = Number(record.weight);
-    if (!keyword || !Number.isFinite(weightRaw)) {
-      continue;
-    }
-    out.push({
-      keyword,
-      weight: Math.max(0, Math.min(100, Math.round(weightRaw))),
-      category: pickString(record, "category"),
-      rationale: pickString(record, "rationale"),
-    });
-  }
-  return mergeWeightedKeywords(out);
+  return parseWeightedKeywordsFromProposal(input);
 }
 
 export function normalizeResearchedJobPosition(input: unknown): ResearchedJobPosition | null {
@@ -204,7 +188,7 @@ export function normalizeResearchedJobPosition(input: unknown): ResearchedJobPos
       ? record.skills_required.map((v) => String(v).trim()).filter(Boolean)
       : undefined;
 
-  return backfillJobResearchSources({
+  const draft = backfillJobResearchSources({
     id,
     company_id,
     title,
@@ -241,6 +225,7 @@ export function normalizeResearchedJobPosition(input: unknown): ResearchedJobPos
         }
       : undefined,
     role: {
+      raw_jd_text: pickString(roleRecord ?? {}, "raw_jd_text"),
       description_summary:
         pickString(roleRecord ?? {}, "description_summary") ?? pickString(record, "description_summary"),
       responsibilities: Array.isArray(roleRecord?.responsibilities)
@@ -290,6 +275,7 @@ export function normalizeResearchedJobPosition(input: unknown): ResearchedJobPos
       research_model: pickString(researchRecord ?? {}, "research_model") ?? pickString(record, "research_model"),
     },
   });
+  return sanitizeResearchedJobPosition(draft).job;
 }
 
 export function normalizeResearchCatalog(input: unknown): ResearchCatalog {

@@ -17,8 +17,8 @@ In short: why rent your resume workflow forever, when you can own it and make it
 | Resume.io | $29.95 / 4 weeks (after $2.95 7-day trial) | Resume builder, cover letters, templates, PDF downloads | MuhFweeCeeVee has local-first CV editing/export; cover letters are **Coming Soon** |
 | Kickresume | $24/mo monthly, $18/mo quarterly, $8/mo yearly | Resume + cover letter templates, ATS checker, AI writer | MuhFweeCeeVee has AI analysis and template workflow; ATS-style checker polish is **Coming Soon** |
 | VisualCV | $16/mo billed quarterly | Resume templates, unlimited resumes, PDFs, share links, website profile | MuhFweeCeeVee has customizable local workflow; public profile website flow is **Coming Soon** |
-| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has keyword analysis; integrated job-tracker workflow is **Coming Soon** |
-| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, template rendering, YAML/Form editing, PDF export, AI scoring, keyword workspace, photo analysis | Built to be owned + customized; Companies and Cover Letters tabs are in progress (**Coming Soon**) |
+| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has Research job keywords + Editor targeting; integrated job-tracker is **Coming Soon** |
+| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, templates, PDF export, AI scoring, Research catalog (companies/jobs/keywords), photo analysis | Built to be owned + customized; cover letters / tracker polish **Coming Soon** |
 
 ## Features
 
@@ -33,7 +33,7 @@ Use Print Room to configure template-based rendering (`cambridge-v1`, `stanford-
 
 ### 2) Edit precision + job-fit diagnostics
 
-Combine Form + YAML editing with AI scoring, keyword-gap analysis, and selected-company targeting from external companies metadata so every change can be checked for recruiter relevance and missing signal.
+Combine Form + YAML editing with AI scoring and **Research** job targeting (pick a researched company + job; weighted keywords highlight in the Editor). Product direction: one company/job list in Research — see [`proposal/`](proposal/).
 
 <p align="center">
   <img src="images/SCREENSHOT_03.png" width="49%" />
@@ -58,17 +58,18 @@ Version `1.0.2` is the current public release with a stable user-facing workflow
 - Editor Form View includes collapsible nested containers (collapsed by default for deep structures) with compact summary metadata for faster navigation.
 - Experience entries in Form View are labeled with role-first titles and period/company subtitles instead of generic numbered labels.
 - Settings (OpenRouter login, Analysis Model, Image Generation Model for future use, base URL, credit status, and per-check cost estimates)
-- AI analysis targeting with metadata-source selection, multi-company checkbox selection, and inline Form/YAML metadata editing
+- **Research** tab: local catalog of companies + job positions, weighted keywords, field AI (see roadmap in `proposal/`)
+- Editor job targeting from Research (keyword highlight); legacy company-metadata multi-select is being retired (D1)
 - Dynamic language variants in Editor (add language + optional AI translation)
 - Variant auto-resolution supports both id styles:
   `cv_<language>_<target>` and `cv_<language>_<iteration>_<target>`.
 - Language sync modal in Editor (pick source/target language pair with timestamp visibility)
-- Keywords workspace (gap analysis and prioritization)
 - Theme support (light/dark/system + template themes)
 - Print Room photo customization modes (default/circle/square/original-ratio/off)
 - Public fictional sample profile (`John Doe`)
-- Tracked example company metadata plus an untracked personal company metadata file
-- Privacy hardening for local/private artifacts (personal CVs, local DB/snapshots, editor/runtime files) to keep them out of git by default
+- Privacy hardening for local/private artifacts (personal CVs, research catalog, photos) to keep them out of git by default
+
+**Note:** The old **Keyword Studio** tab and sqlite JD corpus were retired to `backup/retired-keywords/`. Keywords now live on **Research → job positions**.
 
 ## Repository Layout
 
@@ -120,9 +121,11 @@ npm run lint
 npm run typecheck
 ```
 
-Keywords troubleshooting:
+## Roadmap / proposals
 
-- If the Keywords tab shows empty JD results despite existing cache data, set `SQLITE_BIN` to your sqlite executable path (for example `export SQLITE_BIN=/home/linuxbrew/.linuxbrew/bin/sqlite3`) before starting the web app.
+- [`proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md`](proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md) — product direction
+- [`proposal/IMPLEMENTATION_PLAN.md`](proposal/IMPLEMENTATION_PLAN.md) — workstreams (D1–D5 locked)
+- [`proposal/PROGRESS.md`](proposal/PROGRESS.md) — checkbox progress
 
 ## Production Build
 
@@ -244,6 +247,7 @@ Steps:
 | [`MARKDOWN_LINT.md`](dev/MARKDOWN_LINT.md) | Markdown lint configuration and rules |
 | [`.markdownlint.json`](.markdownlint.json) | Markdown lint rule config |
 | [`docs/API.md`](docs/API.md) | Web API reference |
+| [`proposal/`](proposal/) | Research hardening backlog, implementation plan, progress |
 | [`docs/CV_SCORING_STANDARD.md`](docs/CV_SCORING_STANDARD.md) | CV scoring rubric and quality checks |
 | [`docs/CV_YAML_STANDARD.md`](docs/CV_YAML_STANDARD.md) | CV YAML schema and validation rules |
 | [`docs/INITIAL_TEMPLATING_BOOTSTRAP.md`](docs/INITIAL_TEMPLATING_BOOTSTRAP.md) | Initial template implementation notes |

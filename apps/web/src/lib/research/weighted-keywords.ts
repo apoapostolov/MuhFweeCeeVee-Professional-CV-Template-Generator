@@ -1,4 +1,4 @@
-import type { WeightedKeyword } from "./types";
+import type { KeywordEvidence, WeightedKeyword } from "./types";
 import { keywordCanonicalKey } from "./keyword-stem";
 
 export const WEIGHTED_KEYWORD_CATEGORIES = [
@@ -15,13 +15,16 @@ export const WEIGHTED_KEYWORD_CATEGORIES = [
 
 export type WeightedKeywordCategory = (typeof WEIGHTED_KEYWORD_CATEGORIES)[number];
 
-function normalizeCategory(raw: string | undefined): string | undefined {
+/** D3: AI keywords without evidence cannot exceed this weight. */
+export const UNVERIFIED_KEYWORD_WEIGHT_CAP = 40;
+
+function normalizeCategory(raw: string | undefined): WeightedKeywordCategory | undefined {
   if (!raw) {
     return undefined;
   }
   const lower = raw.trim().toLowerCase();
   if (WEIGHTED_KEYWORD_CATEGORIES.includes(lower as WeightedKeywordCategory)) {
-    return lower;
+    return lower as WeightedKeywordCategory;
   }
   if (lower === "tech" || lower === "stack") {
     return "tool";
@@ -29,7 +32,65 @@ function normalizeCategory(raw: string | undefined): string | undefined {
   if (lower === "leadership" || lower === "management") {
     return "seniority";
   }
-  return lower;
+  // Closed enum only — drop freeform categories (D3)
+  return undefined;
+}
+
+function normalizeRole(raw: unknown): WeightedKeyword["role"] | undefined {
+  const value = String(raw ?? "").trim().toLowerCase();
+  if (value === "must" || value === "should" || value === "nice") {
+    return value;
+  }
+  return undefined;
+}
+
+function normalizeSource(raw: unknown): WeightedKeyword["source"] | undefined {
+  const value = String(raw ?? "").trim().toLowerCase();
+  if (value === "extract" || value === "ai" || value === "user") {
+    return value;
+  }
+  return undefined;
+}
+
+function normalizeEvidence(raw: unknown): KeywordEvidence[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: KeywordEvidence[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as Record<string, unknown>;
+    const kind = String(record.kind ?? "").trim().toLowerCase();
+    if (kind !== "jd_quote" && kind !== "title" && kind !== "source_url" && kind !== "manual") {
+      continue;
+    }
+    const item: KeywordEvidence = { kind };
+    if (typeof record.text === "string" && record.text.trim()) {
+      item.text = record.text.trim().slice(0, 280);
+    }
+    if (typeof record.url === "string" && record.url.trim()) {
+      item.url = record.url.trim();
+    }
+    const count = Number(record.count);
+    if (Number.isFinite(count) && count > 0) {
+      item.count = Math.round(count);
+    }
+    out.push(item);
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+function hasEvidence(entry: WeightedKeyword): boolean {
+  return Array.isArray(entry.evidence) && entry.evidence.length > 0;
+}
+
+/** Apply D3 soft cap unless user-owned or has evidence. */
+export function applyUnverifiedWeightCap(entry: WeightedKeyword): WeightedKeyword {
+  if (entry.source === "user" || hasEvidence(entry)) {
+    return entry;
+  }
+  if (entry.weight <= UNVERIFIED_KEYWORD_WEIGHT_CAP) {
+    return entry;
+  }
+  return { ...entry, weight: UNVERIFIED_KEYWORD_WEIGHT_CAP };
 }
 
 /** Prefer shorter surface form when stems collide; keep highest weight. */
@@ -48,11 +109,25 @@ function pickDisplayKeyword(current: string, candidate: string): string {
   return b;
 }
 
+function mergeEvidence(
+  a?: KeywordEvidence[],
+  b?: KeywordEvidence[],
+): KeywordEvidence[] | undefined {
+  const combined = [...(a ?? []), ...(b ?? [])];
+  if (combined.length === 0) return undefined;
+  const seen = new Set<string>();
+  const out: KeywordEvidence[] = [];
+  for (const item of combined) {
+    const key = `${item.kind}|${item.text ?? ""}|${item.url ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
 export function mergeWeightedKeywords(keywords: WeightedKeyword[]): WeightedKeyword[] {
-  const groups = new Map<
-    string,
-    { keyword: string; weight: number; category?: string; rationale?: string }
-  >();
+  const groups = new Map<string, WeightedKeyword>();
 
   for (const entry of keywords) {
     const keyword = entry.keyword.trim();
@@ -63,32 +138,51 @@ export function mergeWeightedKeywords(keywords: WeightedKeyword[]): WeightedKeyw
     if (!key) {
       continue;
     }
-    const weight = Math.max(0, Math.min(100, Math.round(entry.weight)));
-    const category = normalizeCategory(entry.category);
+    const capped = applyUnverifiedWeightCap({
+      ...entry,
+      keyword,
+      weight: Math.max(0, Math.min(100, Math.round(entry.weight))),
+      category: normalizeCategory(
+        typeof entry.category === "string" ? entry.category : undefined,
+      ),
+      role: entry.role,
+      source: entry.source,
+      evidence: entry.evidence,
+      canonical_key: key,
+    });
+
     const existing = groups.get(key);
     if (!existing) {
-      groups.set(key, {
-        keyword,
-        weight,
-        category,
-        rationale: entry.rationale?.trim(),
-      });
+      groups.set(key, capped);
       continue;
     }
-    existing.weight = Math.max(existing.weight, weight);
-    existing.keyword = pickDisplayKeyword(existing.keyword, keyword);
-    if (!existing.category && category) {
-      existing.category = category;
-    }
-    if (!existing.rationale && entry.rationale?.trim()) {
-      existing.rationale = entry.rationale.trim();
-    }
+    const merged: WeightedKeyword = {
+      keyword: pickDisplayKeyword(existing.keyword, capped.keyword),
+      weight: Math.max(existing.weight, capped.weight),
+      category: existing.category ?? capped.category,
+      role: existing.role ?? capped.role,
+      rationale: existing.rationale ?? capped.rationale,
+      evidence: mergeEvidence(existing.evidence, capped.evidence),
+      source:
+        existing.source === "user" || capped.source === "user"
+          ? "user"
+          : existing.source === "extract" || capped.source === "extract"
+            ? "extract"
+            : existing.source ?? capped.source,
+      canonical_key: key,
+    };
+    groups.set(key, applyUnverifiedWeightCap(merged));
   }
 
-  return [...groups.values()].sort((a, b) => b.weight - a.weight || a.keyword.localeCompare(b.keyword));
+  return [...groups.values()].sort(
+    (a, b) => b.weight - a.weight || a.keyword.localeCompare(b.keyword),
+  );
 }
 
-export function parseWeightedKeywordsFromProposal(proposal: unknown): WeightedKeyword[] {
+export function parseWeightedKeywordsFromProposal(
+  proposal: unknown,
+  options?: { forceSource?: WeightedKeyword["source"] },
+): WeightedKeyword[] {
   const raw = Array.isArray(proposal)
     ? proposal
     : proposal &&
@@ -107,30 +201,33 @@ export function parseWeightedKeywordsFromProposal(proposal: unknown): WeightedKe
     if (!keyword || !Number.isFinite(weightRaw)) {
       continue;
     }
+    // AI must not claim source: user (D3)
+    let source = normalizeSource(record.source);
+    if (source === "user" && options?.forceSource !== "user") {
+      source = options?.forceSource ?? "ai";
+    }
+    if (options?.forceSource) {
+      source = options.forceSource;
+    }
     draft.push({
       keyword,
       weight: Math.max(0, Math.min(100, Math.round(weightRaw))),
       category: typeof record.category === "string" ? record.category : undefined,
+      role: normalizeRole(record.role),
       rationale: typeof record.rationale === "string" ? record.rationale : undefined,
+      evidence: normalizeEvidence(record.evidence),
+      source: source ?? "ai",
     });
   }
   return mergeWeightedKeywords(draft);
 }
 
 export const WEIGHTED_KEYWORD_AI_INSTRUCTIONS = [
-  "Weighted keywords power CV tailoring and ATS alignment. Produce a LARGE, diverse set (target 45–90 entries after dedup), not ~20 obvious terms.",
-  "",
-  "Coverage buckets (use category on each entry):",
-  "- position (8–18): role-specific nouns/verbs from the posting — deliverables, scope, tech named in the JD, team/product context.",
-  "- seniority (6–12): level signals — ownership, mentorship, strategy, stakeholder mgmt, IC vs lead, years band language.",
-  "- industry (15–30): modern domain vocabulary beyond the JD — adjacent trends, stack ecosystem, regulations, methodologies, buyer/market terms for this industry even if not listed on the posting.",
-  "- skill | tool | domain | soft | certification | methodology: fill remaining depth; prefer specific over generic.",
-  "",
-  "Canonical surface forms (critical):",
-  "- ONE entry per concept. Use dictionary/base forms: integrate (not integrating AND integration), analyze (not analysis AND analyzing).",
-  "- Do not list inflection variants, plural duplicates, or near-synonyms that share the same root.",
-  "- Multi-word phrases OK when the phrase is the unit (e.g. machine learning, product discovery).",
-  "",
-  "Weights 0–100: position/seniority core terms 75–95; industry adjacency 55–80; supporting soft/domain 35–65; generic filler (team player, fast-paced) avoid or ≤30.",
-  "Optional short rationale on high-weight terms only.",
+  "Weighted keywords power CV tailoring and ATS alignment.",
+  "Prefer terms grounded in the job description. Attach evidence when possible:",
+  '  evidence: [{ "kind": "jd_quote", "text": "short span from JD", "count": 1 }]',
+  "Categories must be one of: " + WEIGHTED_KEYWORD_CATEGORIES.join(", ") + ".",
+  "role: must | should | nice.",
+  "Do not set source to user. Unverified terms will be weight-capped at 40.",
+  "Canonical surface forms: ONE entry per concept; no inflection duplicates.",
 ].join("\n");
