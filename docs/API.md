@@ -51,7 +51,8 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `POST /research/companies/enrich` — staged company fill (`companyName`, `officeCountry`, `stages?`, `useWebSearch?` default false, optional website/linkedin/aboutText). Default stage: `identity`. Cache 7d unless `forceRefresh`.
 - `POST /research/companies/research` — **deprecated** wrapper: all stages + `useWebSearch: true`
 - `GET|PUT|DELETE /research/job-positions/:jobId`
-- `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, …)
+- `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, optional JD; skips web when JD is long enough)
+- `POST /research/jobs/extract-keywords` — local JD keyword extract (`jobId`, optional `rawJdText`, `replace?`); no web
 - `POST /research/field-refine` — per-field AI (`entityType`, `entityId`, `fieldPath`, `useWebSearch?: boolean` default false). Unknown paths 400; proposals validated against field contracts.
 
 ### Analysis (Editor + metadata)

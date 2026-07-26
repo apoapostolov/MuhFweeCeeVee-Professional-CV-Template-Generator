@@ -19,8 +19,8 @@ Plan: `IMPLEMENTATION_PLAN.md`
 - [x] WS1 Field contracts (types, catalogs, validate, envelope, merge, sanitize, enum UI)
 - [x] WS2 Field refine typed + Include Research checkbox (D2/D5)
 - [x] WS3 Staged company research (`/enrich`, cache, stages UI, cheap default)
-- [ ] WS4 JD text + slim job research (partial: `raw_jd_text` field in form + type)
-- [ ] WS5 Keyword extract
+- [x] WS4 JD text + slim job research (raw_jd_text, no 45–90 invent requirement)
+- [x] WS5 Keyword extract (local lexicon + API + UI button)
 - [ ] WS6 Editor targeting + gap (implements D1 in product)
 - [ ] WS7 Cover letters
 - [ ] WS8 Application tracker

@@ -45,17 +45,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: `Company '${companyId}' not found.` }, { status: 404 });
   }
 
+  const useWebSearch = !jobDescription || jobDescription.length < 80;
   const prompt = buildJobPositionResearchPrompt({
     company,
     jobTitle,
     jobDescription,
     linkedinUrl,
+    useWebSearch,
   });
   const result = await callOpenRouterResearchChat(
     prompt,
-    researchWebSearchSystemMessage(
-      "Research a job position from live web sources (LinkedIn job posting first) and return JSON only. weighted_keywords must be a large, deduplicated, canonical list per the prompt (45–90 concepts).",
-    ),
+    useWebSearch
+      ? researchWebSearchSystemMessage(
+          "Research a job position from live web sources (LinkedIn first). Return JSON only. Prefer grounded keywords (15–40), not speculative lists.",
+        )
+      : "Structure the job from the provided description only. No web search. Return JSON only. Prefer grounded keywords (15–40).",
+    { useWebSearch },
   );
 
   if (!result.ok) {
@@ -78,6 +83,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   job.research_model = result.model;
   if (linkedinUrl) {
     job.linkedin_url = linkedinUrl;
+  }
+  if (jobDescription) {
+    job.role = {
+      ...job.role,
+      raw_jd_text: jobDescription.slice(0, 50_000),
+      description_summary: job.role?.description_summary,
+    };
   }
 
   const updated = await upsertResearchedJobPosition(job);

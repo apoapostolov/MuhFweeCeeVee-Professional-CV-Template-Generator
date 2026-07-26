@@ -148,19 +148,34 @@ export function buildJobPositionResearchPrompt(payload: {
   jobTitle: string;
   jobDescription?: string;
   linkedinUrl?: string;
+  /** When true, skip mandatory web block (paste-JD path). */
+  useWebSearch?: boolean;
 }): string {
   const office = payload.company.office;
-  return [
-    researchWebSearchPromptBlock({
-      kind: "job_position",
-      companyName: payload.company.name,
-      officeCountry: office.country,
-      officeCity: office.city,
-      jobTitle: payload.jobTitle,
-      linkedinUrl: payload.linkedinUrl,
-    }),
-    "You are a job-market research assistant building a weighted keyword profile for CV tailoring and ATS alignment.",
-    "Derive responsibilities, skills, and keywords from the live LinkedIn job posting or careers page when available.",
+  const useWebSearch = payload.useWebSearch !== false;
+  const lines: string[] = [];
+  if (useWebSearch) {
+    lines.push(
+      researchWebSearchPromptBlock({
+        kind: "job_position",
+        companyName: payload.company.name,
+        officeCountry: office.country,
+        officeCity: office.city,
+        jobTitle: payload.jobTitle,
+        linkedinUrl: payload.linkedinUrl,
+      }),
+    );
+  } else {
+    lines.push(
+      "Fill job role fields from the provided job description only (no web search).",
+      "Do not invent employers, people, or unstated stack.",
+    );
+  }
+  lines.push(
+    "You are a job-market research assistant structuring a job record for CV tailoring.",
+    "Prefer role.responsibilities, skills, and a SHORT weighted_keywords list grounded in the JD text.",
+    "Do NOT invent 45–90 speculative industry keywords. Prefer 15–40 high-evidence terms with evidence when possible.",
+    "Keyword extraction can also run locally later — quality over quantity.",
     WEIGHTED_KEYWORD_AI_INSTRUCTIONS,
     "",
     `Company: ${payload.company.name} (${office.label ?? office.city ?? ""}, ${office.country})`,
@@ -171,7 +186,8 @@ export function buildJobPositionResearchPrompt(payload: {
     "",
     "Return ONLY valid JSON (no markdown) with shape:",
     JOB_JSON_SHAPE(payload.company.id),
-  ].join("\n");
+  );
+  return lines.filter((line) => line.length > 0).join("\n");
 }
 
 export function parseJobPositionResearchResponse(
@@ -200,9 +216,7 @@ export function parseJobPositionResearchResponse(
     company_id: companyId,
     title,
   });
-  if (!normalized || normalized.weighted_keywords.length === 0) {
-    return null;
-  }
+  // Keywords may be empty; client can run local extract from role.raw_jd_text
   return normalized;
 }
 

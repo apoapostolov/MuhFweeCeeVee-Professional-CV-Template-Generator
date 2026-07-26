@@ -130,6 +130,7 @@ export function ResearchDetailForm({
   const source = entityType === "company" ? company : job;
   const [draft, setDraft] = useState<unknown>(source);
   const [dirty, setDirty] = useState(false);
+  const [extractingKeywords, setExtractingKeywords] = useState(false);
 
   useEffect(() => {
     setDraft(source);
@@ -438,10 +439,75 @@ export function ResearchDetailForm({
           <p className="text-xs text-[var(--ink-muted)]">
             {language === "bg"
               ? "Редактирайте полетата и използвайте ✨ за по-дълбоко проучване."
-              : "Edit fields and use ✨ Research More to refine individual values."}
+              : "Edit fields and use ✨ to improve values. Extract keywords from the pasted JD (local, free)."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {entityType === "job_position" ? (
+            <button
+              className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-[var(--surface-2)] disabled:opacity-60"
+              disabled={extractingKeywords || !entityId}
+              onClick={() => {
+                void (async () => {
+                  setExtractingKeywords(true);
+                  try {
+                    const response = await fetch("/api/research/jobs/extract-keywords", {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({
+                        jobId: entityId,
+                        rawJdText: getAtPath(draft, ["role", "raw_jd_text"]),
+                        replace: true,
+                      }),
+                    });
+                    const payload = (await response.json()) as {
+                      error?: string;
+                      job_position?: ResearchedJobPosition;
+                      stats?: { phraseHits?: number; termHits?: number };
+                    };
+                    if (!response.ok || !payload.job_position) {
+                      onNotice(
+                        payload.error ??
+                          (language === "bg"
+                            ? "Извличането на ключови думи не успя."
+                            : "Keyword extract failed."),
+                      );
+                      return;
+                    }
+                    setDraft(payload.job_position);
+                    setDirty(true);
+                    if (researchAutoSaveEnabled && onDraftChange) {
+                      onDraftChange(payload.job_position, "job_position");
+                    }
+                    const hits =
+                      (payload.stats?.phraseHits ?? 0) + (payload.stats?.termHits ?? 0);
+                    onNotice(
+                      language === "bg"
+                        ? `Извлечени ключови думи от JD (локално). Трефове: ${hits}.`
+                        : `Extracted keywords from JD (local). Hits: ${hits}.`,
+                    );
+                  } catch {
+                    onNotice(
+                      language === "bg"
+                        ? "Извличането на ключови думи не успя."
+                        : "Keyword extract failed.",
+                    );
+                  } finally {
+                    setExtractingKeywords(false);
+                  }
+                })();
+              }}
+              type="button"
+            >
+              {extractingKeywords
+                ? language === "bg"
+                  ? "Извличане..."
+                  : "Extracting..."
+                : language === "bg"
+                  ? "Извлечи ключови думи от JD"
+                  : "Extract keywords from JD"}
+            </button>
+          ) : null}
           <EditorAutoSaveToggle
             enabled={researchAutoSaveEnabled}
             language={language}
@@ -579,8 +645,8 @@ export function ResearchDetailForm({
                 {keywords.length === 0 ? (
                   <p className="col-span-2 text-xs text-[var(--ink-muted)]">
                     {language === "bg"
-                      ? "Няма ключови думи. Пуснете проучване на позиция от страничната лента."
-                      : "No keywords yet. Research a job position from the sidebar."}
+                      ? "Няма ключови думи. Поставете JD в „Job description“ и натиснете „Извлечи ключови думи от JD“."
+                      : "No keywords yet. Paste a JD into “Job description (paste JD)” and click “Extract keywords from JD”."}
                   </p>
                 ) : (
                   <>
