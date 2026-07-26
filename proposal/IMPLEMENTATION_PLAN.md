@@ -1,6 +1,7 @@
 # Research Hardening + Feature Backlog — Implementation Plan
 
-> **For agentic workers:** Implement **one workstream at a time**. Prefer `subagent-driven-development` (fresh agent per task) or execute inline with checkpoints after each task. Steps use checkbox (`- [ ]`) syntax for tracking.  
+> **SHIPPED in v1.3.0 (2026-07-26).** Historical plan only — do not re-execute WS0–WS11.  
+> Live follow-ups: root [`TODO.md`](../TODO.md). Progress archive: [`PROGRESS.md`](./PROGRESS.md).  
 > **Spec source:** [`FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md`](./FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md)
 
 **Goal:** Make Research/Keywords trustworthy and cheap (field contracts, staged research, evidence-based keywords, Editor gap targeting), then ship remaining product features (cover letters, tracker, ATS polish) and engineering hygiene—without freeform AI dumps.

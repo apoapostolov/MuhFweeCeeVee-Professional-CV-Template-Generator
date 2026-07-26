@@ -1,7 +1,7 @@
 # Proposal: Feature backlog + Research / Keyword hardening
 
-**Status:** draft for product direction  
-**Date:** 2026-07-25  
+**Status:** shipped (core) in **v1.3.0** — historical proposal, not an active backlog  
+**Date:** 2026-07-25 (written) · closed 2026-07-26  
 **Scope:** MuhFweeCeeVee after security release `v1.2.4`  
 **Audience:** product owner + implementing agents  
 

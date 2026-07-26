@@ -10,6 +10,7 @@ services/parser/__pycache__/
 services/parser/.pytest_cache/
 
 exports/
+work/
 logs/
 
 .env

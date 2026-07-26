@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Dead `/api/prototype` control routes (unused scaffold).
+- Stalled session docs (`docs/REQUEST_CATALOG_SINCE_SCORE_SECTION.md`, `docs/INITIAL_TEMPLATING_BOOTSTRAP.md`) and obsolete `dev/RELEASE_NOTES_v1.1.0.md`.
+
 ## [1.3.0] - 2026-07-26
 
 Power-user job-search workflow: research → tailored CV → letter → application pack → print.

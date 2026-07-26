@@ -1,7 +1,9 @@
 # Implementation progress
 
-Spec: `FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md`  
-Plan: `IMPLEMENTATION_PLAN.md`
+**Status: shipped in v1.3.0 (2026-07-26).** Keep as decision archive only.
+
+Spec: `FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md` (historical)  
+Plan: `IMPLEMENTATION_PLAN.md` (historical)
 
 ## Locked decisions
 

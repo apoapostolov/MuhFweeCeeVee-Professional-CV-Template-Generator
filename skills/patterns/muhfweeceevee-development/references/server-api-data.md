@@ -32,7 +32,12 @@ All listed routes use `export const runtime = "nodejs"` unless noted.
 | GET | `/api/preview/html` | — | `buildCvTemplateHtml` |
 | GET | `/api/export/pdf` | — | HTML + Playwright PDF |
 | GET | `/api/export/image` | — | raster export variant |
-| GET/POST | `/api/prototype` | — | experimental ingest (low traffic) |
+| GET/POST | `/api/cover-letters` | mutating yes | cover letter store + AI draft/humanize |
+| GET/POST | `/api/applications` | mutating yes | board packets (export/import/reuse) |
+| GET | `/api/ai-skills` | — | product skill registry metadata |
+| GET/POST | `/api/research/*` | mutating yes | catalog, enrich, keywords, gap, field refine |
+
+**Removed:** `/api/prototype` (dead scaffold, deleted).
 
 **Retired (docs only):** `/api/analysis/keywords*` — implementation lives under
 `backup/retired-keywords/`, not in active `apps/web`.

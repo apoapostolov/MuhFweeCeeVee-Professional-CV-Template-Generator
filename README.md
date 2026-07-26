@@ -135,11 +135,12 @@ npm run lint
 npm run typecheck
 ```
 
-## Roadmap / proposals
+## Planning archive (v1.3.0 shipped)
 
-- [`proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md`](proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md) — product direction
-- [`proposal/IMPLEMENTATION_PLAN.md`](proposal/IMPLEMENTATION_PLAN.md) — workstreams (D1–D5 locked)
-- [`proposal/PROGRESS.md`](proposal/PROGRESS.md) — checkbox progress
+- [`proposal/PROGRESS.md`](proposal/PROGRESS.md) — locked decisions D1–D5 + completed workstreams
+- [`proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md`](proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md) — original proposal (historical)
+- [`proposal/IMPLEMENTATION_PLAN.md`](proposal/IMPLEMENTATION_PLAN.md) — workstream plan (historical)
+- Open follow-ups: [`TODO.md`](TODO.md)
 
 ## Production Build
 
@@ -261,10 +262,11 @@ Steps:
 | [`MARKDOWN_LINT.md`](dev/MARKDOWN_LINT.md) | Markdown lint configuration and rules |
 | [`.markdownlint.json`](.markdownlint.json) | Markdown lint rule config |
 | [`docs/API.md`](docs/API.md) | Web API reference |
-| [`proposal/`](proposal/) | Research hardening backlog, implementation plan, progress |
+| [`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md) | Full documentation map |
+| [`proposal/`](proposal/) | Shipped v1.3.0 plan archive (D1–D5 + WS progress) |
 | [`docs/CV_SCORING_STANDARD.md`](docs/CV_SCORING_STANDARD.md) | CV scoring rubric and quality checks |
 | [`docs/CV_YAML_STANDARD.md`](docs/CV_YAML_STANDARD.md) | CV YAML schema and validation rules |
-| [`docs/INITIAL_TEMPLATING_BOOTSTRAP.md`](docs/INITIAL_TEMPLATING_BOOTSTRAP.md) | Initial template implementation notes |
+| [`ai-skills/README.md`](ai-skills/README.md) | Runtime product AI skills |
 | [`MCP.md`](dev/MCP.md) | MCP wrapper usage guide |
 
 ## License
