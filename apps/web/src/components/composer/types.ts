@@ -93,6 +93,8 @@ export type ActivePanel =
   | "research"
   | "editor"
   | "templates"
+  | "cover_letters"
+  | "applications"
   | "settings";
 export type EditorViewMode = "form" | "yaml";
 export type ThemeMode = "light" | "dark" | "system";

@@ -60,8 +60,11 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 
 - `POST /analysis/cv` — optional `jobPositionId`, `companyIds`
 - `POST /analysis/field` — `professional_rewrite` / `shorten`; optional `jobPositionId`
-- `POST /analysis/company-research` — Editor company metadata (not Research catalog)
-- `POST /analysis/company-field` — metadata field refine with web search
+- `POST /analysis/ats-check` — deterministic ATS rules (`cvId`, optional `jobId`); no LLM
+- `POST /analysis/company-research` — **retired in product UI** (prefer Research enrich)
+- `POST /analysis/company-field` — metadata field refine (legacy)
+- `GET|POST /cover-letters` — list/save/delete; `draftWithAi: true` uses analysis model (no web)
+- `GET|POST /applications` — application board CRUD (`wishlist|applied|interview|offer|rejected|ghosted`)
 
 ### Company metadata auth
 

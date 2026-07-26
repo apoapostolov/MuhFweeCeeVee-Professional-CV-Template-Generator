@@ -59,6 +59,24 @@ export function ComposerNav({
         </button>
         <button
           className={`rounded-md px-4 py-2 text-sm font-semibold ${
+            activePanel === "cover_letters" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+          }`}
+          onClick={() => onPanelChange("cover_letters")}
+          type="button"
+        >
+          Letters
+        </button>
+        <button
+          className={`rounded-md px-4 py-2 text-sm font-semibold ${
+            activePanel === "applications" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
+          }`}
+          onClick={() => onPanelChange("applications")}
+          type="button"
+        >
+          Apps
+        </button>
+        <button
+          className={`rounded-md px-4 py-2 text-sm font-semibold ${
             activePanel === "templates" ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-2)] text-slate-800"
           }`}
           onClick={() => onPanelChange("templates")}

@@ -102,6 +102,9 @@ export type EditorPanelProps = {
   analysisText: string;
   onRunAnalysisSection: () => void;
   onRunAnalysisFull: () => void;
+  onRunAtsCheck: () => void;
+  atsCheckLoading: boolean;
+  atsCheckText: string;
   editorNotice: string;
 };
 
@@ -179,6 +182,9 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     analysisText,
     onRunAnalysisSection,
     onRunAnalysisFull,
+    onRunAtsCheck,
+    atsCheckLoading,
+    atsCheckText,
     editorNotice,
   } = props;
 
@@ -513,6 +519,20 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           />
                           Score Whole CV
                         </button>
+                        <button
+                          className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                          disabled={atsCheckLoading || !selectedCvId}
+                          onClick={onRunAtsCheck}
+                          type="button"
+                        >
+                          {atsCheckLoading
+                            ? uiLanguage === "bg"
+                              ? "ATS…"
+                              : "ATS…"
+                            : uiLanguage === "bg"
+                              ? "ATS проверка"
+                              : "ATS check"}
+                        </button>
                         <EditorAutoSaveToggle
                           enabled={editorAutoSaveEnabled}
                           language={uiLanguage}
@@ -793,13 +813,17 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                               </div>
                             ) : null}
                           </div>
+                        ) : atsCheckText ? (
+                          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-800">
+                            {atsCheckText}
+                          </pre>
                         ) : analysisText ? (
                           <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-800">
                             {analysisText}
                           </pre>
                         ) : (
                           <p className="mt-2 text-xs text-[var(--ink-muted)]">
-                            Run section or full CV scoring to receive score, field-level analysis, and rewrite proposals.
+                            Run section/full scoring or ATS check for results.
                           </p>
                         )}
                       </div>

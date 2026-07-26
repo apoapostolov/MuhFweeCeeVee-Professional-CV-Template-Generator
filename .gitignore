@@ -49,6 +49,9 @@ data/settings/openrouter.yaml
 data/settings/companies.personal.json
 data/research/catalog.json
 data/research/cache/
+data/cover_letters/*.yaml
+!data/cover_letters/.gitkeep
+data/applications/board.json
 /photos/
 /photos/metadata.json
 

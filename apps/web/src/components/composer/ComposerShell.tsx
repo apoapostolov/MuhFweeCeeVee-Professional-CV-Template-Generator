@@ -9,6 +9,8 @@ import { PhotoBoothPanel } from "./PhotoBoothPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { TemplatesPanel } from "./TemplatesPanel";
 import { ResearchPanel } from "./ResearchPanel";
+import { CoverLettersPanel } from "./CoverLettersPanel";
+import { ApplicationsPanel } from "./ApplicationsPanel";
 import { WorkspacePanel } from "./WorkspacePanel";
 import { asRecord } from "./form-path-utils";
 import { ComposerToastHost } from "./composer-toast";
@@ -126,6 +128,9 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               analysisDrawerCollapsed={c.analysisDrawerCollapsed}
               analysisLoading={c.analysisLoading}
               analysisText={c.analysisText}
+              atsCheckLoading={c.atsCheckLoading}
+              atsCheckText={c.atsCheckText}
+              onRunAtsCheck={() => void c.runAtsCheck()}
               availableLanguages={c.availableLanguages}
               companyMetadataDraft={asRecord(c.companyMetadataDraft)}
               analysisCompanySource={c.analysisCompanySource}
@@ -190,6 +195,27 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               galleryCvId={c.selectedCvId || c.mostRecentCv?.id || ""}
               previewNonce={c.previewNonce}
               templates={c.orderedTemplateItems}
+            />
+          )}
+
+          {c.activePanel === "cover_letters" && (
+            <CoverLettersPanel
+              language={c.uiLanguage}
+              researchCompanyName={c.selectedResearchCompany?.name}
+              researchJobTitle={c.selectedResearchJob?.title}
+              selectedCompanyId={c.selectedResearchCompanyId}
+              selectedCvId={c.selectedCvId}
+              selectedJobId={c.selectedResearchJobPositionId}
+            />
+          )}
+
+          {c.activePanel === "applications" && (
+            <ApplicationsPanel
+              defaultCompanyId={c.selectedResearchCompanyId}
+              defaultCompanyName={c.selectedResearchCompany?.name}
+              defaultJobId={c.selectedResearchJobPositionId}
+              defaultJobTitle={c.selectedResearchJob?.title}
+              language={c.uiLanguage}
             />
           )}
 

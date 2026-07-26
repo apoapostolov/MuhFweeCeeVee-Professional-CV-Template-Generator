@@ -241,6 +241,8 @@ export function useComposerController() {
   const [researchCompanies, setResearchCompanies] = useState<ResearchedCompany[]>([]);
   const [researchJobPositions, setResearchJobPositions] = useState<ResearchedJobPosition[]>([]);
   const [keywordGapReport, setKeywordGapReport] = useState<KeywordGapReport | null>(null);
+  const [atsCheckLoading, setAtsCheckLoading] = useState(false);
+  const [atsCheckText, setAtsCheckText] = useState("");
   const [selectedResearchCompanyId, setSelectedResearchCompanyId] = useState(
     () => readStoredResearchSelection().companyId,
   );
@@ -2580,6 +2582,48 @@ export function useComposerController() {
     }
   }
 
+  async function runAtsCheck() {
+    if (!selectedCvId) {
+      return;
+    }
+    setAtsCheckLoading(true);
+    setAtsCheckText("");
+    try {
+      const response = await fetch("/api/analysis/ats-check", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          cvId: selectedCvId,
+          jobId: selectedResearchJobPositionId || undefined,
+        }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        report?: {
+          score: number;
+          summary: { pass: number; warn: number; fail: number };
+          items: Array<{ severity: string; title: string; detail: string }>;
+        };
+      };
+      if (!response.ok || !payload.report) {
+        setAtsCheckText(payload.error ?? "ATS check failed.");
+        return;
+      }
+      const lines = [
+        `ATS score ${payload.report.score} (pass ${payload.report.summary.pass} · warn ${payload.report.summary.warn} · fail ${payload.report.summary.fail})`,
+        ...payload.report.items.map(
+          (item) => `[${item.severity.toUpperCase()}] ${item.title}: ${item.detail}`,
+        ),
+      ];
+      setAtsCheckText(lines.join("\n"));
+      setAnalysisDrawerCollapsed(false);
+    } catch {
+      setAtsCheckText("ATS check failed.");
+    } finally {
+      setAtsCheckLoading(false);
+    }
+  }
+
   async function runAnalysis(scope: "section" | "full") {
     if (!selectedCvId || !selectedTemplateId) {
       return;
@@ -3257,6 +3301,9 @@ export function useComposerController() {
     researchCompaniesMetadata,
     saveEditorSection,
     runAnalysis,
+    runAtsCheck,
+    atsCheckLoading,
+    atsCheckText,
     toggleAnalysisCompanySelection,
     syncLanguagePair,
     createLanguageVariant,

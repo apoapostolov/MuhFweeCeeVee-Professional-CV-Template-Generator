@@ -22,9 +22,9 @@ Plan: `IMPLEMENTATION_PLAN.md`
 - [x] WS4 JD text + slim job research (raw_jd_text, no 45–90 invent requirement)
 - [x] WS5 Keyword extract (local lexicon + API + UI button)
 - [x] WS6 Editor targeting + gap (metadata.targeting, gap panel, metadata AI research retired)
-- [ ] WS7 Cover letters
-- [ ] WS8 Application tracker
-- [ ] WS9 Deterministic ATS
+- [x] WS7 Cover letters (store, API, Letters tab, cheap AI draft)
+- [x] WS8 Application tracker (board.json, Apps tab, add from Research target)
+- [x] WS9 Deterministic ATS check (Editor button, no LLM)
 - [ ] WS10 Engineering health
 - [ ] WS11 MCP / optional
 
