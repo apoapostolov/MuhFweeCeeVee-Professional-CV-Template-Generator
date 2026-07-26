@@ -144,7 +144,13 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                       onClick={() => onSetAnalysisFocusId(item.id)}
                     >
                       <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-slate-100">
-                        <Image alt={item.name} className="h-full w-full object-cover" fill src={item.dataUrl} unoptimized />
+                        <Image
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                          fill
+                          src={item.mediaUrl || item.dataUrl}
+                          unoptimized
+                        />
                         {item.analysis?.verdict ? (
                           <span
                             className={`absolute right-1 top-1 z-10 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.06em] ${photoVerdictPillClass(item.analysis.verdict)}`}

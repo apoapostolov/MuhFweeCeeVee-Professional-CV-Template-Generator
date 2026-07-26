@@ -7,18 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-26
+
 ### Added
 
 - Research hardening pipeline (field contracts, staged company enrich, local JD keyword extract, Editor keyword gap + `metadata.targeting`).
 - **Letters** tab: cover letter YAML store, save/delete, cheap AI draft from CV + Research target.
 - **Apps** tab: application tracker board (wishlist → offer/rejected/ghosted).
 - **ATS check** button in Editor: deterministic rules (no LLM), optional job keyword coverage.
+- Photo list uses `mediaUrl` (`/api/photos/raw`) instead of embedding base64 for every item.
+- MCP tools: `research_company_enrich`, `research_extract_keywords`, `research_keyword_gap`, `analysis_ats_check`, cover letters, applications.
 
 ### Changed
 
 - Company Research defaults to cheap identity fill; **Include Research** checkbox enables web.
 - Field ✨ uses the same Include Research checkbox (analysis model when off).
 - Metadata company AI research retired in UI (use Research tab).
+- Live Perplexity integration tests require `RUN_LIVE_RESEARCH=1` in addition to an API key.
+- `packages/render-core` documented as type stub only.
 
 ## [1.2.4] - 2026-07-25
 

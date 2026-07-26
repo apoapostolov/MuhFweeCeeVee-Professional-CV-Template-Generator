@@ -328,7 +328,7 @@ export function registerTools(server) {
 
   server.tool(
     "research_company_run",
-    "Run web-backed AI research for a company office and upsert catalog.",
+    "Legacy full-web company research (all stages). Prefer research_company_enrich.",
     {
       companyId: z.string().optional(),
       companyName: z.string().min(1),
@@ -337,6 +337,27 @@ export function registerTools(server) {
       officeLabel: z.string().optional(),
     },
     async (body) => toTextContent(await requestJson("POST", "/research/companies/research", { body })),
+  );
+
+  server.tool(
+    "research_company_enrich",
+    "Staged company fill. useWebSearch false (default) = cheap analysis model; true = Research/web.",
+    {
+      companyId: z.string().optional(),
+      companyName: z.string().min(1),
+      officeCountry: z.string().min(1),
+      officeCity: z.string().optional(),
+      officeLabel: z.string().optional(),
+      website: z.string().optional(),
+      linkedinCompanyUrl: z.string().optional(),
+      aboutText: z.string().optional(),
+      stages: z
+        .array(z.enum(["identity", "office", "hiring", "people", "linkedin_jobs"]))
+        .optional(),
+      useWebSearch: z.boolean().optional(),
+      forceRefresh: z.boolean().optional(),
+    },
+    async (body) => toTextContent(await requestJson("POST", "/research/companies/enrich", { body })),
   );
 
   server.tool(
@@ -381,15 +402,90 @@ export function registerTools(server) {
 
   server.tool(
     "research_field_refine",
-    "AI refine one research catalog field with web search (up to 3 proposals).",
+    "AI refine one research catalog field. useWebSearch default false (cheap analysis model).",
     {
       entityType: z.enum(["company", "job_position"]),
       entityId: z.string().min(1),
       fieldPath: z.string().min(1),
       fieldLabel: z.string().optional(),
       currentValue: z.union([z.string(), z.record(z.any()), z.array(z.any())]).optional(),
+      useWebSearch: z.boolean().optional(),
     },
     async (body) => toTextContent(await requestJson("POST", "/research/field-refine", { body })),
+  );
+
+  server.tool(
+    "research_extract_keywords",
+    "Local JD keyword extract for a job (no web).",
+    {
+      jobId: z.string().min(1),
+      rawJdText: z.string().optional(),
+      replace: z.boolean().optional(),
+    },
+    async (body) =>
+      toTextContent(await requestJson("POST", "/research/jobs/extract-keywords", { body })),
+  );
+
+  server.tool(
+    "research_keyword_gap",
+    "Keyword gap report for a CV vs researched job.",
+    { cvId: z.string().min(1), jobId: z.string().min(1) },
+    async (body) => toTextContent(await requestJson("POST", "/research/jobs/gap", { body })),
+  );
+
+  server.tool(
+    "analysis_ats_check",
+    "Deterministic ATS checks (no LLM).",
+    { cvId: z.string().min(1), jobId: z.string().optional() },
+    async (body) => toTextContent(await requestJson("POST", "/analysis/ats-check", { body })),
+  );
+
+  server.tool(
+    "cover_letters_list",
+    "List cover letters.",
+    {},
+    async () => toTextContent(await requestJson("GET", "/cover-letters")),
+  );
+
+  server.tool(
+    "cover_letter_save",
+    "Save or AI-draft a cover letter (draftWithAi uses analysis model, no web).",
+    {
+      id: z.string().optional(),
+      cvId: z.string().min(1),
+      companyId: z.string().optional(),
+      jobId: z.string().optional(),
+      title: z.string().optional(),
+      body: z.string().optional(),
+      draftWithAi: z.boolean().optional(),
+    },
+    async (body) => toTextContent(await requestJson("POST", "/cover-letters", { body })),
+  );
+
+  server.tool(
+    "applications_list",
+    "List application tracker board.",
+    {},
+    async () => toTextContent(await requestJson("GET", "/applications")),
+  );
+
+  server.tool(
+    "application_upsert",
+    "Create/update an application card.",
+    {
+      id: z.string().optional(),
+      company_id: z.string().optional(),
+      job_id: z.string().optional(),
+      company_name: z.string().min(1),
+      job_title: z.string().min(1),
+      status: z
+        .enum(["wishlist", "applied", "interview", "offer", "rejected", "ghosted"])
+        .optional(),
+      url: z.string().optional(),
+      notes: z.string().optional(),
+    },
+    async (body) =>
+      toTextContent(await requestJson("POST", "/applications", { body: { action: "upsert", ...body } })),
   );
 
   server.tool(
@@ -426,7 +522,7 @@ export function registerTools(server) {
 
   server.tool(
     "company_metadata_research",
-    "AI research for Editor company metadata (not Research catalog).",
+    "LEGACY: Editor metadata research. Prefer research_company_enrich on the Research catalog.",
     { companyName: z.string().min(1), existingRecord: z.record(z.any()).optional() },
     async (body) => toTextContent(await requestJson("POST", "/analysis/company-research", { body })),
   );

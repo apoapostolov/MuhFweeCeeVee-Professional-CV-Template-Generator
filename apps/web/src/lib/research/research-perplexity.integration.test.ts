@@ -22,6 +22,9 @@ import {
 const HAS_OPENROUTER_KEY = Boolean(
   (process.env.OPENROUTER_API_KEY ?? "").trim().length > 0,
 );
+/** Opt-in: CI never sets this. Local: RUN_LIVE_RESEARCH=1 npm test … */
+const RUN_LIVE_RESEARCH =
+  process.env.RUN_LIVE_RESEARCH === "1" || process.env.RUN_LIVE_RESEARCH === "true";
 
 const LIVE_TIMEOUT_MS = 180_000;
 
@@ -43,7 +46,9 @@ async function callResearchWithRetry(
   return last;
 }
 
-describe.skipIf(!HAS_OPENROUTER_KEY)("Perplexity live research quality", () => {
+describe.skipIf(!HAS_OPENROUTER_KEY || !RUN_LIVE_RESEARCH)(
+  "Perplexity live research quality",
+  () => {
   it(
     "configures native Perplexity web search on the OpenRouter request",
     () => {
@@ -215,4 +220,5 @@ describe.skipIf(!HAS_OPENROUTER_KEY)("Perplexity live research quality", () => {
     },
     LIVE_TIMEOUT_MS,
   );
-});
+  },
+);

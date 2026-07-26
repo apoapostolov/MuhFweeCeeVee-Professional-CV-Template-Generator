@@ -9,7 +9,10 @@ export type PhotoBoothGalleryItem = {
   id: string;
   name: string;
   mimeType: string;
+  /** Full data URL when requested; empty on lightweight list. */
   dataUrl: string;
+  /** Browser-safe URL for <img src> without embedding base64 in the list payload. */
+  mediaUrl: string;
   createdAt: string;
   width: number;
   height: number;
@@ -31,6 +34,10 @@ export type PhotoBoothGalleryItem = {
     model: string;
   }>;
 };
+
+export function photoMediaUrl(id: string): string {
+  return `/api/photos/raw?id=${encodeURIComponent(id)}`;
+}
 
 const PHOTOS_DIR = repoPath("photos");
 const METADATA_FILE = "metadata.json";
@@ -131,7 +138,10 @@ async function bufferToDataUrl(filePath: string, mimeType: string): Promise<stri
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
-async function buildGalleryItem(fileName: string): Promise<PhotoBoothGalleryItem | null> {
+async function buildGalleryItem(
+  fileName: string,
+  options?: { includeDataUrl?: boolean },
+): Promise<PhotoBoothGalleryItem | null> {
   const id = normalizePhotoId(fileName);
   if (!id || id === METADATA_FILE) return null;
   const ext = path.extname(id).toLowerCase();
@@ -147,6 +157,8 @@ async function buildGalleryItem(fileName: string): Promise<PhotoBoothGalleryItem
   if (!stat.isFile()) return null;
 
   const mimeType = mimeTypeFromExtension(ext);
+  const includeDataUrl = options?.includeDataUrl === true;
+  // Always read for dimensions; avoid base64 in list responses (WS10).
   const buffer = await fs.readFile(filePath);
   const { width, height } = readImageDimensions(buffer, mimeType);
   const history = await getPhotoAnalysisHistory(id);
@@ -156,7 +168,8 @@ async function buildGalleryItem(fileName: string): Promise<PhotoBoothGalleryItem
     id,
     name: displayNameFromStoredId(id),
     mimeType,
-    dataUrl: `data:${mimeType};base64,${buffer.toString("base64")}`,
+    dataUrl: includeDataUrl ? `data:${mimeType};base64,${buffer.toString("base64")}` : "",
+    mediaUrl: photoMediaUrl(id),
     createdAt: stat.mtime.toISOString(),
     width,
     height,
@@ -182,7 +195,9 @@ async function buildGalleryItem(fileName: string): Promise<PhotoBoothGalleryItem
   };
 }
 
-export async function listPhotoBoothItems(): Promise<PhotoBoothGalleryItem[]> {
+export async function listPhotoBoothItems(options?: {
+  includeDataUrl?: boolean;
+}): Promise<PhotoBoothGalleryItem[]> {
   await ensurePhotosDir();
   let entries: string[];
   try {
@@ -191,10 +206,34 @@ export async function listPhotoBoothItems(): Promise<PhotoBoothGalleryItem[]> {
     return [];
   }
 
-  const items = await Promise.all(entries.map((entry) => buildGalleryItem(entry)));
+  const items = await Promise.all(
+    entries.map((entry) => buildGalleryItem(entry, { includeDataUrl: options?.includeDataUrl })),
+  );
   return items
     .filter((item): item is PhotoBoothGalleryItem => item !== null)
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+}
+
+export async function getPhotoBoothItem(
+  photoId: string,
+  options?: { includeDataUrl?: boolean },
+): Promise<PhotoBoothGalleryItem | null> {
+  return buildGalleryItem(photoId, { includeDataUrl: options?.includeDataUrl !== false });
+}
+
+export async function readPhotoBuffer(
+  photoId: string,
+): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  const safeId = normalizePhotoId(photoId);
+  if (!safeId || safeId === METADATA_FILE) return null;
+  const ext = path.extname(safeId).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) return null;
+  try {
+    const buffer = await fs.readFile(path.join(PHOTOS_DIR, safeId));
+    return { buffer, mimeType: mimeTypeFromExtension(ext) };
+  } catch {
+    return null;
+  }
 }
 
 export async function addPhotoBoothFiles(
@@ -211,7 +250,7 @@ export async function addPhotoBoothFiles(
     const filePath = path.join(PHOTOS_DIR, storedId);
     await fs.writeFile(filePath, file.buffer);
 
-    const item = await buildGalleryItem(storedId);
+    const item = await buildGalleryItem(storedId, { includeDataUrl: true });
     if (item) added.push(item);
   }
 

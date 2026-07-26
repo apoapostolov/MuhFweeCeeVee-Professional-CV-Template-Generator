@@ -25,8 +25,8 @@ Plan: `IMPLEMENTATION_PLAN.md`
 - [x] WS7 Cover letters (store, API, Letters tab, cheap AI draft)
 - [x] WS8 Application tracker (board.json, Apps tab, add from Research target)
 - [x] WS9 Deterministic ATS check (Editor button, no LLM)
-- [ ] WS10 Engineering health
-- [ ] WS11 MCP / optional
+- [x] WS10 Engineering health (live test gate, photo mediaUrl, nginx auth docs, render-core stub note)
+- [x] WS11 MCP tools for enrich/extract/gap/ats/letters/apps
 
 ## D1 migration checklist (UI)
 

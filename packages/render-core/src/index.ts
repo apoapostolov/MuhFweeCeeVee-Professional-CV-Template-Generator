@@ -1,6 +1,8 @@
 /**
  * Shared rendering types for cross-package callers.
- * Live PDF/HTML rendering is implemented in
+ *
+ * Status: **type stub only** (not a full shared renderer package yet).
+ * Live PDF/HTML rendering lives in:
  * `apps/web/src/lib/server/renderCvTemplate.ts` and `apps/web/src/lib/server/render/`.
  */
 export type RenderJob = {

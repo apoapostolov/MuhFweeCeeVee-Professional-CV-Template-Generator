@@ -3037,21 +3037,29 @@ export function useComposerController() {
     });
   }
 
+  async function resolvePhotoDataUrl(id: string): Promise<{ dataUrl: string; name: string }> {
+    const response = await fetch(`/api/photos?id=${encodeURIComponent(id)}`);
+    const payload = (await response.json()) as PhotoBoothListResponse & {
+      item?: PhotoBoothItem;
+    };
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error ?? "Could not load photo.");
+    }
+    const item =
+      payload.item ??
+      (Array.isArray(payload.items) ? payload.items.find((entry) => entry.id === id) : undefined);
+    if (!item?.dataUrl?.startsWith("data:image/")) {
+      throw new Error("Selected photo no longer exists. Please reselect an image.");
+    }
+    return { dataUrl: item.dataUrl, name: item.name };
+  }
+
   async function analyzePhotoBoothItem(id: string): Promise<void> {
     if (!id) return;
     setPhotoBoothAnalyzingId(id);
     setPhotoBoothAnalysisFocusId(id);
     try {
-      const freshGalleryResponse = await fetch("/api/photos");
-      const freshGalleryPayload = (await freshGalleryResponse.json()) as PhotoBoothListResponse;
-      if (!freshGalleryResponse.ok || !freshGalleryPayload.ok) {
-        throw new Error(freshGalleryPayload.error ?? "Could not load latest photo data.");
-      }
-      const freshItems = Array.isArray(freshGalleryPayload.items) ? freshGalleryPayload.items : [];
-      const item = freshItems.find((entry) => entry.id === id);
-      if (!item) {
-        throw new Error("Selected photo no longer exists. Please reselect an image.");
-      }
+      const item = await resolvePhotoDataUrl(id);
       const response = await fetch("/api/analysis/photo", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -3127,15 +3135,12 @@ export function useComposerController() {
     if (photoBoothCompareIds.length < 2) return;
     setPhotoBoothCompareLoading(true);
     try {
-      const freshGalleryResponse = await fetch("/api/photos");
-      const freshGalleryPayload = (await freshGalleryResponse.json()) as PhotoBoothListResponse;
-      if (!freshGalleryResponse.ok || !freshGalleryPayload.ok) {
-        throw new Error(freshGalleryPayload.error ?? "Could not load latest photo data.");
-      }
-      const freshItems = Array.isArray(freshGalleryPayload.items) ? freshGalleryPayload.items : [];
-      const selectedItems = photoBoothCompareIds
-        .map((id) => freshItems.find((item) => item.id === id) ?? null)
-        .filter((entry): entry is PhotoBoothItem => entry !== null);
+      const selectedItems = await Promise.all(
+        photoBoothCompareIds.map(async (id) => {
+          const resolved = await resolvePhotoDataUrl(id);
+          return { id, name: resolved.name, dataUrl: resolved.dataUrl };
+        }),
+      );
       if (selectedItems.length < 2) {
         throw new Error("At least 2 selected photos are required for comparison.");
       }

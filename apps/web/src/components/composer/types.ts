@@ -225,7 +225,9 @@ export type PhotoBoothItem = {
   id: string;
   name: string;
   mimeType: string;
+  /** May be empty on list; use mediaUrl for display. */
   dataUrl: string;
+  mediaUrl?: string;
   createdAt: string;
   width: number;
   height: number;

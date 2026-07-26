@@ -3,15 +3,26 @@ import { NextResponse } from "next/server";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
   addPhotoBoothFiles,
+  getPhotoBoothItem,
   listPhotoBoothItems,
   removePhotoBoothItem,
 } from "@/lib/server/photoGalleryStore";
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   try {
-    const items = await listPhotoBoothItems();
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id")?.trim() ?? "";
+    if (id) {
+      const item = await getPhotoBoothItem(id, { includeDataUrl: true });
+      if (!item) {
+        return NextResponse.json({ ok: false, error: "Photo not found." }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true, item, items: [item] });
+    }
+    // List without base64 payloads (use item.mediaUrl for display).
+    const items = await listPhotoBoothItems({ includeDataUrl: false });
     return NextResponse.json({ ok: true, items });
   } catch (error) {
     return NextResponse.json(

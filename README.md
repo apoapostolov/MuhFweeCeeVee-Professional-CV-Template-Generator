@@ -114,6 +114,21 @@ clients must send it as `Authorization: Bearer …` or `x-mfcv-api-token` on
 mutation/analysis/export routes. The local browser UI on `localhost` stays trusted
 without embedding the secret. Production non-loopback access without a token is denied.
 
+Nginx example (snippet):
+
+```nginx
+location /api/ {
+  proxy_pass http://127.0.0.1:3000/api/;
+  # Prefer terminating TLS here; do not strip Authorization.
+  proxy_set_header Host $host;
+  proxy_set_header Authorization $http_authorization;
+  proxy_set_header x-mfcv-api-token $http_x_mfcv_api_token;
+}
+```
+
+Optional: `MFCV_REQUIRE_API_TOKEN=true` fails closed if the token is missing.
+Live research integration tests: `RUN_LIVE_RESEARCH=1` (never set in CI).
+
 Quality checks:
 
 ```bash
