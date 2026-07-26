@@ -21,35 +21,27 @@ Plan: `IMPLEMENTATION_PLAN.md`
 - [x] WS3 Staged company research (`/enrich`, cache, stages UI, cheap default)
 - [x] WS4 JD text + slim job research (raw_jd_text, no 45–90 invent requirement)
 - [x] WS5 Keyword extract (local lexicon + API + UI button)
-- [ ] WS6 Editor targeting + gap (implements D1 in product)
+- [x] WS6 Editor targeting + gap (metadata.targeting, gap panel, metadata AI research retired)
 - [ ] WS7 Cover letters
 - [ ] WS8 Application tracker
 - [ ] WS9 Deterministic ATS
 - [ ] WS10 Engineering health
 - [ ] WS11 MCP / optional
 
-## WS1 detail
-
-- [x] Contract types + company/job catalogs
-- [x] validateFieldValue + tests
-- [x] Weighted keyword evidence + D3 soft cap
-- [x] Envelope parse + merge
-- [x] sanitize on normalizeResearchedCompany/Job
-- [x] Contract-aware enum selects + url/email inputs in ResearchDetailForm
-
-## WS2 detail
-
-- [x] `callOpenRouterResearchChat({ useWebSearch })` — analysis model when false
-- [x] Contract-driven refine prompts + truncated context
-- [x] Field-refine API validates proposals; unknown path 400
-- [x] UI checkbox “Include Research (search web — costs more)”
-
 ## D1 migration checklist (UI)
 
-- [ ] Hide or mark Editor company metadata multi-select as legacy
-- [ ] Editor targeting dropdowns bound only to Research catalog
-- [ ] Persist `metadata.targeting` company_id + job_id on CV
-- [ ] Analysis uses jobPositionId from catalog only
-- [ ] Remove/disable `/analysis/company-research` + `/analysis/company-field` + UI
-- [ ] Import path: metadata → catalog shells + notes (optional)
-- [ ] Stop using `/api/companies` for live targeting after migration
+- [x] Editor targeting dropdowns bound only to Research catalog
+- [x] Persist `metadata.targeting` company_id + job_id on CV
+- [x] Restore targeting when CV loads
+- [x] Analysis uses jobPositionId from Research selection
+- [x] Metadata company AI research shows retired notice (→ Research tab)
+- [x] Keyword gap panel in Editor Job Targeting
+- [ ] Optional: import metadata → catalog shells
+- [ ] Optional: remove `/api/analysis/company-research` routes entirely
+
+## WS1–WS6 detail
+
+- Contracts + D3 caps + sanitize on normalize
+- Field ✨ + company enrich Include Research checkbox
+- Local JD keyword extract
+- CV targeting persist/restore + live gap panel

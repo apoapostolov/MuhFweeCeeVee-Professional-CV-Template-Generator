@@ -119,6 +119,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               selectedResearchJobPositionId={c.selectedResearchJobPositionId}
               selectedResearchJobKeywordCount={c.selectedResearchJob?.weighted_keywords.length ?? 0}
               selectedResearchJobAtsKeywordCount={c.editorAtsKeywords.length}
+              keywordGapReport={c.keywordGapReport}
               onSelectResearchCompany={c.selectResearchCompany}
               onSelectResearchJob={c.selectResearchJob}
               analysisData={c.analysisData}

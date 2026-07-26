@@ -16,6 +16,7 @@ import {
 } from "./editor-autosave-ui";
 import type { useEditorFormRenderer } from "./useEditorFormRenderer";
 import { companyOfficeSummary } from "@/lib/research/research-normalize";
+import type { KeywordGapReport } from "@/lib/research/keywordGap";
 import type { ResearchedCompany } from "@/lib/research/types";
 import type {
   CompanySource,
@@ -57,6 +58,7 @@ export type EditorPanelProps = {
   onSelectResearchJob: (jobId: string) => void;
   selectedResearchJobKeywordCount: number;
   selectedResearchJobAtsKeywordCount: number;
+  keywordGapReport: KeywordGapReport | null;
   selectedTemplateId: string;
   editorLoading: boolean;
   companyMetadataNotice: string;
@@ -133,6 +135,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onSelectResearchJob,
     selectedResearchJobKeywordCount,
     selectedResearchJobAtsKeywordCount,
+    keywordGapReport,
     selectedTemplateId,
     editorLoading,
     companyMetadataNotice,
@@ -283,19 +286,23 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                   </div>
 
                   <div className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-                    <p className="text-sm font-semibold text-slate-800">Job Targeting</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {uiLanguage === "bg" ? "Цел (Research)" : "Job Targeting"}
+                    </p>
                     <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                      Pick a researched company and job position from the Research tab. Keywords highlight in form fields.
+                      {uiLanguage === "bg"
+                        ? "Само каталог Research. Изборът се записва в CV (metadata.targeting)."
+                        : "Research catalog only. Selection is saved on the CV (metadata.targeting)."}
                     </p>
 
                     <label className="mt-3 block text-xs font-medium text-slate-700">
-                      Company
+                      {uiLanguage === "bg" ? "Компания" : "Company"}
                       <select
                         className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs"
                         onChange={(event) => onSelectResearchCompany(event.target.value)}
                         value={selectedResearchCompanyId}
                       >
-                        <option value="">None</option>
+                        <option value="">{uiLanguage === "bg" ? "Няма" : "None"}</option>
                         {researchCompanies.map((company) => (
                           <option key={company.id} value={company.id}>
                             {company.name} ({companyOfficeSummary(company)})
@@ -305,14 +312,14 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     </label>
 
                     <label className="mt-3 block text-xs font-medium text-slate-700">
-                      Job position
+                      {uiLanguage === "bg" ? "Позиция" : "Job position"}
                       <select
                         className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-xs disabled:opacity-60"
                         disabled={!selectedResearchCompanyId}
                         onChange={(event) => onSelectResearchJob(event.target.value)}
                         value={selectedResearchJobPositionId}
                       >
-                        <option value="">None</option>
+                        <option value="">{uiLanguage === "bg" ? "Няма" : "None"}</option>
                         {researchJobsForCompany.map((job) => (
                           <option key={job.id} value={job.id}>
                             {job.title}
@@ -328,6 +335,44 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           ? ` ${selectedResearchJobAtsKeywordCount} ATS terms (cyan).`
                           : ""}
                       </p>
+                    ) : null}
+
+                    {keywordGapReport && selectedResearchJobPositionId ? (
+                      <div className="mt-3 rounded-md border border-[var(--line)] bg-white p-2">
+                        <p className="text-xs font-semibold text-slate-800">
+                          {uiLanguage === "bg" ? "Липси в CV" : "Keyword gap"}
+                        </p>
+                        {keywordGapReport.missingMust.length === 0 &&
+                        keywordGapReport.missingShould.length === 0 ? (
+                          <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                            {uiLanguage === "bg"
+                              ? "Няма силни липсващи must/should ключове."
+                              : "No strong missing must/should keywords."}
+                          </p>
+                        ) : (
+                          <ul className="mt-1 max-h-36 space-y-0.5 overflow-auto text-xs">
+                            {keywordGapReport.missingMust.slice(0, 8).map((item) => (
+                              <li key={`must-${item.keyword}`}>
+                                <span className="font-semibold text-rose-700">must</span>{" "}
+                                {item.keyword}{" "}
+                                <span className="text-[var(--ink-muted)]">({item.weight})</span>
+                              </li>
+                            ))}
+                            {keywordGapReport.missingShould.slice(0, 8).map((item) => (
+                              <li key={`should-${item.keyword}`}>
+                                <span className="font-semibold text-amber-700">should</span>{" "}
+                                {item.keyword}{" "}
+                                <span className="text-[var(--ink-muted)]">({item.weight})</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <p className="mt-1 text-[10px] text-[var(--ink-muted)]">
+                          {uiLanguage === "bg"
+                            ? `Използвани: ${keywordGapReport.used.length} · Липси must: ${keywordGapReport.missingMust.length}`
+                            : `Used: ${keywordGapReport.used.length} · Missing must: ${keywordGapReport.missingMust.length}`}
+                        </p>
+                      </div>
                     ) : null}
 
                     <div className="mt-3">
@@ -390,7 +435,11 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             className={`h-3.5 w-3.5 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
                             variant={resolvedTheme === "dark" ? "default" : "on-light"}
                           />
-                          {companyResearchLoading ? "Researching..." : "Research Company"}
+                          {companyResearchLoading
+                            ? "…"
+                            : uiLanguage === "bg"
+                              ? "→ Research таб"
+                              : "→ Use Research tab"}
                         </button>
                         <EditorAutoSaveToggle
                           enabled={companyMetadataAutoSaveEnabled}

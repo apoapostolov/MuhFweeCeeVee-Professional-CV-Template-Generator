@@ -44,6 +44,8 @@ import {
   resolveCompanyIdsToResearch,
 } from "@/lib/company-research";
 import { collectEditorAtsTerms } from "@/lib/research/editor-ats-keywords";
+import { computeKeywordGap, type KeywordGapReport } from "@/lib/research/keywordGap";
+import { readCvTargeting, writeCvTargeting } from "@/lib/research/cvTargeting";
 import {
   readEditorFlatSubsectionsPreference,
   writeEditorFlatSubsectionsPreference,
@@ -238,6 +240,7 @@ export function useComposerController() {
   const [companyMetadataSavedFingerprint, setCompanyMetadataSavedFingerprint] = useState("");
   const [researchCompanies, setResearchCompanies] = useState<ResearchedCompany[]>([]);
   const [researchJobPositions, setResearchJobPositions] = useState<ResearchedJobPosition[]>([]);
+  const [keywordGapReport, setKeywordGapReport] = useState<KeywordGapReport | null>(null);
   const [selectedResearchCompanyId, setSelectedResearchCompanyId] = useState(
     () => readStoredResearchSelection().companyId,
   );
@@ -517,6 +520,17 @@ export function useComposerController() {
     () => collectEditorAtsTerms(selectedResearchJob?.ats),
     [selectedResearchJob],
   );
+
+  const keywordGap = useMemo((): KeywordGapReport | null => {
+    if (!editorCv || !selectedResearchJob) {
+      return null;
+    }
+    return computeKeywordGap(editorCv, selectedResearchJob.weighted_keywords ?? []);
+  }, [editorCv, selectedResearchJob]);
+
+  useEffect(() => {
+    setKeywordGapReport(keywordGap);
+  }, [keywordGap]);
 
   const loadAnalysisCompanies = useCallback(async (): Promise<void> => {
     try {
@@ -1111,6 +1125,17 @@ export function useComposerController() {
         if (cancelled) return;
         const doc = payload.cv ?? null;
         setEditorCv(doc);
+        // D1: restore Research targeting from CV metadata when present
+        const targeting = readCvTargeting(doc);
+        if (targeting?.job_id) {
+          setSelectedResearchJobPositionId(targeting.job_id);
+          if (targeting.company_id) {
+            setSelectedResearchCompanyId(targeting.company_id);
+          }
+        } else if (targeting?.company_id) {
+          setSelectedResearchCompanyId(targeting.company_id);
+          setSelectedResearchJobPositionId("");
+        }
       } finally {
         if (!cancelled) {
           setEditorLoading(false);
@@ -2189,94 +2214,12 @@ export function useComposerController() {
   }
 
   async function researchCompaniesMetadata(): Promise<void> {
-    const draft = companyMetadataDraftRef.current;
-    const companies = Array.isArray((draft as { companies?: unknown })?.companies)
-      ? [...((draft as { companies: unknown[] }).companies)]
-      : [];
-    const idsToResearch = resolveCompanyIdsToResearch(draft, analysisCompanyIds);
-
-    if (idsToResearch.length === 0) {
-      setCompanyMetadataNotice(
-        "Add a company with an id, or select target companies in the sidebar to research.",
-      );
-      return;
-    }
-
-    setCompanyResearchLoading(true);
-    setCompanyMetadataNotice("");
-
-    let researchedCount = 0;
-    const failures: string[] = [];
-
-    for (const companyId of idsToResearch) {
-      const index = companies.findIndex((entry) => {
-        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-          return false;
-        }
-        const id = (entry as Record<string, unknown>).id;
-        return typeof id === "string" && id.trim() === companyId;
-      });
-      if (index < 0) {
-        continue;
-      }
-
-      const existing =
-        companies[index] && typeof companies[index] === "object" && !Array.isArray(companies[index])
-          ? (companies[index] as Record<string, unknown>)
-          : {};
-      const companyName =
-        typeof existing.name === "string" && existing.name.trim().length > 0
-          ? existing.name.trim()
-          : companyId;
-
-      try {
-        const response = await fetch("/api/analysis/company-research", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            companyName,
-            existingRecord: existing,
-          }),
-        });
-        const payload = (await response.json()) as {
-          error?: string;
-          company?: Record<string, unknown>;
-        };
-        if (!response.ok || !payload.company) {
-          failures.push(`${companyName}: ${payload.error ?? "research failed"}`);
-          continue;
-        }
-        companies[index] = mergeResearchedCompanyRecord(existing, payload.company);
-        researchedCount += 1;
-      } catch {
-        failures.push(`${companyName}: research request failed`);
-      }
-    }
-
-    if (researchedCount > 0) {
-      const nextDocument = { companies };
-      setCompanyMetadataDraft(nextDocument);
-      setCompanyMetadataYamlDraft(stringifyYaml(nextDocument));
-      companyMetadataDraftRef.current = nextDocument;
-      companyMetadataYamlDraftRef.current = stringifyYaml(nextDocument);
-      scheduleCompanyMetadataAutosave();
-    }
-
-    if (failures.length === 0 && researchedCount > 0) {
-      setCompanyMetadataNotice(
-        researchedCount === 1
-          ? "Web research applied to 1 company (empty fields filled)."
-          : `Web research applied to ${researchedCount} companies (empty fields filled).`,
-      );
-    } else if (failures.length > 0 && researchedCount > 0) {
-      setCompanyMetadataNotice(
-        `Research updated ${researchedCount} company${researchedCount === 1 ? "" : "ies"}. Some failed: ${failures.slice(0, 2).join("; ")}`,
-      );
-    } else {
-      setCompanyMetadataNotice(failures[0] ?? "Company research failed.");
-    }
-
-    setCompanyResearchLoading(false);
+    // D1: metadata company AI research is retired — use Research tab + staged enrich
+    setCompanyMetadataNotice(
+      uiIsBg(uiLanguage)
+        ? "Проучването на компании от метаданни е спряно. Ползвайте таб Research (компании/позиции)."
+        : "Company metadata AI research is retired. Use the Research tab (companies/jobs) instead.",
+    );
   }
 
   async function saveEditorSection() {
@@ -2329,11 +2272,32 @@ export function useComposerController() {
     }
   }
 
+  async function persistCvTargeting(next: {
+    company_id?: string;
+    job_id?: string;
+  } | null): Promise<void> {
+    if (!editorCv || !selectedCvId) {
+      return;
+    }
+    const updated = writeCvTargeting(editorCv as Record<string, unknown>, next);
+    setEditorCv(updated);
+    try {
+      await fetch(`/api/cvs/${encodeURIComponent(selectedCvId)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cv: updated }),
+      });
+    } catch {
+      // non-fatal; selection still works in session
+    }
+  }
+
   function selectResearchCompany(companyId: string) {
     clearResearchAutosaveTimers();
     setSelectedResearchCompanyId(companyId);
     setSelectedResearchJobPositionId("");
-    setAnalysisCompanyIds(companyId ? [companyId] : []);
+    // D1: no longer maps Research catalog ids into legacy metadata multi-select
+    void persistCvTargeting(companyId ? { company_id: companyId, job_id: "" } : null);
   }
 
   function selectResearchJob(jobId: string) {
@@ -2342,6 +2306,13 @@ export function useComposerController() {
     const job = researchJobPositions.find((entry) => entry.id === jobId);
     if (job) {
       setSelectedResearchCompanyId(job.company_id);
+      void persistCvTargeting({ company_id: job.company_id, job_id: jobId });
+    } else if (!jobId) {
+      void persistCvTargeting(
+        selectedResearchCompanyId
+          ? { company_id: selectedResearchCompanyId, job_id: "" }
+          : null,
+      );
     }
   }
 
@@ -3315,6 +3286,7 @@ export function useComposerController() {
     researchJobsForCompany,
     editorWeightedKeywords,
     editorAtsKeywords,
+    keywordGapReport,
     researchCatalogLoading,
     researchingCompany,
     researchingJob,

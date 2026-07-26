@@ -53,6 +53,7 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `GET|PUT|DELETE /research/job-positions/:jobId`
 - `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, optional JD; skips web when JD is long enough)
 - `POST /research/jobs/extract-keywords` — local JD keyword extract (`jobId`, optional `rawJdText`, `replace?`); no web
+- `POST /research/jobs/gap` — keyword gap report (`cvId`, `jobId`)
 - `POST /research/field-refine` — per-field AI (`entityType`, `entityId`, `fieldPath`, `useWebSearch?: boolean` default false). Unknown paths 400; proposals validated against field contracts.
 
 ### Analysis (Editor + metadata)
