@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cover letters: AI draft runs a **humanizer postprocess** pass; manual **Humanize** button rewrites the current body.
 - `GET /api/ai-skills` — list enabled product skills and hooks.
 
+### Fixed
+
+- Dark mode: theme-aware **vertical** scrollbars; horizontal scrollbar chrome suppressed app-wide.
+- Print Room: Refresh / Open / Print actions stay on one row inside the sidebar width.
+
 ## [1.3.0] - 2026-07-26
 
 ### Added

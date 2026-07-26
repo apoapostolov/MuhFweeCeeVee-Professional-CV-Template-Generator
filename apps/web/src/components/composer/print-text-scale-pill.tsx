@@ -55,7 +55,7 @@ export function PrintTextScaleRow({
 
   return (
     <div
-      className={`flex items-center justify-between gap-2 ${rowDisabled ? "cursor-not-allowed opacity-50" : ""}`}
+      className={`flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 ${rowDisabled ? "cursor-not-allowed opacity-50" : ""}`}
       title={disabledTitle}
     >
       <label
@@ -63,17 +63,17 @@ export function PrintTextScaleRow({
       >
         <input
           checked={enabled}
-          className="h-4 w-4 shrink-0 rounded border-[var(--line)]"
+          className="h-4 w-4 shrink-0 rounded border-[var(--line)] accent-[var(--accent)]"
           disabled={rowDisabled ? true : undefined}
           onChange={(event) => onEnabledChange(event.target.checked)}
           type="checkbox"
         />
-        <span className="truncate">{label}</span>
+        <span className="min-w-0 truncate">{label}</span>
       </label>
 
       <div
         aria-label={`${label}: ${value}%`}
-        className="inline-flex shrink-0 overflow-hidden rounded-full border border-[var(--line)] text-xs font-semibold"
+        className="inline-flex shrink-0 overflow-hidden rounded-full border border-[var(--line)] bg-[var(--surface-1)] text-xs font-semibold"
         role="group"
       >
         <button
@@ -85,10 +85,10 @@ export function PrintTextScaleRow({
         >
           −
         </button>
-        <span className="flex items-center border-x border-[var(--line)] bg-white">
+        <span className="flex items-center border-x border-[var(--line)] bg-[var(--surface-1)]">
           <input
             aria-label={`${label} percent`}
-            className="w-9 px-0.5 py-0.5 text-center tabular-nums text-slate-800 disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-9 bg-transparent px-0.5 py-0.5 text-center tabular-nums text-slate-800 disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             disabled={controlDisabled ? true : undefined}
             inputMode="numeric"
             max={PRINT_TEXT_SCALE_MAX}
