@@ -160,8 +160,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   const t = {
     pageTitle: bg ? "Кандидатствания" : "Job applications",
     pageSubtitle: bg
-      ? "Дъска по статус. Хванете заглавието на картата и преместете между колони. Пакет: CV, снимка, компания, писмо."
-      : "Status board. Drag a card header between columns. Pack: CV, photo, company, letter.",
+      ? "Дъска по статус. Клик за детайли; дърпане на заглавието между колони. Пакет: CV, снимка, компания, писмо."
+      : "Status board. Click for details; drag the header between columns. Pack: CV, photo, company, letter.",
     newApplication: bg ? "Ново кандидатстване" : "New application",
     addFromResearch: bg ? "От Research цел" : "Add from Research",
     addFromResearchTitle: bg
@@ -452,9 +452,20 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     [applications],
   );
 
+  const onKanbanClick = useCallback(
+    (appId: string) => {
+      const app = applications.find((entry) => entry.id === appId);
+      if (app) openEdit(app);
+    },
+    // openEdit is stable enough via closure; applications is the lookup source
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [applications],
+  );
+
   const { drag, onCardPointerDown, columnClassName, isDraggingId } = useKanbanDrag({
     busy,
     onDrop: onKanbanDrop,
+    onClick: onKanbanClick,
   });
 
   const dragApp = drag
@@ -701,9 +712,10 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                           : "border-[var(--line)] bg-[var(--surface-1)]"
                       } ${dragging ? "opacity-30" : "opacity-100"}`}
+                      data-kanban-card
                       key={app.id}
                     >
-                      {/* Grabbable header: same bar language as bottom actions */}
+                      {/* Header: click opens details; drag starts after small move */}
                       <div
                         className={`select-none border-b border-white/25 bg-slate-700 px-2.5 py-2.5 ${
                           busy
@@ -714,8 +726,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         style={{ touchAction: "none" }}
                         title={
                           bg
-                            ? "Хванете и преместете"
-                            : "Drag to move between columns"
+                            ? "Клик: детайли · дърпане: преместване"
+                            : "Click: details · drag: move column"
                         }
                       >
                         <p className="truncate text-[11px] font-bold leading-snug text-white">
@@ -731,7 +743,12 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         ) : null}
                       </div>
 
-                      <div className="px-1.5 py-1.5" data-no-dnd>
+                      <button
+                        className="w-full px-1.5 py-1.5 text-left"
+                        data-no-dnd
+                        onClick={() => openEdit(app)}
+                        type="button"
+                      >
                         <div className="flex flex-nowrap items-center justify-center gap-px overflow-hidden">
                           <Chip
                             label={t.chipCv}
@@ -773,7 +790,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             </p>
                           );
                         })()}
-                      </div>
+                      </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
                         className="flex h-7 border-t border-white/25 bg-slate-700"

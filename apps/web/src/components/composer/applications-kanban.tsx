@@ -10,17 +10,14 @@ import {
   type ReactNode,
 } from "react";
 
-/**
- * Hold before the card lifts. Keep low — header is drag-only so near-instant
- * grab is preferred. Tiny delay still filters accidental taps.
- */
-export const KANBAN_GRIP_MS = 40;
 /** Soft lean limit (degrees) while dragging. */
 const MAX_LEAN_DEG = 12;
 /** How strongly horizontal velocity maps to lean. */
 const LEAN_SENSITIVITY = 0.65;
 /** Smooth lean interpolation (0–1 per sample). */
 const LEAN_SMOOTH = 0.28;
+/** Movement (px) before a press becomes a drag (below this = click). */
+const DRAG_THRESHOLD_PX = 4;
 
 export type KanbanDragState = {
   appId: string;
@@ -42,12 +39,13 @@ type PendingGrip = {
   startX: number;
   startY: number;
   cardEl: HTMLElement;
-  timer: ReturnType<typeof setTimeout>;
 };
 
 export type UseKanbanDragOptions = {
   busy?: boolean;
   onDrop: (appId: string, status: string) => void;
+  /** Fired on a press+release that never crossed the drag threshold. */
+  onClick?: (appId: string) => void;
 };
 
 function isInteractiveTarget(el: EventTarget | null): boolean {
@@ -60,11 +58,13 @@ function isInteractiveTarget(el: EventTarget | null): boolean {
 }
 
 /**
- * Pointer-based kanban drag: grip delay, floating card, velocity lean, column drop.
+ * Pointer-based kanban drag: move to lift, floating card, velocity lean, column drop.
+ * Click (no real movement) opens details via onClick.
  */
 export function useKanbanDrag({
   busy = false,
   onDrop,
+  onClick,
 }: UseKanbanDragOptions): {
   drag: KanbanDragState | null;
   onCardPointerDown: (appId: string, event: ReactPointerEvent<HTMLElement>) => void;
@@ -78,35 +78,32 @@ export function useKanbanDrag({
   const lastTRef = useRef(0);
   const leanRef = useRef(0);
   const rafRef = useRef(0);
+  const onClickRef = useRef(onClick);
+  const onDropRef = useRef(onDrop);
+  onClickRef.current = onClick;
+  onDropRef.current = onDrop;
 
   const clearPending = useCallback(() => {
-    const pending = pendingRef.current;
-    if (pending) {
-      clearTimeout(pending.timer);
-      pendingRef.current = null;
-    }
+    pendingRef.current = null;
   }, []);
 
-  const endDrag = useCallback(
-    (commit: boolean) => {
-      const current = dragRef.current;
-      clearPending();
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = 0;
-      }
-      dragRef.current = null;
-      setDrag(null);
-      leanRef.current = 0;
-      document.body.style.userSelect = "";
-      document.body.style.cursor = "";
+  const endDrag = useCallback((commit: boolean) => {
+    const current = dragRef.current;
+    clearPending();
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    dragRef.current = null;
+    setDrag(null);
+    leanRef.current = 0;
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
 
-      if (commit && current?.overStatus) {
-        onDrop(current.appId, current.overStatus);
-      }
-    },
-    [clearPending, onDrop],
-  );
+    if (commit && current?.overStatus) {
+      onDropRef.current(current.appId, current.overStatus);
+    }
+  }, [clearPending]);
 
   const activateDrag = useCallback(
     (
@@ -116,7 +113,10 @@ export function useKanbanDrag({
       clientY: number,
       pointerId: number,
     ) => {
-      const rect = cardEl.getBoundingClientRect();
+      // Prefer the full card root for size (header is only the grip).
+      const root =
+        (cardEl.closest("[data-kanban-card]") as HTMLElement | null) ?? cardEl;
+      const rect = root.getBoundingClientRect();
       const next: KanbanDragState = {
         appId,
         pointerId,
@@ -146,64 +146,27 @@ export function useKanbanDrag({
       if (isInteractiveTarget(event.target)) return;
       if (dragRef.current) return;
 
-      const cardEl = event.currentTarget;
-      const pointerId = event.pointerId;
-      const startX = event.clientX;
-      const startY = event.clientY;
-
-      clearPending();
-
-      // Activate immediately if grip is 0; otherwise after short hold.
-      // Also activate as soon as the pointer moves a few px (grab-and-go).
-      const tryActivate = (x: number, y: number) => {
-        if (pendingRef.current?.appId !== appId) return;
-        const pending = pendingRef.current;
-        if (!pending) return;
-        clearTimeout(pending.timer);
-        pendingRef.current = null;
-        activateDrag(appId, pending.cardEl, x, y, pending.pointerId);
-      };
-
-      if (KANBAN_GRIP_MS <= 0) {
-        activateDrag(appId, cardEl, startX, startY, pointerId);
-        return;
-      }
-
-      const timer = setTimeout(() => {
-        tryActivate(startX, startY);
-      }, KANBAN_GRIP_MS);
-
       pendingRef.current = {
         appId,
-        pointerId,
-        startX,
-        startY,
-        cardEl,
-        timer,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        cardEl: event.currentTarget,
       };
     },
-    [activateDrag, busy, clearPending],
+    [busy],
   );
 
   useEffect(() => {
     function onMove(event: PointerEvent) {
       const pending = pendingRef.current;
-      if (pending && event.pointerId === pending.pointerId) {
+      if (pending && event.pointerId === pending.pointerId && !dragRef.current) {
         const dx = event.clientX - pending.startX;
         const dy = event.clientY - pending.startY;
-        const dist = Math.hypot(dx, dy);
-        // Grab-and-go: any real movement engages drag immediately.
-        if (dist >= 3) {
-          clearTimeout(pending.timer);
+        if (Math.hypot(dx, dy) >= DRAG_THRESHOLD_PX) {
+          const { appId, cardEl, pointerId } = pending;
           pendingRef.current = null;
-          activateDrag(
-            pending.appId,
-            pending.cardEl,
-            event.clientX,
-            event.clientY,
-            pending.pointerId,
-          );
-          // fall through so this move also positions the card
+          activateDrag(appId, cardEl, event.clientX, event.clientY, pointerId);
         } else {
           return;
         }
@@ -259,7 +222,10 @@ export function useKanbanDrag({
     function onUp(event: PointerEvent) {
       const pending = pendingRef.current;
       if (pending && event.pointerId === pending.pointerId) {
-        clearPending();
+        // Press without drag → open details.
+        const appId = pending.appId;
+        pendingRef.current = null;
+        onClickRef.current?.(appId);
         return;
       }
       if (dragRef.current && event.pointerId === dragRef.current.pointerId) {
@@ -270,7 +236,7 @@ export function useKanbanDrag({
     function onCancel(event: PointerEvent) {
       const pending = pendingRef.current;
       if (pending && event.pointerId === pending.pointerId) {
-        clearPending();
+        pendingRef.current = null;
       }
       if (dragRef.current && event.pointerId === dragRef.current.pointerId) {
         endDrag(false);
@@ -284,9 +250,9 @@ export function useKanbanDrag({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onCancel);
-      clearPending();
+      pendingRef.current = null;
     };
-  }, [activateDrag, clearPending, endDrag]);
+  }, [activateDrag, endDrag]);
 
   const columnClassName = useCallback(
     (status: string) => {
@@ -338,21 +304,6 @@ export function KanbanFloatingCard({
       >
         {children}
       </div>
-    </div>
-  );
-}
-
-/** Compact card face for list + floating layer (shared chrome). */
-export function KanbanCardFace(props: {
-  title: string;
-  subtitle: string;
-  chips: ReactNode;
-}): JSX.Element {
-  return (
-    <div className="p-2">
-      <p className="truncate font-semibold text-slate-900">{props.title}</p>
-      <p className="truncate text-[var(--ink-muted)]">{props.subtitle}</p>
-      <div className="mt-1.5 flex flex-wrap gap-1">{props.chips}</div>
     </div>
   );
 }
