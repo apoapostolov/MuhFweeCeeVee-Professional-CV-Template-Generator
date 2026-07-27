@@ -109,9 +109,16 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
       setVersion(item.version ?? null);
       setLoadedFromVersion(null);
       setUndoStack([]);
+      setDeleteArmed(false);
       void loadVersions(item.id);
     }
   }, [items, selectedId, loadVersions]);
+
+  useEffect(() => {
+    if (!deleteArmed) return;
+    const timer = window.setTimeout(() => setDeleteArmed(false), DELETE_ARM_MS);
+    return () => window.clearTimeout(timer);
+  }, [deleteArmed]);
 
   function pushUndo() {
     setUndoStack((prev) => {
@@ -255,6 +262,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
 
   async function remove(id: string) {
     setBusy(true);
+    setDeleteArmed(false);
     try {
       await fetch("/api/cover-letters", {
         method: "POST",
@@ -274,6 +282,15 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
     } finally {
       setBusy(false);
     }
+  }
+
+  function onDeleteLetterClick() {
+    if (!selectedId || busy) return;
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      return;
+    }
+    void remove(selectedId);
   }
 
   async function deleteVersion(versionNum: number) {
@@ -324,6 +341,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
     setLoadedFromVersion(null);
     setVersions([]);
     setUndoStack([]);
+    setDeleteArmed(false);
     setNotice("");
   }
 
@@ -469,12 +487,32 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
             </button>
             {selectedId ? (
               <button
-                className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 disabled:opacity-60"
+                className={
+                  deleteArmed
+                    ? "rounded-md border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                    : "rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                }
                 disabled={busy}
-                onClick={() => void remove(selectedId)}
+                onBlur={() => setDeleteArmed(false)}
+                onClick={onDeleteLetterClick}
+                title={
+                  deleteArmed
+                    ? bg
+                      ? "Натисни отново за изтриване"
+                      : "Click again to delete"
+                    : bg
+                      ? "Изтрий писмото"
+                      : "Delete letter"
+                }
                 type="button"
               >
-                {bg ? "Изтрий" : "Delete"}
+                {deleteArmed
+                  ? bg
+                    ? "Потвърди"
+                    : "Confirm"
+                  : bg
+                    ? "Изтрий"
+                    : "Delete"}
               </button>
             ) : null}
           </div>
@@ -563,4 +601,9 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                 </li>
               );
             })}
-   
+          </ul>
+        )}
+      </aside>
+    </div>
+  );
+}
