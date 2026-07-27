@@ -98,7 +98,7 @@ function Chip({
 }): JSX.Element {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded px-1 py-px text-[7px] font-semibold uppercase leading-none tracking-wide ${
+      className={`inline-flex shrink-0 items-center rounded px-0.5 py-px text-[8.5px] font-semibold uppercase leading-none tracking-wide ${
         ok
           ? "bg-[var(--accent-soft)] text-slate-800"
           : "bg-[var(--surface-2)] text-[var(--ink-muted)]"
@@ -705,7 +705,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </div>
 
                       <div className="px-1.5 py-1.5" data-no-dnd>
-                        <div className="flex flex-nowrap items-center justify-between gap-0.5 overflow-hidden">
+                        <div className="flex flex-nowrap items-center gap-px overflow-hidden">
                           <Chip
                             label={t.chipCv}
                             ok={hasCv}
@@ -809,7 +809,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </p>
             </div>
             <div className="px-1.5 py-1.5">
-              <div className="flex flex-nowrap items-center justify-between gap-0.5 overflow-hidden">
+              <div className="flex flex-nowrap items-center gap-px overflow-hidden">
                 <Chip
                   label={t.chipCv}
                   ok={Boolean(dragApp.cv_id)}
