@@ -58,7 +58,7 @@ describe("application packets", () => {
     expect(isApplicationPacketFile(null)).toBe(false);
   });
 
-  it("resets status_since only when moving up a stage", () => {
+  it("resets status_since only on real forward pipeline moves", () => {
     const existing: Application = {
       id: "a1",
       company_name: "Acme",
@@ -77,6 +77,13 @@ describe("application packets", () => {
     ).toBe("2026-01-01T00:00:00.000Z");
     expect(
       resolveStatusSince({ existing, nextStatus: "applied", now }),
+    ).toBe("2026-01-01T00:00:00.000Z");
+    // Terminal outcomes do not reset the dwell clock.
+    expect(
+      resolveStatusSince({ existing, nextStatus: "rejected", now }),
+    ).toBe("2026-01-01T00:00:00.000Z");
+    expect(
+      resolveStatusSince({ existing, nextStatus: "ghosted", now }),
     ).toBe("2026-01-01T00:00:00.000Z");
   });
 

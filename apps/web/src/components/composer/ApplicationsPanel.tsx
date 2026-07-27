@@ -396,9 +396,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     const prevIdx = APPLICATION_STATUSES.indexOf(app.status);
     const nextIdx = APPLICATION_STATUSES.indexOf(status);
     const now = new Date().toISOString();
-    // Forward only: reset status_since. Backward keeps the clock.
-    const status_since =
-      nextIdx > prevIdx ? now : app.status_since || app.created_at || now;
+    // Reset only on real pipeline progress (not rejected/ghosted, not backward).
+    const isTerminal = status === "rejected" || status === "ghosted";
+    const fromTerminal = app.status === "rejected" || app.status === "ghosted";
+    const movedForward =
+      !isTerminal && !fromTerminal && nextIdx > prevIdx;
+    const status_since = movedForward
+      ? now
+      : app.status_since || app.created_at || now;
     // Optimistic move for snappy kanban drops.
     setApplications((prev) =>
       prev.map((entry) =>
@@ -782,8 +787,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                               className="mt-1 text-center text-[9px] font-semibold tabular-nums text-[var(--ink-muted)]"
                               title={
                                 bg
-                                  ? `${days} дни без придвижване напред (назад не нулира)`
-                                  : `${days} day${days === 1 ? "" : "s"} without moving up (moving back does not reset)`
+                                  ? `${days} дни без придвижване напред (назад / rejected / ghosted не нулират)`
+                                  : `${days} day${days === 1 ? "" : "s"} without moving up (back / rejected / ghosted do not reset)`
                               }
                             >
                               {formatDaysLabel(days, bg)}

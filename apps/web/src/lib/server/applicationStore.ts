@@ -51,6 +51,29 @@ export function statusIndex(status: ApplicationStatus): number {
   return APPLICATION_STATUSES.indexOf(status);
 }
 
+/** Terminal / side outcomes — do not count as “moving up” for the dwell clock. */
+export function isTerminalStatus(status: ApplicationStatus): boolean {
+  return status === "rejected" || status === "ghosted";
+}
+
+/**
+ * True when the move is forward progress on the hiring path
+ * (later stage, excluding rejected/ghosted).
+ */
+export function isForwardProgress(
+  from: ApplicationStatus,
+  to: ApplicationStatus,
+): boolean {
+  if (from === to) return false;
+  if (isTerminalStatus(to)) return false;
+  if (isTerminalStatus(from)) {
+    // Leaving a terminal column into a pipeline stage does not reset either
+    // (clock already frozen while rejected/ghosted).
+    return false;
+  }
+  return statusIndex(to) > statusIndex(from);
+}
+
 /** Days since status_since (0 if same calendar day / invalid). */
 export function daysWithoutForwardProgress(
   statusSince: string,
@@ -63,7 +86,8 @@ export function daysWithoutForwardProgress(
 
 /**
  * Resolve status_since on upsert.
- * Forward stage change → reset clock. Backward / same → keep existing clock.
+ * Reset only on real forward pipeline moves (e.g. applied → interview).
+ * Moving back, or into rejected/ghosted, keeps the existing clock.
  */
 export function resolveStatusSince(params: {
   existing: Application | undefined;
@@ -77,9 +101,7 @@ export function resolveStatusSince(params: {
   if (!params.existing) {
     return params.now;
   }
-  const prevIdx = statusIndex(params.existing.status);
-  const nextIdx = statusIndex(params.nextStatus);
-  if (nextIdx > prevIdx) {
+  if (isForwardProgress(params.existing.status, params.nextStatus)) {
     return params.now;
   }
   return (
