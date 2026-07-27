@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { Copy, Download, FolderOpen, Trash2 } from "lucide-react";
 
-import {
-  KanbanFloatingCard,
-  KANBAN_GRIP_MS,
-  useKanbanDrag,
-} from "./applications-kanban";
+import { KanbanFloatingCard, useKanbanDrag } from "./applications-kanban";
 
 const APPLICATION_STATUSES = [
   "wishlist",
