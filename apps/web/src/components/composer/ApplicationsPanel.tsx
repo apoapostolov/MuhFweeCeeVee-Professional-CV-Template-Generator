@@ -705,7 +705,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </div>
 
                       <div className="px-1.5 py-1.5" data-no-dnd>
-                        <div className="flex flex-nowrap items-center gap-px overflow-hidden">
+                        <div className="flex flex-nowrap items-center justify-center gap-px overflow-hidden">
                           <Chip
                             label={t.chipCv}
                             ok={hasCv}
@@ -809,7 +809,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </p>
             </div>
             <div className="px-1.5 py-1.5">
-              <div className="flex flex-nowrap items-center gap-px overflow-hidden">
+              <div className="flex flex-nowrap items-center justify-center gap-px overflow-hidden">
                 <Chip
                   label={t.chipCv}
                   ok={Boolean(dragApp.cv_id)}
