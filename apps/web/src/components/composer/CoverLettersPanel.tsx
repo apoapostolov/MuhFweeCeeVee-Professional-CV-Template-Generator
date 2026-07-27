@@ -271,6 +271,42 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
     }
   }
 
+  async function deleteVersion(versionNum: number) {
+    if (!selectedId) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/cover-letters", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_version",
+          id: selectedId,
+          version: versionNum,
+        }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        versions?: VersionMeta[];
+      };
+      if (!response.ok) {
+        setNotice(payload.error ?? "Delete version failed.");
+        return;
+      }
+      setVersions(payload.versions ?? []);
+      if (loadedFromVersion === versionNum) {
+        setLoadedFromVersion(null);
+      }
+      setNotice(
+        bg ? `Изтрита версия v${versionNum}.` : `Deleted version v${versionNum}.`,
+      );
+    } catch {
+      setNotice("Delete version failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function startNew() {
     setSelectedId("");
     setTitle(
@@ -477,7 +513,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                   key={v.version}
                 >
                   <div className="flex items-start justify-between gap-1">
-                    <span className="font-semibold text-slate-800">
+                    <span className="min-w-0 font-semibold text-slate-800">
                       v{v.version}
                       {isSavedHead ? (
                         <span className="ml-1 font-normal text-[var(--ink-muted)]">
@@ -490,9 +526,23 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                         </span>
                       ) : null}
                     </span>
-                    <span className="text-[var(--ink-muted)]">
-                      {sourceLabel(v.source, bg)}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <span className="text-[var(--ink-muted)]">
+                        {sourceLabel(v.source, bg)}
+                      </span>
+                      <button
+                        aria-label={
+                          bg ? `Изтрий версия ${v.version}` : `Delete version ${v.version}`
+                        }
+                        className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-600 hover:bg-[var(--surface-2)] hover:text-rose-700 disabled:opacity-40"
+                        disabled={busy}
+                        onClick={() => void deleteVersion(v.version)}
+                        title={bg ? "Изтрий снимката" : "Delete this snapshot"}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-0.5 text-[var(--ink-muted)]">
                     {v.saved_at ? v.saved_at.slice(0, 19).replace("T", " ") : "—"}

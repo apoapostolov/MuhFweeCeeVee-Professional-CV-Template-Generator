@@ -491,6 +491,18 @@ export function registerTools(server) {
   );
 
   server.tool(
+    "cover_letter_delete_version",
+    "Delete one cover letter history snapshot (does not change the live letter).",
+    { id: z.string().min(1), version: z.number().int().positive() },
+    async (body) =>
+      toTextContent(
+        await requestJson("POST", "/cover-letters", {
+          body: { action: "delete_version", ...body },
+        }),
+      ),
+  );
+
+  server.tool(
     "ai_skills_list",
     "List product AI skills (ai-skills/) and hooks used for prompt injection / output repair.",
     {},

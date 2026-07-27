@@ -5,6 +5,7 @@ import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
   buildCoverLetterId,
   deleteCoverLetter,
+  deleteCoverLetterVersion,
   listCoverLetterVersions,
   listCoverLetters,
   readCoverLetter,
@@ -80,6 +81,30 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     const ok = await deleteCoverLetter(id);
     return NextResponse.json({ ok, id });
+  }
+
+  if (action === "delete_version") {
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    const version = Number(body.version);
+    if (!id || !Number.isFinite(version)) {
+      return NextResponse.json(
+        { error: "id and version are required." },
+        { status: 400 },
+      );
+    }
+    const ok = await deleteCoverLetterVersion(id, version);
+    if (!ok) {
+      return NextResponse.json({ error: "Version not found." }, { status: 404 });
+    }
+    const list = await listCoverLetterVersions(id);
+    const current = await readCoverLetter(id);
+    return NextResponse.json({
+      ok: true,
+      id,
+      deleted_version: version,
+      current_version: current?.version ?? null,
+      versions: list,
+    });
   }
 
   // Load a history snapshot only — does not write a new revision (client may Save later).

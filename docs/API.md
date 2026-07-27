@@ -67,6 +67,7 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `GET|POST /cover-letters` — list/save/delete; **AI draft** and **Humanize** are separate; version history under `data/cover_letters/history/`
   - `GET ?id=&versions=1` — version list; `GET ?id=&version=N` — one snapshot (read-only)
   - `POST { action: "load_version"|"restore", id, version }` — return snapshot only (**no write**); client **Save** creates a new revision
+  - `POST { action: "delete_version", id, version }` — delete one history snapshot (live letter unchanged)
 - `GET /api/ai-skills` — list product AI skills + hooks (metadata only)
 - `GET|POST /applications` — kanban board of **application packets** (CV + photo + company + letter refs)
   - packet fields: `cv_id`, `photo_id`, `cover_letter_id`, `packet_title`, company/job, status, notes

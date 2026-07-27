@@ -205,6 +205,22 @@ export async function readCoverLetterVersion(
   }
 }
 
+/** Delete one history snapshot only — does not change the live letter. */
+export async function deleteCoverLetterVersion(
+  id: string,
+  version: number,
+): Promise<boolean> {
+  assertValidId(id);
+  if (!Number.isFinite(version) || version < 1) return false;
+  try {
+    await fs.unlink(historyFilePath(id, version));
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
+
 export async function writeCoverLetter(
   doc: CoverLetterDocument,
   options?: { source?: CoverLetterVersionSource; skipHistory?: boolean },
