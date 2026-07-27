@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clampDwellDays,
   daysWithoutForwardProgress,
   isApplicationPacketFile,
   packetCompleteness,
   PACKET_FORMAT,
   resolveStatusSince,
+  statusSinceFromDays,
   type Application,
 } from "./applicationStore";
 
@@ -91,5 +93,30 @@ describe("application packets", () => {
     const since = "2026-01-01T12:00:00.000Z";
     const day30 = Date.parse("2026-01-31T12:00:00.000Z");
     expect(daysWithoutForwardProgress(since, day30)).toBe(30);
+  });
+
+  it("round-trips manual day counter edits via status_since", () => {
+    const now = Date.parse("2026-07-27T15:00:00.000Z");
+    expect(clampDwellDays(-3)).toBe(0);
+    expect(clampDwellDays(12.9)).toBe(12);
+    expect(clampDwellDays(20_000)).toBe(9999);
+    const since = statusSinceFromDays(45, now);
+    expect(daysWithoutForwardProgress(since, now)).toBe(45);
+    expect(
+      resolveStatusSince({
+        existing: {
+          id: "a1",
+          company_name: "Acme",
+          job_title: "Engineer",
+          status: "applied",
+          status_since: "2026-01-01T00:00:00.000Z",
+          created_at: "2026-01-01T00:00:00.000Z",
+          updated_at: "2026-01-10T00:00:00.000Z",
+        },
+        nextStatus: "interview",
+        now: "2026-07-27T15:00:00.000Z",
+        explicit: since,
+      }),
+    ).toBe(since);
   });
 });

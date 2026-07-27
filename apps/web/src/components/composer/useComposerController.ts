@@ -16,8 +16,13 @@ import {
   STORAGE_KEYS,
   themeOptionsForTemplate,
 } from "@/components/composer/constants";
-import { readStoredPrintTextScale } from "@/lib/print-text-scale";
 import { stepPrintTextScale } from "@/components/composer/print-text-scale-pill";
+import {
+  isPrintTweaksScopeReady,
+  printTweaksScopeKey,
+  readPrintTweaksForScope,
+  writePrintTweaksForScope,
+} from "@/components/composer/print-tweaks-persistence";
 import {
   isTemplatePathVisible,
   readTemplateVisibility,
@@ -636,61 +641,64 @@ export function useComposerController() {
     }
   }, [selectedPhotoMode]);
 
-  useEffect(() => {
-    try {
-      if (printTweakRemovePhoto) {
-        window.localStorage.setItem(STORAGE_KEYS.printTweakRemovePhoto, "1");
-      } else {
-        window.localStorage.removeItem(STORAGE_KEYS.printTweakRemovePhoto);
-      }
-    } catch {
-      // no-op
-    }
-  }, [printTweakRemovePhoto]);
+  // Print tweaks are remembered per CV + template + language (see print-tweaks-persistence).
+  const printTweaksScope = useMemo(
+    () => ({
+      cvId: selectedCvId,
+      templateId: selectedTemplateId,
+      language: selectedLanguage,
+    }),
+    [selectedCvId, selectedTemplateId, selectedLanguage],
+  );
+  const printTweaksScopeKeyRef = useRef("");
+  const skipPrintTweaksPersistRef = useRef(false);
 
   useEffect(() => {
-    try {
-      if (printTweakMoveSkillsLeft) {
-        window.localStorage.setItem(STORAGE_KEYS.printTweakMoveSkillsLeft, "1");
-      } else {
-        window.localStorage.removeItem(STORAGE_KEYS.printTweakMoveSkillsLeft);
-      }
-    } catch {
-      // no-op
+    if (!isPrintTweaksScopeReady(printTweaksScope)) {
+      printTweaksScopeKeyRef.current = "";
+      return;
     }
-  }, [printTweakMoveSkillsLeft]);
+    const nextKey = printTweaksScopeKey(printTweaksScope);
+    if (printTweaksScopeKeyRef.current === nextKey) {
+      return;
+    }
+    printTweaksScopeKeyRef.current = nextKey;
+    skipPrintTweaksPersistRef.current = true;
+    const restored = readPrintTweaksForScope(printTweaksScope);
+    setPrintTweakRemovePhoto(restored.removePhoto);
+    setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
+    setPrintTweakSidebarTextScaleEnabled(restored.sidebarTextScaleEnabled);
+    setPrintTweakSidebarTextScale(restored.sidebarTextScale);
+    setPrintTweakContentTextScaleEnabled(restored.contentTextScaleEnabled);
+    setPrintTweakContentTextScale(restored.contentTextScale);
+    setPreviewNonce(Date.now());
+  }, [printTweaksScope]);
 
   useEffect(() => {
-    try {
-      if (printTweakSidebarTextScaleEnabled) {
-        window.localStorage.setItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled, "1");
-      } else {
-        window.localStorage.removeItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled);
-      }
-      window.localStorage.setItem(
-        STORAGE_KEYS.printTweakSidebarTextScale,
-        String(printTweakSidebarTextScale),
-      );
-    } catch {
-      // no-op
+    if (!isPrintTweaksScopeReady(printTweaksScope)) {
+      return;
     }
-  }, [printTweakSidebarTextScaleEnabled, printTweakSidebarTextScale]);
-
-  useEffect(() => {
-    try {
-      if (printTweakContentTextScaleEnabled) {
-        window.localStorage.setItem(STORAGE_KEYS.printTweakContentTextScaleEnabled, "1");
-      } else {
-        window.localStorage.removeItem(STORAGE_KEYS.printTweakContentTextScaleEnabled);
-      }
-      window.localStorage.setItem(
-        STORAGE_KEYS.printTweakContentTextScale,
-        String(printTweakContentTextScale),
-      );
-    } catch {
-      // no-op
+    if (skipPrintTweaksPersistRef.current) {
+      skipPrintTweaksPersistRef.current = false;
+      return;
     }
-  }, [printTweakContentTextScaleEnabled, printTweakContentTextScale]);
+    writePrintTweaksForScope(printTweaksScope, {
+      removePhoto: printTweakRemovePhoto,
+      moveSkillsLeft: printTweakMoveSkillsLeft,
+      sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
+      sidebarTextScale: printTweakSidebarTextScale,
+      contentTextScaleEnabled: printTweakContentTextScaleEnabled,
+      contentTextScale: printTweakContentTextScale,
+    });
+  }, [
+    printTweaksScope,
+    printTweakRemovePhoto,
+    printTweakMoveSkillsLeft,
+    printTweakSidebarTextScaleEnabled,
+    printTweakSidebarTextScale,
+    printTweakContentTextScaleEnabled,
+    printTweakContentTextScale,
+  ]);
 
   useEffect(() => {
     try {
@@ -838,35 +846,7 @@ export function useComposerController() {
             // no-op
           }
           setSelectedPhotoMode(persistedPhotoMode);
-
-          try {
-            setPrintTweakRemovePhoto(
-              window.localStorage.getItem(STORAGE_KEYS.printTweakRemovePhoto) === "1",
-            );
-            setPrintTweakMoveSkillsLeft(
-              window.localStorage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1",
-            );
-            setPrintTweakSidebarTextScaleEnabled(
-              window.localStorage.getItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled) ===
-                "1",
-            );
-            setPrintTweakSidebarTextScale(
-              readStoredPrintTextScale(
-                window.localStorage.getItem(STORAGE_KEYS.printTweakSidebarTextScale),
-              ),
-            );
-            setPrintTweakContentTextScaleEnabled(
-              window.localStorage.getItem(STORAGE_KEYS.printTweakContentTextScaleEnabled) ===
-                "1",
-            );
-            setPrintTweakContentTextScale(
-              readStoredPrintTextScale(
-                window.localStorage.getItem(STORAGE_KEYS.printTweakContentTextScale),
-              ),
-            );
-          } catch {
-            // no-op
-          }
+          // Print tweaks load via printTweaksScope effect once CV + template + language are set.
         }
       } finally {
         if (!cancelled) {

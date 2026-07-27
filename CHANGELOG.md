@@ -21,9 +21,10 @@ Power-user job-search workflow: research → tailored CV → letter → applicat
 - **Letters** — save cover letters tied to CV + Research target; cheap AI draft.
 - **Humanizer skill on letters** — second-pass rewrite kills generic AI-isms (`ai-skills/humanizer`); manual **Humanize** is a separate step from AI draft.
 - **Letter versioning** — server snapshots on save / AI / Humanize; load into editor without writing; delete snapshots; local **Undo** stack.
-- **Board (applications)** — kanban by stage with application **packets** (CV + photo + company + letter).
-- **Board drag-and-drop** — click header for details; drag header between columns with soft lean; segmented icon actions.
-- **Board dwell counter** — `Nd` in header (pastel red when **> 30 days**); resets only on real pipeline progress (not back / rejected / ghosted).
+- **Applications** (kanban) — by stage with application **packets** (CV + photo + company + letter).
+- **Applications drag-and-drop** — click header for details; drag header between columns with soft lean; segmented icon actions.
+- **Applications dwell counter** — `Nd` in header (pastel red when **> 30 days**); resets only on real pipeline progress (not back / rejected / ghosted); **editable in details** to fix stuck or accidental resets.
+- **Print Room tweaks remembered** per **CV + template + language** (sidebar/content scale, remove photo, skills left).
 - **Import company metadata → Research catalog** — no AI shells from legacy Editor metadata files.
 - **ATS check** (Editor) — deterministic rules, no LLM; optional job keyword coverage.
 - **MCP tools** for enrich, keywords, gap, ATS, letters, packets, catalog import.
@@ -32,7 +33,7 @@ Power-user job-search workflow: research → tailored CV → letter → applicat
 
 - Field contracts + keyword score caps: empty beats fake emails/phones.
 - Photo gallery list uses lightweight `mediaUrl` instead of full base64 for every thumbnail.
-- Board nav label: **Board**; packet editor labels clarified (EN/BG).
+- Nav label: **Applications** (was Board); packet editor labels clarified (EN/BG).
 
 ### Removed
 

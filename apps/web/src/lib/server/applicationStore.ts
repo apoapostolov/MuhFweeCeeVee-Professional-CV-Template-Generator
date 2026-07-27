@@ -84,6 +84,26 @@ export function daysWithoutForwardProgress(
   return Math.max(0, Math.floor((nowMs - t) / (24 * 60 * 60 * 1000)));
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Clamp editable dwell-day values (0 … ~27 years). */
+export function clampDwellDays(days: number): number {
+  if (!Number.isFinite(days)) return 0;
+  return Math.max(0, Math.min(9999, Math.floor(days)));
+}
+
+/**
+ * ISO timestamp for “this many whole days without forward progress”.
+ * Used when the user manually fixes a stuck / accidentally reset counter.
+ */
+export function statusSinceFromDays(
+  days: number,
+  nowMs: number = Date.now(),
+): string {
+  const n = clampDwellDays(days);
+  return new Date(nowMs - n * MS_PER_DAY).toISOString();
+}
+
 /**
  * Resolve status_since on upsert.
  * Reset only on real forward pipeline moves (e.g. applied → interview).

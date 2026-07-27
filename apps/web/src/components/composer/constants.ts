@@ -145,12 +145,15 @@ export const STORAGE_KEYS = {
   selectedTemplateId: "mfcv_selected_template_id",
   selectedTemplateTheme: "mfcv_selected_template_theme",
   selectedPhotoMode: "mfcv_selected_photo_mode",
+  /** @deprecated Global single-value keys; migrated via print-tweaks-persistence fallback. */
   printTweakRemovePhoto: "mfcv_print_tweak_remove_photo",
   printTweakMoveSkillsLeft: "mfcv_print_tweak_move_skills_left",
   printTweakSidebarTextScale: "mfcv_print_tweak_sidebar_text_scale",
   printTweakSidebarTextScaleEnabled: "mfcv_print_tweak_sidebar_text_scale_enabled",
   printTweakContentTextScale: "mfcv_print_tweak_content_text_scale",
   printTweakContentTextScaleEnabled: "mfcv_print_tweak_content_text_scale_enabled",
+  /** Map of PrintTweaksState keyed by cvId::templateId::language */
+  printTweaksByScope: "mfcv_print_tweaks_by_scope_v1",
   approvedPhotoId: "mfcv_photo_booth_approved_id",
   imageGenerationModel: "mfcv_image_generation_model",
   fieldRewriteProposals: "mfcv_field_rewrite_proposals_v1",

@@ -64,6 +64,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     photo_id?: unknown;
     cover_letter_id?: unknown;
     packet_title?: unknown;
+    status_since?: unknown;
     packet?: unknown;
     restoreCv?: unknown;
     restoreLetter?: unknown;
@@ -207,6 +208,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     cover_letter_id:
       typeof body.cover_letter_id === "string" ? body.cover_letter_id : undefined,
     packet_title: typeof body.packet_title === "string" ? body.packet_title : undefined,
+    status_since:
+      typeof body.status_since === "string" && body.status_since.trim()
+        ? body.status_since.trim()
+        : undefined,
   });
 
   return NextResponse.json({ ok: true, applications: board.applications });

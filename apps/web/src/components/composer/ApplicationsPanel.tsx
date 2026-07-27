@@ -35,11 +35,23 @@ type Application = {
   created_at: string;
 };
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function clampDwellDays(days: number): number {
+  if (!Number.isFinite(days)) return 0;
+  return Math.max(0, Math.min(9999, Math.floor(days)));
+}
+
 function daysWithoutProgress(app: Application): number {
   const since = app.status_since || app.created_at;
   const t = Date.parse(since);
   if (!Number.isFinite(t)) return 0;
-  return Math.max(0, Math.floor((Date.now() - t) / (24 * 60 * 60 * 1000)));
+  return Math.max(0, Math.floor((Date.now() - t) / MS_PER_DAY));
+}
+
+/** ISO for “this many whole days without forward progress”. */
+function statusSinceFromDays(days: number, nowMs: number = Date.now()): string {
+  return new Date(nowMs - clampDwellDays(days) * MS_PER_DAY).toISOString();
 }
 
 function formatDaysLabel(days: number, bg: boolean): string {
@@ -73,6 +85,8 @@ export type ApplicationsPanelProps = {
 
 function emptyDraft(): Omit<Application, "id" | "created_at" | "updated_at"> & {
   id?: string;
+  /** Editable dwell counter (days without forward stage progress). */
+  days_without_progress: number;
 } {
   return {
     company_name: "",
@@ -86,6 +100,7 @@ function emptyDraft(): Omit<Application, "id" | "created_at" | "updated_at"> & {
     photo_id: "",
     cover_letter_id: "",
     packet_title: "",
+    days_without_progress: 0,
   };
 }
 
@@ -182,6 +197,10 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     open: bg ? "Отвори" : "Open",
     delete: bg ? "Изтрий" : "Delete",
     stage: bg ? "Етап" : "Stage",
+    daysStuck: bg ? "Дни без напредък" : "Days without progress",
+    daysStuckHint: bg
+      ? "Броячът на картата. Поправете при грешка или случаен нулев ресет."
+      : "Card dwell counter. Fix a stuck value or an accidental reset.",
     editorIdleTitle: bg ? "Детайли" : "Details",
     editorIdleHint: bg
       ? "Изберете карта от дъската или създайте ново кандидатстване."
@@ -322,6 +341,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       photo_id: app.photo_id || "",
       cover_letter_id: app.cover_letter_id || "",
       packet_title: app.packet_title || "",
+      status_since: app.status_since || app.created_at,
+      days_without_progress: daysWithoutProgress(app),
     });
     setEditorOpen(true);
     setNotice("");
@@ -335,6 +356,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     setBusy(true);
     setNotice("");
     try {
+      const days = clampDwellDays(draft.days_without_progress ?? 0);
       const response = await fetch("/api/applications", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -352,6 +374,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           photo_id: draft.photo_id || "",
           cover_letter_id: draft.cover_letter_id || "",
           packet_title: draft.packet_title || undefined,
+          // Explicit clock so sidebar edits stick (and survive stage changes on save).
+          status_since: statusSinceFromDays(days),
         }),
       });
       const payload = (await response.json()) as {
@@ -413,7 +437,16 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       ),
     );
     if (draft.id === app.id) {
-      setDraft((d) => ({ ...d, status }));
+      setDraft((d) => ({
+        ...d,
+        status,
+        status_since,
+        days_without_progress: daysWithoutProgress({
+          ...app,
+          status,
+          status_since,
+        }),
+      }));
     }
     setBusy(true);
     try {
@@ -1100,6 +1133,36 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     </option>
                   ))}
                 </select>
+              </label>
+
+              <label className="block text-[10px] font-medium text-slate-700">
+                {t.daysStuck}
+                <input
+                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs tabular-nums"
+                  inputMode="numeric"
+                  max={9999}
+                  min={0}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setDraft((d) => ({ ...d, days_without_progress: 0 }));
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (!Number.isFinite(n)) return;
+                    setDraft((d) => ({
+                      ...d,
+                      days_without_progress: clampDwellDays(n),
+                    }));
+                  }}
+                  step={1}
+                  title={t.daysStuckHint}
+                  type="number"
+                  value={draft.days_without_progress ?? 0}
+                />
+                <span className="mt-0.5 block text-[10px] font-normal text-[var(--ink-muted)]">
+                  {t.daysStuckHint}
+                </span>
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
