@@ -5,10 +5,13 @@ import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
   buildCoverLetterId,
   deleteCoverLetter,
+  listCoverLetterVersions,
   listCoverLetters,
   readCoverLetter,
+  readCoverLetterVersion,
   writeCoverLetter,
   type CoverLetterDocument,
+  type CoverLetterVersionSource,
 } from "@/lib/server/coverLetterStore";
 import { readCv } from "@/lib/server/cvStore";
 import {
@@ -20,7 +23,32 @@ import { callOpenRouterResearchChat } from "@/lib/server/openRouterResearch";
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id")?.trim() ?? "";
+  const versions = url.searchParams.get("versions") === "1";
+  const versionRaw = url.searchParams.get("version");
+
+  if (id && versionRaw) {
+    const version = Number(versionRaw);
+    const snap = await readCoverLetterVersion(id, version);
+    if (!snap) {
+      return NextResponse.json({ error: "Version not found." }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, version: snap });
+  }
+
+  if (id && versions) {
+    const list = await listCoverLetterVersions(id);
+    const current = await readCoverLetter(id);
+    return NextResponse.json({
+      ok: true,
+      id,
+      current_version: current?.version ?? null,
+      versions: list,
+    });
+  }
+
   const items = await listCoverLetters();
   return NextResponse.json({ ok: true, items });
 }
@@ -40,6 +68,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     language?: unknown;
     draftWithAi?: unknown;
     humanize?: unknown;
+    version?: unknown;
   };
 
   const action = typeof body.action === "string" ? body.action : "save";
@@ -51,6 +80,55 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     const ok = await deleteCoverLetter(id);
     return NextResponse.json({ ok, id });
+  }
+
+  if (action === "restore") {
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    const version = Number(body.version);
+    if (!id || !Number.isFinite(version)) {
+      return NextResponse.json(
+        { error: "id and version are required." },
+        { status: 400 },
+      );
+    }
+    const existing = await readCoverLetter(id);
+    if (!existing) {
+      return NextResponse.json({ error: "Cover letter not found." }, { status: 404 });
+    }
+    const snap = await readCoverLetterVersion(id, version);
+    if (!snap) {
+      return NextResponse.json({ error: "Version not found." }, { status: 404 });
+    }
+    const restored = await writeCoverLetter(
+      {
+        ...existing,
+        title: snap.title,
+        body: snap.body,
+      },
+      { source: "restore" },
+    );
+    const versions = await listCoverLetterVersions(id);
+    return NextResponse.json({
+      ok: true,
+      item: restored,
+      versions,
+      restored_from: version,
+    });
+  }
+
+  if (action === "versions") {
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    if (!id) {
+      return NextResponse.json({ error: "id is required." }, { status: 400 });
+    }
+    const list = await listCoverLetterVersions(id);
+    const current = await readCoverLetter(id);
+    return NextResponse.json({
+      ok: true,
+      id,
+      current_version: current?.version ?? null,
+      versions: list,
+    });
   }
 
   const cvId = typeof body.cvId === "string" ? body.cvId.trim() : "";
@@ -86,13 +164,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     | undefined;
 
+  let writeSource: CoverLetterVersionSource = "save";
+
   const personName = async (): Promise<string | undefined> => {
     const cv = await readCv(cvId);
     if (!cv) return undefined;
     return (cv as { person?: { full_name?: string } }).person?.full_name;
   };
 
+  // AI draft only — no humanizer pass (separate step).
   if (body.draftWithAi === true) {
+    writeSource = "ai_draft";
     const cv = await readCv(cvId);
     if (!cv) {
       return NextResponse.json({ error: "CV not found." }, { status: 404 });
@@ -135,36 +217,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (company || job) {
       title = `Cover letter — ${job?.title ?? "Role"} @ ${company?.name ?? "Company"}`;
     }
-
-    // Product skill: humanizer postprocess (soft-fail keeps raw draft).
-    const humanized = await applyAiSkillPostprocess({
-      hook: "cover_letter_draft",
-      text: letterBody,
-      context: {
-        applicantName: person?.full_name,
-        companyName: company?.name,
-        jobTitle: job?.title,
-      },
-    });
-    if (humanized.ok) {
-      letterBody = humanized.text;
-      skillMeta = {
-        skillId: humanized.skill.skillId,
-        skillName: humanized.skill.skillName,
-        hook: humanized.skill.hook,
-        model: humanized.model,
-        applied: true,
-      };
-    } else {
-      skillMeta = {
-        skillId: humanized.skill?.skillId ?? "humanizer",
-        skillName: humanized.skill?.skillName ?? "Humanizer",
-        hook: humanized.skill?.hook ?? "cover_letter_draft",
-        applied: false,
-        warning: humanized.error,
-      };
-    }
   } else if (body.humanize === true) {
+    // Humanizer only — separate from AI draft.
+    writeSource = "humanize";
     if (!letterBody.trim()) {
       return NextResponse.json(
         { error: "body is required to humanize." },
@@ -210,14 +265,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     title,
     body: letterBody,
     language: typeof body.language === "string" ? body.language : undefined,
+    version: existing?.version ?? 0,
     created_at: existing?.created_at ?? new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
-  const saved = await writeCoverLetter(doc);
+  const saved = await writeCoverLetter(doc, { source: writeSource });
+  const versions = await listCoverLetterVersions(id);
   return NextResponse.json({
     ok: true,
     item: saved,
     skill: skillMeta,
+    versions,
   });
 }

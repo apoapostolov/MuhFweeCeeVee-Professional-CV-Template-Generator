@@ -171,6 +171,7 @@ export async function restorePacketEmbeds(
       title: letter.title || `Cover letter — ${file.packet.job_title}`,
       body: letter.body || "",
       language: letter.language,
+      version: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });

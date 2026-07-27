@@ -452,7 +452,7 @@ export function registerTools(server) {
 
   server.tool(
     "cover_letter_save",
-    "Save or AI-draft a cover letter. draftWithAi uses analysis model (no web) then humanizer skill postprocess; humanize rewrites body via ai-skills/humanizer.",
+    "Save or AI-draft a cover letter. draftWithAi (cheap, no web) and humanize are separate steps; each creates a version snapshot.",
     {
       id: z.string().optional(),
       cvId: z.string().min(1),
@@ -464,6 +464,30 @@ export function registerTools(server) {
       humanize: z.boolean().optional(),
     },
     async (body) => toTextContent(await requestJson("POST", "/cover-letters", { body })),
+  );
+
+  server.tool(
+    "cover_letter_versions",
+    "List cover letter version history (server snapshots).",
+    { id: z.string().min(1) },
+    async ({ id }) =>
+      toTextContent(
+        await requestJson("GET", "/cover-letters", {
+          query: { id, versions: "1" },
+        }),
+      ),
+  );
+
+  server.tool(
+    "cover_letter_restore",
+    "Restore a cover letter from a version snapshot (creates a new revision).",
+    { id: z.string().min(1), version: z.number().int().positive() },
+    async (body) =>
+      toTextContent(
+        await requestJson("POST", "/cover-letters", {
+          body: { action: "restore", ...body },
+        }),
+      ),
   );
 
   server.tool(

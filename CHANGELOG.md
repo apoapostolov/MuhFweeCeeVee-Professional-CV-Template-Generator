@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`POST /api/research/catalog/import-metadata`** — import legacy Editor company-metadata (example + personal) into Research catalog shells + target_roles as jobs (no AI). Research sidebar button + MCP `research_catalog_import_metadata`.
+- **Letters versioning** — server snapshots on save / AI draft / Humanize; restore from history panel; local **Undo** stack before AI/Humanize/restore.
+- Letters: **AI draft** and **Humanize** are separate steps (no auto-humanize after draft).
 
 ## [1.3.0] - 2026-07-26
 
