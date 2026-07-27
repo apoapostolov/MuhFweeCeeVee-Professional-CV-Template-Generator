@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
+import {
+  KanbanFloatingCard,
+  KANBAN_GRIP_MS,
+  useKanbanDrag,
+} from "./applications-kanban";
+
 const APPLICATION_STATUSES = [
   "wishlist",
   "applied",
@@ -137,8 +143,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   const t = {
     pageTitle: bg ? "Кандидатствания" : "Job applications",
     pageSubtitle: bg
-      ? "Дъска по статус. Всяка карта е пакет: CV, снимка, компания и писмо."
-      : "Status board. Each card is a pack: CV, photo, company, and cover letter.",
+      ? "Дъска по статус. Задръжте карта за преместване между колони. Пакет: CV, снимка, компания, писмо."
+      : "Status board. Hold a card to drag between columns. Pack: CV, photo, company, letter.",
     newApplication: bg ? "Ново кандидатстване" : "New application",
     addFromResearch: bg ? "От Research цел" : "Add from Research",
     addFromResearchTitle: bg
@@ -369,6 +375,18 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   }
 
   async function setStatus(app: Application, status: ApplicationStatus) {
+    if (app.status === status) return;
+    // Optimistic move for snappy kanban drops.
+    setApplications((prev) =>
+      prev.map((entry) =>
+        entry.id === app.id
+          ? { ...entry, status, updated_at: new Date().toISOString() }
+          : entry,
+      ),
+    );
+    if (draft.id === app.id) {
+      setDraft((d) => ({ ...d, status }));
+    }
     setBusy(true);
     try {
       const response = await fetch("/api/applications", {
@@ -383,11 +401,41 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       const payload = (await response.json()) as { applications?: Application[] };
       if (response.ok) {
         setApplications(payload.applications ?? []);
+      } else {
+        // Revert optimistic update on failure.
+        setApplications((prev) =>
+          prev.map((entry) => (entry.id === app.id ? app : entry)),
+        );
       }
+    } catch {
+      setApplications((prev) =>
+        prev.map((entry) => (entry.id === app.id ? app : entry)),
+      );
     } finally {
       setBusy(false);
     }
   }
+
+  const onKanbanDrop = useCallback(
+    (appId: string, status: string) => {
+      const app = applications.find((entry) => entry.id === appId);
+      if (!app) return;
+      if (!(APPLICATION_STATUSES as readonly string[]).includes(status)) return;
+      void setStatus(app, status as ApplicationStatus);
+    },
+    // setStatus closes over applications intentionally for the source app snapshot
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [applications],
+  );
+
+  const { drag, onCardPointerDown, columnClassName, isDraggingId } = useKanbanDrag({
+    busy,
+    onDrop: onKanbanDrop,
+  });
+
+  const dragApp = drag
+    ? applications.find((entry) => entry.id === drag.appId) ?? null
+    : null;
 
   async function exportPacket(id: string) {
     setBusy(true);
@@ -605,11 +653,15 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         <div className="grid min-h-0 min-w-0 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-3 xl:grid-cols-6">
           {APPLICATION_STATUSES.map((status) => (
             <div
-              className="flex min-h-[12rem] min-w-0 flex-col rounded-xl border border-[var(--line)] bg-white p-2"
+              className={`flex min-h-[12rem] min-w-0 flex-col rounded-xl border border-[var(--line)] bg-white p-2 ${columnClassName(status)}`}
+              data-kanban-status={status}
               key={status}
             >
               <p className="px-1 text-xs font-semibold tracking-wide text-slate-700">
                 {statusLabel(status, bg)}
+                <span className="ml-1 font-normal text-[var(--ink-muted)]">
+                  ({(byStatus.get(status) ?? []).length})
+                </span>
               </p>
               <ul className="mt-2 flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
                 {(byStatus.get(status) ?? []).map((app) => {
@@ -617,106 +669,121 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   const hasPhoto = Boolean(app.photo_id);
                   const hasCompany = Boolean(app.company_id || app.company_name);
                   const hasLetter = Boolean(app.cover_letter_id);
+                  const dragging = isDraggingId(app.id);
                   return (
                     <li
-                      className={`rounded-md border p-2 text-xs ${
+                      className={`rounded-md border text-xs transition-opacity ${
                         draft.id === app.id && editorOpen
                           ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                           : "border-[var(--line)] bg-[var(--surface-1)]"
+                      } ${dragging ? "opacity-30" : "opacity-100"} ${
+                        busy ? "cursor-default" : "cursor-grab active:cursor-grabbing"
                       }`}
                       key={app.id}
+                      onPointerDown={(event) => onCardPointerDown(app.id, event)}
+                      style={{ touchAction: "none" }}
+                      title={
+                        bg
+                          ? `Задръжте ~${KANBAN_GRIP_MS}ms за преместване`
+                          : `Hold ~${KANBAN_GRIP_MS}ms to drag`
+                      }
                     >
-                      <button
-                        className="w-full min-w-0 text-left"
-                        onClick={() => openEdit(app)}
-                        type="button"
-                      >
-                        <p className="truncate font-semibold text-slate-900">
-                          {app.packet_title || app.job_title}
-                        </p>
-                        <p className="truncate text-[var(--ink-muted)]">
-                          {app.company_name}
-                          {app.packet_title ? ` · ${app.job_title}` : ""}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          <Chip
-                            label={t.chipCv}
-                            ok={hasCv}
-                            titleMissing={`${t.chipCv}: ${t.chipMissing}`}
-                            titleOk={`${t.chipCv}: ${t.chipOk}`}
-                          />
-                          <Chip
-                            label={t.chipPhoto}
-                            ok={hasPhoto}
-                            titleMissing={`${t.chipPhoto}: ${t.chipMissing}`}
-                            titleOk={`${t.chipPhoto}: ${t.chipOk}`}
-                          />
-                          <Chip
-                            label={t.chipCompany}
-                            ok={hasCompany}
-                            titleMissing={`${t.chipCompany}: ${t.chipMissing}`}
-                            titleOk={`${t.chipCompany}: ${t.chipOk}`}
-                          />
-                          <Chip
-                            label={t.chipLetter}
-                            ok={hasLetter}
-                            titleMissing={`${t.chipLetter}: ${t.chipMissing}`}
-                            titleOk={`${t.chipLetter}: ${t.chipOk}`}
-                          />
-                        </div>
-                      </button>
-                      <label className="mt-2 block text-[10px] font-medium text-slate-600">
-                        {t.stage}
-                        <select
-                          className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-1 py-1 text-xs"
-                          disabled={busy}
-                          onChange={(event) =>
-                            void setStatus(app, event.target.value as ApplicationStatus)
-                          }
-                          value={app.status}
-                        >
-                          {APPLICATION_STATUSES.map((option) => (
-                            <option key={option} value={option}>
-                              {statusLabel(option, bg)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
+                      <div className="p-2">
                         <button
-                          className="text-[10px] font-semibold text-slate-800 underline"
-                          disabled={busy}
+                          className="w-full min-w-0 text-left"
                           onClick={() => openEdit(app)}
                           type="button"
                         >
-                          {t.open}
+                          <p className="truncate font-semibold text-slate-900">
+                            {app.packet_title || app.job_title}
+                          </p>
+                          <p className="truncate text-[var(--ink-muted)]">
+                            {app.company_name}
+                            {app.packet_title ? ` · ${app.job_title}` : ""}
+                          </p>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            <Chip
+                              label={t.chipCv}
+                              ok={hasCv}
+                              titleMissing={`${t.chipCv}: ${t.chipMissing}`}
+                              titleOk={`${t.chipCv}: ${t.chipOk}`}
+                            />
+                            <Chip
+                              label={t.chipPhoto}
+                              ok={hasPhoto}
+                              titleMissing={`${t.chipPhoto}: ${t.chipMissing}`}
+                              titleOk={`${t.chipPhoto}: ${t.chipOk}`}
+                            />
+                            <Chip
+                              label={t.chipCompany}
+                              ok={hasCompany}
+                              titleMissing={`${t.chipCompany}: ${t.chipMissing}`}
+                              titleOk={`${t.chipCompany}: ${t.chipOk}`}
+                            />
+                            <Chip
+                              label={t.chipLetter}
+                              ok={hasLetter}
+                              titleMissing={`${t.chipLetter}: ${t.chipMissing}`}
+                              titleOk={`${t.chipLetter}: ${t.chipOk}`}
+                            />
+                          </div>
                         </button>
-                        <button
-                          className="text-[10px] font-semibold text-slate-800 underline"
-                          disabled={busy}
-                          onClick={() => void exportPacket(app.id)}
-                          title={t.exportPacketTitle}
-                          type="button"
+                        <label
+                          className="mt-2 block text-[10px] font-medium text-slate-600"
+                          data-no-dnd
                         >
-                          {t.exportPacket}
-                        </button>
-                        <button
-                          className="text-[10px] font-semibold text-slate-800 underline"
-                          disabled={busy}
-                          onClick={() => void reusePacket(app)}
-                          title={t.reuseTitle}
-                          type="button"
-                        >
-                          {t.reuseForSimilar}
-                        </button>
-                        <button
-                          className="text-[10px] font-semibold text-rose-700"
-                          disabled={busy}
-                          onClick={() => void remove(app.id)}
-                          type="button"
-                        >
-                          {t.delete}
-                        </button>
+                          {t.stage}
+                          <select
+                            className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-1 py-1 text-xs"
+                            disabled={busy}
+                            onChange={(event) =>
+                              void setStatus(app, event.target.value as ApplicationStatus)
+                            }
+                            value={app.status}
+                          >
+                            {APPLICATION_STATUSES.map((option) => (
+                              <option key={option} value={option}>
+                                {statusLabel(option, bg)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1" data-no-dnd>
+                          <button
+                            className="text-[10px] font-semibold text-slate-800 underline"
+                            disabled={busy}
+                            onClick={() => openEdit(app)}
+                            type="button"
+                          >
+                            {t.open}
+                          </button>
+                          <button
+                            className="text-[10px] font-semibold text-slate-800 underline"
+                            disabled={busy}
+                            onClick={() => void exportPacket(app.id)}
+                            title={t.exportPacketTitle}
+                            type="button"
+                          >
+                            {t.exportPacket}
+                          </button>
+                          <button
+                            className="text-[10px] font-semibold text-slate-800 underline"
+                            disabled={busy}
+                            onClick={() => void reusePacket(app)}
+                            title={t.reuseTitle}
+                            type="button"
+                          >
+                            {t.reuseForSimilar}
+                          </button>
+                          <button
+                            className="text-[10px] font-semibold text-rose-700"
+                            disabled={busy}
+                            onClick={() => void remove(app.id)}
+                            type="button"
+                          >
+                            {t.delete}
+                          </button>
+                        </div>
                       </div>
                     </li>
                   );
@@ -725,6 +792,51 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             </div>
           ))}
         </div>
+
+        {drag && dragApp ? (
+          <KanbanFloatingCard drag={drag}>
+            <div className="p-2">
+              <p className="truncate font-semibold text-slate-900">
+                {dragApp.packet_title || dragApp.job_title}
+              </p>
+              <p className="truncate text-[var(--ink-muted)]">
+                {dragApp.company_name}
+                {dragApp.packet_title ? ` · ${dragApp.job_title}` : ""}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                <Chip
+                  label={t.chipCv}
+                  ok={Boolean(dragApp.cv_id)}
+                  titleMissing=""
+                  titleOk=""
+                />
+                <Chip
+                  label={t.chipPhoto}
+                  ok={Boolean(dragApp.photo_id)}
+                  titleMissing=""
+                  titleOk=""
+                />
+                <Chip
+                  label={t.chipCompany}
+                  ok={Boolean(dragApp.company_id || dragApp.company_name)}
+                  titleMissing=""
+                  titleOk=""
+                />
+                <Chip
+                  label={t.chipLetter}
+                  ok={Boolean(dragApp.cover_letter_id)}
+                  titleMissing=""
+                  titleOk=""
+                />
+              </div>
+              {drag.overStatus ? (
+                <p className="mt-2 text-[10px] font-semibold text-[var(--accent)]">
+                  → {statusLabel(drag.overStatus as ApplicationStatus, bg)}
+                </p>
+              ) : null}
+            </div>
+          </KanbanFloatingCard>
+        ) : null}
 
         <aside className="flex min-h-0 min-w-0 flex-col rounded-xl border border-[var(--line)] bg-white p-3">
           <p className="text-sm font-semibold text-slate-900">
