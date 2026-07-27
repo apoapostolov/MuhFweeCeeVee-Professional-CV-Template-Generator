@@ -98,7 +98,7 @@ function Chip({
 }): JSX.Element {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded px-0.5 py-px text-[8.5px] font-semibold uppercase leading-none tracking-wide ${
+      className={`inline-flex shrink-0 items-center rounded px-0.5 py-px text-[9px] font-semibold uppercase leading-none tracking-wide ${
         ok
           ? "bg-[var(--accent-soft)] text-slate-800"
           : "bg-[var(--surface-2)] text-[var(--ink-muted)]"
