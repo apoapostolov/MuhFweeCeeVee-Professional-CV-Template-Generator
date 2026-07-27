@@ -7,22 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed
-
-- Dead `/api/prototype` control routes (unused scaffold).
-- Stalled session docs (`docs/REQUEST_CATALOG_SINCE_SCORE_SECTION.md`, `docs/INITIAL_TEMPLATING_BOOTSTRAP.md`) and obsolete `dev/RELEASE_NOTES_v1.1.0.md`.
-- `backup/retired-keywords/` Keyword Studio archive (recover from git history if needed).
-- **`POST /api/analysis/company-research`** and `lib/company-research` (D1) — use Research staged enrich.
-
-### Added
-
-- **`POST /api/research/catalog/import-metadata`** — import legacy Editor company-metadata (example + personal) into Research catalog shells + target_roles as jobs (no AI). Research sidebar button + MCP `research_catalog_import_metadata`.
-- **Letters versioning** — server snapshots on save / AI draft / Humanize; restore from history panel; local **Undo** stack before AI/Humanize/restore.
-- Letters: **AI draft** and **Humanize** are separate steps (no auto-humanize after draft).
-- **Board kanban drag-and-drop** — grab header to drag; soft lean with mouse velocity; drop on columns (optimistic status update).
-- **Board stage dwell counter** — card shows days without moving *up* (`status_since`); moving back does not reset the clock.
-
-## [1.3.0] - 2026-07-26
+## [1.3.0] - 2026-07-27
 
 Power-user job-search workflow: research → tailored CV → letter → application pack → print.
 
@@ -34,22 +19,32 @@ Power-user job-search workflow: research → tailored CV → letter → applicat
 - **Local JD keyword extract** — pull weighted keywords from job text without inventing a full AI job dossier.
 - **Editor keyword gap + targeting** — persist Research company/job on the CV; see what the JD asks for vs what you wrote.
 - **Letters** — save cover letters tied to CV + Research target; cheap AI draft.
-- **Humanizer skill on letters** — second-pass rewrite kills generic AI-isms (`ai-skills/humanizer`, from [apoapostolov/humanizer](https://github.com/apoapostolov/humanizer)); manual **Humanize** on any draft.
-- **Board (applications)** — kanban by stage (Wishlist → Applied → Interview → Offer / Rejected / Ghosted).
-- **Application packets** — each card binds **CV + profile photo + company + cover letter**; always editable; **Download pack** / **Open packet** JSON; **Copy for similar role** reuses CV/photo for another company.
-- **ATS check** (Editor) — deterministic rules, no LLM; optional coverage against job keywords.
-- **MCP tools** for staged enrich, keyword extract/gap, ATS check, letters, application packets (export/import/reuse).
+- **Humanizer skill on letters** — second-pass rewrite kills generic AI-isms (`ai-skills/humanizer`); manual **Humanize** is a separate step from AI draft.
+- **Letter versioning** — server snapshots on save / AI / Humanize; load into editor without writing; delete snapshots; local **Undo** stack.
+- **Board (applications)** — kanban by stage with application **packets** (CV + photo + company + letter).
+- **Board drag-and-drop** — click header for details; drag header between columns with soft lean; segmented icon actions.
+- **Board dwell counter** — `Nd` in header (pastel red when **> 30 days**); resets only on real pipeline progress (not back / rejected / ghosted).
+- **Import company metadata → Research catalog** — no AI shells from legacy Editor metadata files.
+- **ATS check** (Editor) — deterministic rules, no LLM; optional job keyword coverage.
+- **MCP tools** for enrich, keywords, gap, ATS, letters, packets, catalog import.
 
 ### Changed
 
-- Field contracts + keyword score caps: empty beats fake emails/phones; soft-cap unverified keyword weights.
-- Photo gallery list uses lightweight `mediaUrl` instead of shipping full base64 for every thumbnail.
-- Board nav label: **Board**; clearer packet editor labels (EN/BG).
+- Field contracts + keyword score caps: empty beats fake emails/phones.
+- Photo gallery list uses lightweight `mediaUrl` instead of full base64 for every thumbnail.
+- Board nav label: **Board**; packet editor labels clarified (EN/BG).
+
+### Removed
+
+- Dead `/api/prototype` scaffold.
+- `backup/retired-keywords/` archive (recover from git history if needed).
+- **`POST /api/analysis/company-research`** (D1) — use Research staged enrich.
 
 ### Fixed
 
-- Dark mode: theme-aware vertical scrollbars; no horizontal scrollbar chrome in the app shell.
-- Print Room: Refresh / Open / Print fit one row in the sidebar.
+- Dark mode vertical scrollbars; no horizontal scrollbar chrome in the app shell.
+- Print Room Refresh / Open / Print fit one row in the sidebar.
+- Letters body fills editor column; toolbar does not overlap content.
 
 ## [1.2.4] - 2026-07-25
 
@@ -67,38 +62,11 @@ Power-user job-search workflow: research → tailored CV → letter → applicat
 
 ### Added
 
-- **`@muhfweeceevee/mcp-wrapper` v0.2.0**: MCP tools for Research (catalog CRUD, company/job research, field refine), CV analysis (`analysis_cv`, `analysis_field`), CV workflow (`create_cv`, `cv_history`, `cv_sync`, `translate_field`), company metadata, session backup export/import (server data), and render URL builders (`export_pdf_url`, `export_image_url`) with **print tweak** query params.
-- **`GET /api/health`**: lightweight readiness payload (`ok`, `apiAuthRequired`, version).
-- OpenRouter **`imageModel`** persisted in `data/settings/openrouter.yaml` and exposed on **GET/PUT** `/api/settings/openrouter` (Settings save includes image model).
+- **`@muhfweeceevee/mcp-wrapper` v0.2.0**: MCP tools for Research, CV analysis, CV workflow, company metadata, session backup, and render URL builders.
+- **`GET /api/health`**: lightweight readiness payload.
+- OpenRouter **imageModel** persisted in settings.
 
 ### Changed
 
-- MCP wrapper sends **`MFCV_API_TOKEN`** (or `CV_API_TOKEN`) on every API call when configured; [`MCP.md`](dev/MCP.md) documents the full tool catalog and auth.
-- [`docs/API.md`](docs/API.md) updated for v1.2.x Research APIs, print-tweak params, health, and retired Keyword Studio routes.
-- **`PUT /api/companies`** requires API token when `MFCV_API_TOKEN` is set (aligned with other mutations).
-
-### Removed
-
-- Keyword Studio MCP tools (`keyword_*`) now return a clear **retired in v1.1.0** error instead of calling removed HTTP routes.
-
-## [1.2.2] - 2026-06-04
-
-### Added
-
-- **Print Room → Tweaks**: **Sidebar Text Size** and **Content Text Size** with a checkbox to turn each on, a compact **− | % | +** control on the same row (right-aligned), and a typable center value (**50–200%**; ± moves in **5%** steps). Scales the sidebar or main CV column in PDF preview—including headings, body text, and icons—so you can fit content to a target page count.
-- Settings **Research model** under **AI Provider** (recommended list, web-search status, and cost estimates tied to that model).
-- Research field **✨** runs AI refinement as soon as you open it; **Research More** requests another batch when you need alternatives. Up to three proposals with confidence and **Apply** render **inline below each field** (same pattern as Editor Professional Rewrite), not in a side drawer.
-- **Live web search** for company research, job research, and per-field refine (LinkedIn-first guidance; Perplexity Sonar and OpenRouter online search paths).
-
-### Changed
-
-- Settings **AI Provider**: Analysis, Research, and Image use the same neutral panel layout; **Base URL** is no longer shown in the UI; **Import / Export** section title matches the AI Provider heading style.
-- Approximate research costs in Settings follow your selected **research** model instead of the analysis model.
-- Image generation pricing line in Settings is shorter (compact per-image USD + token note).
-
-## [1.2.1] - 2026-06-05
-
-### Added
-
-- **Settings → Import / Export Data**: full **session backup** JSON—browser `localStorage`, researched **companies and job positions** (`data/research/catalog.json`), **company metadata** files, and all **CV YAML** on the dev server. Import restores each layer (new `PUT /api/research/catalog`) and reloads the app.
-- Research catalog list **two-click delete** (compact ✕, red confirm) for companies and job positions, with stable row height in the sidebar.
+- MCP wrapper sends **`MFCV_API_TOKEN`** when configured.
+- Keyword Studio MCP tools return retired errors.

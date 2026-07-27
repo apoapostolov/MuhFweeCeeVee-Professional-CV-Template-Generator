@@ -1139,4 +1139,25 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     title={t.exportPacketTitle}
                     type="button"
                   >
-           
+                    {t.exportPacket}
+                  </button>
+                ) : null}
+                <button
+                  className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold"
+                  disabled={busy}
+                  onClick={() => {
+                    setEditorOpen(false);
+                    setDraft(emptyDraft());
+                  }}
+                  type="button"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
