@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`POST /api/research/catalog/import-metadata`** — import legacy Editor company-metadata (example + personal) into Research catalog shells + target_roles as jobs (no AI). Research sidebar button + MCP `research_catalog_import_metadata`.
 - **Letters versioning** — server snapshots on save / AI draft / Humanize; restore from history panel; local **Undo** stack before AI/Humanize/restore.
 - Letters: **AI draft** and **Humanize** are separate steps (no auto-humanize after draft).
-- **Board kanban drag-and-drop** — hold card ~180ms to lift; soft lean with mouse velocity; drop on columns (optimistic status update).
+- **Board kanban drag-and-drop** — grab header to drag; soft lean with mouse velocity; drop on columns (optimistic status update).
+- **Board stage dwell counter** — card shows days without moving *up* (`status_since`); moving back does not reset the clock.
 
 ## [1.3.0] - 2026-07-26
 

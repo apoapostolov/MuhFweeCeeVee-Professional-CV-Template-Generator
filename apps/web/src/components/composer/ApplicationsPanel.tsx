@@ -29,9 +29,29 @@ type Application = {
   photo_id?: string;
   cover_letter_id?: string;
   packet_title?: string;
+  /** ISO — clock for days without forward stage progress. */
+  status_since?: string;
   updated_at: string;
   created_at: string;
 };
+
+function daysWithoutProgress(app: Application): number {
+  const since = app.status_since || app.created_at;
+  const t = Date.parse(since);
+  if (!Number.isFinite(t)) return 0;
+  return Math.max(0, Math.floor((Date.now() - t) / (24 * 60 * 60 * 1000)));
+}
+
+function formatDaysLabel(days: number, bg: boolean): string {
+  if (bg) {
+    if (days === 0) return "0д";
+    if (days === 1) return "1д";
+    return `${days}д`;
+  }
+  if (days === 0) return "0d";
+  if (days === 1) return "1d";
+  return `${days}d`;
+}
 
 type CvOption = { id: string; displayName?: string };
 type PhotoOption = { id: string; name: string; mediaUrl?: string };
@@ -373,11 +393,17 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
   async function setStatus(app: Application, status: ApplicationStatus) {
     if (app.status === status) return;
+    const prevIdx = APPLICATION_STATUSES.indexOf(app.status);
+    const nextIdx = APPLICATION_STATUSES.indexOf(status);
+    const now = new Date().toISOString();
+    // Forward only: reset status_since. Backward keeps the clock.
+    const status_since =
+      nextIdx > prevIdx ? now : app.status_since || app.created_at || now;
     // Optimistic move for snappy kanban drops.
     setApplications((prev) =>
       prev.map((entry) =>
         entry.id === app.id
-          ? { ...entry, status, updated_at: new Date().toISOString() }
+          ? { ...entry, status, status_since, updated_at: now }
           : entry,
       ),
     );
@@ -393,6 +419,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           action: "upsert",
           ...app,
           status,
+          // Let server recompute status_since; do not force client clock except via status change rules
         }),
       });
       const payload = (await response.json()) as { applications?: Application[] };
@@ -731,6 +758,21 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             titleOk={`${t.chipLetter}: ${t.chipOk}`}
                           />
                         </div>
+                        {(() => {
+                          const days = daysWithoutProgress(app);
+                          return (
+                            <p
+                              className="mt-1 text-center text-[9px] font-semibold tabular-nums text-[var(--ink-muted)]"
+                              title={
+                                bg
+                                  ? `${days} дни без придвижване напред (назад не нулира)`
+                                  : `${days} day${days === 1 ? "" : "s"} without moving up (moving back does not reset)`
+                              }
+                            >
+                              {formatDaysLabel(days, bg)}
+                            </p>
+                          );
+                        })()}
                       </div>
                       {/* Bottom border segmented into icon actions */}
                       <div

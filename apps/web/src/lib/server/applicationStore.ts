@@ -37,9 +37,57 @@ export type Application = {
   cover_letter_id?: string;
   /** Optional human label for the combo pack. */
   packet_title?: string;
+  /**
+   * Clock for “days without moving up”.
+   * Set when the card is created or moved to a later stage.
+   * Moving backward does not update this (does not reset the clock).
+   */
+  status_since: string;
   updated_at: string;
   created_at: string;
 };
+
+export function statusIndex(status: ApplicationStatus): number {
+  return APPLICATION_STATUSES.indexOf(status);
+}
+
+/** Days since status_since (0 if same calendar day / invalid). */
+export function daysWithoutForwardProgress(
+  statusSince: string,
+  nowMs: number = Date.now(),
+): number {
+  const t = Date.parse(statusSince);
+  if (!Number.isFinite(t)) return 0;
+  return Math.max(0, Math.floor((nowMs - t) / (24 * 60 * 60 * 1000)));
+}
+
+/**
+ * Resolve status_since on upsert.
+ * Forward stage change → reset clock. Backward / same → keep existing clock.
+ */
+export function resolveStatusSince(params: {
+  existing: Application | undefined;
+  nextStatus: ApplicationStatus;
+  now: string;
+  explicit?: string;
+}): string {
+  if (params.explicit && params.explicit.trim()) {
+    return params.explicit.trim();
+  }
+  if (!params.existing) {
+    return params.now;
+  }
+  const prevIdx = statusIndex(params.existing.status);
+  const nextIdx = statusIndex(params.nextStatus);
+  if (nextIdx > prevIdx) {
+    return params.now;
+  }
+  return (
+    params.existing.status_since ||
+    params.existing.created_at ||
+    params.now
+  );
+}
 
 export type ApplicationBoard = {
   version: 1;
@@ -125,6 +173,12 @@ function normalizeOptionalId(value: unknown): string | undefined {
 function normalizeApplication(raw: Partial<Application> & { id: string }): Application {
   const status =
     typeof raw.status === "string" && isStatus(raw.status) ? raw.status : "wishlist";
+  const created_at =
+    typeof raw.created_at === "string" ? raw.created_at : new Date().toISOString();
+  const status_since =
+    typeof raw.status_since === "string" && raw.status_since.trim()
+      ? raw.status_since.trim()
+      : created_at;
   return {
     id: raw.id,
     company_id: normalizeOptionalId(raw.company_id),
@@ -139,7 +193,8 @@ function normalizeApplication(raw: Partial<Application> & { id: string }): Appli
     photo_id: normalizeOptionalId(raw.photo_id),
     cover_letter_id: normalizeOptionalId(raw.cover_letter_id),
     packet_title: normalizeOptionalId(raw.packet_title),
-    created_at: typeof raw.created_at === "string" ? raw.created_at : new Date().toISOString(),
+    status_since,
+    created_at,
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : new Date().toISOString(),
   };
 }
@@ -197,6 +252,14 @@ export async function upsertApplication(
   const status =
     input.status && isStatus(input.status) ? input.status : existing?.status ?? "wishlist";
 
+  const status_since = resolveStatusSince({
+    existing,
+    nextStatus: status,
+    now,
+    explicit:
+      typeof input.status_since === "string" ? input.status_since : undefined,
+  });
+
   const nextApp = normalizeApplication({
     id,
     company_id:
@@ -216,6 +279,7 @@ export async function upsertApplication(
         : existing?.cover_letter_id,
     packet_title:
       input.packet_title !== undefined ? input.packet_title : existing?.packet_title,
+    status_since,
     created_at: existing?.created_at || now,
     updated_at: now,
   });
