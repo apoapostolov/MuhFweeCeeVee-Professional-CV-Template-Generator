@@ -722,7 +722,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     >
                       {/* Header: click opens details; drag starts after small move */}
                       <div
-                        className={`select-none border-b border-white/25 bg-slate-700 px-2.5 py-2.5 ${
+                        className={`flex select-none items-start gap-1.5 border-b border-white/25 bg-slate-700 px-2.5 py-2.5 ${
                           busy
                             ? "cursor-default"
                             : "cursor-grab active:cursor-grabbing"
@@ -735,17 +735,37 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             : "Click: details · drag: move column"
                         }
                       >
-                        <p className="truncate text-[11px] font-bold leading-snug text-white">
-                          {app.job_title || app.packet_title || "—"}
-                        </p>
-                        <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-white/75">
-                          {app.company_name || "—"}
-                        </p>
-                        {app.packet_title && app.packet_title !== app.job_title ? (
-                          <p className="mt-0.5 truncate text-[9px] text-white/55">
-                            {app.packet_title}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-bold leading-snug text-white">
+                            {app.job_title || app.packet_title || "—"}
                           </p>
-                        ) : null}
+                          <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-white/75">
+                            {app.company_name || "—"}
+                          </p>
+                          {app.packet_title && app.packet_title !== app.job_title ? (
+                            <p className="mt-0.5 truncate text-[9px] text-white/55">
+                              {app.packet_title}
+                            </p>
+                          ) : null}
+                        </div>
+                        {(() => {
+                          const days = daysWithoutProgress(app);
+                          const stale = days > 30;
+                          return (
+                            <span
+                              className={`shrink-0 pt-0.5 text-[13px] font-bold tabular-nums leading-none ${
+                                stale ? "text-rose-300" : "text-white/90"
+                              }`}
+                              title={
+                                bg
+                                  ? `${days} дни без придвижване напред (назад / rejected / ghosted не нулират)`
+                                  : `${days} day${days === 1 ? "" : "s"} without moving up (back / rejected / ghosted do not reset)`
+                              }
+                            >
+                              {formatDaysLabel(days, bg)}
+                            </span>
+                          );
+                        })()}
                       </div>
 
                       <button
@@ -780,21 +800,6 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             titleOk={`${t.chipLetter}: ${t.chipOk}`}
                           />
                         </div>
-                        {(() => {
-                          const days = daysWithoutProgress(app);
-                          return (
-                            <p
-                              className="mt-1 text-center text-[9px] font-semibold tabular-nums text-[var(--ink-muted)]"
-                              title={
-                                bg
-                                  ? `${days} дни без придвижване напред (назад / rejected / ghosted не нулират)`
-                                  : `${days} day${days === 1 ? "" : "s"} without moving up (back / rejected / ghosted do not reset)`
-                              }
-                            >
-                              {formatDaysLabel(days, bg)}
-                            </p>
-                          );
-                        })()}
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
@@ -864,13 +869,28 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
         {drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
-            <div className="border-b border-white/25 bg-slate-700 px-2.5 py-2.5">
-              <p className="truncate text-[11px] font-bold leading-snug text-white">
-                {dragApp.job_title || dragApp.packet_title || "—"}
-              </p>
-              <p className="mt-0.5 truncate text-[10px] font-medium text-white/75">
-                {dragApp.company_name || "—"}
-              </p>
+            <div className="flex items-start gap-1.5 border-b border-white/25 bg-slate-700 px-2.5 py-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-bold leading-snug text-white">
+                  {dragApp.job_title || dragApp.packet_title || "—"}
+                </p>
+                <p className="mt-0.5 truncate text-[10px] font-medium text-white/75">
+                  {dragApp.company_name || "—"}
+                </p>
+              </div>
+              {(() => {
+                const days = daysWithoutProgress(dragApp);
+                const stale = days > 30;
+                return (
+                  <span
+                    className={`shrink-0 pt-0.5 text-[13px] font-bold tabular-nums leading-none ${
+                      stale ? "text-rose-300" : "text-white/90"
+                    }`}
+                  >
+                    {formatDaysLabel(days, bg)}
+                  </span>
+                );
+              })()}
             </div>
             <div className="px-1.5 py-1.5">
               <div className="flex flex-nowrap items-center justify-center gap-px overflow-hidden">
@@ -1119,25 +1139,4 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     title={t.exportPacketTitle}
                     type="button"
                   >
-                    {t.exportPacket}
-                  </button>
-                ) : null}
-                <button
-                  className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold"
-                  disabled={busy}
-                  onClick={() => {
-                    setEditorOpen(false);
-                    setDraft(emptyDraft());
-                  }}
-                  type="button"
-                >
-                  {t.cancel}
-                </button>
-              </div>
-            </div>
-          )}
-        </aside>
-      </div>
-    </div>
-  );
-}
+           
