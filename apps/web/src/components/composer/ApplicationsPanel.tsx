@@ -677,62 +677,65 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         draft.id === app.id && editorOpen
                           ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                           : "border-[var(--line)] bg-[var(--surface-1)]"
-                      } ${dragging ? "opacity-30" : "opacity-100"} ${
-                        busy ? "cursor-default" : "cursor-grab active:cursor-grabbing"
-                      }`}
+                      } ${dragging ? "opacity-30" : "opacity-100"}`}
                       key={app.id}
-                      onPointerDown={(event) => onCardPointerDown(app.id, event)}
-                      style={{ touchAction: "none" }}
-                      title={
-                        bg
-                          ? `Задръжте ~${KANBAN_GRIP_MS}ms за преместване`
-                          : `Hold ~${KANBAN_GRIP_MS}ms to drag`
-                      }
                     >
-                      <div className="p-2 pb-1.5">
-                        <button
-                          className="w-full min-w-0 text-left"
-                          onClick={() => openEdit(app)}
-                          type="button"
-                        >
-                          <p className="truncate font-semibold text-slate-900">
-                            {app.packet_title || app.job_title}
+                      {/* Grabbable header: job + company (primary drag handle) */}
+                      <div
+                        className={`select-none border-b border-[var(--line)] bg-[var(--surface-2)] px-2.5 py-2.5 ${
+                          busy
+                            ? "cursor-default"
+                            : "cursor-grab active:cursor-grabbing"
+                        }`}
+                        onPointerDown={(event) => onCardPointerDown(app.id, event)}
+                        style={{ touchAction: "none" }}
+                        title={
+                          bg
+                            ? `Задръжте ~${KANBAN_GRIP_MS}ms за преместване`
+                            : `Hold ~${KANBAN_GRIP_MS}ms to drag`
+                        }
+                      >
+                        <p className="truncate text-[11px] font-bold leading-snug text-slate-900">
+                          {app.job_title || app.packet_title || "—"}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-[var(--ink-muted)]">
+                          {app.company_name || "—"}
+                        </p>
+                        {app.packet_title && app.packet_title !== app.job_title ? (
+                          <p className="mt-0.5 truncate text-[9px] text-[var(--ink-muted)]">
+                            {app.packet_title}
                           </p>
-                          <p className="truncate text-[var(--ink-muted)]">
-                            {app.company_name}
-                            {app.packet_title ? ` · ${app.job_title}` : ""}
-                          </p>
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            <Chip
-                              label={t.chipCv}
-                              ok={hasCv}
-                              titleMissing={`${t.chipCv}: ${t.chipMissing}`}
-                              titleOk={`${t.chipCv}: ${t.chipOk}`}
-                            />
-                            <Chip
-                              label={t.chipPhoto}
-                              ok={hasPhoto}
-                              titleMissing={`${t.chipPhoto}: ${t.chipMissing}`}
-                              titleOk={`${t.chipPhoto}: ${t.chipOk}`}
-                            />
-                            <Chip
-                              label={t.chipCompany}
-                              ok={hasCompany}
-                              titleMissing={`${t.chipCompany}: ${t.chipMissing}`}
-                              titleOk={`${t.chipCompany}: ${t.chipOk}`}
-                            />
-                            <Chip
-                              label={t.chipLetter}
-                              ok={hasLetter}
-                              titleMissing={`${t.chipLetter}: ${t.chipMissing}`}
-                              titleOk={`${t.chipLetter}: ${t.chipOk}`}
-                            />
-                          </div>
-                        </button>
-                        <label
-                          className="mt-2 block text-[10px] font-medium text-slate-600"
-                          data-no-dnd
-                        >
+                        ) : null}
+                      </div>
+
+                      <div className="p-2 pb-1.5" data-no-dnd>
+                        <div className="flex flex-wrap gap-1">
+                          <Chip
+                            label={t.chipCv}
+                            ok={hasCv}
+                            titleMissing={`${t.chipCv}: ${t.chipMissing}`}
+                            titleOk={`${t.chipCv}: ${t.chipOk}`}
+                          />
+                          <Chip
+                            label={t.chipPhoto}
+                            ok={hasPhoto}
+                            titleMissing={`${t.chipPhoto}: ${t.chipMissing}`}
+                            titleOk={`${t.chipPhoto}: ${t.chipOk}`}
+                          />
+                          <Chip
+                            label={t.chipCompany}
+                            ok={hasCompany}
+                            titleMissing={`${t.chipCompany}: ${t.chipMissing}`}
+                            titleOk={`${t.chipCompany}: ${t.chipOk}`}
+                          />
+                          <Chip
+                            label={t.chipLetter}
+                            ok={hasLetter}
+                            titleMissing={`${t.chipLetter}: ${t.chipMissing}`}
+                            titleOk={`${t.chipLetter}: ${t.chipOk}`}
+                          />
+                        </div>
+                        <label className="mt-2 block text-[10px] font-medium text-slate-600">
                           {t.stage}
                           <select
                             className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-1 py-1 text-xs"
@@ -818,15 +821,16 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
         {drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
+            <div className="border-b border-[var(--line)] bg-[var(--surface-2)] px-2.5 py-2.5">
+              <p className="truncate text-[11px] font-bold leading-snug text-slate-900">
+                {dragApp.job_title || dragApp.packet_title || "—"}
+              </p>
+              <p className="mt-0.5 truncate text-[10px] font-medium text-[var(--ink-muted)]">
+                {dragApp.company_name || "—"}
+              </p>
+            </div>
             <div className="p-2">
-              <p className="truncate font-semibold text-slate-900">
-                {dragApp.packet_title || dragApp.job_title}
-              </p>
-              <p className="truncate text-[var(--ink-muted)]">
-                {dragApp.company_name}
-                {dragApp.packet_title ? ` · ${dragApp.job_title}` : ""}
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1">
                 <Chip
                   label={t.chipCv}
                   ok={Boolean(dragApp.cv_id)}
