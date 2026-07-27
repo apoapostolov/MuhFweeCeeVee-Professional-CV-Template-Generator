@@ -464,7 +464,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
             </button>
             {selectedId ? (
               <button
-                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 disabled:opacity-60"
+                className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 disabled:opacity-60"
                 disabled={busy}
                 onClick={() => void remove(selectedId)}
                 type="button"
