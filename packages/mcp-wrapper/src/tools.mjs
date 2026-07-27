@@ -479,13 +479,13 @@ export function registerTools(server) {
   );
 
   server.tool(
-    "cover_letter_restore",
-    "Restore a cover letter from a version snapshot (creates a new revision).",
+    "cover_letter_load_version",
+    "Load a cover letter version snapshot (does not persist; save separately to create a new revision).",
     { id: z.string().min(1), version: z.number().int().positive() },
     async (body) =>
       toTextContent(
         await requestJson("POST", "/cover-letters", {
-          body: { action: "restore", ...body },
+          body: { action: "load_version", ...body },
         }),
       ),
   );

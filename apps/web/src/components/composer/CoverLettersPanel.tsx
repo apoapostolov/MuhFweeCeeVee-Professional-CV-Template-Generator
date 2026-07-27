@@ -61,7 +61,10 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
   const [selectedId, setSelectedId] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  /** Saved head version on disk. */
   const [version, setVersion] = useState<number | null>(null);
+  /** History version currently loaded into the editor (null = head / new edits). */
+  const [loadedFromVersion, setLoadedFromVersion] = useState<number | null>(null);
   const [versions, setVersions] = useState<VersionMeta[]>([]);
   const [undoStack, setUndoStack] = useState<UndoSnapshot[]>([]);
   const [busy, setBusy] = useState(false);
@@ -99,6 +102,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
       setTitle(item.title);
       setBody(item.body);
       setVersion(item.version ?? null);
+      setLoadedFromVersion(null);
       setUndoStack([]);
       void loadVersions(item.id);
     }
@@ -177,6 +181,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
       setTitle(payload.item.title);
       setBody(payload.item.body);
       setVersion(payload.item.version ?? null);
+      setLoadedFromVersion(null);
       if (payload.versions) setVersions(payload.versions);
       else void loadVersions(payload.item.id);
       await load();
@@ -206,42 +211,38 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
     }
   }
 
-  async function restoreVersion(versionNum: number) {
+  /** Load a history snapshot into the editor only — no new server version until Save. */
+  async function loadVersionIntoEditor(versionNum: number) {
     if (!selectedId) return;
     pushUndo();
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/cover-letters", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          action: "restore",
-          id: selectedId,
-          version: versionNum,
-        }),
-      });
+      const response = await fetch(
+        `/api/cover-letters?id=${encodeURIComponent(selectedId)}&version=${versionNum}`,
+      );
       const payload = (await response.json()) as {
         error?: string;
-        item?: CoverLetterItem;
-        versions?: VersionMeta[];
+        version?: {
+          version: number;
+          title: string;
+          body: string;
+        };
       };
-      if (!response.ok || !payload.item) {
-        setNotice(payload.error ?? "Restore failed.");
+      if (!response.ok || !payload.version) {
+        setNotice(payload.error ?? "Load failed.");
         return;
       }
-      setTitle(payload.item.title);
-      setBody(payload.item.body);
-      setVersion(payload.item.version ?? null);
-      if (payload.versions) setVersions(payload.versions);
-      await load();
+      setTitle(payload.version.title);
+      setBody(payload.version.body);
+      setLoadedFromVersion(payload.version.version);
       setNotice(
         bg
-          ? `Възстановена версия ${versionNum} → v${payload.item.version}.`
-          : `Restored v${versionNum} → now v${payload.item.version}.`,
+          ? `Заредена v${versionNum} в редактора (незаписана). Запази за нова версия.`
+          : `Loaded v${versionNum} into the editor (unsaved). Save to create a new version.`,
       );
     } catch {
-      setNotice("Restore failed.");
+      setNotice("Load failed.");
     } finally {
       setBusy(false);
     }
@@ -260,6 +261,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
         setTitle("");
         setBody("");
         setVersion(null);
+        setLoadedFromVersion(null);
         setVersions([]);
         setUndoStack([]);
       }
@@ -278,6 +280,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
     );
     setBody("");
     setVersion(null);
+    setLoadedFromVersion(null);
     setVersions([]);
     setUndoStack([]);
     setNotice("");
@@ -338,7 +341,10 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
             {bg ? "Заглавие" : "Title"}
             <input
               className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-              onChange={(event) => setTitle(event.target.value)}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                if (loadedFromVersion != null) setLoadedFromVersion(null);
+              }}
               value={title}
             />
           </label>
@@ -347,17 +353,24 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
         <div className="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-2">
           <div className="flex shrink-0 items-center justify-between gap-2 text-xs font-medium text-slate-800">
             <span>{bg ? "Текст" : "Body"}</span>
-            {version != null ? (
-              <span className="text-[10px] font-normal text-[var(--ink-muted)]">
-                v{version}
-              </span>
-            ) : null}
+            <span className="text-[10px] font-normal text-[var(--ink-muted)]">
+              {loadedFromVersion != null
+                ? bg
+                  ? `преглед v${loadedFromVersion}${version != null ? ` · записана v${version}` : ""}`
+                  : `viewing v${loadedFromVersion}${version != null ? ` · saved v${version}` : ""}`
+                : version != null
+                  ? `v${version}`
+                  : ""}
+            </span>
           </div>
           {/* Absolute fill so the body uses the full remaining column height. */}
           <div className="relative mt-1 min-h-0 flex-1">
             <textarea
               className="absolute inset-0 h-full w-full resize-none rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs leading-5"
-              onChange={(event) => setBody(event.target.value)}
+              onChange={(event) => {
+                setBody(event.target.value);
+                if (loadedFromVersion != null) setLoadedFromVersion(null);
+              }}
               value={body}
             />
           </div>
@@ -438,8 +451,8 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
         </p>
         <p className="mt-1 text-[10px] text-[var(--ink-muted)]">
           {bg
-            ? "Сървърни снимки при запис / AI / Humanize. Undo е локален стек."
-            : "Server snapshots on save / AI / Humanize. Undo is a local stack."}
+            ? "Зареди версия в редактора (без нов запис). Save създава нова версия."
+            : "Load a version into the editor (no new save). Save creates a new version."}
         </p>
         {!selectedId ? (
           <p className="mt-4 text-xs text-[var(--ink-muted)]">
@@ -451,40 +464,53 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
           </p>
         ) : (
           <ul className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto">
-            {versions.map((v) => (
-              <li
-                className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-2 text-[10px]"
-                key={v.version}
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <span className="font-semibold text-slate-800">
-                    v{v.version}
-                    {version === v.version ? (
-                      <span className="ml-1 font-normal text-[var(--ink-muted)]">
-                        ({bg ? "текуща" : "current"})
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="text-[var(--ink-muted)]">
-                    {sourceLabel(v.source, bg)}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[var(--ink-muted)]">
-                  {v.saved_at ? v.saved_at.slice(0, 19).replace("T", " ") : "—"}
-                </p>
-                {v.body_preview ? (
-                  <p className="mt-1 line-clamp-2 text-slate-700">{v.body_preview}</p>
-                ) : null}
-                <button
-                  className="mt-1.5 font-semibold text-slate-800 underline disabled:opacity-50"
-                  disabled={busy || version === v.version}
-                  onClick={() => void restoreVersion(v.version)}
-                  type="button"
+            {versions.map((v) => {
+              const isSavedHead = version === v.version;
+              const isLoaded = loadedFromVersion === v.version;
+              return (
+                <li
+                  className={`rounded-md border p-2 text-[10px] ${
+                    isLoaded
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--line)] bg-[var(--surface-1)]"
+                  }`}
+                  key={v.version}
                 >
-                  {bg ? "Възстанови" : "Restore"}
-                </button>
-              </li>
-            ))}
+                  <div className="flex items-start justify-between gap-1">
+                    <span className="font-semibold text-slate-800">
+                      v{v.version}
+                      {isSavedHead ? (
+                        <span className="ml-1 font-normal text-[var(--ink-muted)]">
+                          ({bg ? "записана" : "saved"})
+                        </span>
+                      ) : null}
+                      {isLoaded && !isSavedHead ? (
+                        <span className="ml-1 font-normal text-[var(--ink-muted)]">
+                          ({bg ? "в редактора" : "in editor"})
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-[var(--ink-muted)]">
+                      {sourceLabel(v.source, bg)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[var(--ink-muted)]">
+                    {v.saved_at ? v.saved_at.slice(0, 19).replace("T", " ") : "—"}
+                  </p>
+                  {v.body_preview ? (
+                    <p className="mt-1 line-clamp-2 text-slate-700">{v.body_preview}</p>
+                  ) : null}
+                  <button
+                    className="mt-1.5 font-semibold text-slate-800 underline disabled:opacity-50"
+                    disabled={busy || isLoaded}
+                    onClick={() => void loadVersionIntoEditor(v.version)}
+                    type="button"
+                  >
+                    {bg ? "Зареди" : "Load"}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </aside>

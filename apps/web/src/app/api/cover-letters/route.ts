@@ -82,7 +82,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ ok, id });
   }
 
-  if (action === "restore") {
+  // Load a history snapshot only — does not write a new revision (client may Save later).
+  if (action === "restore" || action === "load_version") {
     const id = typeof body.id === "string" ? body.id.trim() : "";
     const version = Number(body.version);
     if (!id || !Number.isFinite(version)) {
@@ -99,20 +100,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!snap) {
       return NextResponse.json({ error: "Version not found." }, { status: 404 });
     }
-    const restored = await writeCoverLetter(
-      {
-        ...existing,
-        title: snap.title,
-        body: snap.body,
-      },
-      { source: "restore" },
-    );
-    const versions = await listCoverLetterVersions(id);
     return NextResponse.json({
       ok: true,
-      item: restored,
-      versions,
-      restored_from: version,
+      id,
+      current_version: existing.version,
+      version: snap,
+      persisted: false,
     });
   }
 
