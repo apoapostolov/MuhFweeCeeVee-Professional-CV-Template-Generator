@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
+import { Copy, Download, FolderOpen, Trash2 } from "lucide-react";
 
 import {
   KanbanFloatingCard,
@@ -672,7 +673,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   const dragging = isDraggingId(app.id);
                   return (
                     <li
-                      className={`rounded-md border text-xs transition-opacity ${
+                      className={`overflow-hidden rounded-md border text-xs transition-opacity ${
                         draft.id === app.id && editorOpen
                           ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                           : "border-[var(--line)] bg-[var(--surface-1)]"
@@ -688,7 +689,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           : `Hold ~${KANBAN_GRIP_MS}ms to drag`
                       }
                     >
-                      <div className="p-2">
+                      <div className="p-2 pb-1.5">
                         <button
                           className="w-full min-w-0 text-left"
                           onClick={() => openEdit(app)}
@@ -748,42 +749,64 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             ))}
                           </select>
                         </label>
-                        <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1" data-no-dnd>
-                          <button
-                            className="text-[10px] font-semibold text-slate-800 underline"
-                            disabled={busy}
-                            onClick={() => openEdit(app)}
-                            type="button"
-                          >
-                            {t.open}
-                          </button>
-                          <button
-                            className="text-[10px] font-semibold text-slate-800 underline"
-                            disabled={busy}
-                            onClick={() => void exportPacket(app.id)}
-                            title={t.exportPacketTitle}
-                            type="button"
-                          >
-                            {t.exportPacket}
-                          </button>
-                          <button
-                            className="text-[10px] font-semibold text-slate-800 underline"
-                            disabled={busy}
-                            onClick={() => void reusePacket(app)}
-                            title={t.reuseTitle}
-                            type="button"
-                          >
-                            {t.reuseForSimilar}
-                          </button>
-                          <button
-                            className="text-[10px] font-semibold text-rose-700"
-                            disabled={busy}
-                            onClick={() => void remove(app.id)}
-                            type="button"
-                          >
-                            {t.delete}
-                          </button>
-                        </div>
+                      </div>
+                      {/* Bottom border segmented into icon actions */}
+                      <div
+                        className="flex h-7 border-t border-white/25 bg-slate-700"
+                        data-no-dnd
+                      >
+                        <button
+                          aria-label={t.open}
+                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          disabled={busy}
+                          onClick={() => openEdit(app)}
+                          title={t.open}
+                          type="button"
+                        >
+                          <FolderOpen aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <span
+                          aria-hidden
+                          className="w-px shrink-0 self-stretch bg-white/20"
+                        />
+                        <button
+                          aria-label={t.exportPacket}
+                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          disabled={busy}
+                          onClick={() => void exportPacket(app.id)}
+                          title={t.exportPacketTitle}
+                          type="button"
+                        >
+                          <Download aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <span
+                          aria-hidden
+                          className="w-px shrink-0 self-stretch bg-white/20"
+                        />
+                        <button
+                          aria-label={t.reuseForSimilar}
+                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          disabled={busy}
+                          onClick={() => void reusePacket(app)}
+                          title={t.reuseTitle}
+                          type="button"
+                        >
+                          <Copy aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <span
+                          aria-hidden
+                          className="w-px shrink-0 self-stretch bg-white/20"
+                        />
+                        <button
+                          aria-label={t.delete}
+                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          disabled={busy}
+                          onClick={() => void remove(app.id)}
+                          title={t.delete}
+                          type="button"
+                        >
+                          <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
                       </div>
                     </li>
                   );
