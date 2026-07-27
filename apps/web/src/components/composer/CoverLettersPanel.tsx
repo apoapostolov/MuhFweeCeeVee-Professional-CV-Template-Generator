@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState, type JSX } from "react";
 
+import { ConfirmRemoveButton } from "./confirm-remove-button";
+
 export type CoverLetterItem = {
   id: string;
   cv_id: string;
@@ -530,18 +532,15 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                       <span className="text-[var(--ink-muted)]">
                         {sourceLabel(v.source, bg)}
                       </span>
-                      <button
-                        aria-label={
-                          bg ? `Изтрий версия ${v.version}` : `Delete version ${v.version}`
-                        }
-                        className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-600 hover:bg-[var(--surface-2)] hover:text-rose-700 disabled:opacity-40"
-                        disabled={busy}
-                        onClick={() => void deleteVersion(v.version)}
-                        title={bg ? "Изтрий снимката" : "Delete this snapshot"}
-                        type="button"
-                      >
-                        ×
-                      </button>
+                      <ConfirmRemoveButton
+                        appearance="default"
+                        className="!h-5 !w-5"
+                        kind="version"
+                        language={language}
+                        onConfirm={() => {
+                          if (!busy) void deleteVersion(v.version);
+                        }}
+                      />
                     </div>
                   </div>
                   <p className="mt-0.5 text-[var(--ink-muted)]">

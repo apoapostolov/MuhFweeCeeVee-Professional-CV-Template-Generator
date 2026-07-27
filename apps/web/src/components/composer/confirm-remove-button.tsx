@@ -19,7 +19,7 @@ const armedCatalogButtonClass = `${catalogButtonBoxClass} border-red-600 bg-red-
 
 const ARM_TIMEOUT_MS = 8000;
 
-export type ConfirmRemoveKind = "field" | "item" | "company" | "job";
+export type ConfirmRemoveKind = "field" | "item" | "company" | "job" | "version";
 
 export type ConfirmRemoveButtonProps = {
   language: string;
@@ -44,6 +44,11 @@ function labels(language: string, kind: ConfirmRemoveKind, armed: boolean): { ar
         ? { aria: "Потвърди изтриване на позиция", title: "Натисни отново за изтриване" }
         : { aria: "Confirm delete job position", title: "Click again to delete" };
     }
+    if (kind === "version") {
+      return bg
+        ? { aria: "Потвърди изтриване на версия", title: "Натисни отново за изтриване" }
+        : { aria: "Confirm delete version", title: "Click again to delete" };
+    }
     if (kind === "item") {
       return bg
         ? { aria: "Потвърди премахване на елемент", title: "Натисни отново за премахване" }
@@ -62,6 +67,11 @@ function labels(language: string, kind: ConfirmRemoveKind, armed: boolean): { ar
     return bg
       ? { aria: "Изтрий позиция", title: "Изтрий позиция" }
       : { aria: "Delete job position", title: "Delete job position" };
+  }
+  if (kind === "version") {
+    return bg
+      ? { aria: "Изтрий версия", title: "Изтрий версия" }
+      : { aria: "Delete version", title: "Delete version" };
   }
   if (kind === "item") {
     return bg
