@@ -102,7 +102,7 @@ function Chip({
 }): JSX.Element {
   return (
     <span
-      className={`inline-flex rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+      className={`inline-flex shrink-0 items-center rounded px-1 py-px text-[7px] font-semibold uppercase leading-none tracking-wide ${
         ok
           ? "bg-[var(--accent-soft)] text-slate-800"
           : "bg-[var(--surface-2)] text-[var(--ink-muted)]"
@@ -110,7 +110,7 @@ function Chip({
       title={ok ? titleOk : titleMissing}
     >
       {label}
-      {ok ? " ✓" : ""}
+      {ok ? "✓" : ""}
     </span>
   );
 }
@@ -194,8 +194,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     save: bg ? "Запази" : "Save",
     cancel: bg ? "Отказ" : "Cancel",
     chipCv: "CV",
-    chipPhoto: bg ? "Снимка" : "Photo",
-    chipCompany: bg ? "Фирма" : "Company",
+    chipPhoto: bg ? "Фото" : "Photo",
+    chipCompany: bg ? "Фирма" : "Co",
     chipLetter: bg ? "Писмо" : "Letter",
     chipOk: bg ? "свързано" : "linked",
     chipMissing: bg ? "липсва" : "missing",
@@ -680,9 +680,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       } ${dragging ? "opacity-30" : "opacity-100"}`}
                       key={app.id}
                     >
-                      {/* Grabbable header: job + company (primary drag handle) */}
+                      {/* Grabbable header: same bar language as bottom actions */}
                       <div
-                        className={`select-none border-b border-[var(--line)] bg-[var(--surface-2)] px-2.5 py-2.5 ${
+                        className={`select-none border-b border-white/25 bg-slate-700 px-2.5 py-2.5 ${
                           busy
                             ? "cursor-default"
                             : "cursor-grab active:cursor-grabbing"
@@ -695,21 +695,21 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             : `Hold ~${KANBAN_GRIP_MS}ms to drag`
                         }
                       >
-                        <p className="truncate text-[11px] font-bold leading-snug text-slate-900">
+                        <p className="truncate text-[11px] font-bold leading-snug text-white">
                           {app.job_title || app.packet_title || "—"}
                         </p>
-                        <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-[var(--ink-muted)]">
+                        <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-white/75">
                           {app.company_name || "—"}
                         </p>
                         {app.packet_title && app.packet_title !== app.job_title ? (
-                          <p className="mt-0.5 truncate text-[9px] text-[var(--ink-muted)]">
+                          <p className="mt-0.5 truncate text-[9px] text-white/55">
                             {app.packet_title}
                           </p>
                         ) : null}
                       </div>
 
-                      <div className="p-2 pb-1.5" data-no-dnd>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="px-1.5 py-1.5" data-no-dnd>
+                        <div className="flex flex-nowrap items-center justify-between gap-0.5 overflow-hidden">
                           <Chip
                             label={t.chipCv}
                             ok={hasCv}
@@ -735,23 +735,6 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             titleOk={`${t.chipLetter}: ${t.chipOk}`}
                           />
                         </div>
-                        <label className="mt-2 block text-[10px] font-medium text-slate-600">
-                          {t.stage}
-                          <select
-                            className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-1 py-1 text-xs"
-                            disabled={busy}
-                            onChange={(event) =>
-                              void setStatus(app, event.target.value as ApplicationStatus)
-                            }
-                            value={app.status}
-                          >
-                            {APPLICATION_STATUSES.map((option) => (
-                              <option key={option} value={option}>
-                                {statusLabel(option, bg)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
                       </div>
                       {/* Bottom border segmented into icon actions */}
                       <div
@@ -821,16 +804,16 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
         {drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
-            <div className="border-b border-[var(--line)] bg-[var(--surface-2)] px-2.5 py-2.5">
-              <p className="truncate text-[11px] font-bold leading-snug text-slate-900">
+            <div className="border-b border-white/25 bg-slate-700 px-2.5 py-2.5">
+              <p className="truncate text-[11px] font-bold leading-snug text-white">
                 {dragApp.job_title || dragApp.packet_title || "—"}
               </p>
-              <p className="mt-0.5 truncate text-[10px] font-medium text-[var(--ink-muted)]">
+              <p className="mt-0.5 truncate text-[10px] font-medium text-white/75">
                 {dragApp.company_name || "—"}
               </p>
             </div>
-            <div className="p-2">
-              <div className="flex flex-wrap gap-1">
+            <div className="px-1.5 py-1.5">
+              <div className="flex flex-nowrap items-center justify-between gap-0.5 overflow-hidden">
                 <Chip
                   label={t.chipCv}
                   ok={Boolean(dragApp.cv_id)}
@@ -857,7 +840,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 />
               </div>
               {drag.overStatus ? (
-                <p className="mt-2 text-[10px] font-semibold text-[var(--accent)]">
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--accent)]">
                   → {statusLabel(drag.overStatus as ApplicationStatus, bg)}
                 </p>
               ) : null}
