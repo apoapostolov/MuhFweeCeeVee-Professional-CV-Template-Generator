@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, type JSX } from "react";
 
 import { ConfirmRemoveButton } from "./confirm-remove-button";
 
+const DELETE_ARM_MS = 8000;
+
 export type CoverLetterItem = {
   id: string;
   cv_id: string;
@@ -71,6 +73,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
   const [undoStack, setUndoStack] = useState<UndoSnapshot[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [deleteArmed, setDeleteArmed] = useState(false);
 
   const load = useCallback(async () => {
     const response = await fetch("/api/cover-letters");
@@ -560,9 +563,4 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                 </li>
               );
             })}
-          </ul>
-        )}
-      </aside>
-    </div>
-  );
-}
+   
