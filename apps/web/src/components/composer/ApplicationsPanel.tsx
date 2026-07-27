@@ -144,8 +144,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   const t = {
     pageTitle: bg ? "Кандидатствания" : "Job applications",
     pageSubtitle: bg
-      ? "Дъска по статус. Задръжте карта за преместване между колони. Пакет: CV, снимка, компания, писмо."
-      : "Status board. Hold a card to drag between columns. Pack: CV, photo, company, letter.",
+      ? "Дъска по статус. Хванете заглавието на картата и преместете между колони. Пакет: CV, снимка, компания, писмо."
+      : "Status board. Drag a card header between columns. Pack: CV, photo, company, letter.",
     newApplication: bg ? "Ново кандидатстване" : "New application",
     addFromResearch: bg ? "От Research цел" : "Add from Research",
     addFromResearchTitle: bg
@@ -691,8 +691,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         style={{ touchAction: "none" }}
                         title={
                           bg
-                            ? `Задръжте ~${KANBAN_GRIP_MS}ms за преместване`
-                            : `Hold ~${KANBAN_GRIP_MS}ms to drag`
+                            ? "Хванете и преместете"
+                            : "Drag to move between columns"
                         }
                       >
                         <p className="truncate text-[11px] font-bold leading-snug text-white">

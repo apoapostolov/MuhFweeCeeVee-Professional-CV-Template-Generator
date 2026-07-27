@@ -10,8 +10,11 @@ import {
   type ReactNode,
 } from "react";
 
-/** Hold before the card lifts out of the column. */
-export const KANBAN_GRIP_MS = 180;
+/**
+ * Hold before the card lifts. Keep low — header is drag-only so near-instant
+ * grab is preferred. Tiny delay still filters accidental taps.
+ */
+export const KANBAN_GRIP_MS = 40;
 /** Soft lean limit (degrees) while dragging. */
 const MAX_LEAN_DEG = 12;
 /** How strongly horizontal velocity maps to lean. */
@@ -149,17 +152,25 @@ export function useKanbanDrag({
       const startY = event.clientY;
 
       clearPending();
-      const timer = setTimeout(() => {
+
+      // Activate immediately if grip is 0; otherwise after short hold.
+      // Also activate as soon as the pointer moves a few px (grab-and-go).
+      const tryActivate = (x: number, y: number) => {
+        if (pendingRef.current?.appId !== appId) return;
         const pending = pendingRef.current;
-        if (!pending || pending.appId !== appId) return;
+        if (!pending) return;
+        clearTimeout(pending.timer);
         pendingRef.current = null;
-        activateDrag(
-          appId,
-          pending.cardEl,
-          pending.startX,
-          pending.startY,
-          pending.pointerId,
-        );
+        activateDrag(appId, pending.cardEl, x, y, pending.pointerId);
+      };
+
+      if (KANBAN_GRIP_MS <= 0) {
+        activateDrag(appId, cardEl, startX, startY, pointerId);
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        tryActivate(startX, startY);
       }, KANBAN_GRIP_MS);
 
       pendingRef.current = {
@@ -180,9 +191,20 @@ export function useKanbanDrag({
       if (pending && event.pointerId === pending.pointerId) {
         const dx = event.clientX - pending.startX;
         const dy = event.clientY - pending.startY;
-        // Cancel grip if the pointer wanders before lift (scroll / misclick).
-        if (Math.hypot(dx, dy) > 14) {
-          clearPending();
+        const dist = Math.hypot(dx, dy);
+        // Grab-and-go: any real movement engages drag immediately.
+        if (dist >= 3) {
+          clearTimeout(pending.timer);
+          pendingRef.current = null;
+          activateDrag(
+            pending.appId,
+            pending.cardEl,
+            event.clientX,
+            event.clientY,
+            pending.pointerId,
+          );
+          // fall through so this move also positions the card
+        } else {
           return;
         }
       }
@@ -264,7 +286,7 @@ export function useKanbanDrag({
       window.removeEventListener("pointercancel", onCancel);
       clearPending();
     };
-  }, [clearPending, endDrag]);
+  }, [activateDrag, clearPending, endDrag]);
 
   const columnClassName = useCallback(
     (status: string) => {
