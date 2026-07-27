@@ -490,7 +490,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                 className={
                   deleteArmed
                     ? "rounded-md border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-                    : "rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                    : "rounded-md border border-[var(--line)] bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
                 }
                 disabled={busy}
                 onBlur={() => setDeleteArmed(false)}
