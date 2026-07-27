@@ -574,8 +574,7 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
                         {sourceLabel(v.source, bg)}
                       </span>
                       <ConfirmRemoveButton
-                        appearance="default"
-                        className="!h-5 !w-5"
+                        appearance="catalog"
                         kind="version"
                         language={language}
                         onConfirm={() => {
