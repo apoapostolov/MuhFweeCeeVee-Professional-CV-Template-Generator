@@ -1,0 +1,33 @@
+services:
+  muhfweeceevee:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: muhfweeceevee:local
+    init: true
+    ports:
+      # Publish only to this host. Put a TLS reverse proxy in front of it when
+      # remote access is required.
+      - "127.0.0.1:${MFCV_PORT:-3000}:3000"
+    environment:
+      MFCV_API_TOKEN: ${MFCV_API_TOKEN:?Set MFCV_API_TOKEN before starting Compose.}
+      MFCV_REQUIRE_API_TOKEN: "true"
+      MFCV_ENV_FILE: /app/runtime-config/.env
+    volumes:
+      - mfcv-data:/app/data
+      - mfcv-photos:/app/photos
+      - mfcv-runtime-config:/app/runtime-config
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'node -e "fetch(\"http://127.0.0.1:3000/api/health\").then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"'
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  mfcv-data:
+  mfcv-photos:
+  mfcv-runtime-config:

@@ -49,9 +49,9 @@ Review available CV templates side-by-side, then finalize profile-photo quality 
   <img src="images/SCREENSHOT_06.png" width="49%" />
 </p>
 
-## 1.3.0 Release Scope
+## 1.3.1 Release Scope
 
-Version **`1.3.0`** is the current release — research → tailored CV → letter → application pack → print:
+Version **`1.3.1`** is the current release — research → tailored CV → letter → application pack → print → local container deployment:
 
 | Area | What you get |
 | --- | --- |
@@ -61,12 +61,13 @@ Version **`1.3.0`** is the current release — research → tailored CV → lett
 | **Board** | Kanban by stage; each card is a **packet** (CV + photo + company + letter); download / open packet files; copy pack for a similar role |
 | **Print Room** | Template PDF preview/export, photo modes, text-scale tweaks |
 | **MCP** | Agent tools for enrich, keywords, gap, ATS, letters, packets |
+| **Docker Compose** | Secure local container deployment with persistent CV, photo, and settings storage |
 
 Also: field contracts (no inventable emails/phones), lighter photo gallery payloads, dark-mode scrollbar polish.
 
 **Note:** The old **Keyword Studio** tab / sqlite JD corpus were removed in v1.1 (recover from git history if needed). Keywords live on **Research → job positions**.
 
-Full notes: [`CHANGELOG.md`](CHANGELOG.md) · tag `v1.3.0`.
+Full notes: [`CHANGELOG.md`](CHANGELOG.md) · tag `v1.3.1`.
 
 ## Repository Layout
 
@@ -151,6 +152,37 @@ npm run start
 ```
 
 Default web runtime port is `3000` unless overridden by environment.
+
+## Docker Compose (local host)
+
+Docker Compose is the supported container path for a single local host. It
+persists CV/application data and Photo Booth files in named volumes, runs the
+web process as an unprivileged user, and exposes the service only on
+`127.0.0.1`. Put nginx or Caddy with TLS in front of it for remote access.
+OpenRouter settings saved through the app UI persist in a separate private
+runtime-config volume.
+
+```bash
+cp deploy/docker/compose.env.example .env.docker
+# Set a long, random MFCV_API_TOKEN in .env.docker.
+docker compose --env-file .env.docker up --build -d
+docker compose --env-file .env.docker ps
+```
+
+Open `http://127.0.0.1:3000`. The health endpoint is available at
+`http://127.0.0.1:3000/api/health`.
+
+Useful lifecycle commands:
+
+```bash
+docker compose --env-file .env.docker logs -f
+docker compose --env-file .env.docker down
+```
+
+`down` keeps named volumes. Do not run `docker compose down --volumes` unless
+you deliberately want to erase all container-managed CV, photo, and runtime
+configuration data. The `.env.docker` file contains secrets and must remain
+local.
 
 ## Hosting Guide
 

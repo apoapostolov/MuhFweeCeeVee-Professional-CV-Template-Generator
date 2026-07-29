@@ -23,7 +23,9 @@ export type OpenRouterSettings = {
 
 const SETTINGS_DIR = repoPath("data", "settings");
 const SETTINGS_FILE = path.join(SETTINGS_DIR, "openrouter.yaml");
-const ENV_FILE = repoPath(".env");
+// Docker uses a named volume for this file so settings saved through the UI
+// survive container replacement without putting secrets in the image.
+const ENV_FILE = process.env.MFCV_ENV_FILE?.trim() || repoPath(".env");
 
 const DEFAULT_SETTINGS: OpenRouterSettings = {
   apiKey: "",

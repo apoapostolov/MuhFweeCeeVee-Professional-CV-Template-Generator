@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-29
+
+### Added
+
+- **Docker Compose deployment** — run MuhFweeCeeVee as a local container with
+  PDF/PNG export support, health checks, loopback-only access, and durable CV,
+  photo, and runtime-settings storage. The application runs unprivileged and
+  requires an explicit local API token.
+
 ## [1.3.0] - 2026-07-27
 
 Power-user job-search workflow: research → tailored CV → letter → application pack → print.

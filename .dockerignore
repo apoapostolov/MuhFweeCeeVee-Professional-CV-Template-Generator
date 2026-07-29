@@ -1,0 +1,47 @@
+# Keep image builds reproducible and prevent local/private state from entering
+# the Docker build context.
+.git
+.github
+.vscode
+.env
+.env.*
+!.env.example
+!.env.test.example
+.env.docker
+
+node_modules
+**/node_modules
+apps/web/.next
+apps/web/playwright-report
+apps/web/test-results
+services/parser/.venv
+services/parser/__pycache__
+services/parser/.pytest_cache
+**/__pycache__
+
+exports
+work
+logs
+photos
+examples
+images
+docs
+dev
+skills
+deploy/*
+!deploy/docker/
+!deploy/docker/entrypoint.sh
+
+# Runtime state is supplied by volumes. Keep only the fictional public sample
+# and its template mappings in the image.
+data/*
+!data/cvs/
+data/cvs/*
+!data/cvs/cv_en_john_doe.yaml
+!data/template_mappings/
+data/template_mappings/*
+!data/template_mappings/cv_en_john_doe__*.yaml
+
+keywords/outputs
+keywords/TODO.md
+keywords/DEVELOPMENT_LOG.md

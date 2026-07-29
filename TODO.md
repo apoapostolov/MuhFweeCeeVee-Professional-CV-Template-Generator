@@ -19,6 +19,8 @@ Post-**v1.3.0** follow-ups only. Shipped research/letters/board work is in
 - API auth / SSRF / export concurrency (v1.2.4)
 - ComposerClient panel extract; render split per template
 - **D1 cleanup:** removed `/api/analysis/company-research`; metadata → catalog import; MCP retired
+- Docker Compose deployment path: non-root web runtime, persistent local state,
+  loopback-only publishing, and health checks.
 
 ## Process templates
 

@@ -6,7 +6,7 @@ Map of product and process docs for MuhFweeCeeVee.
 
 | Doc | Purpose |
 |-----|---------|
-| [`README.md`](../README.md) | Overview, quick start, **1.3.0** scope |
+| [`README.md`](../README.md) | Overview, quick start, **1.3.1** scope |
 | [`CHANGELOG.md`](../CHANGELOG.md) | User-facing release history |
 | [`docs/API.md`](API.md) | HTTP API reference |
 | [`docs/CV_YAML_STANDARD.md`](CV_YAML_STANDARD.md) | CV YAML shape |

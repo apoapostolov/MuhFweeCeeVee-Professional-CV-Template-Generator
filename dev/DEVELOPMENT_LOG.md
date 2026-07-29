@@ -17,6 +17,20 @@ documentation changes. User-facing summaries belong in `CHANGELOG.md`.
 
 ## Recent Entries
 
+### 2026-07-29 - Docker Compose deployment support
+
+- Context: Add a maintained container path after triaging the abandoned fork's
+  early Docker branch.
+- Files changed: `Dockerfile`, `.dockerignore`, `docker-compose.yml`,
+  `deploy/docker/entrypoint.sh`, `deploy/docker/compose.env.example`, and
+  Docker instructions in `README.md`; OpenRouter settings now support a
+  container-specific persistent environment-file path.
+- Validation: WSL `docker compose config` passes. The live image build reached
+  `npm ci` but the npm registry connection reset; repository-wide lint and type
+  checks remain blocked by pre-existing errors.
+- Follow-up risk: retry `docker compose up --build` on a stable network and
+  confirm PDF export before production use.
+
 ### 2026-06-02 - Composer panel extract (1g–1i)
 
 - Context: Continue decomposing `ComposerClient.tsx` per audit item 1.
