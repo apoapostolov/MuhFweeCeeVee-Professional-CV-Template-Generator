@@ -1,6 +1,6 @@
 # API Reference
 
-Internal HTTP API used by the web UI and `@muhfweeceevee/mcp-wrapper` (v0.2.0).
+Internal HTTP API used by the web UI and `@muhfweeceevee/mcp-wrapper` (v0.3.0).
 
 Base path: `/api`
 
@@ -19,9 +19,12 @@ Mutation, analysis, sync, export, and other cost-bearing routes call `assertApiA
 | Token unset + `NODE_ENV=production` + non-loopback | **401** — set `MFCV_API_TOKEN` before exposing the host |
 | `MFCV_REQUIRE_API_TOKEN=true` and token missing | **503** |
 
-OpenRouter `baseUrl` is allowlisted to `https://openrouter.ai` (SSRF protection). PDF/PNG export is serialized via `MFCV_EXPORT_CONCURRENCY` (default `1`).
+OpenRouter `baseUrl` is allowlisted to `https://openrouter.ai` (SSRF
+protection). PDF/PNG export is serialized via `MFCV_EXPORT_CONCURRENCY`
+(default `1`).
 
-`GET /cvs/:id?autoTranslate=true` is rejected (**405**). Create translated variants with `POST /cvs/variant` (`aiTranslate: true`).
+`GET /cvs/:id?autoTranslate=true` is rejected (**405**). Create translated
+variants with `POST /cvs/variant` (`aiTranslate: true`).
 
 ## Since 1.2.2
 
@@ -48,13 +51,19 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `GET /research/catalog` — list companies + job positions
 - `PUT /research/catalog` — replace catalog (auth when token set)
 - `GET|PUT|DELETE /research/companies/:companyId`
-- `POST /research/companies/enrich` — staged company fill (`companyName`, `officeCountry`, `stages?`, `useWebSearch?` default false, optional website/linkedin/aboutText). Default stage: `identity`. Cache 7d unless `forceRefresh`.
+- `POST /research/companies/enrich` — staged company fill (`companyName`,
+  `officeCountry`, `stages?`, `useWebSearch?` default false, and optional
+  website/LinkedIn/about text). Default stage: `identity`. Cache seven days
+  unless `forceRefresh`.
 - `POST /research/companies/research` — **deprecated** wrapper: all stages + `useWebSearch: true`
 - `GET|PUT|DELETE /research/job-positions/:jobId`
-- `POST /research/job-positions/research` — job research (`companyId`, `jobTitle`, optional JD; skips web when JD is long enough)
+- `POST /research/job-positions/research` — job research (`companyId`,
+  `jobTitle`, optional JD; skips web when JD is long enough)
 - `POST /research/jobs/extract-keywords` — local JD keyword extract (`jobId`, optional `rawJdText`, `replace?`); no web
 - `POST /research/jobs/gap` — keyword gap report (`cvId`, `jobId`)
-- `POST /research/field-refine` — per-field AI (`entityType`, `entityId`, `fieldPath`, `useWebSearch?: boolean` default false). Unknown paths 400; proposals validated against field contracts.
+- `POST /research/field-refine` — per-field AI (`entityType`, `entityId`,
+  `fieldPath`, `useWebSearch?: boolean` default false). Unknown paths return
+  400; proposals are validated against field contracts.
 
 ### Analysis (Editor + metadata)
 
@@ -66,16 +75,92 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `POST /analysis/company-field` — metadata field refine (legacy)
 - `GET|POST /cover-letters` — list/save/delete; **AI draft** and **Humanize** are separate; version history under `data/cover_letters/history/`
   - `GET ?id=&versions=1` — version list; `GET ?id=&version=N` — one snapshot (read-only)
-  - `POST { action: "load_version"|"restore", id, version }` — return snapshot only (**no write**); client **Save** creates a new revision
+  - `POST { action: "load_version"|"restore", id, version }` — return snapshot
+    only (**no write**); client **Save** creates a new revision
   - `POST { action: "delete_version", id, version }` — delete one history snapshot (live letter unchanged)
 - `GET /api/ai-skills` — list product AI skills + hooks (metadata only)
-- `GET|POST /applications` — kanban board of **application packets** (CV + photo + company + letter refs)
-  - packet fields: `cv_id`, `photo_id`, `cover_letter_id`, `packet_title`, company/job, status, notes
-  - `GET ?export=<id>` or `POST { action: "export", id }` → portable `muhfweeceevee.application_packet` JSON (embeds CV + letter body; photo re-link by id)
+- `GET|POST /applications` — application operations board and portable packet
+  actions.
+  - packet fields include `cv_id`, `photo_id`, `cover_letter_id`,
+    `packet_title`, company/job, status, priority, source, role/CV families,
+    notes, next action, contacts, activities, and submission summaries
+  - `GET` also returns likely duplicate groups for review; it never merges
+    records automatically
+  - `GET ?export=<id>` or `POST { action: "export", id }` → portable
+    `muhfweeceevee.application_packet` JSON (embeds CV + letter body; photo
+    re-link by id)
   - `POST { action: "import", packet, restoreCv?, restoreLetter? }` → new card (+ restore embeds)
   - `POST { action: "duplicate", id, overrides? }` → reuse CV/photo for a similar company (clears letter by default)
+- `GET|PATCH /applications/:applicationId` — read or update operational fields,
+  archive/restore, and next action
+- `POST /applications/:applicationId/activities` — append a timestamped event
+  (`applied`, recruiter contact, follow-up, phone screen, interview,
+  assessment, offer, rejection, note, or status change)
+- `POST /applications/:applicationId/contacts` — add a recruiter, hiring
+  manager, referrer, interviewer, or other contact
+- `POST /applications/:applicationId/submissions` — freeze the exact CV source,
+  rendered PDF, cover-letter revision, selected photo, company/job target, ATS
+  result, and SHA-256 checksums; the stored assets are immutable
+- `GET /applications/:applicationId/submissions?snapshotId=&asset=` — download
+  one frozen asset
+- `PUT /applications/:applicationId/submissions` — restore one checksummed
+  snapshot asset from a session ZIP import
+- `POST /applications/intake` — rule-based single-listing intake from pasted URL
+  and/or job text; creates or reuses Research company/job and Wishlist records,
+  preserves the raw input, and returns duplicate candidates
+- `GET /applications/analytics` — event-derived funnel, response/interview/offer
+  rates, median stage duration, source/role-family breakdowns, follow-up
+  effectiveness, and explicit data-quality caveats
 
-- `GET|POST /applications` — application board CRUD (`wishlist|applied|interview|offer|rejected|ghosted`)
+### Career evidence
+
+- `GET /evidence` — list reusable achievements, responsibilities, skills,
+  projects, leadership examples, and domain evidence
+- `POST /evidence` — create or update an entry with tags, source, verification,
+  and provenance
+- `GET|PATCH|DELETE /evidence/:evidenceId` — read, revise, or remove one entry
+- `POST /evidence/:evidenceId/links` — add a hash-backed provenance reference to
+  a CV revision without copying the evidence text into the CV automatically
+
+### MuhFwee AI copilot
+
+Assistant routes use the same API authorization policy as other private or
+cost-bearing operations. Conversations remain local under ignored
+`data/assistant/`.
+
+- `GET|POST /assistant/sessions` — list or create conversations. `GET` accepts
+  `q`, `status=active|archived|all`, and `panel` filters and returns `total`.
+- `GET|PATCH /assistant/sessions/:sessionId` — load a conversation or change
+  its active/archive state
+- `POST /assistant/turn` — stream `assistant.v1` events as newline-delimited
+  JSON; supports user-message, typed plan, tool lifecycle, approval, handoff,
+  message delta, usage, error, and terminal events. Guarded calls end with
+  `awaiting_approval`.
+- `POST /assistant/approvals/:proposalId` — approve or reject a persisted
+  proposal using the current context envelope. Approval rechecks target content,
+  consumes a server-only token exactly once, executes MCP, and returns the
+  resulting events. Duplicate requests replay the stored result.
+- `POST /assistant/approval-batches` — approve or reject 2–10 pending proposals
+  from one conversation. A batch must use one approval class; each proposal is
+  still rechecked, token-bound, executed, and audited individually. Approval
+  stops at the first non-approved result.
+- `GET|POST /assistant/playbooks` — list built-in plus private saved playbooks,
+  or create a private playbook from a title, prompt, and optional panel scopes
+- `DELETE /assistant/playbooks/:playbookId` — delete a private playbook;
+  built-in playbooks are immutable
+- `GET|POST /assistant/portable-history` — export redacted conversation history
+  and private playbooks or restore an explicit opt-in payload. Imported
+  conversations are always archived and cannot resume old approvals.
+- `GET /assistant/sessions/:sessionId/audit` — list the private redacted audit
+  history for one conversation
+- `POST /assistant/reconnect` — restart the server-owned local MCP client and
+  rediscover its read and confirmed-management tool catalog
+
+The browser never receives the OpenRouter key, MCP credentials, or approval
+token. Phase 3 permits explicitly approved CV, Research, cover-letter, and
+application tools, plus non-mutating plans, private playbooks, conversation
+management, coherent batches, and direct panel handoffs. Sensitive settings,
+bulk/session import, photo, and career-evidence mutations remain blocked.
 
 ### Company metadata auth
 
@@ -107,6 +192,21 @@ Scaling uses CSS `zoom` on sidebar vs main content regions.
 - `GET /photos`
 - `POST /photos` (`multipart/form-data`, key: `files`, supports multiple)
 - `DELETE /photos?id=<photoId>`
+
+Backup restore uses the same authenticated `POST /photos` route with exactly
+one `files` image plus:
+
+- `restoreId`: original safe photo ID to overwrite or recreate
+- `analysisHistory`: optional JSON array of stored per-photo analysis results
+
+This restore-only form preserves application photo references. Normal uploads
+continue to receive newly generated IDs.
+
+Session backup v4 includes career evidence. ZIP archive v2 additionally embeds
+immutable application-submission assets and restores each one through the
+checksummed submissions `PUT` route before merging application records.
+Assistant history is absent unless the export request explicitly enables it;
+the optional payload uses `/assistant/portable-history` and restores archived.
 
 ### `GET /photos` response highlights
 
@@ -252,7 +352,9 @@ Optional cache controls:
 ## 7) OpenRouter Settings + Credit
 
 - `GET /settings/openrouter` — `model`, `researchModel`, `imageModel`, model catalog
-- `PUT /settings/openrouter` — `apiKey`, `model`, `researchModel`, `imageModel`, `baseUrl` (auth when token set); saving API key writes `.env` `OPENROUTER_API_KEY`
+- `PUT /settings/openrouter` — `apiKey`, `model`, `researchModel`, `imageModel`,
+  `baseUrl` (auth when token set); saving the API key writes `.env`
+  `OPENROUTER_API_KEY`
 - `GET /settings/openrouter/credit` — credit/prepaid status from OpenRouter
 
 ## 8) Keywords Data APIs (retired in v1.1.0)

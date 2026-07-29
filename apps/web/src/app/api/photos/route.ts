@@ -6,6 +6,7 @@ import {
   getPhotoBoothItem,
   listPhotoBoothItems,
   removePhotoBoothItem,
+  restorePhotoBoothFile,
 } from "@/lib/server/photoGalleryStore";
 
 export const runtime = "nodejs";
@@ -45,6 +46,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const form = await request.formData();
     const uploads: Array<{ name: string; mimeType: string; buffer: Buffer }> = [];
+    const restoreId =
+      typeof form.get("restoreId") === "string"
+        ? String(form.get("restoreId")).trim()
+        : "";
+    const analysisHistoryRaw =
+      typeof form.get("analysisHistory") === "string"
+        ? String(form.get("analysisHistory"))
+        : "";
 
     for (const value of form.values()) {
       if (!(value instanceof File)) continue;
@@ -55,6 +64,33 @@ export async function POST(request: Request): Promise<NextResponse> {
         mimeType: value.type,
         buffer,
       });
+    }
+
+    if (restoreId) {
+      if (uploads.length !== 1) {
+        return NextResponse.json(
+          { ok: false, error: "Photo restore requires exactly one image file." },
+          { status: 400 },
+        );
+      }
+      let analysisHistory: unknown[] | undefined;
+      if (analysisHistoryRaw) {
+        const parsed = JSON.parse(analysisHistoryRaw) as unknown;
+        if (!Array.isArray(parsed)) {
+          return NextResponse.json(
+            { ok: false, error: "Photo analysis history must be an array." },
+            { status: 400 },
+          );
+        }
+        analysisHistory = parsed;
+      }
+      const restored = await restorePhotoBoothFile({
+        id: restoreId,
+        mimeType: uploads[0].mimeType,
+        buffer: uploads[0].buffer,
+        analysisHistory,
+      });
+      return NextResponse.json({ ok: true, item: restored, items: [restored] });
     }
 
     if (uploads.length === 0) {

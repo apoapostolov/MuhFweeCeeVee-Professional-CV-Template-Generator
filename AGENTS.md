@@ -79,9 +79,14 @@ write or update a skill while context is fresh.
 - Start the dev server before code changes. See
   [`DEV_SERVER_WORKFLOW.md`](dev/DEV_SERVER_WORKFLOW.md).
 
+```powershell
+npm run dev:windows:start      # Next.js on Windows, port 10004
+npm run dev:windows:restart    # required after code changes
+```
+
+Use `npm run dev:wsl` only as the polling-based `/mnt/c` fallback.
+
 ```bash
-npm run dev                    # Next.js, default port 3000
-npm run dev --workspace @muhfweeceevee/web -- -p 3005   # custom port
 npm run dev:parser             # optional FastAPI on 8001
 ```
 

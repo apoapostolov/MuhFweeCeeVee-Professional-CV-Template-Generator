@@ -26,6 +26,27 @@ or exposed a non-obvious root cause.
 
 ## Recent Resolutions
 
+- 2026-07-29 — WSL development server on a Windows-mounted checkout
+  - Problem: Next.js development became slow and intermittently stale.
+  - Context: the checkout lives on `C:\` while Next.js ran under WSL against
+    `/mnt/c`.
+  - Symptoms: slow compilation, Watchpack `ENOMEM`, malformed partial
+    `.next/dev/types` files, and missing Windows/Linux optional native modules
+    after switching package-manager hosts.
+  - Attempts that failed: additional polling, repeated cache clears, and
+    restarting the WSL service after each check.
+  - Root cause: DrvFS polling and two operating systems sharing one
+    platform-specific `node_modules` and `.next` directory.
+  - Winning fix: host Next.js natively on Windows with tracked start/stop
+    scripts; retain WSL only as an explicit polling fallback.
+  - Why this fix works: file watching, dependencies, generated output, and the
+    browser now use the same operating system and filesystem semantics.
+  - Validation: Windows health, page compilation, PDF export, and HMR smoke.
+  - Residual risk: running Windows and WSL dev servers simultaneously will
+    still contend for the port and generated cache.
+  - Reusable rule: when a checkout is on `C:\`, prefer a Windows-native watcher;
+    otherwise move the checkout into the WSL ext4 filesystem.
+
 - 2026-03-08 — Keyword analysis empty dataset on sqlite binary mismatch
   - Problem: Keywords tab showed empty JD results despite existing cache data
     on certain environments.

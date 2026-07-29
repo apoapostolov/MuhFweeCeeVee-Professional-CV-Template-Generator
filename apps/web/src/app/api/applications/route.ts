@@ -9,6 +9,7 @@ import {
   APPLICATION_STATUSES,
   deleteApplication,
   duplicateApplication,
+  findApplicationDuplicates,
   importApplicationPacket,
   isApplicationPacketFile,
   packetCompleteness,
@@ -42,6 +43,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     completeness: Object.fromEntries(
       board.applications.map((app) => [app.id, packetCompleteness(app)]),
     ),
+    duplicates: findApplicationDuplicates(board.applications),
   });
 }
 
@@ -65,6 +67,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     cover_letter_id?: unknown;
     packet_title?: unknown;
     status_since?: unknown;
+    priority?: unknown;
+    source?: unknown;
+    location?: unknown;
+    role_family?: unknown;
+    cv_family?: unknown;
+    archived_at?: unknown;
+    raw_job_input?: unknown;
+    deadline_at?: unknown;
+    salary_text?: unknown;
+    employment_type?: unknown;
+    next_action?: unknown;
+    contacts?: unknown;
+    activities?: unknown;
+    submission_snapshots?: unknown;
     packet?: unknown;
     restoreCv?: unknown;
     restoreLetter?: unknown;
@@ -212,6 +228,41 @@ export async function POST(request: Request): Promise<NextResponse> {
       typeof body.status_since === "string" && body.status_since.trim()
         ? body.status_since.trim()
         : undefined,
+    priority:
+      body.priority === "low" ||
+      body.priority === "normal" ||
+      body.priority === "high"
+        ? body.priority
+        : undefined,
+    source: typeof body.source === "string" ? body.source : undefined,
+    location: typeof body.location === "string" ? body.location : undefined,
+    role_family:
+      typeof body.role_family === "string" ? body.role_family : undefined,
+    cv_family:
+      typeof body.cv_family === "string" ? body.cv_family : undefined,
+    archived_at:
+      typeof body.archived_at === "string" ? body.archived_at : undefined,
+    raw_job_input:
+      typeof body.raw_job_input === "string" ? body.raw_job_input : undefined,
+    deadline_at:
+      typeof body.deadline_at === "string" ? body.deadline_at : undefined,
+    salary_text:
+      typeof body.salary_text === "string" ? body.salary_text : undefined,
+    employment_type:
+      typeof body.employment_type === "string"
+        ? body.employment_type
+        : undefined,
+    next_action:
+      body.next_action && typeof body.next_action === "object"
+        ? (body.next_action as never)
+        : undefined,
+    contacts: Array.isArray(body.contacts) ? (body.contacts as never) : undefined,
+    activities: Array.isArray(body.activities)
+      ? (body.activities as never)
+      : undefined,
+    submission_snapshots: Array.isArray(body.submission_snapshots)
+      ? (body.submission_snapshots as never)
+      : undefined,
   });
 
   return NextResponse.json({ ok: true, applications: board.applications });

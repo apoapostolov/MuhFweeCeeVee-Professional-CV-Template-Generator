@@ -1,6 +1,13 @@
 "use client";
 
+import { useRef, useState } from "react";
+
+import type { AssistantRecordReference } from "@muhfweeceevee/schemas";
+
 import type { ComposerController } from "./useComposerController";
+import { AssistantLauncher } from "./AssistantLauncher";
+import { AssistantPanel } from "./AssistantPanel";
+import { buildAssistantComposerContext } from "./assistant-context";
 import { ComposerNav } from "./ComposerNav";
 import { ComposerOverlays } from "./ComposerOverlays";
 import { ThemeModeToggle } from "./composer-ui";
@@ -20,11 +27,27 @@ export type ComposerShellProps = {
 };
 
 export function ComposerShell({ controller: c }: ComposerShellProps) {
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantApplication, setAssistantApplication] =
+    useState<AssistantRecordReference | null>(null);
+  const assistantLauncherRef = useRef<HTMLButtonElement>(null);
+  const assistantContext = buildAssistantComposerContext(
+    c,
+    new Date().toISOString(),
+    assistantApplication ? [assistantApplication] : [],
+  );
+
+  function closeAssistant(): void {
+    setAssistantOpen(false);
+    requestAnimationFrame(() => assistantLauncherRef.current?.focus());
+  }
+
   return (
     <main className="app-shell paper-grid grain-overlay h-screen overflow-hidden px-4 py-4 md:px-8 md:py-6">
       <ThemeModeToggle themeMode={c.themeMode} onThemeModeChange={c.setThemeMode} />
       <div className="mx-auto flex h-full w-full max-w-[1900px] flex-col">
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-1)] p-4 shadow-[0_10px_40px_rgba(31,41,55,0.12)] md:p-6">
+        <div className="flex min-h-0 flex-1 gap-3">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-1)] p-4 shadow-[0_10px_40px_rgba(31,41,55,0.12)] md:p-6">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="mt-2 text-3xl font-black text-slate-900 md:text-4xl">MuhFweeCeeVee</h1>
@@ -217,7 +240,21 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               defaultJobId={c.selectedResearchJobPositionId}
               defaultJobTitle={c.selectedResearchJob?.title}
               defaultPhotoId={c.approvedPhotoId || undefined}
+              defaultTemplateId={c.selectedTemplateId || undefined}
+              defaultTemplateTheme={c.selectedTemplateTheme || undefined}
               language={c.uiLanguage}
+              onAssistantSelectionChange={(selection) =>
+                setAssistantApplication(
+                  selection
+                    ? {
+                        type: "application",
+                        id: selection.id,
+                        label: selection.label,
+                        revision: selection.revision,
+                      }
+                    : null,
+                )
+              }
             />
           )}
 
@@ -277,8 +314,28 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
             />
           )}
           <ComposerOverlays controller={c} />
-        </section>
+          </section>
+          <AssistantPanel
+            context={assistantContext}
+            isOpen={assistantOpen}
+            onClose={closeAssistant}
+            onNavigate={(handoff) => {
+              c.setActivePanel(handoff.panel as typeof c.activePanel);
+              window.dispatchEvent(
+                new CustomEvent("mfcv:assistant-handoff", {
+                  detail: handoff,
+                }),
+              );
+            }}
+          />
+        </div>
       </div>
+      {!assistantOpen ? (
+        <AssistantLauncher
+          onOpen={() => setAssistantOpen(true)}
+          ref={assistantLauncherRef}
+        />
+      ) : null}
       <ComposerToastHost onDismiss={c.dismissComposerToast} toasts={c.composerToasts} />
     </main>
   );

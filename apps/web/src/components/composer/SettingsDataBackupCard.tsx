@@ -7,11 +7,16 @@ import {
   formatBackupExportSummary,
   formatBackupImportSummary,
   importComposerSessionBackupFromText,
-  serializeComposerSessionBackup,
 } from "./composer-session-backup";
+import {
+  buildComposerSessionArchive,
+  formatArchiveExportSummary,
+  formatArchiveImportSummary,
+  importComposerSessionArchive,
+} from "./composer-session-archive";
 
 const IMPORT_CONFIRM_MESSAGE =
-  "Replace browser preferences and server-side CVs, company metadata, and research catalog with this backup? The page will reload.";
+  "Merge this backup into the current session? Matching CV, application, cover-letter, and photo IDs will be updated. Included assistant conversations restore archived and cannot run old approvals. Records not present in the backup will remain. Included browser preferences will be overwritten, then the page will reload.";
 
 export function SettingsDataBackupCard(): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,12 +24,14 @@ export function SettingsDataBackupCard(): JSX.Element {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [includeGeneratedPdfs, setIncludeGeneratedPdfs] = useState(true);
+  const [includeAssistantHistory, setIncludeAssistantHistory] = useState(false);
 
   async function exportToTextarea(): Promise<void> {
     setBusy(true);
     setError("");
     try {
-      const backup = await buildComposerSessionBackup();
+      const backup = await buildComposerSessionBackup({ includeAssistantHistory });
       setJsonText(JSON.stringify(backup, null, 2));
       setNotice(formatBackupExportSummary(backup));
     } catch (exportError) {
@@ -39,7 +46,13 @@ export function SettingsDataBackupCard(): JSX.Element {
     setBusy(true);
     setError("");
     try {
-      const payload = jsonText.trim() || (await serializeComposerSessionBackup(true));
+      const payload =
+        jsonText.trim() ||
+        JSON.stringify(
+          await buildComposerSessionBackup({ includeAssistantHistory }),
+          null,
+          2,
+        );
       if (!jsonText.trim()) {
         setJsonText(payload);
       }
@@ -47,6 +60,33 @@ export function SettingsDataBackupCard(): JSX.Element {
       setNotice("JSON copied to clipboard.");
     } catch {
       setError("Could not copy to clipboard.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadBackupFile(): Promise<void> {
+    setBusy(true);
+    setError("");
+    try {
+      const archive = await buildComposerSessionArchive({
+        includeGeneratedPdfs,
+        includeAssistantHistory,
+      });
+      const url = URL.createObjectURL(archive.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = archive.fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setNotice(formatArchiveExportSummary(archive));
+    } catch (exportError) {
+      setNotice("");
+      setError(
+        exportError instanceof Error ? exportError.message : "Download failed.",
+      );
     } finally {
       setBusy(false);
     }
@@ -62,6 +102,22 @@ export function SettingsDataBackupCard(): JSX.Element {
     } catch (importError) {
       setNotice("");
       setError(importError instanceof Error ? importError.message : "Import failed.");
+      setBusy(false);
+    }
+  }
+
+  async function applyZipImport(file: File): Promise<void> {
+    setBusy(true);
+    setError("");
+    try {
+      const summary = await importComposerSessionArchive(file);
+      setNotice(formatArchiveImportSummary(summary));
+      window.setTimeout(() => window.location.reload(), 400);
+    } catch (importError) {
+      setNotice("");
+      setError(
+        importError instanceof Error ? importError.message : "ZIP import failed.",
+      );
       setBusy(false);
     }
   }
@@ -82,6 +138,16 @@ export function SettingsDataBackupCard(): JSX.Element {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) {
+      return;
+    }
+    if (
+      file.name.toLowerCase().endsWith(".zip") ||
+      file.type === "application/zip"
+    ) {
+      if (!window.confirm(IMPORT_CONFIRM_MESSAGE)) {
+        return;
+      }
+      void applyZipImport(file);
       return;
     }
     const reader = new FileReader();
@@ -105,17 +171,50 @@ export function SettingsDataBackupCard(): JSX.Element {
     <div className="flex h-full min-h-0 min-w-0 flex-col">
       <h2 className="shrink-0 text-xl font-bold text-slate-900">Import / Export Data</h2>
       <p className="mt-2 shrink-0 text-sm text-[var(--ink-muted)]">
-        Full session backup: browser preferences (localStorage), researched companies and job
-        positions, job-targeting metadata, and CV YAML files stored on this dev server.
+        Portable ZIP backups include browser preferences, research, CV sources, applications,
+        cover letters and history, plus photos actually used by applications or approved in
+        Photo Booth.
       </p>
-      <div className="mt-4 grid w-full shrink-0 grid-cols-2 gap-2">
+      <label className="mt-3 flex shrink-0 items-center gap-2 text-xs font-medium text-slate-700">
+        <input
+          checked={includeGeneratedPdfs}
+          disabled={busy}
+          onChange={(event) => setIncludeGeneratedPdfs(event.target.checked)}
+          type="checkbox"
+        />
+        Generate application PDFs with the currently selected template
+      </label>
+      <label className="mt-2 flex shrink-0 items-start gap-2 text-xs font-medium text-slate-700">
+        <input
+          checked={includeAssistantHistory}
+          disabled={busy}
+          onChange={(event) => setIncludeAssistantHistory(event.target.checked)}
+          type="checkbox"
+        />
+        <span>
+          Include private MuhFwee AI conversations and saved playbooks
+          <span className="mt-0.5 block font-normal text-[var(--ink-muted)]">
+            Off by default. Approval arguments are redacted, and restored
+            conversations are archived so old operations cannot be applied.
+          </span>
+        </span>
+      </label>
+      <div className="mt-4 grid w-full shrink-0 grid-cols-3 gap-2">
+        <button
+          className="w-full rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
+          disabled={busy}
+          onClick={() => void downloadBackupFile()}
+          type="button"
+        >
+          {busy ? "Working…" : "Download ZIP"}
+        </button>
         <button
           className="w-full rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-[var(--surface-2)] disabled:opacity-60"
           disabled={busy}
           onClick={() => void exportToTextarea()}
           type="button"
         >
-          {busy ? "Working…" : "Export JSON"}
+          Show JSON
         </button>
         <button
           className="w-full rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-[var(--surface-2)] disabled:opacity-60"
@@ -133,7 +232,7 @@ export function SettingsDataBackupCard(): JSX.Element {
             className="h-full min-h-[12rem] w-full max-w-full flex-1 resize-none rounded-md border border-[var(--line)] bg-white px-2 pb-10 pt-2 font-mono text-[11px] leading-relaxed text-slate-800 lg:min-h-0"
             disabled={busy}
             onChange={(event) => setJsonText(event.target.value)}
-            placeholder="Export JSON or paste a full session backup here."
+            placeholder="Show JSON or paste a session backup here."
             spellCheck={false}
             value={jsonText}
           />
@@ -143,12 +242,12 @@ export function SettingsDataBackupCard(): JSX.Element {
             onClick={onImportClick}
             type="button"
           >
-            Import JSON
+            Import JSON / ZIP
           </button>
         </div>
       </label>
       <input
-        accept="application/json,.json,text/plain"
+        accept="application/json,application/zip,.json,.zip,text/plain"
         className="hidden"
         onChange={onFileSelected}
         ref={fileInputRef}

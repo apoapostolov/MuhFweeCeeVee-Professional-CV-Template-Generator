@@ -1,8 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
-import { Copy, Download, FolderOpen, Trash2 } from "lucide-react";
+import { Archive, BookmarkPlus, Copy, Download, FolderOpen, Search, Trash2 } from "lucide-react";
 
+import { ApplicationActivityTimeline } from "./ApplicationActivityTimeline";
+import { ApplicationAnalyticsView } from "./ApplicationAnalyticsView";
+import { ApplicationQuickIntake } from "./ApplicationQuickIntake";
+import { ApplicationSubmissionHistory } from "./ApplicationSubmissionHistory";
+import { ApplicationTodayView } from "./ApplicationTodayView";
+import { CareerEvidenceView } from "./CareerEvidenceView";
+import {
+  applicationMatchesFilters,
+  DEFAULT_APPLICATION_FILTERS,
+  loadSavedApplicationViews,
+  saveApplicationViews,
+  type Application,
+  type ApplicationFilters,
+  type ApplicationsView,
+  type ApplicationStatus,
+  type SavedApplicationView,
+} from "./application-operations-types";
 import { KanbanFloatingCard, useKanbanDrag } from "./applications-kanban";
 
 const APPLICATION_STATUSES = [
@@ -13,27 +30,6 @@ const APPLICATION_STATUSES = [
   "rejected",
   "ghosted",
 ] as const;
-
-type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
-
-type Application = {
-  id: string;
-  company_id?: string;
-  job_id?: string;
-  company_name: string;
-  job_title: string;
-  status: ApplicationStatus;
-  url?: string;
-  notes?: string;
-  cv_id?: string;
-  photo_id?: string;
-  cover_letter_id?: string;
-  packet_title?: string;
-  /** ISO — clock for days without forward stage progress. */
-  status_since?: string;
-  updated_at: string;
-  created_at: string;
-};
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -81,10 +77,24 @@ export type ApplicationsPanelProps = {
   defaultCvId?: string;
   /** Approved photo booth id — used when creating packets. */
   defaultPhotoId?: string;
+  /** Current Print Room template used to freeze submitted PDFs. */
+  defaultTemplateId?: string;
+  defaultTemplateTheme?: string;
+  onAssistantSelectionChange?: (
+    selection: {
+      id: string;
+      label: string;
+      revision?: string;
+    } | null,
+  ) => void;
 };
 
-function emptyDraft(): Omit<Application, "id" | "created_at" | "updated_at"> & {
+function emptyDraft(): Omit<
+  Application,
+  "id" | "created_at" | "updated_at" | "status_since"
+> & {
   id?: string;
+  status_since?: string;
   /** Editable dwell counter (days without forward stage progress). */
   days_without_progress: number;
 } {
@@ -100,6 +110,11 @@ function emptyDraft(): Omit<Application, "id" | "created_at" | "updated_at"> & {
     photo_id: "",
     cover_letter_id: "",
     packet_title: "",
+    priority: "normal",
+    source: "",
+    location: "",
+    role_family: "",
+    cv_family: "",
     days_without_progress: 0,
   };
 }
@@ -155,13 +170,23 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     defaultJobTitle,
     defaultCvId,
     defaultPhotoId,
+    defaultTemplateId,
+    defaultTemplateTheme,
+    onAssistantSelectionChange,
   } = props;
 
   const [applications, setApplications] = useState<Application[]>([]);
+  const [duplicates, setDuplicates] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft());
+  const [view, setView] = useState<ApplicationsView>("board");
+  const [filters, setFilters] = useState<ApplicationFilters>(
+    DEFAULT_APPLICATION_FILTERS,
+  );
+  const [savedViews, setSavedViews] = useState<SavedApplicationView[]>([]);
+  const [savedViewName, setSavedViewName] = useState("");
 
   const [cvOptions, setCvOptions] = useState<CvOption[]>([]);
   const [photoOptions, setPhotoOptions] = useState<PhotoOption[]>([]);
@@ -253,8 +278,12 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
   const loadBoard = useCallback(async () => {
     const response = await fetch("/api/applications");
-    const payload = (await response.json()) as { applications?: Application[] };
+    const payload = (await response.json()) as {
+      applications?: Application[];
+      duplicates?: Record<string, string[]>;
+    };
     setApplications(payload.applications ?? []);
+    setDuplicates(payload.duplicates ?? {});
   }, []);
 
   const loadLookups = useCallback(async () => {
@@ -289,18 +318,33 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   useEffect(() => {
     void loadBoard();
     void loadLookups();
+    setSavedViews(loadSavedApplicationViews());
   }, [loadBoard, loadLookups]);
+
+  useEffect(() => {
+    const refresh = () => void loadBoard();
+    window.addEventListener("mfcv:assistant-mutation", refresh);
+    return () => window.removeEventListener("mfcv:assistant-mutation", refresh);
+  }, [loadBoard]);
+
+  const filteredApplications = useMemo(
+    () =>
+      applications.filter((application) =>
+        applicationMatchesFilters(application, filters),
+      ),
+    [applications, filters],
+  );
 
   const byStatus = useMemo(() => {
     const map = new Map<ApplicationStatus, Application[]>();
     for (const status of APPLICATION_STATUSES) {
       map.set(
         status,
-        applications.filter((app) => app.status === status),
+        filteredApplications.filter((app) => app.status === status),
       );
     }
     return map;
-  }, [applications]);
+  }, [filteredApplications]);
 
   const jobsForCompany = useMemo(() => {
     const companyId = draft.company_id?.trim();
@@ -308,7 +352,13 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     return jobOptions.filter((job) => job.company_id === companyId);
   }, [draft.company_id, jobOptions]);
 
+  const selectedApplication = useMemo(
+    () => applications.find((application) => application.id === draft.id),
+    [applications, draft.id],
+  );
+
   function openNew() {
+    onAssistantSelectionChange?.(null);
     setDraft({
       ...emptyDraft(),
       company_id: defaultCompanyId || "",
@@ -322,12 +372,18 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           ? `${defaultJobTitle || "Role"} @ ${defaultCompanyName || "Company"}`
           : "",
       status: "wishlist",
+      priority: "normal",
     });
     setEditorOpen(true);
     setNotice("");
   }
 
-  function openEdit(app: Application) {
+  const openEdit = useCallback((app: Application) => {
+    onAssistantSelectionChange?.({
+      id: app.id,
+      label: `${app.company_name} · ${app.job_title}`,
+      revision: app.updated_at,
+    });
     setDraft({
       id: app.id,
       company_id: app.company_id || "",
@@ -341,12 +397,26 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       photo_id: app.photo_id || "",
       cover_letter_id: app.cover_letter_id || "",
       packet_title: app.packet_title || "",
+      priority: app.priority || "normal",
+      source: app.source || "",
+      location: app.location || "",
+      role_family: app.role_family || "",
+      cv_family: app.cv_family || "",
+      archived_at: app.archived_at,
+      raw_job_input: app.raw_job_input,
+      deadline_at: app.deadline_at,
+      salary_text: app.salary_text,
+      employment_type: app.employment_type,
+      next_action: app.next_action,
+      contacts: app.contacts,
+      activities: app.activities,
+      submission_snapshots: app.submission_snapshots,
       status_since: app.status_since || app.created_at,
       days_without_progress: daysWithoutProgress(app),
     });
     setEditorOpen(true);
     setNotice("");
-  }
+  }, [onAssistantSelectionChange]);
 
   async function saveDraft() {
     if (!draft.company_name.trim() || !draft.job_title.trim()) {
@@ -374,6 +444,11 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           photo_id: draft.photo_id || "",
           cover_letter_id: draft.cover_letter_id || "",
           packet_title: draft.packet_title || undefined,
+          priority: draft.priority || "normal",
+          source: draft.source || undefined,
+          location: draft.location || undefined,
+          role_family: draft.role_family || undefined,
+          cv_family: draft.cv_family || undefined,
           // Explicit clock so sidebar edits stick (and survive stage changes on save).
           status_since: statusSinceFromDays(days),
         }),
@@ -407,12 +482,99 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       const payload = (await response.json()) as { applications?: Application[] };
       setApplications(payload.applications ?? []);
       if (draft.id === id) {
+        onAssistantSelectionChange?.(null);
         setEditorOpen(false);
         setDraft(emptyDraft());
       }
     } finally {
       setBusy(false);
     }
+  }
+
+  async function refreshApplication(
+    id: string,
+    message?: string,
+  ): Promise<void> {
+    await loadBoard();
+    const response = await fetch(
+      `/api/applications/${encodeURIComponent(id)}`,
+    );
+    const payload = (await response.json()) as { application?: Application };
+    if (payload.application) {
+      openEdit(payload.application);
+    }
+    if (message) setNotice(message);
+  }
+
+  async function completeNextAction(application: Application): Promise<void> {
+    const title = application.next_action?.title;
+    const response = await fetch(
+      `/api/applications/${encodeURIComponent(application.id)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ next_action: null }),
+      },
+    );
+    if (response.ok) {
+      if (title) {
+        await fetch(
+          `/api/applications/${encodeURIComponent(application.id)}/activities`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              type: "note",
+              summary: `Completed next action: ${title}`,
+            }),
+          },
+        );
+      }
+      await loadBoard();
+      setNotice(bg ? "Действието е завършено." : "Action completed.");
+    }
+  }
+
+  async function setArchived(application: Application): Promise<void> {
+    const response = await fetch(
+      `/api/applications/${encodeURIComponent(application.id)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ archived: !application.archived_at }),
+      },
+    );
+    if (response.ok) {
+      await loadBoard();
+      setEditorOpen(false);
+      setNotice(
+        application.archived_at
+          ? bg
+            ? "Кандидатстването е възстановено."
+            : "Application restored."
+          : bg
+            ? "Кандидатстването е архивирано."
+            : "Application archived.",
+      );
+    }
+  }
+
+  function saveCurrentView(): void {
+    const name = savedViewName.trim();
+    if (!name) return;
+    const next = [
+      ...savedViews.filter(
+        (entry) => entry.name.toLowerCase() !== name.toLowerCase(),
+      ),
+      {
+        id: crypto.randomUUID(),
+        name,
+        filters: { ...filters },
+      },
+    ];
+    setSavedViews(next);
+    saveApplicationViews(next);
+    setSavedViewName("");
   }
 
   async function setStatus(app: Application, status: ApplicationStatus) {
@@ -495,9 +657,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       const app = applications.find((entry) => entry.id === appId);
       if (app) openEdit(app);
     },
-    // openEdit is stable enough via closure; applications is the lookup source
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [applications],
+    [applications, openEdit],
   );
 
   const { drag, onCardPointerDown, columnClassName, isDraggingId } = useKanbanDrag({
@@ -675,6 +835,23 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           <p className="text-xs text-[var(--ink-muted)]">{t.pageSubtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ApplicationQuickIntake
+            disabled={busy}
+            language={language}
+            onComplete={(application, deduplicated) => {
+              void loadBoard();
+              openEdit(application);
+              setNotice(
+                deduplicated
+                  ? bg
+                    ? "Отворено е съществуващото кандидатстване; дубликат не е създаден."
+                    : "Opened the existing application; no duplicate was created."
+                  : bg
+                    ? "Обявата е добавена в Wishlist."
+                    : "Job added to Wishlist.",
+              );
+            }}
+          />
           <button
             className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
             disabled={busy}
@@ -722,7 +899,167 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         </p>
       ) : null}
 
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 py-2">
+        <div className="flex rounded-md border border-[var(--line)] p-0.5" role="group" aria-label={bg ? "Изглед" : "Application view"}>
+          {(
+            [
+              ["board", bg ? "Дъска" : "Board"],
+              ["today", bg ? "Днес" : "Today"],
+              ["analytics", bg ? "Анализи" : "Analytics"],
+              ["evidence", bg ? "Доказателства" : "Evidence"],
+            ] as Array<[ApplicationsView, string]>
+          ).map(([value, label]) => (
+            <button
+              aria-pressed={view === value}
+              className={`rounded px-2.5 py-1 text-xs font-semibold ${
+                view === value
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-700 hover:bg-[var(--surface-2)]"
+              }`}
+              key={value}
+              onClick={() => setView(value)}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {view === "board" || view === "today" ? (
+          <>
+            <label className="relative min-w-48 flex-1">
+              <span className="sr-only">{bg ? "Търси" : "Search applications"}</span>
+              <Search aria-hidden className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-muted)]" />
+              <input
+                className="w-full rounded border border-[var(--line)] py-1.5 pl-7 pr-2 text-xs"
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    search: event.target.value,
+                  }))
+                }
+                placeholder={bg ? "Компания, роля, бележки, ключови думи…" : "Company, role, notes, keywords…"}
+                type="search"
+                value={filters.search}
+              />
+            </label>
+            <select
+              aria-label={bg ? "Филтър по етап" : "Filter by stage"}
+              className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value as ApplicationFilters["status"],
+                }))
+              }
+              value={filters.status}
+            >
+              <option value="all">{bg ? "Всички етапи" : "All stages"}</option>
+              {APPLICATION_STATUSES.map((status) => (
+                <option key={status} value={status}>{statusLabel(status, bg)}</option>
+              ))}
+            </select>
+            <select
+              aria-label={bg ? "Филтър по приоритет" : "Filter by priority"}
+              className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  priority: event.target.value as ApplicationFilters["priority"],
+                }))
+              }
+              value={filters.priority}
+            >
+              <option value="all">{bg ? "Всички приоритети" : "All priorities"}</option>
+              <option value="high">{bg ? "Висок" : "High"}</option>
+              <option value="normal">{bg ? "Нормален" : "Normal"}</option>
+              <option value="low">{bg ? "Нисък" : "Low"}</option>
+            </select>
+            <select
+              aria-label={bg ? "Филтър архив" : "Archive filter"}
+              className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  archive: event.target.value as ApplicationFilters["archive"],
+                }))
+              }
+              value={filters.archive}
+            >
+              <option value="active">{bg ? "Активни" : "Active"}</option>
+              <option value="archived">{bg ? "Архивирани" : "Archived"}</option>
+              <option value="all">{bg ? "Всички" : "All"}</option>
+            </select>
+            <select
+              aria-label={bg ? "Филтър пакет" : "Packet filter"}
+              className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  packet: event.target.value as ApplicationFilters["packet"],
+                }))
+              }
+              value={filters.packet}
+            >
+              <option value="all">{bg ? "Всички пакети" : "All packets"}</option>
+              <option value="complete">{bg ? "Пълни" : "Complete"}</option>
+              <option value="missing">{bg ? "С липси" : "Missing items"}</option>
+            </select>
+            <select
+              aria-label={bg ? "Запазен изглед" : "Saved view"}
+              className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+              onChange={(event) => {
+                const saved = savedViews.find((entry) => entry.id === event.target.value);
+                if (saved) setFilters(saved.filters);
+              }}
+              value=""
+            >
+              <option value="">{bg ? "Запазени изгледи…" : "Saved views…"}</option>
+              {savedViews.map((saved) => (
+                <option key={saved.id} value={saved.id}>{saved.name}</option>
+              ))}
+            </select>
+            <div className="flex">
+              <input
+                aria-label={bg ? "Име на изглед" : "Saved view name"}
+                className="w-32 rounded-l border border-[var(--line)] px-2 py-1.5 text-xs"
+                onChange={(event) => setSavedViewName(event.target.value)}
+                placeholder={bg ? "Име на изглед" : "View name"}
+                value={savedViewName}
+              />
+              <button
+                aria-label={bg ? "Запази изгледа" : "Save current view"}
+                className="rounded-r border border-l-0 border-[var(--line)] px-2"
+                disabled={!savedViewName.trim()}
+                onClick={saveCurrentView}
+                title={bg ? "Запази изгледа" : "Save current view"}
+                type="button"
+              >
+                <BookmarkPlus aria-hidden className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </>
+        ) : null}
+      </div>
+
+      {view === "analytics" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <ApplicationAnalyticsView language={language} />
+        </div>
+      ) : view === "evidence" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <CareerEvidenceView defaultCvId={defaultCvId} language={language} />
+        </div>
+      ) : (
       <div className="grid min-h-0 flex-1 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+        {view === "today" ? (
+          <ApplicationTodayView
+            applications={filteredApplications}
+            language={language}
+            onComplete={(application) => void completeNextAction(application)}
+            onOpen={openEdit}
+          />
+        ) : (
         <div className="grid min-h-0 min-w-0 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-3 xl:grid-cols-6">
           {APPLICATION_STATUSES.map((status) => (
             <div
@@ -833,6 +1170,18 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             titleOk={`${t.chipLetter}: ${t.chipOk}`}
                           />
                         </div>
+                        {app.next_action ? (
+                          <p className="mt-1 truncate text-[9px] text-[var(--ink-muted)]">
+                            {new Date(app.next_action.due_at).toLocaleDateString()} ·{" "}
+                            {app.next_action.title}
+                          </p>
+                        ) : null}
+                        <div className="mt-1 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide text-[var(--ink-muted)]">
+                          <span>{app.priority ?? "normal"}</span>
+                          {duplicates[app.id]?.length ? (
+                            <span>{bg ? "Дубликат" : "Duplicate"}</span>
+                          ) : null}
+                        </div>
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
@@ -899,8 +1248,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             </div>
           ))}
         </div>
+        )}
 
-        {drag && dragApp ? (
+        {view === "board" && drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
             <div className="flex items-start gap-1.5 border-b border-white/25 bg-slate-700 px-2.5 py-2.5">
               <div className="min-w-0 flex-1">
@@ -973,17 +1323,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             {editorOpen ? t.editorHint : t.editorIdleHint}
           </p>
 
-          {!editorOpen ? (
-            <div className="mt-4 flex flex-1 flex-col items-start justify-center gap-2 text-xs text-[var(--ink-muted)]">
-              <button
-                className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white"
-                onClick={openNew}
-                type="button"
-              >
-                {t.newApplication}
-              </button>
-            </div>
-          ) : (
+          {editorOpen ? (
             <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto">
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.applicationName}
@@ -996,6 +1336,89 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   value={draft.packet_title || ""}
                 />
               </label>
+
+              {draft.id && duplicates[draft.id]?.length ? (
+                <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900">
+                  {bg
+                    ? `Възможен дубликат: ${duplicates[draft.id].length} друго кандидатстване със същия URL или компания/позиция.`
+                    : `Possible duplicate: ${duplicates[draft.id].length} other application with the same URL or company/role.`}
+                </p>
+              ) : null}
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="block text-[10px] font-medium text-slate-700">
+                  {bg ? "Приоритет" : "Priority"}
+                  <select
+                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        priority: event.target.value as Application["priority"],
+                      }))
+                    }
+                    value={draft.priority ?? "normal"}
+                  >
+                    <option value="high">{bg ? "Висок" : "High"}</option>
+                    <option value="normal">{bg ? "Нормален" : "Normal"}</option>
+                    <option value="low">{bg ? "Нисък" : "Low"}</option>
+                  </select>
+                </label>
+                <label className="block text-[10px] font-medium text-slate-700">
+                  {bg ? "Източник" : "Source"}
+                  <input
+                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        source: event.target.value,
+                      }))
+                    }
+                    placeholder="LinkedIn"
+                    value={draft.source ?? ""}
+                  />
+                </label>
+                <label className="block text-[10px] font-medium text-slate-700">
+                  {bg ? "Локация" : "Location"}
+                  <input
+                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        location: event.target.value,
+                      }))
+                    }
+                    value={draft.location ?? ""}
+                  />
+                </label>
+                <label className="block text-[10px] font-medium text-slate-700">
+                  {bg ? "Семейство роли" : "Role family"}
+                  <input
+                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        role_family: event.target.value,
+                      }))
+                    }
+                    placeholder={bg ? "Product, Engineering…" : "Product, Engineering…"}
+                    value={draft.role_family ?? ""}
+                  />
+                </label>
+                <label className="block text-[10px] font-medium text-slate-700 sm:col-span-2">
+                  {bg ? "CV семейство" : "CV family"}
+                  <input
+                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        cv_family: event.target.value,
+                      }))
+                    }
+                    placeholder={bg ? "Напр. Product Leadership" : "e.g. Product Leadership"}
+                    value={draft.cv_family ?? ""}
+                  />
+                </label>
+              </div>
 
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.resumeCv}
@@ -1185,6 +1608,29 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 />
               </label>
 
+              {selectedApplication ? (
+                <>
+                  <ApplicationSubmissionHistory
+                    application={selectedApplication}
+                    disabled={busy}
+                    language={language}
+                    onChanged={(message) =>
+                      void refreshApplication(selectedApplication.id, message)
+                    }
+                    templateId={defaultTemplateId}
+                    theme={defaultTemplateTheme}
+                  />
+                  <ApplicationActivityTimeline
+                    application={selectedApplication}
+                    disabled={busy}
+                    language={language}
+                    onChanged={(message) =>
+                      void refreshApplication(selectedApplication.id, message)
+                    }
+                  />
+                </>
+              ) : null}
+
               <div className="mt-auto flex flex-wrap gap-2 pt-2">
                 <button
                   className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
@@ -1205,10 +1651,28 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     {t.exportPacket}
                   </button>
                 ) : null}
+                {selectedApplication ? (
+                  <button
+                    className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+                    disabled={busy}
+                    onClick={() => void setArchived(selectedApplication)}
+                    type="button"
+                  >
+                    <Archive aria-hidden className="h-3.5 w-3.5" />
+                    {selectedApplication.archived_at
+                      ? bg
+                        ? "Възстанови"
+                        : "Restore"
+                      : bg
+                        ? "Архивирай"
+                        : "Archive"}
+                  </button>
+                ) : null}
                 <button
                   className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold"
                   disabled={busy}
                   onClick={() => {
+                    onAssistantSelectionChange?.(null);
                     setEditorOpen(false);
                     setDraft(emptyDraft());
                   }}
@@ -1218,9 +1682,10 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 </button>
               </div>
             </div>
-          )}
+          ) : null}
         </aside>
       </div>
+      )}
     </div>
   );
 }

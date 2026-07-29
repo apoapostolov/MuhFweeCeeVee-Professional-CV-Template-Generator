@@ -15,6 +15,90 @@ export const APPLICATION_STATUSES = [
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
+export const APPLICATION_PRIORITIES = ["low", "normal", "high"] as const;
+export type ApplicationPriority = (typeof APPLICATION_PRIORITIES)[number];
+
+export const APPLICATION_ACTIVITY_TYPES = [
+  "created",
+  "applied",
+  "status_change",
+  "recruiter_contact",
+  "follow_up_sent",
+  "phone_screen",
+  "interview_round",
+  "assessment",
+  "offer",
+  "rejection",
+  "note",
+] as const;
+export type ApplicationActivityType =
+  (typeof APPLICATION_ACTIVITY_TYPES)[number];
+
+export type ApplicationContact = {
+  id: string;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  linkedin_url?: string;
+  notes?: string;
+  created_at: string;
+};
+
+export type ApplicationActivity = {
+  id: string;
+  type: ApplicationActivityType;
+  occurred_at: string;
+  summary: string;
+  notes?: string;
+  contact_id?: string;
+  meeting_url?: string;
+  round?: string;
+  outcome?: string;
+  from_status?: ApplicationStatus;
+  to_status?: ApplicationStatus;
+};
+
+export type ApplicationNextAction = {
+  title: string;
+  due_at: string;
+  priority: ApplicationPriority;
+  contact_id?: string;
+  meeting_url?: string;
+  reminder_state: "none" | "scheduled" | "dismissed";
+  completed_at?: string;
+};
+
+export type ApplicationSubmissionAsset = {
+  file: string;
+  sha256: string;
+  bytes: number;
+};
+
+export type ApplicationSubmissionSnapshot = {
+  id: string;
+  submitted_at: string;
+  source?: string;
+  submission_url?: string;
+  confirmation_reference?: string;
+  template_id: string;
+  theme?: string;
+  cv_id: string;
+  cv_revision?: string;
+  cv_sha256: string;
+  cover_letter_id?: string;
+  cover_letter_version?: number;
+  photo_id?: string;
+  job_id?: string;
+  assets: {
+    manifest: ApplicationSubmissionAsset;
+    cv_source: ApplicationSubmissionAsset;
+    cv_pdf: ApplicationSubmissionAsset;
+    cover_letter?: ApplicationSubmissionAsset;
+    photo?: ApplicationSubmissionAsset;
+  };
+};
+
 /**
  * Kanban card + application packet refs.
  * Packet = CV + Photo + Company/Job + Cover letter bindings (always editable).
@@ -37,6 +121,21 @@ export type Application = {
   cover_letter_id?: string;
   /** Optional human label for the combo pack. */
   packet_title?: string;
+  /** Portfolio-scale organization and reporting fields. */
+  priority?: ApplicationPriority;
+  source?: string;
+  location?: string;
+  role_family?: string;
+  cv_family?: string;
+  archived_at?: string;
+  raw_job_input?: string;
+  deadline_at?: string;
+  salary_text?: string;
+  employment_type?: string;
+  next_action?: ApplicationNextAction;
+  contacts?: ApplicationContact[];
+  activities?: ApplicationActivity[];
+  submission_snapshots?: ApplicationSubmissionSnapshot[];
   /**
    * Clock for “days without moving up”.
    * Set when the card is created or moved to a later stage.
@@ -206,10 +305,155 @@ function isStatus(value: string): value is ApplicationStatus {
   return (APPLICATION_STATUSES as readonly string[]).includes(value);
 }
 
+function isPriority(value: unknown): value is ApplicationPriority {
+  return (
+    typeof value === "string" &&
+    (APPLICATION_PRIORITIES as readonly string[]).includes(value)
+  );
+}
+
+function isActivityType(value: unknown): value is ApplicationActivityType {
+  return (
+    typeof value === "string" &&
+    (APPLICATION_ACTIVITY_TYPES as readonly string[]).includes(value)
+  );
+}
+
 function normalizeOptionalId(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeContacts(value: unknown): ApplicationContact[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (entry): entry is Partial<ApplicationContact> =>
+        Boolean(entry) && typeof entry === "object",
+    )
+    .map((entry) => ({
+      id: normalizeOptionalId(entry.id) ?? newId(),
+      name: normalizeOptionalId(entry.name) ?? "Contact",
+      role: normalizeOptionalId(entry.role),
+      email: normalizeOptionalId(entry.email),
+      phone: normalizeOptionalId(entry.phone),
+      linkedin_url: normalizeOptionalId(entry.linkedin_url),
+      notes: normalizeOptionalId(entry.notes),
+      created_at:
+        normalizeOptionalId(entry.created_at) ?? new Date().toISOString(),
+    }));
+}
+
+function normalizeActivities(value: unknown): ApplicationActivity[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (entry): entry is Partial<ApplicationActivity> =>
+        Boolean(entry) && typeof entry === "object",
+    )
+    .map((entry) => ({
+      id: normalizeOptionalId(entry.id) ?? newId(),
+      type: isActivityType(entry.type) ? entry.type : "note",
+      occurred_at:
+        normalizeOptionalId(entry.occurred_at) ?? new Date().toISOString(),
+      summary: normalizeOptionalId(entry.summary) ?? "Activity",
+      notes: normalizeOptionalId(entry.notes),
+      contact_id: normalizeOptionalId(entry.contact_id),
+      meeting_url: normalizeOptionalId(entry.meeting_url),
+      round: normalizeOptionalId(entry.round),
+      outcome: normalizeOptionalId(entry.outcome),
+      from_status:
+        typeof entry.from_status === "string" && isStatus(entry.from_status)
+          ? entry.from_status
+          : undefined,
+      to_status:
+        typeof entry.to_status === "string" && isStatus(entry.to_status)
+          ? entry.to_status
+          : undefined,
+    }))
+    .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+}
+
+function normalizeNextAction(value: unknown): ApplicationNextAction | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<ApplicationNextAction>;
+  const title = normalizeOptionalId(raw.title);
+  const due_at = normalizeOptionalId(raw.due_at);
+  if (!title || !due_at) return undefined;
+  return {
+    title,
+    due_at,
+    priority: isPriority(raw.priority) ? raw.priority : "normal",
+    contact_id: normalizeOptionalId(raw.contact_id),
+    meeting_url: normalizeOptionalId(raw.meeting_url),
+    reminder_state:
+      raw.reminder_state === "scheduled" || raw.reminder_state === "dismissed"
+        ? raw.reminder_state
+        : "none",
+    completed_at: normalizeOptionalId(raw.completed_at),
+  };
+}
+
+function normalizeSubmissionSnapshots(
+  value: unknown,
+): ApplicationSubmissionSnapshot[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (entry): entry is ApplicationSubmissionSnapshot =>
+        Boolean(entry) &&
+        typeof entry === "object" &&
+        typeof (entry as ApplicationSubmissionSnapshot).id === "string" &&
+        typeof (entry as ApplicationSubmissionSnapshot).cv_id === "string" &&
+        typeof (entry as ApplicationSubmissionSnapshot).template_id ===
+          "string",
+    )
+    .sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
+}
+
+function resolveActivities(params: {
+  existing: Application | undefined;
+  nextStatus: ApplicationStatus;
+  now: string;
+  explicit?: ApplicationActivity[];
+  companyName: string;
+  jobTitle: string;
+}): ApplicationActivity[] {
+  if (params.explicit !== undefined) {
+    return params.explicit;
+  }
+  if (!params.existing) {
+    return [
+      {
+        id: newId(),
+        type: "created",
+        occurred_at: params.now,
+        summary: `Created ${params.jobTitle} at ${params.companyName}`,
+      },
+    ];
+  }
+  if (params.existing.status === params.nextStatus) {
+    return params.existing.activities ?? [];
+  }
+  return [
+    {
+      id: newId(),
+      type:
+        params.nextStatus === "applied"
+          ? "applied"
+          : params.nextStatus === "offer"
+            ? "offer"
+            : params.nextStatus === "rejected"
+              ? "rejection"
+              : "status_change",
+      occurred_at: params.now,
+      summary: `Moved from ${params.existing.status} to ${params.nextStatus}`,
+      from_status: params.existing.status,
+      to_status: params.nextStatus,
+    },
+    ...(params.existing.activities ?? []),
+  ];
 }
 
 function normalizeApplication(raw: Partial<Application> & { id: string }): Application {
@@ -235,6 +479,23 @@ function normalizeApplication(raw: Partial<Application> & { id: string }): Appli
     photo_id: normalizeOptionalId(raw.photo_id),
     cover_letter_id: normalizeOptionalId(raw.cover_letter_id),
     packet_title: normalizeOptionalId(raw.packet_title),
+    priority: isPriority(raw.priority) ? raw.priority : "normal",
+    source: normalizeOptionalId(raw.source),
+    location: normalizeOptionalId(raw.location),
+    role_family: normalizeOptionalId(raw.role_family),
+    cv_family: normalizeOptionalId(raw.cv_family),
+    archived_at: normalizeOptionalId(raw.archived_at),
+    raw_job_input:
+      typeof raw.raw_job_input === "string" ? raw.raw_job_input : undefined,
+    deadline_at: normalizeOptionalId(raw.deadline_at),
+    salary_text: normalizeOptionalId(raw.salary_text),
+    employment_type: normalizeOptionalId(raw.employment_type),
+    next_action: normalizeNextAction(raw.next_action),
+    contacts: normalizeContacts(raw.contacts),
+    activities: normalizeActivities(raw.activities),
+    submission_snapshots: normalizeSubmissionSnapshots(
+      raw.submission_snapshots,
+    ),
     status_since,
     created_at,
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : new Date().toISOString(),
@@ -301,17 +562,32 @@ export async function upsertApplication(
     explicit:
       typeof input.status_since === "string" ? input.status_since : undefined,
   });
+  const companyName =
+    input.company_name.trim() || existing?.company_name || "Company";
+  const jobTitle = input.job_title.trim() || existing?.job_title || "Role";
+  const activities = resolveActivities({
+    existing,
+    nextStatus: status,
+    now,
+    explicit: input.activities,
+    companyName,
+    jobTitle,
+  });
 
   const nextApp = normalizeApplication({
     id,
     company_id:
       input.company_id !== undefined ? input.company_id : existing?.company_id,
     job_id: input.job_id !== undefined ? input.job_id : existing?.job_id,
-    company_name: input.company_name.trim() || existing?.company_name || "Company",
-    job_title: input.job_title.trim() || existing?.job_title || "Role",
+    company_name: companyName,
+    job_title: jobTitle,
     status,
     url: input.url !== undefined ? input.url : existing?.url,
-    applied_at: input.applied_at !== undefined ? input.applied_at : existing?.applied_at,
+    applied_at:
+      input.applied_at !== undefined
+        ? input.applied_at
+        : existing?.applied_at ??
+          (status === "applied" ? now : undefined),
     notes: input.notes !== undefined ? input.notes : existing?.notes,
     cv_id: input.cv_id !== undefined ? input.cv_id : existing?.cv_id,
     photo_id: input.photo_id !== undefined ? input.photo_id : existing?.photo_id,
@@ -321,6 +597,48 @@ export async function upsertApplication(
         : existing?.cover_letter_id,
     packet_title:
       input.packet_title !== undefined ? input.packet_title : existing?.packet_title,
+    priority:
+      input.priority !== undefined ? input.priority : existing?.priority,
+    source: input.source !== undefined ? input.source : existing?.source,
+    location:
+      input.location !== undefined ? input.location : existing?.location,
+    role_family:
+      input.role_family !== undefined
+        ? input.role_family
+        : existing?.role_family,
+    cv_family:
+      input.cv_family !== undefined ? input.cv_family : existing?.cv_family,
+    archived_at:
+      input.archived_at !== undefined
+        ? input.archived_at
+        : existing?.archived_at,
+    raw_job_input:
+      input.raw_job_input !== undefined
+        ? input.raw_job_input
+        : existing?.raw_job_input,
+    deadline_at:
+      input.deadline_at !== undefined
+        ? input.deadline_at
+        : existing?.deadline_at,
+    salary_text:
+      input.salary_text !== undefined
+        ? input.salary_text
+        : existing?.salary_text,
+    employment_type:
+      input.employment_type !== undefined
+        ? input.employment_type
+        : existing?.employment_type,
+    next_action:
+      input.next_action !== undefined
+        ? input.next_action
+        : existing?.next_action,
+    contacts:
+      input.contacts !== undefined ? input.contacts : existing?.contacts,
+    activities,
+    submission_snapshots:
+      input.submission_snapshots !== undefined
+        ? input.submission_snapshots
+        : existing?.submission_snapshots,
     status_since,
     created_at: existing?.created_at || now,
     updated_at: now,
@@ -328,6 +646,119 @@ export async function upsertApplication(
 
   const rest = board.applications.filter((a) => a.id !== id);
   return writeBoard({ version: 1, applications: [...rest, nextApp] });
+}
+
+export async function mutateApplication(
+  id: string,
+  mutate: (application: Application) => Application,
+): Promise<{ board: ApplicationBoard; application: Application }> {
+  const board = await readApplicationBoard();
+  const existing = board.applications.find((entry) => entry.id === id);
+  if (!existing) {
+    throw new Error(`Application '${id}' not found.`);
+  }
+  const application = normalizeApplication({
+    ...mutate(existing),
+    id,
+    created_at: existing.created_at,
+    updated_at: new Date().toISOString(),
+  });
+  const written = await writeBoard({
+    version: 1,
+    applications: [
+      ...board.applications.filter((entry) => entry.id !== id),
+      application,
+    ],
+  });
+  return {
+    board: written,
+    application:
+      written.applications.find((entry) => entry.id === id) ?? application,
+  };
+}
+
+export async function appendApplicationActivity(
+  id: string,
+  input: Omit<ApplicationActivity, "id"> & { id?: string },
+): Promise<{ board: ApplicationBoard; application: Application }> {
+  const activity: ApplicationActivity = {
+    ...input,
+    id: input.id ?? newId(),
+  };
+  return mutateApplication(id, (application) => ({
+    ...application,
+    activities: [activity, ...(application.activities ?? [])],
+  }));
+}
+
+export async function addApplicationContact(
+  id: string,
+  input: Omit<ApplicationContact, "id" | "created_at"> & {
+    id?: string;
+    created_at?: string;
+  },
+): Promise<{ board: ApplicationBoard; application: Application }> {
+  const contact: ApplicationContact = {
+    ...input,
+    id: input.id ?? newId(),
+    created_at: input.created_at ?? new Date().toISOString(),
+  };
+  return mutateApplication(id, (application) => ({
+    ...application,
+    contacts: [...(application.contacts ?? []), contact],
+  }));
+}
+
+export function normalizeApplicationUrl(value: string | undefined): string {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (
+        key.toLowerCase().startsWith("utm_") ||
+        ["ref", "source", "tracking"].includes(key.toLowerCase())
+      ) {
+        url.searchParams.delete(key);
+      }
+    }
+    return url.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return value.trim().replace(/\/$/, "").toLowerCase();
+  }
+}
+
+function normalizedIdentity(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+export function findApplicationDuplicates(
+  applications: Application[],
+): Record<string, string[]> {
+  const groups = new Map<string, string[]>();
+  for (const application of applications) {
+    const keys = [
+      normalizeApplicationUrl(application.url),
+      `${normalizedIdentity(application.company_name)}::${normalizedIdentity(
+        application.job_title,
+      )}`,
+    ].filter(Boolean);
+    for (const key of keys) {
+      const ids = groups.get(key) ?? [];
+      ids.push(application.id);
+      groups.set(key, ids);
+    }
+  }
+  const duplicates: Record<string, string[]> = {};
+  for (const ids of groups.values()) {
+    if (ids.length < 2) continue;
+    for (const id of ids) {
+      duplicates[id] = [
+        ...new Set([...(duplicates[id] ?? []), ...ids.filter((x) => x !== id)]),
+      ];
+    }
+  }
+  return duplicates;
 }
 
 export async function deleteApplication(id: string): Promise<ApplicationBoard> {

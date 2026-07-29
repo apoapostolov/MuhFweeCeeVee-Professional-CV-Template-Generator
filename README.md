@@ -49,6 +49,50 @@ Review available CV templates side-by-side, then finalize profile-photo quality 
   <img src="images/SCREENSHOT_06.png" width="49%" />
 </p>
 
+### 4) Portable job-search backups
+
+Download a single ZIP from **Settings → Import / Export Data**. It contains the
+merge-restorable session manifest, structured CV sources, photos referenced by
+applications or approved in Photo Booth, and optionally generated application
+PDFs using the currently selected template. It also carries the career-evidence
+library and every immutable submission asset already frozen for an application.
+ZIP restore preserves CV, application, cover-letter, photo, evidence, and
+submission IDs. Private MuhFwee AI conversations and saved playbooks stay out
+of backups by default; an explicit checkbox includes a redacted copy that
+restores as archived history so old approvals cannot run.
+
+### 5) Power-user application operations
+
+Use **Board** as a job-search operations center rather than only a Kanban:
+
+- freeze the exact CV source, rendered PDF, cover letter, selected photo, target
+  metadata, ATS result, and checksums when applying
+- compare the latest submitted packet with the current working files
+- record recruiter contacts and a chronological activity trail
+- drive follow-ups from **Today**, including overdue and upcoming actions
+- paste a job description or listing URL into **Quick Intake** to create or
+  reuse Research and Wishlist records while preserving the original input
+- search, filter, save views, archive stale applications, flag likely
+  duplicates, and inspect event-derived funnel analytics
+- keep verified achievements and other reusable material in **Evidence**, then
+  link selected evidence to a CV with provenance
+
+### 6) Confirmed-management MuhFwee AI copilot
+
+Open the circular **MuhFwee AI** launcher in the lower-right corner from any
+workspace panel. The copilot receives the visible CV/job/company/template
+context, discovers the local MCP tool catalog, and can inspect records or run
+deterministic derived checks. Every tool call is visible in the conversation.
+For CV, Research, cover-letter, and application changes, the assistant pauses
+on a field-level approval card showing the target, before/after values,
+recovery guidance, and estimated AI cost when pricing is available. Approval
+is revision-bound and exactly-once; changed targets become stale rather than
+being silently overwritten. Sensitive settings and bulk imports remain blocked.
+For repeated workflows, MuhFwee AI can show a multi-step plan, reuse saved
+playbooks, search or archive conversations, group coherent pending approvals,
+and take you directly to the affected workspace panel after a successful
+operation.
+
 ## 1.3.1 Release Scope
 
 Version **`1.3.1`** is the current release — research → tailored CV → letter → application pack → print → local container deployment:
@@ -58,9 +102,9 @@ Version **`1.3.1`** is the current release — research → tailored CV → lett
 | **Research** | Single company/job catalog; staged company enrich; **Include Research** (pay for web only when you want it); local JD keyword extract |
 | **Editor** | Target a Research company + job; keyword highlight + gap; deterministic **ATS check** (no LLM) |
 | **Letters** | Cover letters bound to CV + target; cheap AI draft + **humanizer** pass to strip AI-isms |
-| **Board** | Kanban by stage; each card is a **packet** (CV + photo + company + letter); download / open packet files; copy pack for a similar role |
+| **Board** | Kanban, Today queue, Quick Intake, immutable submitted packets, activity/contact history, saved views, archive/duplicate controls, evidence library, and event-derived analytics |
 | **Print Room** | Template PDF preview/export, photo modes, text-scale tweaks |
-| **MCP** | Agent tools for enrich, keywords, gap, ATS, letters, packets |
+| **MCP / Copilot** | Contextual, streamed MuhFwee AI panel with plans, playbooks, conversation search/archive, coherent approval batches, direct handoffs, and revision-bound approval cards |
 | **Docker Compose** | Secure local container deployment with persistent CV, photo, and settings storage |
 
 Also: field contracts (no inventable emails/phones), lighter photo gallery payloads, dark-mode scrollbar polish.
@@ -99,8 +143,14 @@ Process templates (adapted from shared defaults), checklists, and product specs:
 
 ```bash
 npm run bootstrap
-npm run dev
+npx playwright install chromium
+npm run dev:windows:start
 ```
+
+Open `http://127.0.0.1:10004`. Use `npm run dev:windows:restart` after a
+development change and `npm run dev:windows:stop` when finished. `npm run dev`
+runs the same Windows-native server in the foreground. A polling-based
+`npm run dev:wsl` remains available as a slower fallback.
 
 Optional parser service (second terminal; **scaffold only**, see
 [`services/parser/README.md`](services/parser/README.md)):

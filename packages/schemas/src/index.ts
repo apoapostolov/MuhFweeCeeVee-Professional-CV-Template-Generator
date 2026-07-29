@@ -4,3 +4,4 @@ export const MAPPING_SCHEMA_VERSION = 'mapping.v1';
 
 export * from './cvScoring';
 export * from './cvSchema';
+export * from './assistant';

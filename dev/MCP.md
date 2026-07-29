@@ -2,7 +2,7 @@
 
 MCP stdio server that proxies the MuhFweeCeeVee web API (`/api/*`).
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Install
 
@@ -35,6 +35,31 @@ MFCV_API_TOKEN=your-token CV_API_BASE_URL=http://127.0.0.1:3005/api npm run mcp:
 ```
 
 (`CV_API_TOKEN` is accepted as an alias.) MCP sends `Authorization: Bearer …` and `x-mfcv-api-token` on every request.
+
+## Assistant safety metadata
+
+Every registered tool has a canonical safety class and structured target
+metadata in
+`packages/schemas/src/assistantToolCatalog.json`. MCP discovery exposes these
+under `_meta["muhfweeceevee/assistantPolicy"]`, together with standard MCP
+read-only and destructive annotations.
+
+The metadata is descriptive, not an authorization mechanism. The internal
+assistant applies the server-owned policy in
+`apps/web/src/lib/server/assistantToolPolicy.ts`: read and derived-output tools
+may run, paid/write/destructive tools require proportional approval, and
+sensitive settings, bulk/session imports, retired tools, and unknown tools are
+blocked. New MCP registrations fail at startup until they receive an explicit
+catalog entry.
+
+MuhFwee AI connects to this wrapper through a server-owned stdio client. It
+discovers tools at runtime, selects at most 16 context-relevant tools per turn,
+and re-runs the policy gate before execution. Read and derived tools run within
+the bounded model turn. Phase 2 CV, Research, cover-letter, and application
+mutations become persisted proposals; a separate approval endpoint rechecks
+context and target content, consumes a server token, atomically claims the
+proposal, and only then calls MCP. The browser receives redacted tool events
+but never receives MCP credentials or approval tokens.
 
 ## Client config (stdio)
 
@@ -130,6 +155,33 @@ Print tweak query params (optional on URL tools): `removePhoto`, `moveSkillsLeft
 | `companies_metadata_get` | `GET /companies` or `?source=example\|personal` |
 | `companies_metadata_put` | `PUT /companies?source=` |
 
+### Application operations
+
+| Tool | API |
+|------|-----|
+| `applications_list` | `GET /applications` |
+| `application_save` | `POST /applications` |
+| `application_get` | `GET /applications/:id` |
+| `application_update` | `PATCH /applications/:id` |
+| `application_activity_add` | `POST /applications/:id/activities` |
+| `application_contact_add` | `POST /applications/:id/contacts` |
+| `application_submission_create` | `POST /applications/:id/submissions` |
+| `application_quick_intake` | `POST /applications/intake` |
+| `application_analytics` | `GET /applications/analytics` |
+
+Existing packet tools export, import, and duplicate reusable application
+packets. Submission creation is distinct: it freezes immutable checksummed
+artifacts representing what was actually sent.
+
+### Career evidence
+
+| Tool | API |
+|------|-----|
+| `career_evidence_list` | `GET /evidence` |
+| `career_evidence_save` | `POST /evidence` |
+| `career_evidence_delete` | `DELETE /evidence/:id` |
+| `career_evidence_link_cv` | `POST /evidence/:id/links` |
+
 ### OpenRouter settings
 
 | Tool | API |
@@ -142,7 +194,7 @@ Print tweak query params (optional on URL tools): `removePhoto`, `moveSkillsLeft
 
 | Tool | Description |
 |------|-------------|
-| `session_backup_export` | Server data only (catalog, metadata, CVs) |
+| `session_backup_export` | Server data (catalog, metadata, CVs, applications, letters, evidence) |
 | `session_backup_import` | Restore from `{ server: { … } }` or full backup object |
 
 Browser `localStorage` is not available over MCP; use the web **Settings → Import / Export** UI for full session JSON.

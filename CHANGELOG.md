@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **MuhFwee AI Phases 1–3** — a lower-right launcher opens a responsive, contextual
+  copilot with private local conversations, streamed responses, visible MCP
+  tool activity, cancellation, reconnect/retry recovery, draft persistence,
+  token usage, multi-step plans, saved playbooks, searchable/archiveable
+  conversations, direct workspace handoffs, and keyboard-complete controls.
+  Reads run automatically; CV,
+  Research, cover-letter, and application changes pause on field-level approval
+  cards with target revisions, recovery guidance, proportional destructive or
+  paid wording, and pricing estimates when available. Server-issued tokens,
+  target rechecks, exactly-once execution, and a private audit ledger prevent
+  stale or duplicated writes. Coherent pending operations can be reviewed and
+  applied as one batch without weakening their individual checks. Assistant
+  history stays out of backups by default; an explicit opt-in exports redacted
+  history and restores it archived. Sensitive settings and bulk operations
+  remain unavailable.
+- **Power-user application operations** — Board now includes immutable
+  submission snapshots with checksummed CV/PDF/letter/photo/target/ATS assets,
+  submitted-vs-current comparison, activity and contact timelines, next-action
+  scheduling with a Today queue, Quick Intake from pasted listings, search and
+  saved views, archive/duplicate controls, reusable career evidence with CV
+  provenance, and event-derived funnel analytics.
+- **Portable session ZIP backups** — downloads now combine the v4 session
+  manifest with structured CV sources, photos actually referenced by
+  applications or approved in Photo Booth, per-photo analysis history, career
+  evidence, immutable submission assets, and optional generated application
+  PDFs. ZIP imports preserve photo and submission IDs while merging matching
+  CVs, applications, cover letters, and evidence; records absent from the
+  backup remain untouched.
+
 ## [1.3.1] - 2026-07-29
 
 ### Added

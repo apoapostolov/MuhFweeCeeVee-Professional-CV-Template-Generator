@@ -253,6 +253,27 @@ export async function appendPhotoAnalysis(
   return next;
 }
 
+export async function replacePhotoAnalysisHistory(
+  photoId: string,
+  history: unknown[],
+): Promise<StoredPhotoAnalysis[]> {
+  const safeId = normalizePhotoId(photoId);
+  if (!safeId) return [];
+  const normalized = history
+    .map((entry) => normalizeStoredAnalysis(entry))
+    .filter((entry): entry is StoredPhotoAnalysis => entry !== null)
+    .sort((a, b) => Date.parse(b.analyzedAt) - Date.parse(a.analyzedAt))
+    .slice(0, 50);
+  const store = await readStore();
+  if (normalized.length > 0) {
+    store.photos[safeId] = { history: normalized };
+  } else {
+    delete store.photos[safeId];
+  }
+  await writeStore(store);
+  return normalized;
+}
+
 export async function getPhotoComparisonHistory(imageIds: string[]): Promise<StoredPhotoComparison[]> {
   const signature = normalizedComparisonSignature(imageIds);
   if (!signature) return [];

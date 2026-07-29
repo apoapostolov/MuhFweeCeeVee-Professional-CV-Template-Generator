@@ -2,7 +2,11 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { getPhotoAnalysisHistory, removePhotoAnalysisHistory } from "@/lib/server/photoAnalysisStore";
+import {
+  getPhotoAnalysisHistory,
+  removePhotoAnalysisHistory,
+  replacePhotoAnalysisHistory,
+} from "@/lib/server/photoAnalysisStore";
 import { repoPath } from "@/lib/server/repoPaths";
 
 export type PhotoBoothGalleryItem = {
@@ -255,6 +259,36 @@ export async function addPhotoBoothFiles(
   }
 
   return added;
+}
+
+export async function restorePhotoBoothFile(input: {
+  id: string;
+  mimeType: string;
+  buffer: Buffer;
+  analysisHistory?: unknown[];
+}): Promise<PhotoBoothGalleryItem> {
+  const storedId = normalizePhotoId(input.id);
+  if (!storedId || storedId !== input.id || storedId === METADATA_FILE) {
+    throw new Error("Backup photo id is invalid.");
+  }
+  const ext = path.extname(storedId).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext) || !input.mimeType.startsWith("image/")) {
+    throw new Error(`Backup photo "${storedId}" is not a supported image.`);
+  }
+  if (input.buffer.length === 0 || input.buffer.length > MAX_UPLOAD_BYTES) {
+    throw new Error(`Backup photo "${storedId}" has an invalid file size.`);
+  }
+
+  await ensurePhotosDir();
+  await fs.writeFile(path.join(PHOTOS_DIR, storedId), input.buffer);
+  if (input.analysisHistory) {
+    await replacePhotoAnalysisHistory(storedId, input.analysisHistory);
+  }
+  const item = await buildGalleryItem(storedId, { includeDataUrl: false });
+  if (!item) {
+    throw new Error(`Could not restore backup photo "${storedId}".`);
+  }
+  return item;
 }
 
 export async function removePhotoBoothItem(photoId: string): Promise<boolean> {

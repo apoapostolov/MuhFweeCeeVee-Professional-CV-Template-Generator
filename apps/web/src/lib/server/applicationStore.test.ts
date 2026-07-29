@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampDwellDays,
   daysWithoutForwardProgress,
+  findApplicationDuplicates,
   isApplicationPacketFile,
   packetCompleteness,
   PACKET_FORMAT,
@@ -118,5 +119,36 @@ describe("application packets", () => {
         explicit: since,
       }),
     ).toBe(since);
+  });
+
+  it("detects duplicate URLs after stripping tracking and company-role pairs", () => {
+    const base: Application = {
+      id: "a1",
+      company_name: "Acme Inc.",
+      job_title: "Product Lead",
+      status: "wishlist",
+      url: "https://jobs.example/42?utm_source=linkedin",
+      status_since: "2026-01-01T00:00:00.000Z",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    };
+    const duplicates = findApplicationDuplicates([
+      base,
+      {
+        ...base,
+        id: "a2",
+        url: "https://jobs.example/42",
+      },
+      {
+        ...base,
+        id: "a3",
+        company_name: "Other",
+        job_title: "Engineer",
+        url: "https://jobs.example/99",
+      },
+    ]);
+    expect(duplicates.a1).toContain("a2");
+    expect(duplicates.a2).toContain("a1");
+    expect(duplicates.a3).toBeUndefined();
   });
 });

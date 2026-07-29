@@ -7,7 +7,7 @@ import { registerTools } from "./tools.mjs";
 const server = new McpServer(
   {
     name: "muhfweeceevee-api-mcp",
-    version: "0.2.0",
+    version: "0.3.0",
   },
   {
     instructions: [

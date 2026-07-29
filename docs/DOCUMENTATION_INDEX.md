@@ -11,6 +11,7 @@ Map of product and process docs for MuhFweeCeeVee.
 | [`docs/API.md`](API.md) | HTTP API reference |
 | [`docs/CV_YAML_STANDARD.md`](CV_YAML_STANDARD.md) | CV YAML shape |
 | [`docs/CV_SCORING_STANDARD.md`](CV_SCORING_STANDARD.md) | Scoring rubric |
+| [`docs/AI_COPILOT_PANEL.md`](AI_COPILOT_PANEL.md) | Internal MCP-powered AI copilot specification |
 | [`docs/RESEARCH_LINKEDIN_LIBRARIES.md`](RESEARCH_LINKEDIN_LIBRARIES.md) | Research / LinkedIn notes |
 | [`ai-skills/README.md`](../ai-skills/README.md) | Runtime product AI skills (e.g. humanizer) |
 | [`dev/MCP.md`](../dev/MCP.md) | MCP wrapper tools |

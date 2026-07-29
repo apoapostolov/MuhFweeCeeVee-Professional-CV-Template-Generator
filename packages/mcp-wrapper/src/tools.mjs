@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import assistantToolCatalog from "../../schemas/src/assistantToolCatalog.json" with { type: "json" };
 import {
   appendPrintTweakQuery,
   baseUrl,
@@ -24,12 +25,56 @@ const RETIRED_KEYWORDS_MESSAGE =
 const RETIRED_COMPANY_METADATA_RESEARCH_MESSAGE =
   "Editor company-metadata AI research was retired in v1.3. Use research_company_enrich on the Research catalog (or import metadata shells via research_catalog_import_metadata).";
 
+function assistantToolRegistration(server, name, description, inputSchema, callback) {
+  const definition = assistantToolCatalog[name];
+  if (!definition) {
+    throw new Error(`MCP tool "${name}" has no assistant safety classification.`);
+  }
+
+  const readOnly = definition.class === "read" || definition.class === "derived";
+  return server.registerTool(
+    name,
+    {
+      title: definition.title,
+      description,
+      inputSchema,
+      annotations: {
+        title: definition.title,
+        readOnlyHint: readOnly,
+        destructiveHint: definition.class === "destructive",
+        idempotentHint: readOnly,
+        openWorldHint:
+          definition.class === "paid" &&
+          (name.includes("research") || name.includes("enrich")),
+      },
+      _meta: {
+        "muhfweeceevee/assistantPolicy": {
+          class: definition.class,
+          target: definition.target,
+        },
+      },
+    },
+    callback,
+  );
+}
+
 async function fetchSessionServerSnapshot() {
-  const [catalogPayload, personalPayload, examplePayload, cvListPayload] = await Promise.all([
+  const [
+    catalogPayload,
+    personalPayload,
+    examplePayload,
+    cvListPayload,
+    applicationsPayload,
+    coverLettersPayload,
+    evidencePayload,
+  ] = await Promise.all([
     requestJson("GET", "/research/catalog").catch(() => null),
     requestJson("GET", "/companies", { query: { source: "personal" } }).catch(() => null),
     requestJson("GET", "/companies", { query: { source: "example" } }).catch(() => null),
     requestJson("GET", "/cvs"),
+    requestJson("GET", "/applications"),
+    requestJson("GET", "/cover-letters"),
+    requestJson("GET", "/evidence"),
   ]);
 
   const researchCatalog =
@@ -63,10 +108,56 @@ async function fetchSessionServerSnapshot() {
     }
   }
 
-  return { researchCatalog, companyMetadata, cvs };
+  const applications = Array.isArray(applicationsPayload?.applications)
+    ? applicationsPayload.applications
+    : [];
+  const coverLetters = [];
+  for (const document of Array.isArray(coverLettersPayload?.items)
+    ? coverLettersPayload.items
+    : []) {
+    const id = typeof document?.id === "string" ? document.id.trim() : "";
+    if (!id) continue;
+    const versionList = await requestJson("GET", "/cover-letters", {
+      query: { id, versions: 1 },
+    });
+    const versions = [];
+    for (const meta of Array.isArray(versionList?.versions) ? versionList.versions : []) {
+      const version = Number(meta?.version);
+      if (!Number.isInteger(version) || version < 1) continue;
+      const payload = await requestJson("GET", "/cover-letters", {
+        query: { id, version },
+      });
+      if (payload?.version) versions.push(payload.version);
+    }
+    coverLetters.push({ document, versions });
+  }
+  const careerEvidence = Array.isArray(evidencePayload?.entries)
+    ? evidencePayload.entries
+    : [];
+
+  return {
+    researchCatalog,
+    companyMetadata,
+    cvs,
+    applications,
+    coverLetters,
+    careerEvidence,
+  };
 }
 
 export function registerTools(server) {
+  const rawServer = server;
+  server = {
+    tool: (name, description, inputSchema, callback) =>
+      assistantToolRegistration(
+        rawServer,
+        name,
+        description,
+        inputSchema,
+        callback,
+      ),
+  };
+
   server.tool("health_check", "Ping the API health endpoint.", {}, async () =>
     toTextContent(await requestJson("GET", "/health")),
   );
@@ -74,7 +165,7 @@ export function registerTools(server) {
   server.tool("api_info", "Show MCP wrapper + target API info and tool catalog.", {}, async () => {
     return toTextContent({
       name: "muhfweeceevee-api-mcp",
-      version: "0.2.0",
+      version: "0.3.0",
       apiBaseUrl: baseUrl,
       authConfigured: Boolean((process.env.MFCV_API_TOKEN ?? process.env.CV_API_TOKEN ?? "").trim()),
       env: {
@@ -89,6 +180,8 @@ export function registerTools(server) {
         "analysis",
         "photos",
         "companies",
+        "applications",
+        "career_evidence",
         "openrouter",
         "session_backup",
       ],
@@ -378,7 +471,7 @@ export function registerTools(server) {
     async ({ jobId, job }) =>
       toTextContent(
         await requestJson("PUT", `/research/job-positions/${encodeURIComponent(jobId)}`, {
-          body: { job },
+          body: { job_position: job },
         }),
       ),
   );
@@ -584,6 +677,197 @@ export function registerTools(server) {
   );
 
   server.tool(
+    "application_get",
+    "Get one application with timeline, contacts, next action, and submission comparison.",
+    { applicationId: z.string().min(1) },
+    async ({ applicationId }) =>
+      toTextContent(
+        await requestJson("GET", `/applications/${encodeURIComponent(applicationId)}`),
+      ),
+  );
+
+  server.tool(
+    "application_update",
+    "Update application priority, portfolio fields, archive state, or next action.",
+    {
+      applicationId: z.string().min(1),
+      priority: z.enum(["low", "normal", "high"]).optional(),
+      source: z.string().optional(),
+      location: z.string().optional(),
+      role_family: z.string().optional(),
+      cv_family: z.string().optional(),
+      archived: z.boolean().optional(),
+      next_action: z.record(z.any()).nullable().optional(),
+    },
+    async ({ applicationId, ...body }) =>
+      toTextContent(
+        await requestJson("PATCH", `/applications/${encodeURIComponent(applicationId)}`, {
+          body,
+        }),
+      ),
+  );
+
+  server.tool(
+    "application_activity_add",
+    "Append a dated activity to an application timeline.",
+    {
+      applicationId: z.string().min(1),
+      type: z.enum([
+        "recruiter_contact",
+        "follow_up_sent",
+        "phone_screen",
+        "interview_round",
+        "assessment",
+        "offer",
+        "rejection",
+        "note",
+      ]),
+      summary: z.string().min(1),
+      occurred_at: z.string().optional(),
+      notes: z.string().optional(),
+      contact_id: z.string().optional(),
+      meeting_url: z.string().optional(),
+      round: z.string().optional(),
+      outcome: z.string().optional(),
+    },
+    async ({ applicationId, ...body }) =>
+      toTextContent(
+        await requestJson(
+          "POST",
+          `/applications/${encodeURIComponent(applicationId)}/activities`,
+          { body },
+        ),
+      ),
+  );
+
+  server.tool(
+    "application_contact_add",
+    "Add a recruiter, interviewer, or hiring contact to an application.",
+    {
+      applicationId: z.string().min(1),
+      name: z.string().min(1),
+      role: z.string().optional(),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      linkedin_url: z.string().optional(),
+      notes: z.string().optional(),
+    },
+    async ({ applicationId, ...body }) =>
+      toTextContent(
+        await requestJson(
+          "POST",
+          `/applications/${encodeURIComponent(applicationId)}/contacts`,
+          { body },
+        ),
+      ),
+  );
+
+  server.tool(
+    "application_submission_create",
+    "Freeze the exact submitted CV PDF/source, letter, photo, job record, ATS report, and hashes.",
+    {
+      applicationId: z.string().min(1),
+      templateId: z.string().min(1),
+      theme: z.string().optional(),
+      source: z.string().optional(),
+      submissionUrl: z.string().optional(),
+      confirmationReference: z.string().optional(),
+      submittedAt: z.string().optional(),
+    },
+    async ({ applicationId, ...body }) =>
+      toTextContent(
+        await requestJson(
+          "POST",
+          `/applications/${encodeURIComponent(applicationId)}/submissions`,
+          { body },
+        ),
+      ),
+  );
+
+  server.tool(
+    "application_quick_intake",
+    "Create or deduplicate a company, researched job, and Wishlist application from a pasted URL or description.",
+    {
+      raw: z.string().min(1),
+      companyName: z.string().optional(),
+      jobTitle: z.string().optional(),
+      location: z.string().optional(),
+      source: z.string().optional(),
+    },
+    async (body) =>
+      toTextContent(await requestJson("POST", "/applications/intake", { body })),
+  );
+
+  server.tool(
+    "application_analytics",
+    "Read event-derived application funnel, timing, source, and data-quality metrics.",
+    {},
+    async () =>
+      toTextContent(await requestJson("GET", "/applications/analytics")),
+  );
+
+  server.tool(
+    "career_evidence_list",
+    "List verified reusable career evidence and provenance.",
+    {},
+    async () => toTextContent(await requestJson("GET", "/evidence")),
+  );
+
+  server.tool(
+    "career_evidence_save",
+    "Create or update a verified career evidence entry.",
+    {
+      id: z.string().optional(),
+      kind: z
+        .enum([
+          "achievement",
+          "responsibility",
+          "skill",
+          "project",
+          "leadership",
+          "domain",
+        ])
+        .optional(),
+      title: z.string().optional(),
+      statement: z.string().min(1),
+      metric: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      role_families: z.array(z.string()).optional(),
+      seniority: z.string().optional(),
+      industries: z.array(z.string()).optional(),
+      source: z.string().optional(),
+      source_cv_ids: z.array(z.string()).optional(),
+      last_verified_at: z.string().optional(),
+    },
+    async (body) =>
+      toTextContent(await requestJson("POST", "/evidence", { body })),
+  );
+
+  server.tool(
+    "career_evidence_delete",
+    "Delete one career evidence entry.",
+    { evidenceId: z.string().min(1) },
+    async ({ evidenceId }) =>
+      toTextContent(
+        await requestJson("DELETE", `/evidence/${encodeURIComponent(evidenceId)}`),
+      ),
+  );
+
+  server.tool(
+    "career_evidence_link_cv",
+    "Record a provenance link from one evidence entry to a CV.",
+    { evidenceId: z.string().min(1), cvId: z.string().min(1) },
+    async ({ evidenceId, cvId }) =>
+      toTextContent(
+        await requestJson(
+          "POST",
+          `/evidence/${encodeURIComponent(evidenceId)}/links`,
+          { body: { cvId } },
+        ),
+      ),
+  );
+
+  server.tool(
     "analysis_cv",
     "Score a CV section or full CV (optional company + job targeting).",
     {
@@ -758,12 +1042,12 @@ export function registerTools(server) {
 
   server.tool(
     "session_backup_export",
-    "Export server-side session data (research catalog, company metadata, all CVs). Browser localStorage is not included.",
+    "Export server-side session data (research, CVs, applications, letters, and career evidence). Browser localStorage and binary assets are not included.",
     {},
     async () => {
       const server = await fetchSessionServerSnapshot();
       return toTextContent({
-        version: 2,
+        version: 4,
         exportedAt: new Date().toISOString(),
         note: "MCP export covers server data only. Import localStorage keys via the web Settings UI.",
         server,
@@ -773,7 +1057,7 @@ export function registerTools(server) {
 
   server.tool(
     "session_backup_import",
-    "Import server-side session backup (research catalog, metadata, CVs).",
+    "Import server-side session backup (research, CVs, applications, letters, and career evidence).",
     {
       backup: z.record(z.any()),
     },
@@ -783,6 +1067,10 @@ export function registerTools(server) {
       let researchJobs = 0;
       let companyMetadataSources = 0;
       let cvs = 0;
+      let applications = 0;
+      let coverLetters = 0;
+      let coverLetterVersions = 0;
+      let careerEvidence = 0;
 
       if (server.researchCatalog) {
         await requestJson("PUT", "/research/catalog", { body: server.researchCatalog });
@@ -818,12 +1106,75 @@ export function registerTools(server) {
         }
       }
 
+      if (Array.isArray(server.coverLetters)) {
+        for (const entry of server.coverLetters) {
+          const document = entry?.document;
+          const id = typeof document?.id === "string" ? document.id.trim() : "";
+          const cvId =
+            typeof document?.cv_id === "string" ? document.cv_id.trim() : "";
+          if (!id || !cvId) continue;
+          const versions = Array.isArray(entry.versions)
+            ? [...entry.versions].sort(
+                (left, right) =>
+                  Number(left?.version ?? 0) - Number(right?.version ?? 0),
+              )
+            : [];
+          let previousSignature = "";
+          for (const state of [...versions, document]) {
+            const title =
+              typeof state?.title === "string" && state.title.trim()
+                ? state.title.trim()
+                : "Cover letter";
+            const body = typeof state?.body === "string" ? state.body : "";
+            const signature = `${title}\u0000${body}`;
+            if (signature === previousSignature) continue;
+            previousSignature = signature;
+            await requestJson("POST", "/cover-letters", {
+              body: {
+                action: "save",
+                id,
+                cvId,
+                companyId: document.company_id,
+                jobId: document.job_id,
+                title,
+                body,
+                language: document.language,
+              },
+            });
+            coverLetterVersions += 1;
+          }
+          coverLetters += 1;
+        }
+      }
+
+      if (Array.isArray(server.applications)) {
+        for (const application of server.applications) {
+          if (!application || typeof application !== "object") continue;
+          await requestJson("POST", "/applications", {
+            body: { ...application, action: "upsert" },
+          });
+          applications += 1;
+        }
+      }
+
+      if (Array.isArray(server.careerEvidence)) {
+        for (const evidence of server.careerEvidence) {
+          if (!evidence || typeof evidence !== "object") continue;
+          await requestJson("POST", "/evidence", { body: evidence });
+          careerEvidence += 1;
+        }
+      }
+
       return toTextContent({
         ok: true,
         researchCompanies,
         researchJobs,
         companyMetadataSources,
         cvs,
+        applications,
+        coverLetters,
+        coverLetterVersions,
+        careerEvidence,
       });
     },
   );

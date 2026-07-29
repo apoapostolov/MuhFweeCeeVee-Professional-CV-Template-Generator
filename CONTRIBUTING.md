@@ -14,12 +14,19 @@ cd MuhFweeCeeVee-Professional-CV-Template-Generator
 # Install all dependencies (npm workspaces)
 npm run bootstrap
 
-# Start the web dev server
-npm run dev
+# Install the Windows browser used for PDF export
+npx playwright install chromium
+
+# Start the tracked Windows-native web dev server
+npm run dev:windows:start
 
 # (Optional) Start the parser service in a second terminal
 npm run dev:parser
 ```
+
+Open `http://127.0.0.1:10004`. Use `npm run dev:windows:restart` after source
+changes and `npm run dev:windows:stop` when finished. `npm run dev:wsl` is the
+polling-based fallback for WSL.
 
 ## Development Workflow
 

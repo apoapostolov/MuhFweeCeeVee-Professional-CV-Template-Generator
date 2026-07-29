@@ -45,6 +45,9 @@ data/cover_letters/*.yaml
 data/cover_letters/history/
 !data/cover_letters/.gitkeep
 data/applications/board.json
+data/applications/submissions/
+data/evidence/
+data/assistant/
 /photos/
 /photos/metadata.json
 

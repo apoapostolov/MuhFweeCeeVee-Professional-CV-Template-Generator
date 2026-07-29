@@ -1,25 +1,38 @@
 # Dev Server Workflow — MuhFweeCeeVee
 
-Development-server lifecycle for this monorepo (Next.js Turbopack + optional
-FastAPI parser). Ensures the user and AI never work against stale in-memory
-state.
+Development-server lifecycle for this monorepo (Next.js webpack + optional
+FastAPI parser). The primary web host is native Windows because the repository
+lives on `C:\`; this avoids WSL DrvFS polling and cross-platform native-module
+churn.
 
-Referenced from [`AGENTS.md`](AGENTS.md#standard-work-loop).
+Referenced from [`AGENTS.md`](../AGENTS.md#standard-work-loop).
 
 ## Core Rules
 
 ### Always Start a Dev Server
 
 After orienting (`AGENTS.md`, `TODO.md`, etc.) and before editing application
-code, start the web dev server:
+code, start the Windows-native web dev server:
 
-```bash
-npm run dev
-# Custom port (example):
-npm run dev --workspace @muhfweeceevee/web -- -p 3005
+```powershell
+npx playwright install chromium  # first setup only; required for PDF export
+npm run dev:windows:start
 ```
 
-Optional parser (second terminal):
+The tracked background process listens at `http://127.0.0.1:10004`. For an
+interactive foreground terminal, use:
+
+```powershell
+npm run dev
+```
+
+Optional WSL fallback (polling is required for `/mnt/c`):
+
+```bash
+npm run dev:wsl
+```
+
+Optional parser in WSL:
 
 ```bash
 npm run dev:parser
@@ -31,7 +44,7 @@ Do not run `npm run build` during active feature development.
 
 | Service | Command | Default port | Tech |
 |---------|---------|--------------|------|
-| Web app | `npm run dev` | `3000` | Next.js 16 (Turbopack HMR) |
+| Web app | `npm run dev:windows:start` | `10004` | Next.js 16 webpack HMR on Windows |
 | Parser | `npm run dev:parser` | `8001` | FastAPI + uvicorn reload |
 
 The parser is optional for most UI work; PDF export and some analysis paths use
@@ -41,29 +54,31 @@ the web app and Playwright directly.
 
 A **development prompt** modifies source, styles, templates, or build config.
 
-At the end of each development prompt, restart the affected dev server:
+At the end of each development prompt, restart the Windows dev server:
 
-```bash
-# Ctrl+C in the server terminal, then:
-npm run dev
+```powershell
+npm run dev:windows:restart
 ```
 
-Do not skip restart because "nothing visible changed." Next.js may retain stale
+Do not skip restart because “nothing visible changed.” Next.js may retain stale
 module graphs or `.next` cache entries.
+
+Use `npm run dev:windows:stop` to stop only the process recorded by the
+repository launcher. It refuses to kill an untracked process occupying the
+port.
 
 ### Stale UI Recovery (Next.js)
 
-If the UI still looks wrong after restart, follow
-[`skills/tools/next-dev-workflow/SKILL.md`](../skills/tools/next-dev-workflow/SKILL.md):
+If the UI still looks wrong after restart:
 
-1. Confirm the browser URL uses the live dev port (not an old tab or `npm start`
-   production port).
-2. Hard refresh (Ctrl+Shift+R).
-3. Delete `apps/web/.next/` and restart `npm run dev`.
-4. Clear browser storage used by the composer (local selections, panel state).
+1. Confirm the browser uses `http://127.0.0.1:10004`.
+2. Hard refresh with Ctrl+Shift+R.
+3. Stop the server, delete `apps/web/.next/`, and start it again.
+4. Clear browser storage used by the composer if persisted selections are stale.
 5. Re-open the changed route directly.
 
-**Not applicable:** Vite `node_modules/.vite` cache (this project does not use Vite).
+**Not applicable:** Vite `node_modules/.vite` cache (this project does not use
+Vite).
 
 ### What Is Not a Development Prompt
 
@@ -78,15 +93,30 @@ Mixed prompts (plan + code) require restart after the code portion.
 
 ### Do Not Build for Production Prematurely
 
-Run `npm run build` only when the user requests release prep, production preview,
-or an explicit ship task.
+Run `npm run build` only when the user requests release prep, production
+preview, or an explicit ship task.
 
 ## Quick Reference
 
 | Trigger | Action |
 |---------|--------|
-| After orient, before coding | `npm run dev` (and parser if needed) |
-| After code-modifying prompt | Restart web and/or parser |
+| After orient, before coding | `npm run dev:windows:start` |
+| After code-modifying prompt | `npm run dev:windows:restart` |
 | Audit / plan / docs only | No restart |
-| Stale UI after restart | Next dev workflow skill + clear `.next/` |
+| Stale UI after restart | Stop, clear `.next`, start, then hard refresh |
 | Release / ship | `npm run build`, then `npm run start` or deploy units |
+
+## Why Windows Is Primary
+
+The previous WSL systemd service watched the Windows checkout through
+`/mnt/c`. Repeated development runs showed:
+
+- slow initial compilation from DrvFS traversal;
+- Watchpack polling memory pressure and `ENOMEM`;
+- partial `.next/dev/types` writes during concurrent checks;
+- Windows and Linux optional native packages replacing each other in the
+  shared `node_modules`.
+
+Native Windows Next.js watches the same filesystem that the editor changes,
+uses platform-matched dependencies, and keeps the Windows browser on the same
+network stack. WSL remains appropriate for Docker and the optional parser.
