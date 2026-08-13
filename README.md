@@ -1,145 +1,91 @@
 # MuhFweeCeeVee
 
-MuhFweeCeeVee started as a practical “enough is enough” project: paying recurring CV-tool subscriptions for features that can be built and customized in a few focused days did not make sense anymore.
+*A self-hosted CV and job-search workspace you own instead of renting by the month.*
 
-The core goal is simple:
+[![Repository Version](https://img.shields.io/badge/version-1.3.1-blue)](./package.json)
+[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933)](https://nodejs.org/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED)](./deploy/docker)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-- save roughly **$15-$20 per month** (or more) versus common CV SaaS plans
-- keep full control of your data and workflow
-- quickly customize the product to fit your own job-search style
-
-In short: why rent your resume workflow forever, when you can own it and make it **fwee**.
-
-## Why This Exists (Cost Comparison)
-
-| Service | Typical Paid Cost | Paid Features | Vs MuhFweeCeeVee |
-| --- | ---: | --- | --- |
-| Resume.io | $29.95 / 4 weeks (after $2.95 7-day trial) | Resume builder, cover letters, templates, PDF downloads | MuhFweeCeeVee has local-first CV editing/export + cover letters with **humanizer** skill |
-| Kickresume | $24/mo monthly, $18/mo quarterly, $8/mo yearly | Resume + cover letter templates, ATS checker, AI writer | MuhFweeCeeVee has AI analysis, deterministic ATS check, and humanized cover-letter drafts |
-| VisualCV | $16/mo billed quarterly | Resume templates, unlimited resumes, PDFs, share links, website profile | MuhFweeCeeVee has customizable local workflow; public profile website flow is **Coming Soon** |
-| Teal+ | $13/week | Resume builder, keyword matching, job tracking, AI credits | MuhFweeCeeVee has Research keywords, Editor gap, and **Board** application packets |
-| **MuhFweeCeeVee** | **fwee** | Local self-hosted CV composer, Research, Letters, Board packets, ATS check, PDF print | Owned + customized; cover letters use **humanizer**; packs export/import |
-
-## Features
-
-### 1) Print, preview, and theme confidence
-
-Use Print Room to configure template-based rendering (`cambridge-v1`, `stanford-v1`, `harvard-v1`, `europass-v1`, `edinburgh-v1`) and immediately validate readability in both light and dark visual modes before export. This is the print-ready PDF export path.
+MuhFweeCeeVee brings CV writing, job research, cover letters, applications,
+evidence, scoring, and print-ready export into one local workspace. It keeps the
+source material under your control, supports local ATS checks alongside
+optional AI help, and can preserve the exact documents submitted for each job.
 
 <p align="center">
-  <img src="images/SCREENSHOT_01.png" width="49%" />
-  <img src="images/SCREENSHOT_02.png" width="49%" />
+  <img src="images/SCREENSHOT_01.png" alt="Print Room with a live PDF preview and template controls" width="100%">
 </p>
 
-### 2) Edit precision + job-fit diagnostics
+## What's New in 1.3.1
 
-Combine Form + YAML editing with AI scoring and **Research** job targeting (pick a researched company + job; weighted keywords highlight in the Editor). Product direction: one company/job list in Research — see [`proposal/`](proposal/).
+- Run the complete web app through Docker Compose on a local host.
+- Keep CVs, photos, and runtime settings in durable named volumes.
+- Export PDF and PNG files from an unprivileged container with health checks.
+- Bind to localhost by default and require an explicit API token for protected access.
+
+The repository's current `main` branch also contains application operations and
+the MuhFwee AI copilot listed under **Unreleased** in the
+[changelog](./CHANGELOG.md).
+
+## What You Can Do
+
+- **Write one CV in the view you prefer.** Move between structured forms and YAML without maintaining two separate documents.
+- **See the real output while editing.** Preview and print template-accurate PDFs in Cambridge, Stanford, Harvard, Europass, and Edinburgh styles.
+- **Tailor and check for a specific job.** Extract weighted keywords, show the
+  gaps in the Editor, and run a local ATS check before spending AI credits.
+- **Create cover letters with context.** Bind each letter to a CV and target, keep version history, and run a separate humanizer pass.
+- **Manage the full application trail.** Track stages, next actions, contacts,
+  activity, and analytics, then freeze the exact submitted files as one packet.
+- **Build a reusable evidence library.** Keep verified achievements and link them to the CV claims they support.
+- **Ask the built-in copilot for help.** Review visible tool activity and approve every proposed CV, Research, letter, or application change at field level.
+- **Back up the workspace.** Export a merge-restorable ZIP with structured records, referenced photos, evidence, submissions, and optional PDFs.
 
 <p align="center">
-  <img src="images/SCREENSHOT_03.png" width="49%" />
-  <img src="images/SCREENSHOT_04.png" width="49%" />
+  <img src="images/SCREENSHOT_03.png" alt="CV editor with structured fields and scoring feedback" width="49%">
+  <img src="images/SCREENSHOT_05.png" alt="Template gallery comparing available CV layouts" width="49%">
 </p>
 
-### 3) Presentation polish and profile quality
+## A Practical Workflow
 
-Review available CV templates side-by-side, then finalize profile-photo quality using Photo Booth analysis and recommendations as part of the full self-hosted CV authoring workflow.
+1. Add your master CV in **Editor** using forms or YAML.
+2. Save the company and role in **Research**, then extract the job's keywords.
+3. Target that role from the CV and review the keyword gap and ATS check.
+4. Draft and humanize a cover letter tied to the same CV and target.
+5. Build the application in **Board** and generate the final PDF in **Print Room**.
+6. When you apply, freeze the complete submission packet and set the next action.
+
+AI is optional. Local editing, templates, keyword extraction, ATS checks, board
+operations, and backups remain useful without an external model.
+
+## Templates and Print
+
+Print Room renders the actual PDF inside the app. Per CV, template, and language,
+it remembers presentation tweaks such as text scale, photo mode, and column
+balance.
 
 <p align="center">
-  <img src="images/SCREENSHOT_05.png" width="49%" />
-  <img src="images/SCREENSHOT_06.png" width="49%" />
+  <img src="images/SCREENSHOT_02.png" alt="Dark theme Print Room with a live CV PDF" width="49%">
+  <img src="images/SCREENSHOT_06.png" alt="Photo Booth profile-photo review" width="49%">
 </p>
 
-### 4) Portable job-search backups
+## Data, Privacy, and AI
 
-Download a single ZIP from **Settings → Import / Export Data**. It contains the
-merge-restorable session manifest, structured CV sources, photos referenced by
-applications or approved in Photo Booth, and optionally generated application
-PDFs using the currently selected template. It also carries the career-evidence
-library and every immutable submission asset already frozen for an application.
-ZIP restore preserves CV, application, cover-letter, photo, evidence, and
-submission IDs. Private MuhFwee AI conversations and saved playbooks stay out
-of backups by default; an explicit checkbox includes a redacted copy that
-restores as archived history so old approvals cannot run.
+CVs, application data, photos, and settings stay on the host you control.
+Private MuhFwee AI conversations and playbooks are excluded from backups by
+default. If explicitly included, conversation history is redacted and restored
+as archived history so old approvals cannot run.
 
-### 5) Power-user application operations
+External AI or research features send the relevant job, company, or CV context
+to the provider you configure. Review that provider's privacy terms before
+using sensitive personal data.
 
-Use **Board** as a job-search operations center rather than only a Kanban:
+When the app is reachable beyond localhost, set `MFCV_API_TOKEN`. Non-loopback
+mutation, analysis, and export requests are denied without the token. Put a TLS
+reverse proxy such as Caddy or nginx in front of any remote deployment.
 
-- freeze the exact CV source, rendered PDF, cover letter, selected photo, target
-  metadata, ATS result, and checksums when applying
-- compare the latest submitted packet with the current working files
-- record recruiter contacts and a chronological activity trail
-- drive follow-ups from **Today**, including overdue and upcoming actions
-- paste a job description or listing URL into **Quick Intake** to create or
-  reuse Research and Wishlist records while preserving the original input
-- search, filter, save views, archive stale applications, flag likely
-  duplicates, and inspect event-derived funnel analytics
-- keep verified achievements and other reusable material in **Evidence**, then
-  link selected evidence to a CV with provenance
+## Quick Start
 
-### 6) Confirmed-management MuhFwee AI copilot
-
-Open the circular **MuhFwee AI** launcher in the lower-right corner from any
-workspace panel. The copilot receives the visible CV/job/company/template
-context, discovers the local MCP tool catalog, and can inspect records or run
-deterministic derived checks. Every tool call is visible in the conversation.
-For CV, Research, cover-letter, and application changes, the assistant pauses
-on a field-level approval card showing the target, before/after values,
-recovery guidance, and estimated AI cost when pricing is available. Approval
-is revision-bound and exactly-once; changed targets become stale rather than
-being silently overwritten. Sensitive settings and bulk imports remain blocked.
-For repeated workflows, MuhFwee AI can show a multi-step plan, reuse saved
-playbooks, search or archive conversations, group coherent pending approvals,
-and take you directly to the affected workspace panel after a successful
-operation.
-
-## 1.3.1 Release Scope
-
-Version **`1.3.1`** is the current release — research → tailored CV → letter → application pack → print → local container deployment:
-
-| Area | What you get |
-| --- | --- |
-| **Research** | Single company/job catalog; staged company enrich; **Include Research** (pay for web only when you want it); local JD keyword extract |
-| **Editor** | Target a Research company + job; keyword highlight + gap; deterministic **ATS check** (no LLM) |
-| **Letters** | Cover letters bound to CV + target; cheap AI draft + **humanizer** pass to strip AI-isms |
-| **Board** | Kanban, Today queue, Quick Intake, immutable submitted packets, activity/contact history, saved views, archive/duplicate controls, evidence library, and event-derived analytics |
-| **Print Room** | Template PDF preview/export, photo modes, text-scale tweaks |
-| **MCP / Copilot** | Contextual, streamed MuhFwee AI panel with plans, playbooks, conversation search/archive, coherent approval batches, direct handoffs, and revision-bound approval cards |
-| **Docker Compose** | Secure local container deployment with persistent CV, photo, and settings storage |
-
-Also: field contracts (no inventable emails/phones), lighter photo gallery payloads, dark-mode scrollbar polish.
-
-**Note:** The old **Keyword Studio** tab / sqlite JD corpus were removed in v1.1 (recover from git history if needed). Keywords live on **Research → job positions**.
-
-Full notes: [`CHANGELOG.md`](CHANGELOG.md) · tag `v1.3.1`.
-
-## Repository Layout
-
-- `apps/web/`: Next.js web application
-- `ai-skills/`: **product** AI skills injected at runtime (e.g. `humanizer` on cover letters) — not agent-dev skills
-- `skills/patterns/`: agent/dev workflow skills for contributors
-- `services/parser/`: FastAPI parser service scaffold
-- `packages/schemas/`: shared schema/constants
-- `packages/render-core/`: shared rendering primitives
-- `data/`: sample CV and template mapping data
-- `templates/`: template definitions and assets
-- `deploy/systemd/`, `deploy/nginx/`: Linux deployment references
-
-## Documentation for Contributors and Agents
-
-Process templates (adapted from shared defaults), checklists, and product specs:
-
-- [`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md) — full index
-- [`AGENTS.md`](AGENTS.md) — AI development operating contract
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — human contributor quick start
-
-## Prerequisites
-
-- Node.js `>= 22`
-- npm `>= 10`
-- Python `3.12.x` (for parser service)
-
-## Quick Start (Local)
+Requirements: Node.js 22 or newer and npm 10 or newer.
 
 ```bash
 npm run bootstrap
@@ -147,70 +93,10 @@ npx playwright install chromium
 npm run dev:windows:start
 ```
 
-Open `http://127.0.0.1:10004`. Use `npm run dev:windows:restart` after a
-development change and `npm run dev:windows:stop` when finished. `npm run dev`
-runs the same Windows-native server in the foreground. A polling-based
-`npm run dev:wsl` remains available as a slower fallback.
+Open `http://127.0.0.1:10004`. On other platforms, use `npm run dev`; the
+production app defaults to port `3000`.
 
-Optional parser service (second terminal; **scaffold only**, see
-[`services/parser/README.md`](services/parser/README.md)):
-
-```bash
-npm run dev:parser
-```
-
-When exposing the app beyond localhost, set `MFCV_API_TOKEN` in `.env`. Non-loopback
-clients must send it as `Authorization: Bearer …` or `x-mfcv-api-token` on
-mutation/analysis/export routes. The local browser UI on `localhost` stays trusted
-without embedding the secret. Production non-loopback access without a token is denied.
-
-Nginx example (snippet):
-
-```nginx
-location /api/ {
-  proxy_pass http://127.0.0.1:3000/api/;
-  # Prefer terminating TLS here; do not strip Authorization.
-  proxy_set_header Host $host;
-  proxy_set_header Authorization $http_authorization;
-  proxy_set_header x-mfcv-api-token $http_x_mfcv_api_token;
-}
-```
-
-Optional: `MFCV_REQUIRE_API_TOKEN=true` fails closed if the token is missing.
-Live research integration tests: `RUN_LIVE_RESEARCH=1` (never set in CI).
-
-Quality checks:
-
-```bash
-npm run lint
-npm run typecheck
-```
-
-## Planning archive (v1.3.0 shipped)
-
-- [`proposal/PROGRESS.md`](proposal/PROGRESS.md) — locked decisions D1–D5 + completed workstreams
-- [`proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md`](proposal/FEATURE_BACKLOG_AND_RESEARCH_HARDENING.md) — original proposal (historical)
-- [`proposal/IMPLEMENTATION_PLAN.md`](proposal/IMPLEMENTATION_PLAN.md) — workstream plan (historical)
-- Open follow-ups: [`TODO.md`](TODO.md)
-
-## Production Build
-
-```bash
-npm run bootstrap
-npm run build
-npm run start
-```
-
-Default web runtime port is `3000` unless overridden by environment.
-
-## Docker Compose (local host)
-
-Docker Compose is the supported container path for a single local host. It
-persists CV/application data and Photo Booth files in named volumes, runs the
-web process as an unprivileged user, and exposes the service only on
-`127.0.0.1`. Put nginx or Caddy with TLS in front of it for remote access.
-OpenRouter settings saved through the app UI persist in a separate private
-runtime-config volume.
+## Docker Compose
 
 ```bash
 cp deploy/docker/compose.env.example .env.docker
@@ -219,139 +105,23 @@ docker compose --env-file .env.docker up --build -d
 docker compose --env-file .env.docker ps
 ```
 
-Open `http://127.0.0.1:3000`. The health endpoint is available at
-`http://127.0.0.1:3000/api/health`.
+Open `http://127.0.0.1:3000` and check `/api/health`. Keep `.env.docker` local.
+`docker compose down` preserves named volumes; adding `--volumes` deliberately
+erases container-managed CV, photo, and runtime configuration data.
 
-Useful lifecycle commands:
+## Development
 
 ```bash
-docker compose --env-file .env.docker logs -f
-docker compose --env-file .env.docker down
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
-`down` keeps named volumes. Do not run `docker compose down --volumes` unless
-you deliberately want to erase all container-managed CV, photo, and runtime
-configuration data. The `.env.docker` file contains secrets and must remain
-local.
+- [Documentation index](./docs/DOCUMENTATION_INDEX.md)
+- [CV YAML standard](./docs/CV_YAML_STANDARD.md)
+- [CV scoring standard](./docs/CV_SCORING_STANDARD.md)
+- [API reference](./docs/API.md)
+- [Contributor guide](./CONTRIBUTING.md)
 
-## Hosting Guide
-
-### Windows 11
-
-Recommended stack:
-
-- app process: Node.js (`npm run build && npm run start`)
-- optional parser process: Python `uvicorn`
-- reverse proxy / TLS: Caddy (recommended) or IIS reverse proxy
-
-Steps:
-
-1. Install Node.js 22+ and Python 3.12.
-2. Clone repo and run `npm run bootstrap`.
-3. Build web: `npm run build`.
-4. Run web as background service using NSSM or Windows Task Scheduler:
-   - program: `npm`
-   - args: `run start`
-   - working dir: repo root
-5. (Optional) run parser service with its own NSSM entry:
-   - `cd services/parser`
-   - `python -m venv .venv`
-   - `.venv\Scripts\pip install -r requirements.txt`
-   - `.venv\Scripts\uvicorn main:app --host 127.0.0.1 --port 8001`
-6. Configure Caddy/IIS to proxy HTTPS traffic to `127.0.0.1:3000`.
-
-### Linux (Ubuntu/Debian/RHEL)
-
-Recommended stack:
-
-- app process: systemd service for Next.js
-- optional parser process: systemd service for FastAPI
-- reverse proxy / TLS: nginx or Caddy
-
-Steps:
-
-1. Install Node.js 22+, npm 10+, Python 3.12.
-2. Clone repo and run `npm run bootstrap`.
-3. Build web: `npm run build`.
-4. Create systemd unit for web process (`npm run start`).
-5. (Optional) create parser venv and systemd unit for uvicorn on `127.0.0.1:8001`.
-6. Configure nginx/Caddy reverse proxy and HTTPS certs.
-7. Enable auto-start:
-   - `sudo systemctl enable --now <web-service>`
-   - `sudo systemctl enable --now <parser-service>` (if used)
-
-### macOS
-
-Recommended stack:
-
-- app process: Node.js (`npm run build && npm run start`)
-- optional parser process: Python `uvicorn`
-- service manager: `launchd` (LaunchAgent/LaunchDaemon)
-- reverse proxy / TLS: Caddy or nginx
-
-Steps:
-
-1. Install Node.js 22+ and Python 3.12 (Homebrew recommended).
-2. Clone repo and run `npm run bootstrap`.
-3. Build web: `npm run build`.
-4. Create `launchd` plist for `npm run start` in repo root.
-5. (Optional) create parser `launchd` plist for uvicorn on `127.0.0.1:8001`.
-6. Configure Caddy/nginx to expose HTTPS and proxy to `127.0.0.1:3000`.
-
-## Runtime Data and Privacy
-
-- Public repo includes only fictional sample CV data.
-- Personal/local CV history and planning artifacts are intentionally untracked.
-- Keep real CV content in local/private files outside version control.
-- OpenRouter key is stored in local `.env` as `OPENROUTER_API_KEY` when saved via UI.
-
-## Release and Changelog
-
-- Changelog is the source of truth for release notes:
-  - [`CHANGELOG.md`](CHANGELOG.md)
-- Changelog governance and writing style:
-  - [`CHANGELOG_GUIDE.md`](dev/CHANGELOG_GUIDE.md)
-- API reference (including post-1.0.0 additions):
-  - [`docs/API.md`](docs/API.md)
-- MCP wrapper guide:
-  - [`MCP.md`](dev/MCP.md)
-
-## Documentation Map
-
-| File | Purpose |
-|------|---------|
-| [`README.md`](README.md) | Project overview, features, quick start, hosting guide |
-| [`CHANGELOG.md`](CHANGELOG.md) | Release history (user-facing changes) |
-| [`CHANGELOG_GUIDE.md`](dev/CHANGELOG_GUIDE.md) | Changelog rules, overwrite-first principle, writing style |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution guide |
-| [`SECURITY.md`](dev/SECURITY.md) | Security policy, privacy hardening, secret handling |
-| [`AGENTS.md`](AGENTS.md) | AI-assisted development operating contract (local, gitignored) |
-| [`DEVELOPMENT_PLAN.md`](dev/DEVELOPMENT_PLAN.md) | Forward-looking plan (local, gitignored) |
-| [`DEVELOPMENT_LOG.md`](dev/DEVELOPMENT_LOG.md) | Engineering journal (local, gitignored) |
-| [`TODO.md`](TODO.md) | Active work queue (local, gitignored) |
-| [`TODO_TEMPLATE.md`](dev/TODO_TEMPLATE.md) | TODO structure template reference |
-| [`CODE_REVIEW_CHECKLIST.md`](dev/CODE_REVIEW_CHECKLIST.md) | Code review checklist for AI and human reviews |
-| [`RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) | Preflight and publish checklist |
-| [`DECISION_RECORD_TEMPLATE.md`](dev/DECISION_RECORD_TEMPLATE.md) | Architecture decision record template |
-| [`DEV_SERVER_WORKFLOW.md`](dev/DEV_SERVER_WORKFLOW.md) | Dev server lifecycle (Next.js + parser) |
-| [`GENERATED_FILES.md`](dev/GENERATED_FILES.md) | Generated file rules and staleness detection |
-| [`HARD_PROBLEMS.md`](dev/HARD_PROBLEMS.md) | Record of recurring blockers and resolutions |
-| [`SELF_REVIEW.md`](dev/SELF_REVIEW.md) | Running journal of mistaken approaches and better defaults |
-| [`VIBECHECK.md`](dev/VIBECHECK.md) | Developer interaction profile (local, AI-owned) |
-| [`AGENT_ISSUES.md`](dev/AGENT_ISSUES.md) | Agent/subagent failure records |
-| [`SKILLS_GUIDE.md`](dev/SKILLS_GUIDE.md) | Skill mining and management guide |
-| [`PROJECT_CONVENTIONS.md`](dev/PROJECT_CONVENTIONS.md) | Naming, directory, and structural conventions |
-| [`MARKDOWN_LINT.md`](dev/MARKDOWN_LINT.md) | Markdown lint configuration and rules |
-| [`.markdownlint.json`](.markdownlint.json) | Markdown lint rule config |
-| [`docs/API.md`](docs/API.md) | Web API reference |
-| [`docs/DOCUMENTATION_INDEX.md`](docs/DOCUMENTATION_INDEX.md) | Full documentation map |
-| [`proposal/`](proposal/) | Shipped v1.3.0 plan archive (D1–D5 + WS progress) |
-| [`docs/CV_SCORING_STANDARD.md`](docs/CV_SCORING_STANDARD.md) | CV scoring rubric and quality checks |
-| [`docs/CV_YAML_STANDARD.md`](docs/CV_YAML_STANDARD.md) | CV YAML schema and validation rules |
-| [`ai-skills/README.md`](ai-skills/README.md) | Runtime product AI skills |
-| [`MCP.md`](dev/MCP.md) | MCP wrapper usage guide |
-
-## License
-
-This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
-Template-specific license metadata lives under each template folder.
+MuhFweeCeeVee is available under the [MIT License](./LICENSE).
