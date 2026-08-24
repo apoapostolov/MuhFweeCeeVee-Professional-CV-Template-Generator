@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { runDeterministicAtsChecks } from "@/lib/ats/deterministicChecks";
+import { applyPdfMetadata } from "./pdfMetadata";
 import { stringify } from "yaml";
 
 import {
@@ -103,7 +104,7 @@ async function renderPdf(input: {
   theme?: string;
   photoId?: string;
 }): Promise<Uint8Array> {
-  const { html } = await buildCvTemplateHtml({
+  const { html, metadata } = await buildCvTemplateHtml({
     cvId: input.cvId,
     templateId: input.templateId,
     theme: input.theme,
@@ -124,7 +125,7 @@ async function renderPdf(input: {
       margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
     });
     await page.close();
-    return new Uint8Array(pdf);
+    return applyPdfMetadata(new Uint8Array(pdf), metadata);
   } finally {
     await browser.close();
   }

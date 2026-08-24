@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
+import { applyPdfMetadata } from "@/lib/server/pdfMetadata";
 import { buildCvTemplateHtml } from "@/lib/server/renderCvTemplate";
 import { parseRenderTweaks } from "@/lib/server/render/tweaks";
 import { withExportSlot } from "@/lib/server/renderConcurrency";
@@ -34,7 +35,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         ReturnType<(typeof import("playwright"))["chromium"]["launch"]>
       > | null = null;
       try {
-        const { html } = await buildCvTemplateHtml({
+        const { html, metadata } = await buildCvTemplateHtml({
           cvId,
           templateId,
           theme,
@@ -46,7 +47,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         browser = await chromium.launch({ headless: true });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: "networkidle" });
-        const pdf = await page.pdf({
+        const rawPdf = await page.pdf({
           format: "A4",
           printBackground: true,
           displayHeaderFooter: true,
@@ -56,6 +57,7 @@ export async function GET(request: Request): Promise<NextResponse> {
           margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
         });
         await page.close();
+        const pdf = await applyPdfMetadata(new Uint8Array(rawPdf), metadata);
 
         const fileName = `${cvId}__${templateId}.pdf`;
         return new NextResponse(new Uint8Array(pdf), {

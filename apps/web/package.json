@@ -25,6 +25,7 @@
     "lucide-react": "^0.575.0",
     "nanoid": "^3.3.12",
     "next": "16.1.6",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "stemmer": "^2.0.1",

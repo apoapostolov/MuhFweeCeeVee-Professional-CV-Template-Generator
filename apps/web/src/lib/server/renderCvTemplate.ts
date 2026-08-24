@@ -21,7 +21,7 @@ import {
   resolveEffectivePhotoMode,
   shouldMoveSkillsLeft,
 } from "./render/tweaks";
-import type { MappingFile, RenderInput, RenderResult, TemplateFile } from "./render/types";
+import type { MappingFile, PdfMetadata, RenderInput, RenderResult, TemplateFile } from "./render/types";
 import {
   resolveCambridgeTheme,
   resolveEdinburghTheme,
@@ -30,7 +30,26 @@ import {
 } from "./render/themes";
 import { repoPath } from "./repoPaths";
 
-export type { RenderInput, RenderResult } from "./render/types";
+export type { PdfMetadata, RenderInput, RenderResult } from "./render/types";
+
+function buildPdfMetadata(cv: unknown): PdfMetadata {
+  const person = cv && typeof cv === "object" && !Array.isArray(cv)
+    ? (cv as Record<string, unknown>).person
+    : undefined;
+  const fullName = person && typeof person === "object" && !Array.isArray(person)
+    ? String((person as Record<string, unknown>).full_name ?? "").trim()
+    : "";
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+  const shortName = nameParts.length >= 2
+    ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
+    : fullName;
+  const displayName = shortName || "MuhFweeCeeVee";
+  return {
+    author: displayName,
+    title: `${displayName} CV`,
+    subject: "Curriculum Vitae",
+  };
+}
 
 export async function buildCvTemplateHtml(
   input: RenderInput,
@@ -119,5 +138,6 @@ export async function buildCvTemplateHtml(
     html: injectPrintTweakStyles(html, tweakCss),
     cvId: input.cvId,
     templateId: input.templateId,
+    metadata: buildPdfMetadata(cv),
   };
 }

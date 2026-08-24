@@ -47,10 +47,17 @@ export type RenderInput = {
   tweaks?: RenderTweaks;
 };
 
+export type PdfMetadata = {
+  author: string;
+  title: string;
+  subject: string;
+};
+
 export type RenderResult = {
   html: string;
   cvId: string;
   templateId: string;
+  metadata: PdfMetadata;
 };
 
 export type PhotoMode =
