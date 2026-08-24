@@ -381,6 +381,10 @@ export function useComposerController() {
     }
 
     return [...pairs.values()].sort((a, b) => {
+      const nameOrder = a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: "base" });
+      if (nameOrder !== 0) return nameOrder;
+      const versionOrder = a.displayVersion.localeCompare(b.displayVersion, undefined, { numeric: true, sensitivity: "base" });
+      if (versionOrder !== 0) return versionOrder;
       if (a.latestTs !== b.latestTs) return b.latestTs - a.latestTs;
       return a.key.localeCompare(b.key);
     });
