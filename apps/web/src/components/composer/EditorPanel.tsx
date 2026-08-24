@@ -206,6 +206,24 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
 
                 <div className="mt-4 space-y-3">
                   <div>
+                    <label className="block text-sm font-medium text-slate-800">CV Template</label>
+                    <div className="mt-1 flex gap-1.5">
+                      <select
+                        className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
+                        onChange={(event) => onSwitchCvPair(event.target.value)}
+                        value={selectedPairKey}
+                      >
+                        {cvTemplatesForLanguage.map((pair) => (
+                          <option key={pair.key} value={pair.key}>
+                            {pair.displayName} {pair.displayVersion}
+                          </option>
+                        ))}
+                      </select>
+                      <button aria-label="Create a copy of this CV version" className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold" disabled={!selectedCvId} onClick={onRequestDuplicateCv} title="Create CV version" type="button">+</button>
+                    </div>
+                  </div>
+
+                  <div>
                     <p className="mb-1 text-sm font-medium text-slate-800">Language</p>
                     <div className="flex w-full items-center justify-center gap-2">
                       <div className="inline-flex w-[90%] overflow-hidden rounded-full border border-[var(--line)]">
@@ -256,24 +274,6 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                         Sync requires at least two language variants.
                       </p>
                     ) : null}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-800">CV Template</label>
-                    <div className="mt-1 flex gap-1.5">
-                      <select
-                        className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
-                        onChange={(event) => onSwitchCvPair(event.target.value)}
-                        value={selectedPairKey}
-                      >
-                        {cvTemplatesForLanguage.map((pair) => (
-                          <option key={pair.key} value={pair.key}>
-                            {pair.displayName} {pair.displayVersion}
-                          </option>
-                        ))}
-                      </select>
-                      <button aria-label="Create a copy of this CV version" className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold" disabled={!selectedCvId} onClick={onRequestDuplicateCv} title="Create CV version" type="button">+</button>
-                    </div>
                   </div>
 
                   <div>

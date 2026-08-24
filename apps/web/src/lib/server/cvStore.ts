@@ -490,6 +490,10 @@ export async function ensureLanguageVariant(
     }
   }
 
+  const sourceMetadata =
+    source.metadata && typeof source.metadata === "object" && !Array.isArray(source.metadata)
+      ? (source.metadata as Record<string, unknown>)
+      : {};
   const metadataRaw = cloned.metadata;
   const metadata =
     metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
@@ -498,7 +502,16 @@ export async function ensureLanguageVariant(
 
   cloned.metadata = {
     ...metadata,
+    ...(typeof sourceMetadata.internal_name === "string" ? { internal_name: sourceMetadata.internal_name } : {}),
+    ...(typeof sourceMetadata.internal_version === "string" ? { internal_version: sourceMetadata.internal_version } : {}),
     language: normalizedTargetLanguage,
+    variant: {
+      ...(metadata.variant && typeof metadata.variant === "object" && !Array.isArray(metadata.variant) ? metadata.variant as Record<string, unknown> : {}),
+      cv_id: requestedCvId,
+      iteration: parsed.iteration,
+      target: parsed.target,
+      language: normalizedTargetLanguage,
+    },
     translation: {
       status: translationStatus,
       mode: translationMode,
