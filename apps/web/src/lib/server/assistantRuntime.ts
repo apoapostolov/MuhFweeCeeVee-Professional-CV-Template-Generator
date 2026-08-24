@@ -22,7 +22,10 @@ import {
   decideAssistantToolPolicy,
   gateAssistantToolCall,
 } from "./assistantToolPolicy";
+import { getAiProvider } from "./aiProviderRegistry";
+import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
+import { readXaiOAuthAccessToken } from "./xaiOAuth";
 
 const MAX_TOOL_ROUNDS = 8;
 const MAX_TOOL_CALLS = 25;
@@ -294,64 +297,101 @@ export function selectAssistantToolsForTurn(
     .slice(0, 16);
 }
 
-export const openRouterAssistantModel: AssistantModelClient = {
+function modelResponse(
+  message: { content?: string | null; tool_calls?: ModelToolCall[] },
+  usage: { inputTokens?: number; outputTokens?: number },
+  model: string,
+): ModelResponse {
+  return {
+    message: {
+      content: typeof message.content === "string" ? message.content : null,
+      tool_calls: message.tool_calls?.length ? message.tool_calls : undefined,
+    },
+    usage: { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 },
+    model,
+  };
+}
+
+function anthropicMessages(messages: ModelMessage[]): Array<Record<string, unknown>> {
+  return messages.filter((message) => message.role !== "system").map((message) => {
+    if (message.role === "tool") {
+      return { role: "user", content: [{ type: "tool_result", tool_use_id: message.tool_call_id, content: message.content }] };
+    }
+    if (message.role === "assistant" && message.tool_calls?.length) {
+      return {
+        role: "assistant",
+        content: [
+          ...(message.content ? [{ type: "text", text: message.content }] : []),
+          ...message.tool_calls.map((call) => ({ type: "tool_use", id: call.id, name: call.function.name, input: parseArguments(call.function.arguments) })),
+        ],
+      };
+    }
+    return { role: message.role, content: message.content ?? "" };
+  });
+}
+
+function geminiContents(messages: ModelMessage[]): Array<Record<string, unknown>> {
+  return messages.filter((message) => message.role !== "system").map((message) => {
+    if (message.role === "tool") return { role: "user", parts: [{ functionResponse: { name: message.name, response: { content: message.content } } }] };
+    if (message.role === "assistant") {
+      return { role: "model", parts: [
+        ...(message.content ? [{ text: message.content }] : []),
+        ...(message.tool_calls ?? []).map((call) => ({ functionCall: { name: call.function.name, args: parseArguments(call.function.arguments) } })),
+      ] };
+    }
+    return { role: "user", parts: [{ text: message.content }] };
+  });
+}
+
+export const configuredAssistantModel: AssistantModelClient = {
   async complete({ messages, tools, signal }) {
-    const settings = await readOpenRouterSettings();
-    const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-    if (!apiKey) {
-      throw new Error("OpenRouter API key is not configured.");
+    const settings = await readAiSettingsDocument();
+    if (settings.disabledRoles.includes("assistant")) throw new Error("The Assistant AI role is disabled.");
+    const binding = settings.roles.assistant;
+    const provider = getAiProvider(binding.providerId);
+    if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for the Assistant role.`);
+    const apiKey = provider.id === "xai-oauth" ? await readXaiOAuthAccessToken() : await readAiProviderKey(provider.id);
+    if (provider.auth !== "none" && !apiKey) throw new Error(`AI provider ${provider.name} is not configured for the Assistant role.`);
+    const thinking = binding.thinkingMode && binding.thinkingMode !== "none" ? { reasoning_effort: binding.thinkingMode } : {};
+
+    if (provider.id === "anthropic") {
+      const response = await fetch(`${provider.endpoint}/messages`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json", "anthropic-version": "2023-06-01" },
+        signal,
+        body: JSON.stringify({ model: binding.modelId, system: messages.find((message) => message.role === "system")?.content, messages: anthropicMessages(messages), tools: modelTools(tools).map((tool) => ({ name: tool.function.name, description: tool.function.description, input_schema: tool.function.parameters })), max_tokens: 1_200 }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string }; content?: Array<Record<string, unknown>>; usage?: { input_tokens?: number; output_tokens?: number } };
+      if (!response.ok) throw new Error(payload.error?.message ?? `Anthropic request failed with HTTP ${response.status}.`);
+      const blocks = payload.content ?? [];
+      const text = blocks.filter((block) => block.type === "text").map((block) => String(block.text ?? "")).join("");
+      const toolCalls = blocks.filter((block) => block.type === "tool_use").map((block) => ({ id: String(block.id ?? id("tool")), type: "function" as const, function: { name: String(block.name ?? ""), arguments: JSON.stringify(block.input ?? {}) } }));
+      return modelResponse({ content: text || null, tool_calls: toolCalls }, { inputTokens: payload.usage?.input_tokens, outputTokens: payload.usage?.output_tokens }, binding.modelId);
     }
-    const model = settings.model?.trim() || "openai/gpt-4o-mini";
-    const response = await fetch(settings.baseUrl, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-        "HTTP-Referer": "http://localhost/muhfweeceevee",
-        "X-Title": "MuhFweeCeeVee Copilot",
-      },
-      signal,
-      body: JSON.stringify({
-        model,
-        messages,
-        tools: modelTools(tools),
-        tool_choice: tools.length > 0 ? "auto" : "none",
-        parallel_tool_calls: false,
-        temperature: 0.2,
-        max_completion_tokens: 1_200,
-      }),
-    });
-    const payload = (await response.json().catch(() => ({}))) as {
-      error?: { message?: string };
-      choices?: Array<{
-        message?: { content?: string | null; tool_calls?: ModelToolCall[] };
-      }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-      model?: string;
-    };
-    if (!response.ok) {
-      throw new Error(
-        payload.error?.message ||
-          `OpenRouter request failed with HTTP ${response.status}.`,
-      );
+
+    if (provider.id === "gemini") {
+      const endpoint = `${provider.endpoint}/models/${encodeURIComponent(binding.modelId)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const response = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, signal, body: JSON.stringify({ systemInstruction: { parts: [{ text: messages.find((message) => message.role === "system")?.content ?? "" }] }, contents: geminiContents(messages), tools: [{ functionDeclarations: modelTools(tools).map((tool) => ({ name: tool.function.name, description: tool.function.description, parameters: tool.function.parameters })) }], generationConfig: { temperature: 0.2, maxOutputTokens: 1_200 } }) });
+      const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string }; candidates?: Array<{ content?: { parts?: Array<Record<string, unknown>> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } };
+      if (!response.ok) throw new Error(payload.error?.message ?? `Gemini request failed with HTTP ${response.status}.`);
+      const parts = payload.candidates?.[0]?.content?.parts ?? [];
+      const text = parts.filter((part) => typeof part.text === "string").map((part) => String(part.text)).join("");
+      const toolCalls = parts.filter((part) => part.functionCall && typeof part.functionCall === "object").map((part) => { const call = part.functionCall as Record<string, unknown>; return { id: id("tool"), type: "function" as const, function: { name: String(call.name ?? ""), arguments: JSON.stringify(call.args ?? {}) } }; });
+      return modelResponse({ content: text || null, tool_calls: toolCalls }, { inputTokens: payload.usageMetadata?.promptTokenCount, outputTokens: payload.usageMetadata?.candidatesTokenCount }, binding.modelId);
     }
+
+    const endpoint = provider.id === "openrouter" ? (await readOpenRouterSettings()).baseUrl : `${provider.endpoint?.replace(/\/$/, "")}/chat/completions`;
+    if (!endpoint) throw new Error(`AI provider ${provider.name} has no Assistant completion endpoint.`);
+    const response = await fetch(endpoint, { method: "POST", headers: { ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}), "content-type": "application/json" }, signal, body: JSON.stringify({ model: binding.modelId, messages, tools: modelTools(tools), tool_choice: tools.length > 0 ? "auto" : "none", parallel_tool_calls: false, temperature: 0.2, max_completion_tokens: 1_200, ...thinking }) });
+    const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string }; choices?: Array<{ message?: { content?: string | null; tool_calls?: ModelToolCall[] } }>; usage?: { prompt_tokens?: number; completion_tokens?: number }; model?: string };
+    if (!response.ok) throw new Error(payload.error?.message ?? `${provider.name} request failed with HTTP ${response.status}.`);
     const message = payload.choices?.[0]?.message;
-    if (!message) throw new Error("OpenRouter returned no assistant message.");
-    return {
-      message: {
-        content: typeof message.content === "string" ? message.content : null,
-        tool_calls: Array.isArray(message.tool_calls)
-          ? message.tool_calls
-          : undefined,
-      },
-      usage: {
-        inputTokens: payload.usage?.prompt_tokens ?? 0,
-        outputTokens: payload.usage?.completion_tokens ?? 0,
-      },
-      model: payload.model ?? model,
-    };
+    if (!message) throw new Error(`${provider.name} returned no assistant message.`);
+    return modelResponse(message, { inputTokens: payload.usage?.prompt_tokens, outputTokens: payload.usage?.completion_tokens }, payload.model ?? binding.modelId);
   },
 };
+
+export const openRouterAssistantModel = configuredAssistantModel;
 
 export async function runAssistantTurn(
   input: RunAssistantTurnInput,
