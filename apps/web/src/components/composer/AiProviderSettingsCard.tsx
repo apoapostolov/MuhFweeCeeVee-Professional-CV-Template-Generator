@@ -235,27 +235,32 @@ export function AiProviderSettingsCard({ controller, uiLanguage }: AiProviderSet
           +
         </button>
       </div>
-      <p className="text-[11px] text-slate-600">
-        {isBg ? "Всеки доставчик пази отделен списък модели и роли." : "Each provider keeps its own cached model list and role assignments."}
-      </p>
+      {controller.blocks.length > 0 ? (
+        <p className="text-[11px] text-slate-600">
+          {isBg ? "Всеки доставчик пази отделен списък модели и роли." : "Each provider keeps its own cached model list and role assignments."}
+        </p>
+      ) : null}
       {controller.loading ? <p className="text-xs text-slate-600">Loading AI providers…</p> : null}
       {controller.blocks.map((block) => {
         const provider = controller.providers.find((item) => item.id === block.providerId);
         return provider ? <ProviderBlock controller={controller} key={provider.id} provider={provider} uiLanguage={uiLanguage} /> : null;
       })}
-      <button
-        className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-        disabled={controller.saving}
-        onClick={() => void controller.saveRoles()}
-        type="button"
-      >
-        {isBg ? "Запази ролите" : "Assign Roles"}
-      </button>
+      {controller.blocks.length > 0 ? (
+        <button
+          className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          disabled={controller.saving}
+          onClick={() => void controller.saveRoles()}
+          type="button"
+        >
+          {isBg ? "Запази ролите" : "Assign Roles"}
+        </button>
+      ) : null}
       {controller.notice ? <p className="text-xs text-[var(--ink-muted)]">{controller.notice}</p> : null}
-      <div className="rounded-md border border-[var(--line)] bg-white p-2 text-[11px] text-slate-600">
-        {controller.aiSettings?.quotas.map((quota) => <p key={quota.providerId}>{quota.label}</p>)}
-        {!controller.aiSettings?.quotas.length ? (isBg ? "Няма налични данни за квота." : "No quota data available.") : null}
-      </div>
+      {controller.aiSettings?.quotas.length ? (
+        <div className="rounded-md border border-[var(--line)] bg-white p-2 text-[11px] text-slate-600">
+          {controller.aiSettings.quotas.map((quota) => <p key={quota.providerId}>{quota.label}</p>)}
+        </div>
+      ) : null}
     </div>
   );
 }

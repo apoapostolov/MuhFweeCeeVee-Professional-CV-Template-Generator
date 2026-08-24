@@ -132,7 +132,11 @@ export function useAiProviderSettings() {
       const payload = (await result.json()) as AiSettingsResponse & { error?: string };
       if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to reload models.");
       applyResponse(payload, [...providerIds, providerId]);
-      setNotice(`Models reloaded for ${providers.find((provider) => provider.id === providerId)?.name ?? providerId}.`);
+      if (payload.models.some((model) => model.providerId === providerId)) {
+        setNotice(`Models reloaded for ${providers.find((provider) => provider.id === providerId)?.name ?? providerId}.`);
+      } else {
+        setNotice("");
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Failed to reload models.");
     } finally {
