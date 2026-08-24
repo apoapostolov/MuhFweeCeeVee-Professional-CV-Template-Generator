@@ -134,7 +134,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                       key={item.id}
                       className={`rounded-lg border bg-white p-1.5 shadow-sm ${
                         isApproved
-                          ? "border-emerald-400 ring-2 ring-emerald-200"
+                          ? "border-emerald-500 ring-2 ring-inset ring-emerald-300 shadow-[0_0_0_1px_rgba(16,185,129,0.35)]"
                           : isCompareSelected
                             ? "border-amber-400 ring-2 ring-amber-200"
                           : isFocused
