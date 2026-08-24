@@ -136,16 +136,50 @@ export type ComposerController = ReturnType<typeof useComposerController>;
 const TEXT_FIELD_AUTOSAVE_MS = 2500;
 
 function compareSemanticVersions(left: string, right: string): number {
-  const parse = (value: string): number[] => {
-    const match = value.trim().match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
-    return match ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)] : [0, 0, 0];
+  const parse = (value: string): { core: number[]; prerelease: string[] | null } => {
+    const match = value.trim().match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?/i);
+    return {
+      core: match ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)] : [0, 0, 0],
+      prerelease: match?.[4] ? match[4].split(".") : null,
+    };
   };
-  const leftParts = parse(left);
-  const rightParts = parse(right);
+  const leftVersion = parse(left);
+  const rightVersion = parse(right);
   for (let index = 0; index < 3; index += 1) {
-    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+    if (leftVersion.core[index] !== rightVersion.core[index]) {
+      return leftVersion.core[index] - rightVersion.core[index];
+    }
+  }
+  if (leftVersion.prerelease === null && rightVersion.prerelease !== null) return 1;
+  if (leftVersion.prerelease !== null && rightVersion.prerelease === null) return -1;
+  if (leftVersion.prerelease === null || rightVersion.prerelease === null) return 0;
+  for (let index = 0; index < Math.max(leftVersion.prerelease.length, rightVersion.prerelease.length); index += 1) {
+    const leftPart = leftVersion.prerelease[index];
+    const rightPart = rightVersion.prerelease[index];
+    if (leftPart === undefined) return -1;
+    if (rightPart === undefined) return 1;
+    if (leftPart === rightPart) continue;
+    const leftNumeric = /^\d+$/.test(leftPart);
+    const rightNumeric = /^\d+$/.test(rightPart);
+    if (leftNumeric && rightNumeric) return Number(leftPart) - Number(rightPart);
+    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
+    return leftPart.localeCompare(rightPart);
   }
   return 0;
+}
+
+function compareCvPairs(a: CvPair, b: CvPair): number {
+  const nameOrder = a.displayName.localeCompare(b.displayName, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+  if (nameOrder !== 0) return nameOrder;
+
+  const versionOrder = compareSemanticVersions(b.displayVersion, a.displayVersion);
+  if (versionOrder !== 0) return versionOrder;
+
+  if (a.latestTs !== b.latestTs) return b.latestTs - a.latestTs;
+  return a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: "base" });
 }
 
 export function useComposerController() {
@@ -403,27 +437,15 @@ export function useComposerController() {
       existing.latestTs = Math.max(existing.latestTs, ts);
     }
 
-    return [...pairs.values()].sort((a, b) => {
-      const nameOrder = a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: "base" });
-      if (nameOrder !== 0) return nameOrder;
-      const versionOrder = a.displayVersion.localeCompare(b.displayVersion, undefined, { numeric: true, sensitivity: "base" });
-      if (versionOrder !== 0) return versionOrder;
-      if (a.latestTs !== b.latestTs) return b.latestTs - a.latestTs;
-      return a.key.localeCompare(b.key);
-    });
+    return [...pairs.values()].sort(compareCvPairs);
   }, [cvItems]);
 
   const cvTemplatesForLanguage = useMemo(() => {
     const lang = selectedLanguage.toLowerCase();
     return cvPairs
       .filter((pair) => Boolean(pair.variants[lang]))
-      .sort((a, b) => {
-        const nameOrder = a.displayName.localeCompare(b.displayName, undefined, {
-          sensitivity: "base",
-        });
-        if (nameOrder !== 0) return nameOrder;
-        return compareSemanticVersions(b.displayVersion, a.displayVersion);
-      });
+      .slice()
+      .sort(compareCvPairs);
   }, [cvPairs, selectedLanguage]);
 
   const pdfUrl = useMemo(() => {
