@@ -4,6 +4,7 @@ import { getAtPath, setAtPath } from "@/components/composer/form-path-utils";
 import { parseFieldPath } from "@/lib/field-path-key";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { readCv, writeCv } from "@/lib/server/cvStore";
+import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 import {
   isDefinedLanguageCode,
   languageDisplayName,
@@ -90,6 +91,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       { error: "Could not resolve target CV id for translation." },
       { status: 400 },
     );
+  }
+
+  const openRouterSettings = await readOpenRouterSettings();
+  if (!openRouterSettings.apiKey.trim()) {
+    return NextResponse.json({
+      ok: true,
+      sourceCvId,
+      targetCvId,
+      targetLanguage: targetLanguageRaw,
+      skipped: true,
+      message: "OpenRouter is not configured; translation skipped.",
+    });
   }
 
   const [, targetCv] = await Promise.all([readCv(sourceCvId), readCv(targetCvId)]);
