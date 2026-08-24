@@ -85,7 +85,7 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
             </p>
             <button
               aria-label={bg ? "Обнови цените на моделите" : "Refresh model pricing"}
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[var(--line)] text-slate-600 hover:bg-slate-50 hover:text-slate-950 disabled:opacity-40"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[var(--line)] text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] disabled:opacity-40"
               disabled={aiProviders.modelPricingLoading}
               onClick={() => void aiProviders.refreshModelPricing()}
               title={bg ? "Обнови цените на моделите" : "Refresh model pricing"}
