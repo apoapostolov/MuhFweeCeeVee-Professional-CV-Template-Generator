@@ -696,7 +696,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                     value: skillName,
                   });
                   return (
-                    <div key={childLabel} className="flex min-w-0 items-center gap-2 rounded-md border border-transparent px-1 py-0.5 hover:border-[var(--line)]">
+                    <div key={childLabel} className={`${compactFieldLayout ? "col-span-full" : ""} flex min-w-0 items-center gap-2 rounded-md border border-transparent px-1 py-0.5 hover:border-[var(--line)]`}>
                       <div className="flex h-6 w-6 shrink-0 items-center justify-center">
                         <VisibilityToggleButton
                           label={listItemLabel}
