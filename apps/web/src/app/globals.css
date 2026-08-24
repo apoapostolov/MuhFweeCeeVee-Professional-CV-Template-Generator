@@ -60,6 +60,11 @@ body {
   font-family: var(--font-body-sans), "Segoe UI", sans-serif;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+
 h1,
 h2,
 h3,
