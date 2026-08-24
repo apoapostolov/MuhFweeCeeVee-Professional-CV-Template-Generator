@@ -46,6 +46,7 @@ import {
   compactLeadingGroupIndentStyle,
   EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS,
   compactSectionIndentStyle,
+  isTabulatedArrayEditorPath,
   isTabulatedRootArraySection,
   EDITOR_COMPACT_FIELD_TRACKS_CLASS,
   EDITOR_STACKED_FIELD_ACTIONS_CLASS,
@@ -926,9 +927,14 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       );
       const objectHeaderDivider =
         compactFieldLayout && depth > 0 ? "border-t border-[var(--line)] pt-2" : "";
+      const objectArrayIndex = path[path.length - 1];
+      const isTopLevelStructure = compactFieldLayout && depth === 1 && isTabulatedArrayEditorPath(editorPath);
+      const alternatingStructureClass = isTopLevelStructure && typeof objectArrayIndex === "number"
+        ? `col-span-full grid grid-cols-subgrid gap-y-2 rounded-md px-2 py-2 ${objectArrayIndex % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
+        : compactContainerShellClass(compactFieldLayout, editorPath, depth);
 
       return (
-        <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
+        <div className={alternatingStructureClass}>
           {compactFieldLayout ? (
             experienceItem ? (
               <div
