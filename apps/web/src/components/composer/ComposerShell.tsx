@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { AssistantRecordReference } from "@muhfweeceevee/schemas";
 
@@ -18,6 +18,7 @@ import { TemplatesPanel } from "./TemplatesPanel";
 import { ResearchPanel } from "./ResearchPanel";
 import { CoverLettersPanel } from "./CoverLettersPanel";
 import { ApplicationsPanel } from "./ApplicationsPanel";
+import { prefetchApplications } from "./application-board-prefetch";
 import { WorkspacePanel } from "./WorkspacePanel";
 import { asRecord } from "./form-path-utils";
 import { ComposerToastHost } from "./composer-toast";
@@ -33,6 +34,10 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
   const [duplicateCvOpen, setDuplicateCvOpen] = useState(false);
   const [duplicateCvBusy, setDuplicateCvBusy] = useState(false);
   const [duplicateCvError, setDuplicateCvError] = useState("");
+
+  useEffect(() => {
+    prefetchApplications();
+  }, []);
   const [assistantApplication, setAssistantApplication] =
     useState<AssistantRecordReference | null>(null);
   const assistantLauncherRef = useRef<HTMLButtonElement>(null);

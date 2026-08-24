@@ -5,6 +5,7 @@ import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, 
 import type { RenderTweaks } from "@/lib/server/render/tweaks";
 
 import { ApplicationActivityTimeline } from "./ApplicationActivityTimeline";
+import { loadPrefetchedApplications } from "./application-board-prefetch";
 import { ApplicationAnalyticsView } from "./ApplicationAnalyticsView";
 import { ApplicationQuickIntake } from "./ApplicationQuickIntake";
 import { ApplicationSubmissionHistory } from "./ApplicationSubmissionHistory";
@@ -293,12 +294,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     failedReuse: bg ? "Копирането не успя." : "Could not copy.",
   };
 
-  const loadBoard = useCallback(async () => {
-    const response = await fetch("/api/applications");
-    const payload = (await response.json()) as {
-      applications?: Application[];
-      duplicates?: Record<string, string[]>;
-    };
+  const loadBoard = useCallback(async (force = false) => {
+    const payload = await loadPrefetchedApplications(force);
     setApplications(payload.applications ?? []);
     setDuplicates(payload.duplicates ?? {});
   }, []);
@@ -339,7 +336,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   }, [loadBoard, loadLookups]);
 
   useEffect(() => {
-    const refresh = () => void loadBoard();
+    const refresh = () => void loadBoard(true);
     window.addEventListener("mfcv:assistant-mutation", refresh);
     return () => window.removeEventListener("mfcv:assistant-mutation", refresh);
   }, [loadBoard]);
@@ -540,7 +537,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     preserveEditorTab = false,
   ): Promise<void> {
     const currentEditorTab = editorTab;
-    await loadBoard();
+    await loadBoard(true);
     const response = await fetch(
       `/api/applications/${encodeURIComponent(id)}`,
     );
@@ -576,7 +573,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           },
         );
       }
-      await loadBoard();
+      await loadBoard(true);
       setNotice(bg ? "Действието е завършено." : "Action completed.");
     }
   }
@@ -591,7 +588,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       },
     );
     if (response.ok) {
-      await loadBoard();
+      await loadBoard(true);
       setEditorOpen(false);
       setNotice(
         application.archived_at
@@ -886,7 +883,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             disabled={busy}
             language={language}
             onComplete={(application, deduplicated) => {
-              void loadBoard();
+              void loadBoard(true);
               openEdit(application);
               setNotice(
                 deduplicated
