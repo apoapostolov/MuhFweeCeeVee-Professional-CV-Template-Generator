@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, type JSX } from "react";
+import { Upload } from "lucide-react";
 
 import type { CompanyEnrichStage } from "@/lib/research/companyEnrich";
 import { companyOfficeSummary } from "@/lib/research/research-normalize";
@@ -155,7 +156,7 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                 : "Fill company cheaply by default. Check Include Research only for web search."}
             </p>
             <button
-              className="w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--accent)] px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
               disabled={loadingCatalog}
               onClick={onImportMetadata}
               title={
@@ -165,6 +166,7 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
               }
               type="button"
             >
+              <Upload aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
               {language === "bg"
                 ? "Импорт от company metadata"
                 : "Import from company metadata"}
