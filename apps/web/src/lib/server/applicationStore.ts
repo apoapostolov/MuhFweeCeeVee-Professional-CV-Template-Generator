@@ -285,8 +285,10 @@ export type ApplicationPacketFile = {
 export const PACKET_FORMAT = "muhfweeceevee.application_packet" as const;
 
 const BOARD_PATH = repoPath("data", "applications", "board.json");
+const BOARD_BACKUP_PATH = repoPath("work", "applications-board.json.bak");
 
 const EMPTY: ApplicationBoard = { version: 1, applications: [] };
+let boardWriteQueue: Promise<ApplicationBoard> = Promise.resolve(EMPTY);
 
 async function ensureBoard(): Promise<void> {
   await fs.mkdir(path.dirname(BOARD_PATH), { recursive: true });
@@ -517,11 +519,19 @@ export async function readApplicationBoard(): Promise<ApplicationBoard> {
       ),
     };
   } catch {
+    try {
+      const backup = JSON.parse(await fs.readFile(BOARD_BACKUP_PATH, "utf-8")) as ApplicationBoard;
+      if (backup && Array.isArray(backup.applications)) {
+        return { version: 1, applications: backup.applications.map((app) => normalizeApplication(app as Application & { id: string })) };
+      }
+    } catch {
+      // Return an empty board only when both primary and backup are unreadable.
+    }
     return EMPTY;
   }
 }
 
-async function writeBoard(board: ApplicationBoard): Promise<ApplicationBoard> {
+async function writeBoardUnlocked(board: ApplicationBoard): Promise<ApplicationBoard> {
   await ensureBoard();
   const next = {
     version: 1 as const,
@@ -529,8 +539,24 @@ async function writeBoard(board: ApplicationBoard): Promise<ApplicationBoard> {
       .map((app) => normalizeApplication(app))
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
   };
-  await fs.writeFile(BOARD_PATH, `${JSON.stringify(next, null, 2)}\n`, "utf-8");
+  await fs.mkdir(path.dirname(BOARD_BACKUP_PATH), { recursive: true });
+  await fs.copyFile(BOARD_PATH, BOARD_BACKUP_PATH).catch(() => undefined);
+  const temporary = `${BOARD_PATH}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(next, null, 2)}\n`, "utf-8");
+  try {
+    await fs.rename(temporary, BOARD_PATH);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EPERM") throw error;
+    await fs.copyFile(temporary, BOARD_PATH);
+    await fs.unlink(temporary).catch(() => undefined);
+  }
   return next;
+}
+
+async function writeBoard(board: ApplicationBoard): Promise<ApplicationBoard> {
+  const pending = boardWriteQueue.then(() => writeBoardUnlocked(board));
+  boardWriteQueue = pending.catch(() => EMPTY);
+  return pending;
 }
 
 export async function getApplication(id: string): Promise<Application | null> {
