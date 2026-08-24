@@ -188,6 +188,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   } = props;
 
   const [applications, setApplications] = useState<Application[]>([]);
+  const [boardLoading, setBoardLoading] = useState(true);
   const [duplicates, setDuplicates] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -332,7 +333,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    void loadBoard();
+    void loadBoard().finally(() => setBoardLoading(false));
     void loadLookups();
     setSavedViews(loadSavedApplicationViews());
   }, [loadBoard, loadLookups]);
@@ -1090,7 +1091,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           <CareerEvidenceView defaultCvId={defaultCvId} language={language} />
         </div>
       ) : (
-      <div className="grid min-h-0 flex-1 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+      <div className="relative grid min-h-0 flex-1 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
         {view === "today" ? (
           <ApplicationTodayView
             applications={filteredApplications}
