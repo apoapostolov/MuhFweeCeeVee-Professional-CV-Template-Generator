@@ -123,16 +123,22 @@ function ProviderBlock({
             <>
               <code className="rounded border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold tracking-widest text-slate-900">{controller.oauthCode.value}</code>
               <button
-                aria-label="Copy OAuth login code"
+                aria-label={controller.oauthCodeCopiedProviderId === provider.id ? "OAuth login code copied" : "Copy OAuth login code"}
                 className="inline-flex h-7 w-7 items-center justify-center border-0 text-slate-600 hover:text-slate-950"
-                onClick={() => void controller.copyOAuthCode(controller.oauthCode?.value ?? "")}
-                title="Copy OAuth login code"
+                onClick={() => void controller.copyOAuthCode(provider.id, controller.oauthCode?.value ?? "")}
+                title={controller.oauthCodeCopiedProviderId === provider.id ? "Copied" : "Copy OAuth login code"}
                 type="button"
               >
-                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <rect height="12" rx="2" stroke="currentColor" strokeWidth="1.7" width="12" x="8" y="8" />
-                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
-                </svg>
+                {controller.oauthCodeCopiedProviderId === provider.id ? (
+                  <svg aria-hidden="true" className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                    <path d="m5 12 4 4L19 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <rect height="12" rx="2" stroke="currentColor" strokeWidth="1.7" width="12" x="8" y="8" />
+                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+                  </svg>
+                )}
               </button>
             </>
           ) : null}

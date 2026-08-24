@@ -54,6 +54,7 @@ export function useAiProviderSettings() {
   const [saving, setSaving] = useState(false);
   const [reloadingProviderId, setReloadingProviderId] = useState<string | null>(null);
   const [oauthCode, setOauthCode] = useState<{ providerId: string; value: string } | null>(null);
+  const [oauthCodeCopiedProviderId, setOauthCodeCopiedProviderId] = useState<string | null>(null);
   const [oauthActionProviderId, setOauthActionProviderId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
 
@@ -205,7 +206,7 @@ export function useAiProviderSettings() {
     applyResponse(payload, preserveProviderIds);
   }, [applyResponse, providerIds]);
 
-  const copyOAuthCode = useCallback(async (value: string): Promise<boolean> => {
+  const copyTextToClipboard = useCallback(async (value: string): Promise<boolean> => {
     try {
       await navigator.clipboard.writeText(value);
       return true;
@@ -221,6 +222,15 @@ export function useAiProviderSettings() {
       return copied;
     }
   }, []);
+
+  const copyOAuthCode = useCallback(async (providerId: string, value: string): Promise<boolean> => {
+    const copied = await copyTextToClipboard(value);
+    if (copied) {
+      setOauthCodeCopiedProviderId(providerId);
+      window.setTimeout(() => setOauthCodeCopiedProviderId((current) => current === providerId ? null : current), 1000);
+    }
+    return copied;
+  }, [copyTextToClipboard]);
 
   const waitForCodexOAuth = useCallback(async (sessionId: string, popup: Window | null, interval: number) => {
     const attempts = Math.ceil((15 * 60) / Math.max(5, interval));
@@ -261,7 +271,7 @@ export function useAiProviderSettings() {
         }
         popup.location.assign(payload.verificationUri);
         setOauthCode({ providerId: provider.id, value: payload.userCode });
-        const copied = await copyOAuthCode(payload.userCode);
+        const copied = await copyTextToClipboard(payload.userCode);
         setNotice(copied ? "Login code copied to the clipboard. Complete login in the opened window." : "Copy the login code shown below into the opened window.");
         void waitForCodexOAuth(payload.sessionId, popup, payload.interval ?? 5).catch((error: unknown) => {
           setOauthActionProviderId(null);
@@ -287,7 +297,7 @@ export function useAiProviderSettings() {
       setOauthActionProviderId(null);
       setNotice(error instanceof Error ? error.message : `${provider.name} OAuth login could not start.`);
     }
-  }, [copyOAuthCode, response, waitForCodexOAuth]);
+  }, [copyTextToClipboard, response, waitForCodexOAuth]);
 
   const disconnectOAuth = useCallback(async (provider: AiProviderStatus) => {
     setOauthActionProviderId(provider.id);
@@ -327,6 +337,7 @@ export function useAiProviderSettings() {
     disconnectOAuth,
     oauthCode,
     copyOAuthCode,
+    oauthCodeCopiedProviderId,
     oauthActionProviderId,
     roles: AI_ROLES,
   };

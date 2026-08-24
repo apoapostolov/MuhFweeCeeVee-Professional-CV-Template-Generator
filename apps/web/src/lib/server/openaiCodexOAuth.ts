@@ -8,6 +8,7 @@ const ISSUER = "https://auth.openai.com";
 const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const REDIRECT_URI = `${ISSUER}/deviceauth/callback`;
 const SESSION_FILE = repoPath("work", "ai-oauth", "openai-codex.json");
+const PENDING_DIR = repoPath("work", "ai-oauth", "pending");
 const MAX_LOGIN_AGE_MS = 15 * 60 * 1000;
 
 type PendingLogin = {
@@ -30,7 +31,25 @@ type OAuthTokenResponse = {
   expires_in?: number;
 };
 
-const pendingLogins = new Map<string, PendingLogin>();
+function pendingFile(sessionId: string): string {
+  if (!/^[a-f0-9-]+$/i.test(sessionId)) throw new Error("Invalid OAuth session.");
+  return path.join(PENDING_DIR, `${sessionId}.json`);
+}
+
+async function readPendingLogin(sessionId: string): Promise<PendingLogin | null> {
+  try {
+    return JSON.parse(await fs.readFile(pendingFile(sessionId), "utf8")) as PendingLogin;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function deletePendingLogin(sessionId: string): Promise<void> {
+  await fs.unlink(pendingFile(sessionId)).catch((error: unknown) => {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  });
+}
 
 function expiresAtFromToken(idToken: string, expiresIn?: number): string {
   try {
@@ -62,7 +81,8 @@ export async function startCodexOAuth(): Promise<{
   }
   const sessionId = randomUUID();
   const interval = Math.max(5, payload.interval ?? 5);
-  pendingLogins.set(sessionId, { deviceAuthId: payload.device_auth_id, userCode, interval, createdAt: Date.now() });
+  await fs.mkdir(PENDING_DIR, { recursive: true });
+  await fs.writeFile(pendingFile(sessionId), JSON.stringify({ deviceAuthId: payload.device_auth_id, userCode, interval, createdAt: Date.now() }), "utf8");
   return { sessionId, verificationUri: `${ISSUER}/codex/device`, userCode, interval };
 }
 
@@ -70,9 +90,9 @@ export async function pollCodexOAuth(sessionId: string): Promise<
   | { status: "pending"; interval: number }
   | { status: "connected"; expiresAt: string }
 > {
-  const pending = pendingLogins.get(sessionId);
+  const pending = await readPendingLogin(sessionId);
   if (!pending || Date.now() - pending.createdAt > MAX_LOGIN_AGE_MS) {
-    pendingLogins.delete(sessionId);
+    await deletePendingLogin(sessionId);
     throw new Error("OpenAI Codex login expired. Start login again.");
   }
 
@@ -126,7 +146,7 @@ export async function pollCodexOAuth(sessionId: string): Promise<
     await fs.copyFile(temporary, SESSION_FILE);
     await fs.unlink(temporary).catch(() => undefined);
   }
-  pendingLogins.delete(sessionId);
+  await deletePendingLogin(sessionId);
   return { status: "connected", expiresAt };
 }
 
@@ -134,5 +154,10 @@ export async function disconnectCodexOAuth(): Promise<void> {
   await fs.unlink(SESSION_FILE).catch((error: unknown) => {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   });
-  pendingLogins.clear();
+  try {
+    const files = await fs.readdir(PENDING_DIR);
+    await Promise.all(files.filter((file) => file.endsWith(".json")).map((file) => fs.unlink(path.join(PENDING_DIR, file))));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
 }
