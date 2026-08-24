@@ -632,6 +632,9 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         </div>
       );
       const showArrayChildren = expanded;
+      const arrayChildrenClass = compactFieldLayout && isRatedSkillListPath(pathLabel)
+        ? "col-span-full grid grid-cols-1 gap-y-2"
+        : compactChildrenStackClass(compactFieldLayout, editorPath, depth);
 
       return (
         <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
@@ -656,7 +659,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           )}
 
           {showArrayChildren ? (
-            <div className={compactChildrenStackClass(compactFieldLayout, editorPath, depth)}>
+            <div className={arrayChildrenClass}>
               {node.length === 0 && (
                 <p
                   className={
