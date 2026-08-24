@@ -22,15 +22,15 @@
   --quota-track: #e6dcc7;
   --quota-fill: #0d5c63;
   --quota-gradient: linear-gradient(90deg, #0d5c63 0%, #2a9d8f 55%, #76c893 100%);
-  --yaml-key: #0369a1;
-  --yaml-list: #a21caf;
-  --yaml-punctuation: #475569;
-  --yaml-text: #334155;
-  --yaml-comment: #64748b;
-  --yaml-string: #047857;
-  --yaml-boolean: #6d28d9;
-  --yaml-number: #b45309;
-  --yaml-empty: #94a3b8;
+  --yaml-key: #39727a;
+  --yaml-list: #726587;
+  --yaml-punctuation: #6b7280;
+  --yaml-text: #4b5563;
+  --yaml-comment: #7c8590;
+  --yaml-string: #4f8268;
+  --yaml-boolean: #75678d;
+  --yaml-number: #92734f;
+  --yaml-empty: #8a949e;
 }
 
 :root[data-theme="dark"] {
@@ -55,14 +55,14 @@
   --quota-track: #20262d;
   --quota-fill: #67e8f9;
   --quota-gradient: linear-gradient(90deg, #67e8f9 0%, #67e8f9 25%, #a78bfa 65%, #f0abfc 100%);
-  --yaml-key: #8fb8d8;
-  --yaml-list: #b5a7d6;
-  --yaml-punctuation: #9aa6b2;
-  --yaml-text: #cdd9e5;
-  --yaml-comment: #8d99a6;
-  --yaml-string: #86b99b;
-  --yaml-boolean: #b9a6d9;
-  --yaml-number: #d0a96b;
+  --yaml-key: #8ca6b5;
+  --yaml-list: #a79ab9;
+  --yaml-punctuation: #909aa6;
+  --yaml-text: #c1cbd5;
+  --yaml-comment: #89939f;
+  --yaml-string: #85a890;
+  --yaml-boolean: #aa9bbd;
+  --yaml-number: #b59b73;
   --yaml-empty: #7f8b99;
 }
 
