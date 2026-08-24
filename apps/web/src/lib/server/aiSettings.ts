@@ -286,6 +286,7 @@ async function providerStatus(providerId: string): Promise<AiProviderStatus> {
     connected,
     apiKeyMasked: apiKey ? maskApiKey(apiKey) : undefined,
     expiresAt,
+    oauthVerificationUri: provider.oauthVerificationUri,
     capabilities: provider.capabilities,
   };
 }

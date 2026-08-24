@@ -196,16 +196,39 @@ export function useAiProviderSettings() {
     });
   }, []);
 
-  const openOAuthLogin = useCallback((provider: AiProviderStatus) => {
-    const verificationUri = response?.providers.find((item) => item.id === provider.id)?.id === provider.id
-      ? (provider.id === "xai-oauth" ? "https://accounts.x.ai/oauth2/device" : "")
-      : "";
-    if (!verificationUri) {
-      setNotice(`${provider.name} OAuth login is not available in this build.`);
+  const openOAuthLogin = useCallback(async (provider: AiProviderStatus) => {
+    const popup = window.open("about:blank", "mfcv-ai-oauth", "noopener,noreferrer");
+    if (!popup) {
+      setNotice("The OAuth window was blocked. Allow pop-ups for this site and try again.");
       return;
     }
-    window.open(verificationUri, "mfcv-ai-oauth", "noopener,noreferrer");
-    setNotice(`Complete ${provider.name} login in the opened window, then reload this provider.`);
+
+    try {
+      if (provider.id === "openai-codex") {
+        const result = await fetch("/api/settings/ai/oauth/openai-codex/start", { method: "POST" });
+        const payload = (await result.json()) as { verificationUri?: string; userCode?: string; error?: string };
+        if (!result.ok || !payload.verificationUri || !payload.userCode) {
+          throw new Error(payload.error ?? "OpenAI Codex OAuth login could not start.");
+        }
+        popup.location.href = payload.verificationUri;
+        setNotice(`Enter code ${payload.userCode} in the OpenAI Codex login window, then reload this provider.`);
+        return;
+      }
+
+      const verificationUri = response?.providers.find((item) => item.id === provider.id)?.id === provider.id
+        ? provider.oauthVerificationUri
+        : undefined;
+      if (!verificationUri) {
+        popup.close();
+        setNotice(`${provider.name} OAuth login is not available in this build.`);
+        return;
+      }
+      popup.location.href = verificationUri;
+      setNotice(`Complete ${provider.name} login in the opened window, then reload this provider.`);
+    } catch (error) {
+      popup.close();
+      setNotice(error instanceof Error ? error.message : `${provider.name} OAuth login could not start.`);
+    }
   }, [response]);
 
   return {

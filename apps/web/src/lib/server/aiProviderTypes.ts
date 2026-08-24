@@ -53,6 +53,7 @@ export type AiProviderStatus = {
   connected: boolean;
   apiKeyMasked?: string;
   expiresAt?: string;
+  oauthVerificationUri?: string;
   capabilities: AiCapability[];
 };
 
