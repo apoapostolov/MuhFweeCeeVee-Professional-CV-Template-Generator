@@ -87,6 +87,10 @@ function isRatedSkillListPath(pathLabel: string): boolean {
   ].includes(pathLabel);
 }
 
+function isExperienceSubsectionPath(pathLabel: string): boolean {
+  return /^experience\[\d+\]\.(responsibilities|products|publication_links|quantified_results|tools)$/i.test(pathLabel);
+}
+
 const EXPERIENCE_SUBSECTION_OPTIONS = [
   { key: "responsibilities", en: "Responsibilities", bg: "Отговорности", value: [] },
   { key: "products", en: "Products", bg: "Продукти", value: [] },
@@ -533,7 +537,11 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     }
 
     const removeButton = options?.onRemove ? (
-      <ConfirmRemoveButton kind="field" language={uiLanguage} onConfirm={options.onRemove} />
+      <ConfirmRemoveButton
+        kind={isExperienceSubsectionPath(pathLabel) ? "section" : "field"}
+        language={uiLanguage}
+        onConfirm={options.onRemove}
+      />
     ) : null;
 
     if (Array.isArray(node)) {
@@ -598,7 +606,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               {allSubsectionsCollapsed ? "▾" : "▴"}
             </button>
           ) : null}
-          {removeButton}
+          {!isExperienceSubsectionPath(pathLabel) ? removeButton : null}
           <button
             aria-label={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
@@ -628,6 +636,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               <p className="min-w-0 truncate text-xs text-[var(--ink-muted)]">{headerSubtitle}</p>
             </>
           ) : null}
+          {isExperienceSubsectionPath(pathLabel) ? removeButton : null}
         </div>
       );
       const showArrayChildren = expanded;
