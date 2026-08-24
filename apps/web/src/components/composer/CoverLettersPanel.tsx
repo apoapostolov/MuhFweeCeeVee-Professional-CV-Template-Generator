@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type JSX } from "react";
+import { Plus } from "lucide-react";
 
 import { ConfirmRemoveButton } from "./confirm-remove-button";
 
@@ -358,12 +359,13 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
             : "CV + Research target. AI draft and Humanize are separate steps."}
         </p>
         <button
-          className="mt-3 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
           disabled={busy}
           onClick={startNew}
           type="button"
         >
-          {bg ? "Ново писмо" : "New letter"}
+          <Plus aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} />
+           {bg ? "Ново писмо" : "New letter"}
         </button>
         <ul className="mt-3 min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto">
           {items.map((item) => (
