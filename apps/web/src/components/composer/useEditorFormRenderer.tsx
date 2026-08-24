@@ -997,20 +997,22 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           )}
           {missingExperienceSubsections.length > 0 ? (
             <div
-              className={`${compactFieldLayout ? `${EDITOR_COMPACT_FIELD_TRACKS_CLASS} col-span-full` : ""} mb-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--ink-muted)]`}
+              className={`${compactFieldLayout ? `${EDITOR_COMPACT_FIELD_TRACKS_CLASS} col-span-full` : ""} mb-2 flex w-full items-center justify-between gap-3 text-[11px] text-[var(--ink-muted)]`}
               style={compactFieldLayout ? leadingGroupIndentStyle : sectionIndentStyle}
             >
-              <span>{uiLanguage === "bg" ? "Добави подраздел:" : "Add subsection:"}</span>
-              {missingExperienceSubsections.map((subsection) => (
-                <button
-                  className="rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1 font-medium text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                  key={subsection.key}
-                  onClick={() => updateDraftAt([...path, subsection.key], [...subsection.value])}
-                  type="button"
-                >
-                  {uiLanguage === "bg" ? subsection.bg : subsection.en}
-                </button>
-              ))}
+              <span className="shrink-0">{uiLanguage === "bg" ? "Добави подраздел:" : "Add subsection:"}</span>
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {missingExperienceSubsections.map((subsection) => (
+                  <button
+                    className="rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1 font-medium text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                    key={subsection.key}
+                    onClick={() => updateDraftAt([...path, subsection.key], [...subsection.value])}
+                    type="button"
+                  >
+                    {uiLanguage === "bg" ? subsection.bg : subsection.en}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
           {expanded ? (
