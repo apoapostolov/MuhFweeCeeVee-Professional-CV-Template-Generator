@@ -42,6 +42,7 @@ export type AiSettingsDocument = {
   schemaVersion: 1;
   updatedAt: string;
   roles: Record<AiRole, AiRoleBinding>;
+  disabledRoles: AiRole[];
 };
 
 export type AiProviderStatus = {

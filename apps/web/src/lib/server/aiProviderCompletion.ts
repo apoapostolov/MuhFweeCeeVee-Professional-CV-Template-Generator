@@ -74,7 +74,8 @@ function extractGeminiText(payload: unknown): string {
 
 export async function completeAiText(input: CompletionInput): Promise<CompletionResponse> {
   const settings = await readAiSettingsDocument();
-  const binding = settings.roles[input.role];
+  const binding = settings.disabledRoles.includes(input.role) ? null : settings.roles[input.role];
+  if (!binding) throw new Error(`No AI provider is configured for ${input.role}.`);
   const provider = getAiProvider(binding.providerId);
   if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for ${input.role}.`);
   const apiKey = await readAiProviderKey(provider.id);

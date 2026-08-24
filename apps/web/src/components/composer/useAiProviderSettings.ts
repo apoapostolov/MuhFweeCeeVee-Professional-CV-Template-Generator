@@ -3,10 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
-  AiModel,
   AiProviderStatus,
   AiRole,
-  AiRoleBinding,
   AiSettingsResponse,
 } from "@/lib/server/aiProviderTypes";
 
@@ -27,12 +25,13 @@ const AI_ROLES: readonly AiRole[] = [
 ];
 
 function uniqueProviderIds(response: AiSettingsResponse): string[] {
+  const disabledRoles = new Set(response.disabledRoles);
   const configuredProviderIds = new Set(
     response.providers.filter((provider) => provider.configured).map((provider) => provider.id),
   );
   return [
     ...new Set(
-      AI_ROLES.map((role) => response.roles[role]?.providerId)
+      AI_ROLES.filter((role) => !disabledRoles.has(role)).map((role) => response.roles[role]?.providerId)
         .filter((providerId): providerId is string => Boolean(providerId))
         .filter((providerId) => configuredProviderIds.has(providerId)),
     ),
@@ -40,7 +39,7 @@ function uniqueProviderIds(response: AiSettingsResponse): string[] {
 }
 
 function modelForProvider(response: AiSettingsResponse, providerId: string): string {
-  const role = AI_ROLES.find((candidate) => response.roles[candidate]?.providerId === providerId);
+  const role = AI_ROLES.find((candidate) => !response.disabledRoles.includes(candidate) && response.roles[candidate]?.providerId === providerId);
   return role ? response.roles[role].modelId : response.models.find((model) => model.providerId === providerId)?.id ?? "";
 }
 
@@ -72,7 +71,7 @@ export function useAiProviderSettings() {
     setSelectedRoles((current) => {
       const updated = { ...current };
       for (const providerId of nextProviderIds) {
-        updated[providerId] = AI_ROLES.filter((role) => next.roles[role]?.providerId === providerId);
+        updated[providerId] = AI_ROLES.filter((role) => !next.disabledRoles.includes(role) && next.roles[role]?.providerId === providerId);
       }
       return updated;
     });
@@ -83,7 +82,7 @@ export function useAiProviderSettings() {
     async function load() {
       setLoading(true);
       try {
-        const result = await fetch("/api/settings/ai");
+        const result = await fetch("/api/settings/ai?refresh=1");
         const payload = (await result.json()) as AiSettingsResponse & { error?: string };
         if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to load AI settings.");
         if (!cancelled) applyResponse(payload, []);
@@ -99,8 +98,8 @@ export function useAiProviderSettings() {
     };
   }, [applyResponse]);
 
-  const providers = response?.providers ?? [];
-  const models = response?.models ?? [];
+  const providers = useMemo(() => response?.providers ?? [], [response]);
+  const models = useMemo(() => response?.models ?? [], [response]);
 
   const blocks = useMemo<AiProviderBlock[]>(
     () => providerIds.map((providerId) => ({
@@ -120,7 +119,7 @@ export function useAiProviderSettings() {
   }, [providerIds]);
 
   const removeProvider = useCallback((providerId: string) => {
-    if (AI_ROLES.some((role) => response?.roles[role]?.providerId === providerId)) return;
+    if (AI_ROLES.some((role) => !response?.disabledRoles.includes(role) && response?.roles[role]?.providerId === providerId)) return;
     setProviderIds((current) => current.filter((id) => id !== providerId));
   }, [response]);
 
@@ -167,44 +166,54 @@ export function useAiProviderSettings() {
     }
   }, [apiKeyInputs, applyResponse, providerIds]);
 
-  const saveRoles = useCallback(async () => {
-    const roles: Partial<Record<AiRole, AiRoleBinding>> = {};
-    for (const block of blocks) {
-      if (!block.modelId) continue;
-      for (const role of block.roles) roles[role] = { providerId: block.providerId, modelId: block.modelId };
+  const setModel = useCallback((providerId: string, modelId: string) => {
+    setSelectedModels((current) => ({ ...current, [providerId]: modelId }));
+  }, []);
+
+  const toggleRole = useCallback(async (providerId: string, role: AiRole) => {
+    const block = blocks.find((item) => item.providerId === providerId);
+    if (!block?.modelId) {
+      setNotice("Choose a model before assigning a role.");
+      return;
     }
+    const assigning = !(block.roles.includes(role));
+    const previousRoles = selectedRoles;
+    setSelectedRoles((current) => {
+      const updated = { ...current };
+      for (const id of providerIds) {
+        const roles = current[id] ?? [];
+        updated[id] = assigning && id !== providerId
+          ? roles.filter((item) => item !== role)
+          : id === providerId
+            ? (assigning ? [...roles, role] : roles.filter((item) => item !== role))
+            : roles;
+      }
+      return updated;
+    });
     setSaving(true);
     setNotice("");
     try {
       const result = await fetch("/api/settings/ai", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ roles }),
+        body: JSON.stringify(assigning
+          ? { roles: { [role]: { providerId, modelId: block.modelId } } }
+          : { clearRoles: [role] }),
       });
       const payload = (await result.json()) as AiSettingsResponse & { error?: string };
-      if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to save role assignments.");
+      if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to update role assignment.");
       applyResponse(payload, providerIds);
-      setNotice("Role assignments saved.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Failed to save role assignments.");
+      setSelectedRoles(previousRoles);
+      setNotice(error instanceof Error ? error.message : "Failed to update role assignment.");
     } finally {
       setSaving(false);
     }
-  }, [applyResponse, blocks, providerIds]);
-
-  const setModel = useCallback((providerId: string, modelId: string) => {
-    setSelectedModels((current) => ({ ...current, [providerId]: modelId }));
-  }, []);
-
-  const toggleRole = useCallback((providerId: string, role: AiRole) => {
-    setSelectedRoles((current) => {
-      const roles = current[providerId] ?? [];
-      return { ...current, [providerId]: roles.includes(role) ? roles.filter((item) => item !== role) : [...roles, role] };
-    });
-  }, []);
+  }, [applyResponse, blocks, providerIds, selectedRoles]);
 
   const refreshSettings = useCallback(async (preserveProviderIds: string[] = providerIds) => {
-    const result = await fetch("/api/settings/ai");
+    const requested = [...new Set(preserveProviderIds)].join(",");
+    const result = await fetch(`/api/settings/ai?refresh=1${requested ? `&providers=${encodeURIComponent(requested)}` : ""}`);
     const payload = (await result.json()) as AiSettingsResponse & { error?: string };
     if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to refresh AI providers.");
     applyResponse(payload, preserveProviderIds);
@@ -333,8 +342,8 @@ export function useAiProviderSettings() {
     addProvider,
     removeProvider,
     reloadProvider,
+    refreshSettings,
     saveApiKey,
-    saveRoles,
     setModel,
     toggleRole,
     openOAuthLogin,

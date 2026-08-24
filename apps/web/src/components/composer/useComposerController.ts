@@ -134,6 +134,14 @@ export function useComposerController() {
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const openRouter = useOpenRouterSettings();
   const aiProviders = useAiProviderSettings();
+  const refreshAiSettings = aiProviders.refreshSettings;
+  const previousActivePanel = useRef<ActivePanel | null>(null);
+  useEffect(() => {
+    if (activePanel === "settings" && previousActivePanel.current !== "settings") {
+      void refreshAiSettings().catch(() => undefined);
+    }
+    previousActivePanel.current = activePanel;
+  }, [activePanel, refreshAiSettings]);
   const {
     toasts: composerToasts,
     showToast: showComposerToast,

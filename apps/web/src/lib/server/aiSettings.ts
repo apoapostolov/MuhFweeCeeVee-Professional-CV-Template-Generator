@@ -52,7 +52,7 @@ function defaults(model: string, researchModel: string, imageModel: string): AiS
       } satisfies AiRoleBinding,
     ]),
   ) as Record<AiRole, AiRoleBinding>;
-  return { schemaVersion: 1, updatedAt: "", roles };
+  return { schemaVersion: 1, updatedAt: "", roles, disabledRoles: [] };
 }
 
 function parseEnv(input: string, key: string): string {
@@ -123,7 +123,10 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
         const modelId = typeof record.modelId === "string" ? record.modelId.trim() : "";
         if (getAiProvider(providerId) && modelId) roles[role] = { providerId, modelId };
       }
-      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles };
+      const disabledRoles = Array.isArray(value.disabledRoles)
+        ? value.disabledRoles.filter((role): role is AiRole => typeof role === "string" && AI_ROLES.includes(role as AiRole))
+        : [];
+      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, disabledRoles };
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -133,16 +136,25 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
 }
 
 export async function writeAiSettingsDocument(
-  input: { roles?: Partial<Record<AiRole, AiRoleBinding>>; apiKeys?: Record<string, string> },
+  input: {
+    roles?: Partial<Record<AiRole, AiRoleBinding>>;
+    clearRoles?: AiRole[];
+    apiKeys?: Record<string, string>;
+  },
 ): Promise<AiSettingsDocument> {
   const current = await readAiSettingsDocument();
   const roles = { ...current.roles };
+  const disabledRoles = new Set(current.disabledRoles);
+  for (const role of input.clearRoles ?? []) {
+    if (AI_ROLES.includes(role)) disabledRoles.add(role);
+  }
   for (const role of AI_ROLES) {
     const candidate = input.roles?.[role];
     if (!candidate) continue;
     const provider = getAiProvider(candidate.providerId);
     if (!provider || !candidate.modelId.trim()) throw new Error(`Unknown provider or empty model for ${role}.`);
     roles[role] = { providerId: provider.id, modelId: candidate.modelId.trim() };
+    disabledRoles.delete(role);
   }
   const openRouterRoles = Object.fromEntries(
     ["analysis", "research", "image-generation"].flatMap((role) => {
@@ -161,7 +173,12 @@ export async function writeAiSettingsDocument(
     if (!getAiProvider(providerId)) throw new Error(`Unknown AI provider '${providerId}'.`);
     if (typeof key === "string" && key.trim()) await writeProviderKey(providerId, key.trim());
   }
-  const next = { schemaVersion: 1 as const, updatedAt: new Date().toISOString(), roles };
+  const next = {
+    schemaVersion: 1 as const,
+    updatedAt: new Date().toISOString(),
+    roles,
+    disabledRoles: [...disabledRoles],
+  };
   await fs.mkdir(path.dirname(SETTINGS_FILE), { recursive: true });
   const temporary = `${SETTINGS_FILE}.${process.pid}.tmp`;
   await fs.writeFile(temporary, stringify(next), "utf8");
@@ -178,6 +195,7 @@ export async function writeAiSettingsDocument(
 
 function seedModels(providerId: string): AiModel[] {
   const seeds: Record<string, string[]> = {
+    "openai-codex": ["gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark"],
     openai: ["gpt-4o-mini", "gpt-4.1-mini"],
     anthropic: ["claude-sonnet-4-6", "claude-haiku-4-5"],
     gemini: ["gemini-2.5-flash", "gemini-2.5-pro"],
@@ -243,7 +261,7 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
   const cache = await readAiModelCache(providerId);
   if (!forceRefresh && isAiModelCacheFresh(cache)) return cache?.models ?? [];
   const seed = seedModels(providerId);
-  if (!provider.modelsEndpoint) return cache?.models ?? seed;
+  if (!provider.modelsEndpoint) return providerId === "openai-codex" ? seed : cache?.models ?? seed;
 
   const apiKey = await readProviderKey(providerId);
   if (provider.auth === "api_key" && !apiKey) return cache?.models ?? seed;
@@ -297,7 +315,9 @@ export async function getAiSettingsResponse(
 ): Promise<AiSettingsResponse> {
   const document = await readAiSettingsDocument();
   const providers = await Promise.all(AI_PROVIDER_REGISTRY.map((provider) => providerStatus(provider.id)));
-  const roleProviderIds = AI_ROLES.map((role) => document.roles[role].providerId);
+  const roleProviderIds = AI_ROLES
+    .filter((role) => !document.disabledRoles.includes(role))
+    .map((role) => document.roles[role].providerId);
   const requested = requestedProviderIds.filter((providerId) => getAiProvider(providerId));
   const modelProviderIds = [...new Set([
     ...roleProviderIds,
@@ -305,7 +325,7 @@ export async function getAiSettingsResponse(
     ...providers.filter((provider) => provider.auth === "none" || provider.configured).map((provider) => provider.id),
   ])];
   const modelGroups = await Promise.all(
-    modelProviderIds.map((providerId) => fetchAiModels(providerId, forceRefresh && requested.includes(providerId))),
+    modelProviderIds.map((providerId) => fetchAiModels(providerId, forceRefresh && (requested.length === 0 || requested.includes(providerId)))),
   );
   const quotas: AiQuota[] = [];
   const openRouter = providers.find((provider) => provider.id === "openrouter");

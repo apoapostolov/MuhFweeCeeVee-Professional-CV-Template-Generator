@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
-import { getAiSettingsResponse, writeAiSettingsDocument } from "@/lib/server/aiSettings";
+import { AI_ROLES, getAiSettingsResponse, writeAiSettingsDocument } from "@/lib/server/aiSettings";
 import type { AiRole } from "@/lib/server/aiProviderTypes";
 
 export const runtime = "nodejs";
@@ -27,6 +27,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
   try {
     const body = (await request.json()) as {
       roles?: Partial<Record<AiRole, { providerId?: unknown; modelId?: unknown }>>;
+      clearRoles?: unknown;
       apiKeys?: Record<string, unknown>;
     };
     const roles = Object.fromEntries(
@@ -37,10 +38,13 @@ export async function PUT(request: Request): Promise<NextResponse> {
         return [[role, { providerId: record.providerId, modelId: record.modelId }]];
       }),
     ) as Partial<Record<AiRole, { providerId: string; modelId: string }>>;
+    const clearRoles = Array.isArray(body.clearRoles)
+      ? body.clearRoles.filter((role): role is AiRole => typeof role === "string" && AI_ROLES.includes(role as AiRole))
+      : [];
     const apiKeys = Object.fromEntries(
       Object.entries(body.apiKeys ?? []).filter(([, value]) => typeof value === "string"),
     ) as Record<string, string>;
-    await writeAiSettingsDocument({ roles, apiKeys });
+    await writeAiSettingsDocument({ roles, clearRoles, apiKeys });
     return NextResponse.json({ ok: true, ...(await getAiSettingsResponse(true)) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save AI settings.";
