@@ -206,13 +206,13 @@ h4 {
   --kanban-footer-divider: rgba(36, 65, 93, 0.28);
 }
 .app-shell .app-kanban-priority-low {
-  background: linear-gradient(135deg, #e0f2fe, #cffafe);
+  background: linear-gradient(135deg, #f0fdfa, #ecfeff);
 }
 .app-shell .app-kanban-priority-normal {
-  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
 }
 .app-shell .app-kanban-priority-high {
-  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
 }
 .app-shell .app-kanban-footer {
   background: rgba(239, 246, 255, 0.9);
