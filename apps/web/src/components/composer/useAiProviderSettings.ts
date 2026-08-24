@@ -73,7 +73,7 @@ export function useAiProviderSettings() {
       }
       return updated;
     });
-  }, [providerIds]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
