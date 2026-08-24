@@ -237,7 +237,7 @@ export function AiProviderSettingsCard({ controller, uiLanguage }: AiProviderSet
       </div>
       {controller.blocks.length > 0 ? (
         <p className="text-[11px] text-slate-600">
-          {isBg ? "Всеки доставчик пази отделен списък модели и роли." : "Each provider keeps its own cached model list and role assignments."}
+          {isBg ? "Всеки доставчик пази отделен списък модели и роли." : "Each provider keeps its own cached model list and role"}
         </p>
       ) : null}
       {controller.loading ? <p className="text-xs text-slate-600">Loading AI providers…</p> : null}
