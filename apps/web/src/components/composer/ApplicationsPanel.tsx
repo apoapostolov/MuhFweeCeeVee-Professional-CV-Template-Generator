@@ -1462,7 +1462,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     alt=""
-                    className="aspect-square h-20 w-20 shrink-0 rounded border border-[var(--line)] object-cover"
+                    className="aspect-square h-[84px] w-[84px] shrink-0 rounded border border-[var(--line)] object-cover"
                     src={photoOptions.find((p) => p.id === draft.photo_id)?.mediaUrl || `/api/photos/raw?id=${encodeURIComponent(draft.photo_id)}`}
                   />
                 ) : null}
