@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type JSX } from "react";
-import { CalendarPlus, UserPlus } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 
 import type { ApplicationActivityType } from "@/lib/server/applicationStore";
 
@@ -42,8 +42,6 @@ export function ApplicationActivityTimeline({
   const [activityType, setActivityType] =
     useState<ApplicationActivityType>("note");
   const [activitySummary, setActivitySummary] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactRole, setContactRole] = useState("");
   const [busy, setBusy] = useState(false);
   const bg = language === "bg";
 
@@ -88,7 +86,7 @@ export function ApplicationActivityTimeline({
           />
           <input
             aria-label={bg ? "Срок" : "Due date"}
-            className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+            className="composer-date-input min-w-0 w-full rounded border border-[var(--line)] px-2 py-1.5 text-xs"
             onChange={(event) => setDueAt(event.target.value)}
             type="datetime-local"
             value={dueAt}
@@ -119,10 +117,10 @@ export function ApplicationActivityTimeline({
         </button>
       </div>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
+      <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <select
           aria-label={bg ? "Вид активност" : "Activity type"}
-          className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+          className="min-w-0 w-full rounded border border-[var(--line)] px-2 py-1.5 text-xs sm:col-span-2"
           onChange={(event) =>
             setActivityType(event.target.value as ApplicationActivityType)
           }
@@ -136,13 +134,13 @@ export function ApplicationActivityTimeline({
         </select>
         <input
           aria-label={bg ? "Обобщение на активността" : "Activity summary"}
-          className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
+          className="min-w-0 w-full rounded border border-[var(--line)] px-2 py-1.5 text-xs"
           onChange={(event) => setActivitySummary(event.target.value)}
           placeholder={bg ? "Какво се случи?" : "What happened?"}
           value={activitySummary}
         />
         <button
-          className="rounded-md border border-[var(--line)] px-2 py-1.5 text-xs font-semibold disabled:opacity-60"
+          className="shrink-0 rounded-md border border-[var(--line)] px-2 py-1.5 text-xs font-semibold disabled:opacity-60"
           disabled={disabled || busy || !activitySummary.trim()}
           onClick={() =>
             void request(
@@ -157,43 +155,6 @@ export function ApplicationActivityTimeline({
           type="button"
         >
           {bg ? "Добави" : "Add"}
-        </button>
-      </div>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-        <input
-          aria-label={bg ? "Име на контакт" : "Contact name"}
-          className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
-          onChange={(event) => setContactName(event.target.value)}
-          placeholder={bg ? "Име на контакт" : "Contact name"}
-          value={contactName}
-        />
-        <input
-          aria-label={bg ? "Роля на контакт" : "Contact role"}
-          className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
-          onChange={(event) => setContactRole(event.target.value)}
-          placeholder={bg ? "Рекрутър, hiring manager…" : "Recruiter, hiring manager…"}
-          value={contactRole}
-        />
-        <button
-          className="inline-flex items-center justify-center gap-1 rounded-md border border-[var(--line)] px-2 py-1.5 text-xs font-semibold disabled:opacity-60"
-          disabled={disabled || busy || !contactName.trim()}
-          onClick={() =>
-            void request(
-              "POST",
-              `/api/applications/${encodeURIComponent(application.id)}/contacts`,
-              { name: contactName, role: contactRole || undefined },
-              bg ? "Контактът е добавен." : "Contact added.",
-            ).then((saved) => {
-              if (!saved) return;
-              setContactName("");
-              setContactRole("");
-            })
-          }
-          type="button"
-        >
-          <UserPlus aria-hidden className="h-3.5 w-3.5" />
-          {bg ? "Контакт" : "Contact"}
         </button>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
-import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, Search, Trash2, UserPlus } from "lucide-react";
 
 import { ApplicationActivityTimeline } from "./ApplicationActivityTimeline";
 import { ApplicationAnalyticsView } from "./ApplicationAnalyticsView";
@@ -61,12 +61,18 @@ function formatDaysLabel(days: number, bg: boolean): string {
   return `${days}d`;
 }
 
+function kanbanPriorityClass(priority: Application["priority"]): string {
+  if (priority === "low") return "bg-gradient-to-r from-blue-600 to-cyan-500";
+  if (priority === "high") return "bg-gradient-to-r from-blue-600 to-purple-600";
+  return "bg-gradient-to-r from-blue-700 to-indigo-600";
+}
+
 type CvOption = { id: string; displayName?: string; displayVersion?: string | null };
 type PhotoOption = { id: string; name: string; mediaUrl?: string };
 type LetterOption = { id: string; title: string };
 type CompanyOption = { id: string; name: string };
 type JobOption = { id: string; title: string; company_id: string };
-type ApplicationEditorTab = "application" | "company";
+type ApplicationEditorTab = "application" | "company" | "snapshots";
 
 export type ApplicationsPanelProps = {
   language: string;
@@ -183,6 +189,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<ApplicationEditorTab>("application");
   const [draft, setDraft] = useState(emptyDraft());
+  const [contactName, setContactName] = useState("");
+  const [contactRole, setContactRole] = useState("");
+  const [contactBusy, setContactBusy] = useState(false);
   const [view, setView] = useState<ApplicationsView>("board");
   const [filters, setFilters] = useState<ApplicationFilters>(
     DEFAULT_APPLICATION_FILTERS,
@@ -422,6 +431,29 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     setNotice("");
   }, [onAssistantSelectionChange]);
 
+  async function addContact(): Promise<void> {
+    if (!draft.id || !contactName.trim()) return;
+    setContactBusy(true);
+    try {
+      const response = await fetch(`/api/applications/${encodeURIComponent(draft.id)}/contacts`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: contactName.trim(), role: contactRole.trim() || undefined }),
+      });
+      if (response.ok) {
+        setContactName("");
+        setContactRole("");
+        await refreshApplication(draft.id, bg ? "Контактът е добавен." : "Contact added.");
+      } else {
+        setNotice(bg ? "Контактът не беше добавен." : "Could not add contact.");
+      }
+    } catch {
+      setNotice(bg ? "Контактът не беше добавен." : "Could not add contact.");
+    } finally {
+      setContactBusy(false);
+    }
+  }
+
   async function saveDraft() {
     if (!draft.company_name.trim() || !draft.job_title.trim()) {
       setNotice(t.needCompanyRole);
@@ -431,7 +463,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     setNotice("");
     try {
       const days = clampDwellDays(draft.days_without_progress ?? 0);
-      const cardName = draft.packet_title?.trim() || `${draft.role_family?.trim() || draft.job_title.trim()} @ ${draft.company_name.trim()}`;
+      const cardName = draft.packet_title?.trim() || `${draft.job_title.trim()} @ ${draft.company_name.trim()}`;
       const response = await fetch("/api/applications", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -1091,7 +1123,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     >
                       {/* Header: click opens details; drag starts after small move */}
                       <div
-                        className={`flex select-none items-start gap-1.5 border-b border-white/25 bg-slate-700 px-2.5 py-2.5 ${
+                        className={`flex select-none items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(app.priority)} ${
                           busy
                             ? "cursor-default"
                             : "cursor-grab active:cursor-grabbing"
@@ -1108,14 +1140,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           <p className="truncate text-[11px] font-bold leading-snug text-white">
                             {app.job_title || app.packet_title || "—"}
                           </p>
-                          <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-white/75">
-                            {app.company_name || "—"}
-                          </p>
-                          {app.packet_title && app.packet_title !== app.job_title ? (
-                            <p className="mt-0.5 truncate text-[9px] text-white/55">
-                              {app.packet_title}
+                          <div className="mt-0.5 flex min-w-0 items-baseline justify-between gap-2">
+                            <p className="min-w-0 truncate text-[10px] font-medium leading-snug text-white/75">
+                              {app.company_name || "—"}
                             </p>
-                          ) : null}
+                            <p className="shrink-0 truncate text-right text-[9px] leading-snug text-white/65">
+                              {app.location || "—"}
+                            </p>
+                          </div>
                         </div>
                         {(() => {
                           const days = daysWithoutProgress(app);
@@ -1175,8 +1207,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             {app.next_action.title}
                           </p>
                         ) : null}
-                        <div className="mt-1 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide text-[var(--ink-muted)]">
-                          <span>{app.priority ?? "normal"}</span>
+                        <div className="mt-1 flex items-center justify-end gap-1 text-[8px] uppercase tracking-wide text-[var(--ink-muted)]">
                           {duplicates[app.id]?.length ? (
                             <span>{bg ? "Дубликат" : "Duplicate"}</span>
                           ) : null}
@@ -1233,7 +1264,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           aria-label={t.delete}
                           className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
                           disabled={busy}
-                          onClick={() => void remove(app.id)}
+                          onClick={() => {
+                            const confirmed = window.confirm(
+                              bg
+                                ? `Изтриване на кандидатстването за ${app.job_title} в ${app.company_name}?`
+                                : `Delete the application for ${app.job_title} at ${app.company_name}?`,
+                            );
+                            if (confirmed) void remove(app.id);
+                          }}
                           title={t.delete}
                           type="button"
                         >
@@ -1251,14 +1289,19 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
         {view === "board" && drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
-            <div className="flex items-start gap-1.5 border-b border-white/25 bg-slate-700 px-2.5 py-2.5">
+            <div className={`flex items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(dragApp.priority)}`}>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-bold leading-snug text-white">
                   {dragApp.job_title || dragApp.packet_title || "—"}
                 </p>
-                <p className="mt-0.5 truncate text-[10px] font-medium text-white/75">
-                  {dragApp.company_name || "—"}
-                </p>
+                <div className="mt-0.5 flex min-w-0 items-baseline justify-between gap-2">
+                  <p className="min-w-0 truncate text-[10px] font-medium text-white/75">
+                    {dragApp.company_name || "—"}
+                  </p>
+                  <p className="shrink-0 truncate text-right text-[9px] text-white/65">
+                    {dragApp.location || "—"}
+                  </p>
+                </div>
               </div>
               {(() => {
                 const days = daysWithoutProgress(dragApp);
@@ -1321,8 +1364,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           ) : null}
 
           {editorOpen ? (
-            <div className="mx-auto mt-3 grid w-full grid-cols-2 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5 text-center" role="tablist">
-              {(["application", "company"] as const).map((tab) => (
+            <div className="mx-auto mt-3 grid w-full grid-cols-3 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5 text-center" role="tablist">
+              {(["application", "company", "snapshots"] as const).map((tab) => (
                 <button
                   aria-selected={editorTab === tab}
                   className={`rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide ${editorTab === tab ? "bg-[var(--accent)] text-white" : "text-[var(--ink-muted)] hover:bg-white"}`}
@@ -1331,7 +1374,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   role="tab"
                   type="button"
                 >
-                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : (bg ? "Информация за компанията" : "Company info")}
+                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : tab === "company" ? (bg ? "Информация за компанията" : "Company info") : (bg ? "Версии" : "Snapshots")}
                 </button>
               ))}
             </div>
@@ -1421,15 +1464,33 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   </select>
                 </label>
                 </div>
-              <label className="block text-[10px] font-medium text-slate-700">
-                {bg ? "Семейство роли" : "Role family"}
-                <input
-                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                  onChange={(event) => setDraft((current) => ({ ...current, role_family: event.target.value }))}
-                  placeholder={bg ? "Product, Engineering…" : "Product, Engineering…"}
-                  value={draft.role_family ?? ""}
-                />
-              </label>
+              {draft.id ? (
+                <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                  <input
+                    aria-label={bg ? "Име на контакт" : "Contact name"}
+                    className="min-w-0 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) => setContactName(event.target.value)}
+                    placeholder={bg ? "Име на контакт" : "Contact name"}
+                    value={contactName}
+                  />
+                  <input
+                    aria-label={bg ? "Рекрутър" : "Recruiter"}
+                    className="min-w-0 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(event) => setContactRole(event.target.value)}
+                    placeholder={bg ? "Рекрутър, hiring manager…" : "Recruiter, hiring manager…"}
+                    value={contactRole}
+                  />
+                  <button
+                    className="inline-flex shrink-0 items-center justify-center gap-1 rounded-md border border-[var(--line)] px-2 py-1.5 text-xs font-semibold disabled:opacity-60"
+                    disabled={busy || contactBusy || !contactName.trim()}
+                    onClick={() => void addContact()}
+                    type="button"
+                  >
+                    <UserPlus aria-hidden className="h-3.5 w-3.5" />
+                    {bg ? "Контакт" : "Contact"}
+                  </button>
+                </div>
+              ) : null}
 
               <div className="flex items-end gap-2">
                 <div className="min-w-0 flex-1 space-y-2">
@@ -1580,7 +1641,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.notes}
                 <textarea
-                  className="mt-0.5 min-h-[4rem] w-full resize-y rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                  className="mt-0.5 min-h-[4rem] min-w-0 max-w-full w-full resize-y rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
                   onChange={(e) =>
                     setDraft((d) => ({ ...d, notes: e.target.value }))
                   }
@@ -1590,27 +1651,28 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </>
               ) : null}
 
-              {selectedApplication ? (
-                <>
-                  <ApplicationSubmissionHistory
+              {selectedApplication && editorTab === "snapshots" ? (
+                <ApplicationSubmissionHistory
+                  application={selectedApplication}
+                  disabled={busy}
+                  language={language}
+                  onChanged={(message) =>
+                    void refreshApplication(selectedApplication.id, message)
+                  }
+                  templateId={defaultTemplateId}
+                  theme={defaultTemplateTheme}
+                />
+              ) : null}
+
+              {selectedApplication && editorTab === "application" ? (
+                <ApplicationActivityTimeline
                     application={selectedApplication}
                     disabled={busy}
                     language={language}
                     onChanged={(message) =>
                       void refreshApplication(selectedApplication.id, message)
                     }
-                    templateId={defaultTemplateId}
-                    theme={defaultTemplateTheme}
-                  />
-                  <ApplicationActivityTimeline
-                    application={selectedApplication}
-                    disabled={busy}
-                    language={language}
-                    onChanged={(message) =>
-                      void refreshApplication(selectedApplication.id, message)
-                    }
-                  />
-                </>
+                />
               ) : null}
 
               <div className="mt-auto flex flex-wrap gap-2 pt-2">
