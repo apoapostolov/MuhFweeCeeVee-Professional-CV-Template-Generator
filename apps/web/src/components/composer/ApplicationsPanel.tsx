@@ -876,7 +876,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             title={t.addFromResearchTitle}
             type="button"
           >
-            <FlaskConical aria-hidden className="h-3.5 w-3.5 text-[var(--accent)]" strokeWidth={2} />
+            <FlaskConical aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
             {t.addFromResearch}
           </button>
           <input
