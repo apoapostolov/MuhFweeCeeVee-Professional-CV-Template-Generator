@@ -51,7 +51,7 @@ export function AiDetectionDialog({
           <button className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-[var(--surface-2)]" onClick={onClose} type="button">×</button>
         </div>
         <p className="mt-2 text-xs text-[var(--ink-muted)]">
-          Sapling scans the sidebar, frontmatter, each company/position, and backmatter. GPTZero and the local heuristic scan the whole document. External providers receive sanitized visible CV text and may consume paid quota.
+          AI detectors look for writing patterns that can resemble AI-generated text. They are not proof of authorship, and even a CV written entirely by you can trigger a false positive. Checking your CV helps catch wording that sounds generic or overly polished before it raises questions in a screening process. We check the visible CV text with several detectors; external services receive a sanitized copy and may use paid quota.
         </p>
         {report ? (
           <>
