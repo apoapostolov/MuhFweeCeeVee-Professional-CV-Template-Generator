@@ -720,6 +720,29 @@ export async function appendApplicationActivity(
   }));
 }
 
+export async function updateApplicationActivity(
+  id: string,
+  activityId: string,
+  patch: Partial<Omit<ApplicationActivity, "id">>,
+): Promise<{ board: ApplicationBoard; application: Application }> {
+  return mutateApplication(id, (application) => ({
+    ...application,
+    activities: (application.activities ?? []).map((activity) =>
+      activity.id === activityId ? { ...activity, ...patch, id: activity.id } : activity,
+    ),
+  }));
+}
+
+export async function deleteApplicationActivity(
+  id: string,
+  activityId: string,
+): Promise<{ board: ApplicationBoard; application: Application }> {
+  return mutateApplication(id, (application) => ({
+    ...application,
+    activities: (application.activities ?? []).filter((activity) => activity.id !== activityId),
+  }));
+}
+
 export async function addApplicationContact(
   id: string,
   input: Omit<ApplicationContact, "id" | "created_at"> & {

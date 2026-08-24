@@ -72,7 +72,7 @@ type PhotoOption = { id: string; name: string; mediaUrl?: string };
 type LetterOption = { id: string; title: string };
 type CompanyOption = { id: string; name: string };
 type JobOption = { id: string; title: string; company_id: string };
-type ApplicationEditorTab = "application" | "company" | "snapshots";
+type ApplicationEditorTab = "application" | "company" | "snapshots" | "timeline";
 
 export type ApplicationsPanelProps = {
   language: string;
@@ -1364,8 +1364,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           ) : null}
 
           {editorOpen ? (
-            <div className="mx-auto mt-3 grid w-full grid-cols-3 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5 text-center" role="tablist">
-              {(["application", "company", "snapshots"] as const).map((tab) => (
+            <div className="mx-auto mt-3 grid w-full grid-cols-4 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5 text-center" role="tablist">
+              {(["application", "company", "snapshots", "timeline"] as const).map((tab) => (
                 <button
                   aria-selected={editorTab === tab}
                   className={`rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide ${editorTab === tab ? "bg-[var(--accent)] text-white" : "text-[var(--ink-muted)] hover:bg-white"}`}
@@ -1374,7 +1374,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   role="tab"
                   type="button"
                 >
-                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : tab === "company" ? (bg ? "Информация за компанията" : "Company info") : (bg ? "Версии" : "Snapshots")}
+                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : tab === "company" ? (bg ? "Информация за компанията" : "Company info") : tab === "snapshots" ? (bg ? "Версии" : "Snapshots") : (bg ? "Хронология" : "Timeline")}
                 </button>
               ))}
             </div>
@@ -1664,7 +1664,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 />
               ) : null}
 
-              {selectedApplication && editorTab === "application" ? (
+              {selectedApplication && editorTab === "timeline" ? (
                 <ApplicationActivityTimeline
                     application={selectedApplication}
                     disabled={busy}

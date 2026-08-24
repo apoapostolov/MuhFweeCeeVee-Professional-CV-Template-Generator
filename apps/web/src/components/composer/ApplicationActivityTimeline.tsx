@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, type JSX } from "react";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Pencil, X } from "lucide-react";
 
-import type { ApplicationActivityType } from "@/lib/server/applicationStore";
+import type { ApplicationActivity, ApplicationActivityType } from "@/lib/server/applicationStore";
 
 import type { Application } from "./application-operations-types";
 
@@ -42,11 +42,15 @@ export function ApplicationActivityTimeline({
   const [activityType, setActivityType] =
     useState<ApplicationActivityType>("note");
   const [activitySummary, setActivitySummary] = useState("");
+  const [editingActivity, setEditingActivity] = useState<ApplicationActivity | null>(null);
+  const [editType, setEditType] = useState<ApplicationActivityType>("note");
+  const [editSummary, setEditSummary] = useState("");
+  const [editOccurredAt, setEditOccurredAt] = useState("");
   const [busy, setBusy] = useState(false);
   const bg = language === "bg";
 
   async function request(
-    method: "PATCH" | "POST",
+    method: "PATCH" | "POST" | "DELETE",
     url: string,
     body: Record<string, unknown>,
     success: string,
@@ -67,6 +71,39 @@ export function ApplicationActivityTimeline({
     } finally {
       setBusy(false);
     }
+  }
+
+  function openActivityEditor(activity: ApplicationActivity): void {
+    setEditingActivity(activity);
+    setEditType(activity.type);
+    setEditSummary(activity.summary);
+    setEditOccurredAt(localDateTime(activity.occurred_at));
+  }
+
+  async function saveActivityEdit(): Promise<void> {
+    if (!editingActivity || !editSummary.trim() || !editOccurredAt) return;
+    const saved = await request(
+      "PATCH",
+      `/api/applications/${encodeURIComponent(application.id)}/activities`,
+      {
+        activityId: editingActivity.id,
+        type: editType,
+        summary: editSummary.trim(),
+        occurred_at: new Date(editOccurredAt).toISOString(),
+      },
+      bg ? "Активността е редактирана." : "Activity updated.",
+    );
+    if (saved) setEditingActivity(null);
+  }
+
+  async function deleteActivity(activityId: string): Promise<void> {
+    if (!window.confirm(bg ? "Изтриване на това събитие?" : "Delete this event?")) return;
+    await request(
+      "DELETE",
+      `/api/applications/${encodeURIComponent(application.id)}/activities?activityId=${encodeURIComponent(activityId)}`,
+      {},
+      bg ? "Активността е изтрита." : "Activity deleted.",
+    );
   }
 
   return (
@@ -173,14 +210,48 @@ export function ApplicationActivityTimeline({
             className="border-l-2 border-[var(--line)] pl-2 text-[10px]"
             key={activity.id}
           >
-            <p className="font-semibold">{activity.summary}</p>
-            <p className="text-[var(--ink-muted)]">
-              {activity.type.replaceAll("_", " ")} ·{" "}
-              {new Date(activity.occurred_at).toLocaleString()}
-            </p>
+            <div className="flex items-start gap-1">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{activity.summary}</p>
+                <p className="text-[var(--ink-muted)]">
+                  {activity.type.replaceAll("_", " ")} ·{" "}
+                  {new Date(activity.occurred_at).toLocaleString()}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1 leading-none">
+                <button aria-label={bg ? "Редактиране на събитие" : "Edit event"} className="border-0 bg-transparent p-0 text-[var(--ink-muted)] hover:text-[var(--ink)]" onClick={() => openActivityEditor(activity)} type="button">
+                  <Pencil aria-hidden className="h-[1em] w-[1em]" />
+                </button>
+                <button aria-label={bg ? "Изтриване на събитие" : "Delete event"} className="border-0 bg-transparent p-0 text-[var(--ink-muted)] hover:text-rose-600" onClick={() => void deleteActivity(activity.id)} type="button">
+                  <X aria-hidden className="h-[1em] w-[1em]" />
+                </button>
+              </div>
+            </div>
           </li>
         ))}
       </ol>
+
+      {editingActivity ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation">
+          <div aria-modal="true" className="w-full max-w-sm rounded-lg border border-[var(--line)] bg-[var(--surface-1)] p-3 shadow-xl" role="dialog">
+            <div className="flex items-center justify-between gap-2">
+              <h5 className="text-xs font-semibold">{bg ? "Редактиране на събитие" : "Edit event"}</h5>
+              <button aria-label={bg ? "Затвори" : "Close"} className="border-0 bg-transparent p-0 text-sm text-[var(--ink-muted)]" onClick={() => setEditingActivity(null)} type="button">×</button>
+            </div>
+            <div className="mt-2 grid gap-2">
+              <select aria-label={bg ? "Вид активност" : "Activity type"} className="rounded border border-[var(--line)] px-2 py-1.5 text-xs" onChange={(event) => setEditType(event.target.value as ApplicationActivityType)} value={editType}>
+                {ACTIVITY_TYPES.map((type) => <option key={type} value={type}>{type.replaceAll("_", " ")}</option>)}
+              </select>
+              <input aria-label={bg ? "Дата на събитието" : "Event date"} className="composer-date-input rounded border border-[var(--line)] px-2 py-1.5 text-xs" onChange={(event) => setEditOccurredAt(event.target.value)} type="datetime-local" value={editOccurredAt} />
+              <textarea aria-label={bg ? "Описание" : "Summary"} className="min-h-20 resize-y rounded border border-[var(--line)] px-2 py-1.5 text-xs" onChange={(event) => setEditSummary(event.target.value)} value={editSummary} />
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <button className="rounded border border-[var(--line)] px-2 py-1 text-xs" onClick={() => setEditingActivity(null)} type="button">{bg ? "Отказ" : "Cancel"}</button>
+              <button className="rounded bg-[var(--accent)] px-2 py-1 text-xs font-semibold text-white disabled:opacity-50" disabled={busy || !editSummary.trim() || !editOccurredAt} onClick={() => void saveActivityEdit()} type="button">{bg ? "Запази" : "Save"}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

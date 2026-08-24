@@ -4,12 +4,59 @@ import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import {
   APPLICATION_ACTIVITY_TYPES,
   appendApplicationActivity,
+  deleteApplicationActivity,
+  updateApplicationActivity,
   type ApplicationActivityType,
 } from "@/lib/server/applicationStore";
 
 export const runtime = "nodejs";
 
 type RouteContext = { params: Promise<{ applicationId: string }> };
+
+export async function PATCH(
+  request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) return denied;
+  const { applicationId } = await context.params;
+  const body = (await request.json()) as Record<string, unknown>;
+  const activityId = typeof body.activityId === "string" ? body.activityId : "";
+  const summary = typeof body.summary === "string" ? body.summary.trim() : "";
+  const occurredAt = typeof body.occurred_at === "string" ? body.occurred_at : "";
+  if (!activityId || !summary || !occurredAt) {
+    return NextResponse.json({ error: "activityId, summary, and occurred_at are required." }, { status: 400 });
+  }
+  try {
+    const result = await updateApplicationActivity(applicationId, activityId, {
+      type: typeof body.type === "string" && (APPLICATION_ACTIVITY_TYPES as readonly string[]).includes(body.type)
+        ? (body.type as ApplicationActivityType)
+        : undefined,
+      summary,
+      occurred_at: occurredAt,
+    });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Activity update failed." }, { status: 404 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) return denied;
+  const { applicationId } = await context.params;
+  const activityId = new URL(request.url).searchParams.get("activityId") ?? "";
+  if (!activityId) return NextResponse.json({ error: "activityId is required." }, { status: 400 });
+  try {
+    const result = await deleteApplicationActivity(applicationId, activityId);
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Activity delete failed." }, { status: 404 });
+  }
+}
 
 export async function POST(
   request: Request,
