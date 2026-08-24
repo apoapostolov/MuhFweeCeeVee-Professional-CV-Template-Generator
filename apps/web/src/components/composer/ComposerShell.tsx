@@ -351,7 +351,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
         key={`${duplicateCvOpen}:${c.selectedCvId}`}
         busy={duplicateCvBusy}
         error={duplicateCvError}
-        initialName={`${c.cvItems.find((item) => item.id === c.selectedCvId)?.displayName ?? "CV"} copy`}
+        initialName={(() => { const current = c.cvItems.find((item) => item.id === c.selectedCvId); return `${current?.displayName ?? "CV"} ${current?.displayVersion ?? ""} Copy`.replace(/\s+/g, " ").trim(); })()}
         onClose={() => setDuplicateCvOpen(false)}
         onSubmit={(name) => void submitDuplicateCv(name)}
         open={duplicateCvOpen}
