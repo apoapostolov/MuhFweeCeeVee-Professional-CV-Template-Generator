@@ -565,6 +565,10 @@ export async function upsertApplication(
   const companyName =
     input.company_name.trim() || existing?.company_name || "Company";
   const jobTitle = input.job_title.trim() || existing?.job_title || "Role";
+  const roleFamily = input.role_family !== undefined
+    ? String(input.role_family ?? "").trim()
+    : existing?.role_family?.trim() ?? "";
+  const packetTitle = String(input.packet_title ?? "").trim() || `${roleFamily || jobTitle} @ ${companyName}`;
   const activities = resolveActivities({
     existing,
     nextStatus: status,
@@ -595,8 +599,7 @@ export async function upsertApplication(
       input.cover_letter_id !== undefined
         ? input.cover_letter_id
         : existing?.cover_letter_id,
-    packet_title:
-      input.packet_title !== undefined ? input.packet_title : existing?.packet_title,
+    packet_title: packetTitle,
     priority:
       input.priority !== undefined ? input.priority : existing?.priority,
     source: input.source !== undefined ? input.source : existing?.source,

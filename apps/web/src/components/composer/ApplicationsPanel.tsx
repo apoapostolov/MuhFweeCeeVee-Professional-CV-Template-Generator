@@ -66,6 +66,7 @@ type PhotoOption = { id: string; name: string; mediaUrl?: string };
 type LetterOption = { id: string; title: string };
 type CompanyOption = { id: string; name: string };
 type JobOption = { id: string; title: string; company_id: string };
+type ApplicationEditorTab = "application" | "company";
 
 export type ApplicationsPanelProps = {
   language: string;
@@ -101,7 +102,7 @@ function emptyDraft(): Omit<
   return {
     company_name: "",
     job_title: "",
-    status: "wishlist",
+    status: "applied",
     notes: "",
     url: "",
     company_id: "",
@@ -180,6 +181,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
+  const [editorTab, setEditorTab] = useState<ApplicationEditorTab>("application");
   const [draft, setDraft] = useState(emptyDraft());
   const [view, setView] = useState<ApplicationsView>("board");
   const [filters, setFilters] = useState<ApplicationFilters>(
@@ -247,7 +249,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     companyDisplayName: bg ? "Име на компанията" : "Company name",
     researchRole: bg ? "Позиция от Research" : "Role from Research",
     typeRoleBelow: bg ? "— въведете позиция по-долу —" : "— type role below —",
-    roleTitle: bg ? "Позиция (заглавие)" : "Role title",
+    roleTitle: bg ? "Позиция" : "Position",
     coverLetter: bg ? "Мотивационно писмо" : "Cover letter",
     jobPostUrl: bg ? "Линк към обявата" : "Job post URL",
     notes: bg ? "Бележки" : "Notes",
@@ -371,9 +373,10 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         defaultJobTitle || defaultCompanyName
           ? `${defaultJobTitle || "Role"} @ ${defaultCompanyName || "Company"}`
           : "",
-      status: "wishlist",
+      status: "applied",
       priority: "normal",
     });
+    setEditorTab("application");
     setEditorOpen(true);
     setNotice("");
   }
@@ -414,6 +417,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       status_since: app.status_since || app.created_at,
       days_without_progress: daysWithoutProgress(app),
     });
+    setEditorTab("application");
     setEditorOpen(true);
     setNotice("");
   }, [onAssistantSelectionChange]);
@@ -427,28 +431,29 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     setNotice("");
     try {
       const days = clampDwellDays(draft.days_without_progress ?? 0);
+      const cardName = draft.packet_title?.trim() || `${draft.role_family?.trim() || draft.job_title.trim()} @ ${draft.company_name.trim()}`;
       const response = await fetch("/api/applications", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           action: "upsert",
           id: draft.id,
-          company_id: draft.company_id || undefined,
-          job_id: draft.job_id || undefined,
+          company_id: draft.company_id || "",
+          job_id: draft.job_id || "",
           company_name: draft.company_name,
           job_title: draft.job_title,
           status: draft.status,
-          url: draft.url || undefined,
-          notes: draft.notes || undefined,
+          url: draft.url || "",
+          notes: draft.notes || "",
           cv_id: draft.cv_id || "",
           photo_id: draft.photo_id || "",
           cover_letter_id: draft.cover_letter_id || "",
-          packet_title: draft.packet_title || undefined,
+          packet_title: cardName,
           priority: draft.priority || "normal",
-          source: draft.source || undefined,
-          location: draft.location || undefined,
-          role_family: draft.role_family || undefined,
-          cv_family: draft.cv_family || undefined,
+          source: draft.source || "",
+          location: draft.location || "",
+          role_family: draft.role_family || "",
+          cv_family: "",
           // Explicit clock so sidebar edits stick (and survive stage changes on save).
           status_since: statusSinceFromDays(days),
         }),
@@ -619,6 +624,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           action: "upsert",
           ...app,
           status,
+          status_since: undefined,
           // Let server recompute status_since; do not force client clock except via status change rules
         }),
       });
@@ -1324,6 +1330,23 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           </p>
 
           {editorOpen ? (
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5" role="tablist">
+              {(["application", "company"] as const).map((tab) => (
+                <button
+                  aria-selected={editorTab === tab}
+                  className={`rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide ${editorTab === tab ? "bg-[var(--accent)] text-white" : "text-[var(--ink-muted)] hover:bg-white"}`}
+                  key={tab}
+                  onClick={() => setEditorTab(tab)}
+                  role="tab"
+                  type="button"
+                >
+                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : (bg ? "Информация за компанията" : "Company info")}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {editorOpen ? (
             <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto">
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.applicationName}
@@ -1337,6 +1360,17 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 />
               </label>
 
+              {editorTab === "application" ? (
+                <label className="block text-[10px] font-medium text-slate-700">
+                  {t.roleTitle}
+                  <input
+                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                    onChange={(e) => setDraft((d) => ({ ...d, job_title: e.target.value }))}
+                    value={draft.job_title}
+                  />
+                </label>
+              ) : null}
+
               {draft.id && duplicates[draft.id]?.length ? (
                 <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900">
                   {bg
@@ -1345,25 +1379,18 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 </p>
               ) : null}
 
+              {editorTab === "application" ? (
+                <>
               <div className="grid gap-2 sm:grid-cols-2">
-                <label className="block text-[10px] font-medium text-slate-700">
-                  {bg ? "Приоритет" : "Priority"}
-                  <select
+                <label className="order-1 block text-[10px] font-medium text-slate-700">
+                  {bg ? "Компания" : "Company"}
+                  <input
                     className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        priority: event.target.value as Application["priority"],
-                      }))
-                    }
-                    value={draft.priority ?? "normal"}
-                  >
-                    <option value="high">{bg ? "Висок" : "High"}</option>
-                    <option value="normal">{bg ? "Нормален" : "Normal"}</option>
-                    <option value="low">{bg ? "Нисък" : "Low"}</option>
-                  </select>
+                    onChange={(event) => setDraft((current) => ({ ...current, company_name: event.target.value }))}
+                    value={draft.company_name}
+                  />
                 </label>
-                <label className="block text-[10px] font-medium text-slate-700">
+                <label className="order-3 block text-[10px] font-medium text-slate-700">
                   {bg ? "Източник" : "Source"}
                   <input
                     className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
@@ -1377,7 +1404,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     value={draft.source ?? ""}
                   />
                 </label>
-                <label className="block text-[10px] font-medium text-slate-700">
+                <label className="order-2 block text-[10px] font-medium text-slate-700">
                   {bg ? "Локация" : "Location"}
                   <input
                     className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
@@ -1390,82 +1417,70 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     value={draft.location ?? ""}
                   />
                 </label>
-                <label className="block text-[10px] font-medium text-slate-700">
-                  {bg ? "Семейство роли" : "Role family"}
-                  <input
+                <label className="order-4 block text-[10px] font-medium text-slate-700">
+                  {bg ? "Приоритет" : "Priority"}
+                  <select
                     className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        role_family: event.target.value,
-                      }))
-                    }
-                    placeholder={bg ? "Product, Engineering…" : "Product, Engineering…"}
-                    value={draft.role_family ?? ""}
-                  />
+                    onChange={(event) => setDraft((current) => ({ ...current, priority: event.target.value as Application["priority"] }))}
+                    value={draft.priority ?? "normal"}
+                  >
+                    <option value="high">{bg ? "Висок" : "High"}</option>
+                    <option value="normal">{bg ? "Нормален" : "Normal"}</option>
+                    <option value="low">{bg ? "Нисък" : "Low"}</option>
+                  </select>
                 </label>
-                <label className="block text-[10px] font-medium text-slate-700 sm:col-span-2">
-                  {bg ? "CV семейство" : "CV family"}
-                  <input
-                    className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        cv_family: event.target.value,
-                      }))
-                    }
-                    placeholder={bg ? "Напр. Product Leadership" : "e.g. Product Leadership"}
-                    value={draft.cv_family ?? ""}
+                </div>
+              <label className="block text-[10px] font-medium text-slate-700">
+                {bg ? "Семейство роли" : "Role family"}
+                <input
+                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                  onChange={(event) => setDraft((current) => ({ ...current, role_family: event.target.value }))}
+                  placeholder={bg ? "Product, Engineering…" : "Product, Engineering…"}
+                  value={draft.role_family ?? ""}
+                />
+              </label>
+
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <label className="block text-[10px] font-medium text-slate-700">
+                    {t.resumeCv}
+                    <select
+                      className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                      onChange={(e) => setDraft((d) => ({ ...d, cv_id: e.target.value }))}
+                      value={draft.cv_id || ""}
+                    >
+                      <option value="">{t.noneSelected}</option>
+                      {cvOptions.map((cv) => <option key={cv.id} value={cv.id}>{cv.displayName || cv.id}</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-[10px] font-medium text-slate-700">
+                    {t.profilePhoto}
+                    <select
+                      className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
+                      onChange={(e) => setDraft((d) => ({ ...d, photo_id: e.target.value }))}
+                      value={draft.photo_id || ""}
+                    >
+                      <option value="">{t.noneSelected}</option>
+                      {photoOptions.map((photo) => <option key={photo.id} value={photo.id}>{photo.name || photo.id}</option>)}
+                    </select>
+                  </label>
+                </div>
+                {draft.photo_id ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt=""
+                    className="aspect-square h-20 w-20 shrink-0 rounded border border-[var(--line)] object-cover"
+                    src={photoOptions.find((p) => p.id === draft.photo_id)?.mediaUrl || `/api/photos/raw?id=${encodeURIComponent(draft.photo_id)}`}
                   />
-                </label>
+                ) : null}
               </div>
 
-              <label className="block text-[10px] font-medium text-slate-700">
-                {t.resumeCv}
-                <select
-                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                  onChange={(e) => setDraft((d) => ({ ...d, cv_id: e.target.value }))}
-                  value={draft.cv_id || ""}
-                >
-                  <option value="">{t.noneSelected}</option>
-                  {cvOptions.map((cv) => (
-                    <option key={cv.id} value={cv.id}>
-                      {cv.displayName || cv.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block text-[10px] font-medium text-slate-700">
-                {t.profilePhoto}
-                <select
-                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, photo_id: e.target.value }))
-                  }
-                  value={draft.photo_id || ""}
-                >
-                  <option value="">{t.noneSelected}</option>
-                  {photoOptions.map((photo) => (
-                    <option key={photo.id} value={photo.id}>
-                      {photo.name || photo.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {draft.photo_id ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  alt=""
-                  className="h-16 w-16 rounded border border-[var(--line)] object-cover"
-                  src={
-                    photoOptions.find((p) => p.id === draft.photo_id)?.mediaUrl ||
-                    `/api/photos/raw?id=${encodeURIComponent(draft.photo_id)}`
-                  }
-                />
+                </>
               ) : null}
 
+              {editorTab === "company" ? (
+                <>
+              <div className="grid gap-2 sm:grid-cols-2">
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.researchCompany}
                 <select
@@ -1483,17 +1498,6 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               </label>
 
               <label className="block text-[10px] font-medium text-slate-700">
-                {t.companyDisplayName}
-                <input
-                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, company_name: e.target.value }))
-                  }
-                  value={draft.company_name}
-                />
-              </label>
-
-              <label className="block text-[10px] font-medium text-slate-700">
                 {t.researchRole}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
@@ -1508,36 +1512,20 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   ))}
                 </select>
               </label>
+              </div>
 
-              <label className="block text-[10px] font-medium text-slate-700">
-                {t.roleTitle}
-                <input
-                  className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, job_title: e.target.value }))
-                  }
-                  value={draft.job_title}
-                />
-              </label>
-
+              <div className="grid gap-2 sm:grid-cols-2">
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.coverLetter}
                 <select
                   className="mt-0.5 w-full rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1.5 text-xs"
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, cover_letter_id: e.target.value }))
-                  }
+                  onChange={(e) => setDraft((d) => ({ ...d, cover_letter_id: e.target.value }))}
                   value={draft.cover_letter_id || ""}
                 >
                   <option value="">{t.noneSelected}</option>
-                  {letterOptions.map((letter) => (
-                    <option key={letter.id} value={letter.id}>
-                      {letter.title || letter.id}
-                    </option>
-                  ))}
+                  {letterOptions.map((letter) => <option key={letter.id} value={letter.id}>{letter.title || letter.id}</option>)}
                 </select>
               </label>
-
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.stage}
                 <select
@@ -1587,6 +1575,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   {t.daysStuckHint}
                 </span>
               </label>
+              </div>
 
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.jobPostUrl}
@@ -1607,6 +1596,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   value={draft.notes || ""}
                 />
               </label>
+              </>
+              ) : null}
 
               {selectedApplication ? (
                 <>

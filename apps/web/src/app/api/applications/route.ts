@@ -204,10 +204,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const statusRaw = typeof body.status === "string" ? body.status.trim() : "wishlist";
+  const statusRaw = typeof body.status === "string" ? body.status.trim() : "applied";
   const status = (APPLICATION_STATUSES as readonly string[]).includes(statusRaw)
     ? (statusRaw as ApplicationStatus)
-    : "wishlist";
+    : "applied";
 
   const board = await upsertApplication({
     id: typeof body.id === "string" ? body.id : undefined,

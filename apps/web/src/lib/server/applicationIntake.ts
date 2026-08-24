@@ -262,7 +262,7 @@ export async function quickIntakeApplication(
     job_id: job.id,
     company_name: company.name,
     job_title: job.title,
-    status: "wishlist",
+    status: "applied",
     url: extracted.url,
     source: input.source?.trim() || "Quick Intake",
     location: extracted.location,
