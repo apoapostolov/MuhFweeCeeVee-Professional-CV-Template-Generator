@@ -54,6 +54,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     researchWebSearchSystemMessage(
       "Research a company metadata field from live web sources (LinkedIn-first) and return JSON only with three field value proposals.",
     ),
+    { useWebSearch: false },
   );
 
   if (!result.ok) {

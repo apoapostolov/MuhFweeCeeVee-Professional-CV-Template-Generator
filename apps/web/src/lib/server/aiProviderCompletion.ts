@@ -2,7 +2,7 @@ import { getAiProvider } from "./aiProviderRegistry";
 import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
 import { readXaiOAuthAccessToken } from "./xaiOAuth";
-import { readCodexOAuthAccessToken } from "./openaiCodexOAuth";
+import { readCodexOAuthAccessToken, readCodexOAuthCredentials } from "./openaiCodexOAuth";
 import type { AiRole } from "./aiProviderTypes";
 
 type ChatMessage = {
@@ -74,6 +74,65 @@ function extractGeminiText(payload: unknown): string {
     .join("");
 }
 
+async function completeCodexResponse(
+  modelId: string,
+  messages: ChatMessage[],
+  maxTokens: number,
+  images: string[] = [],
+): Promise<string> {
+  const credentials = await readCodexOAuthCredentials();
+  const system = messages.find((message) => message.role === "system")?.content;
+  const input: Array<{
+    type: "message";
+    role: "assistant" | "user";
+    content: Array<{ type: "output_text" | "input_text" | "input_image"; text?: string; image_url?: string }>;
+  }> = messages
+    .filter((message) => message.role !== "system")
+    .map((message) => ({
+      type: "message",
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: [{ type: message.role === "assistant" ? "output_text" : "input_text", text: message.content }],
+    }));
+  if (images.length > 0) {
+    const last = input[input.length - 1];
+    if (last) {
+      last.content.push(...images.map((image) => ({ type: "input_image" as const, image_url: image })));
+    }
+  }
+  const response = await fetch("https://chatgpt.com/backend-api/codex/responses", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${credentials.accessToken}`,
+      "content-type": "application/json",
+      ...(credentials.accountId ? { "ChatGPT-Account-Id": credentials.accountId } : {}),
+    },
+    body: JSON.stringify({
+      model: modelId,
+      store: false,
+      stream: true,
+      ...(system ? { instructions: system } : {}),
+      input,
+    }),
+    signal: AbortSignal.timeout(120000),
+  });
+  const raw = await response.text();
+  if (!response.ok) throw providerRequestError("OpenAI Codex (OAuth)", response.status, raw);
+  let text = "";
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    if (data === "[DONE]") continue;
+    try {
+      const event = JSON.parse(data) as Record<string, unknown>;
+      if (event.type === "response.output_text.delta" && typeof event.delta === "string") text += event.delta;
+    } catch {
+      // Ignore keepalive and malformed SSE lines. The final empty-response check reports failure.
+    }
+  }
+  if (!text.trim()) throw new Error("AI provider OpenAI Codex (OAuth) returned an empty response.");
+  return text;
+}
+
 export type VisionCompletionInput = {
   role: Extract<AiRole, "vision">;
   prompt: string;
@@ -139,6 +198,11 @@ export async function completeAiText(input: CompletionInput): Promise<Completion
     const payload = await readResponseBody(response, provider.name);
     const text = extractGeminiText(payload);
     if (!text.trim()) throw new Error(`AI provider ${provider.name} returned an empty response.`);
+    return { text, providerId: provider.id, modelId: binding.modelId };
+  }
+
+  if (provider.id === "openai-codex") {
+    const text = await completeCodexResponse(binding.modelId, input.messages, input.maxTokens);
     return { text, providerId: provider.id, modelId: binding.modelId };
   }
 
@@ -210,6 +274,11 @@ export async function completeAiVision(input: VisionCompletionInput): Promise<Co
     const payload = await readResponseBody(response, provider.name);
     const text = extractAnthropicText(payload);
     if (!text.trim()) throw new Error(`AI provider ${provider.name} returned an empty response.`);
+    return { text, providerId: provider.id, modelId: binding.modelId };
+  }
+
+  if (provider.id === "openai-codex") {
+    const text = await completeCodexResponse(binding.modelId, [{ role: "user", content: input.prompt }], input.maxTokens, images);
     return { text, providerId: provider.id, modelId: binding.modelId };
   }
 

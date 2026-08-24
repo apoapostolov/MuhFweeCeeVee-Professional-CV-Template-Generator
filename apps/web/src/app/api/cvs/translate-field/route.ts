@@ -98,7 +98,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const translationBinding = aiSettings.roles.translation;
   const translationProvider = getAiProvider(translationBinding.providerId);
   const translationKey = translationProvider ? await readAiProviderKey(translationProvider.id) : "";
-  if (!translationProvider || (translationProvider.auth !== "none" && !translationKey.trim())) {
+  if (
+    !translationProvider ||
+    (translationProvider.auth !== "none" && translationProvider.auth !== "oauth" && !translationKey.trim())
+  ) {
     return NextResponse.json({
       ok: true,
       sourceCvId,

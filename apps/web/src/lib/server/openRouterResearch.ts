@@ -4,6 +4,7 @@ import {
 } from "@/lib/openrouter-research-model";
 import { buildResearchOpenRouterRequestExtras } from "@/lib/research/research-web-search";
 import { readOpenRouterSettings } from "./openRouterSettings";
+import { completeAiText } from "./aiProviderCompletion";
 
 export { DEFAULT_OPENROUTER_RESEARCH_MODEL };
 
@@ -51,6 +52,38 @@ export async function callOpenRouterResearchChat(
       raw?: string;
     }
 > {
+  const useWebSearch =
+    options && Object.prototype.hasOwnProperty.call(options, "useWebSearch")
+      ? options.useWebSearch === true
+      : true;
+  const temperature = options?.temperature ?? (useWebSearch ? 0.25 : 0.2);
+
+  if (!useWebSearch) {
+    try {
+      const completion = await completeAiText({
+        role: "research",
+        messages: [
+          { role: "system", content: systemContent },
+          { role: "user", content: prompt },
+        ],
+        temperature,
+        maxTokens: 4000,
+      });
+      return {
+        ok: true,
+        content: extractOpenRouterTextContent(completion.text),
+        model: completion.modelId,
+        useWebSearch: false,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "AI research request failed.",
+        status: 502,
+      };
+    }
+  }
+
   const settings = await readOpenRouterSettings();
   const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
   if (!apiKey) {
@@ -59,10 +92,6 @@ export async function callOpenRouterResearchChat(
 
   // Legacy callers (company/job research) omit options → keep web research model.
   // Field refine / staged cheap fill pass useWebSearch: false explicitly (D2).
-  const useWebSearch =
-    options && Object.prototype.hasOwnProperty.call(options, "useWebSearch")
-      ? options.useWebSearch === true
-      : true;
   const analysisModel =
     (settings.model && settings.model.trim()) || "openai/gpt-4o-mini";
   const researchModel = resolveOpenRouterResearchModel(
@@ -72,8 +101,7 @@ export async function callOpenRouterResearchChat(
     (options?.model && options.model.trim()) ||
     (useWebSearch ? researchModel : analysisModel);
 
-  const searchExtras = useWebSearch ? buildResearchOpenRouterRequestExtras(model) : {};
-  const temperature = options?.temperature ?? (useWebSearch ? 0.25 : 0.2);
+  const searchExtras = buildResearchOpenRouterRequestExtras(model);
 
   const response = await fetch(settings.baseUrl, {
     method: "POST",
