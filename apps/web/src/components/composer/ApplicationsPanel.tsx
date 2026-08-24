@@ -63,9 +63,9 @@ function formatDaysLabel(days: number, bg: boolean): string {
 }
 
 function kanbanPriorityClass(priority: Application["priority"]): string {
-  if (priority === "low") return "bg-gradient-to-r from-blue-600 to-cyan-500";
-  if (priority === "high") return "bg-gradient-to-r from-blue-600 to-purple-600";
-  return "bg-gradient-to-r from-blue-700 to-indigo-600";
+  if (priority === "low") return "app-kanban-priority-low";
+  if (priority === "high") return "app-kanban-priority-high";
+  return "app-kanban-priority-normal";
 }
 
 type CvOption = { id: string; displayName?: string; displayVersion?: string | null };
@@ -1142,14 +1142,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         }
                       >
                         <div className="min-w-0 w-full">
-                          <p className="truncate pr-8 text-[11px] font-bold leading-snug text-white">
+                          <p className="truncate pr-8 text-[11px] font-bold leading-snug text-[var(--kanban-header-ink)]">
                             {app.job_title || app.packet_title || "—"}
                           </p>
                           <div className="mt-0.5 flex min-w-0 items-baseline justify-between gap-2">
-                            <p className="min-w-0 truncate text-[10px] font-medium leading-snug text-white/75">
+                            <p className="min-w-0 truncate text-[10px] font-medium leading-snug text-[var(--kanban-header-muted)]">
                               {app.company_name || "—"}
                             </p>
-                            <p className="shrink-0 truncate text-right text-[9px] leading-snug text-white/65">
+                            <p className="shrink-0 truncate text-right text-[9px] leading-snug text-[var(--kanban-header-muted)]">
                               {app.location || "—"}
                             </p>
                           </div>
@@ -1160,7 +1160,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           return (
                             <span
                               className={`absolute right-2.5 top-2.5 text-[13px] font-bold tabular-nums leading-none ${
-                                stale ? "text-rose-300" : "text-white/90"
+                                stale ? "text-rose-600" : "text-[var(--kanban-header-ink)]"
                               }`}
                               title={
                                 bg
@@ -1220,12 +1220,12 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
-                        className="flex h-7 border-t border-white/25 bg-slate-700"
+                        className="app-kanban-footer flex h-7 border-t"
                         data-no-dnd
                       >
                         <button
                           aria-label={t.open}
-                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
                           disabled={busy}
                           onClick={() => openEdit(app)}
                           title={t.open}
@@ -1235,11 +1235,11 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         </button>
                         <span
                           aria-hidden
-                          className="w-px shrink-0 self-stretch bg-white/20"
+                          className="w-px shrink-0 self-stretch bg-[var(--kanban-footer-divider)]"
                         />
                         <button
                           aria-label={t.exportPacket}
-                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
                           disabled={busy}
                           onClick={() => void exportPacket(app.id)}
                           title={t.exportPacketTitle}
@@ -1249,11 +1249,11 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         </button>
                         <span
                           aria-hidden
-                          className="w-px shrink-0 self-stretch bg-white/20"
+                          className="w-px shrink-0 self-stretch bg-[var(--kanban-footer-divider)]"
                         />
                         <button
                           aria-label={t.reuseForSimilar}
-                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
                           disabled={busy}
                           onClick={() => void reusePacket(app)}
                           title={t.reuseTitle}
@@ -1263,11 +1263,11 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         </button>
                         <span
                           aria-hidden
-                          className="w-px shrink-0 self-stretch bg-white/20"
+                          className="w-px shrink-0 self-stretch bg-[var(--kanban-footer-divider)]"
                         />
                         <button
                           aria-label={t.delete}
-                          className="flex min-w-0 flex-1 items-center justify-center text-white/90 transition-colors hover:bg-white/10 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
                           disabled={busy}
                           onClick={() => {
                             const confirmed = window.confirm(
@@ -1296,14 +1296,14 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           <KanbanFloatingCard drag={drag}>
             <div className={`relative flex items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(dragApp.priority)}`}>
               <div className="min-w-0 w-full">
-                <p className="truncate pr-8 text-[11px] font-bold leading-snug text-white">
+                <p className="truncate pr-8 text-[11px] font-bold leading-snug text-[var(--kanban-header-ink)]">
                   {dragApp.job_title || dragApp.packet_title || "—"}
                 </p>
                 <div className="mt-0.5 flex min-w-0 items-baseline justify-between gap-2">
-                  <p className="min-w-0 truncate text-[10px] font-medium text-white/75">
+                  <p className="min-w-0 truncate text-[10px] font-medium text-[var(--kanban-header-muted)]">
                     {dragApp.company_name || "—"}
                   </p>
-                  <p className="shrink-0 truncate text-right text-[9px] text-white/65">
+                  <p className="shrink-0 truncate text-right text-[9px] text-[var(--kanban-header-muted)]">
                     {dragApp.location || "—"}
                   </p>
                 </div>
@@ -1314,7 +1314,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 return (
                   <span
                     className={`absolute right-2.5 top-2.5 text-[13px] font-bold tabular-nums leading-none ${
-                      stale ? "text-rose-300" : "text-white/90"
+                      stale ? "text-rose-600" : "text-[var(--kanban-header-ink)]"
                     }`}
                   >
                     {formatDaysLabel(days, bg)}
@@ -1379,7 +1379,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   role="tab"
                   type="button"
                 >
-                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : tab === "company" ? (bg ? "Информация за компанията" : "Company info") : tab === "snapshots" ? (bg ? "Версии" : "Snapshots") : (bg ? "Хронология" : "Timeline")}
+                  {tab === "application" ? (bg ? "Кандидатстване" : "Application") : tab === "company" ? (bg ? "Компания" : "Company") : tab === "snapshots" ? (bg ? "Версии" : "Snapshots") : (bg ? "Хронология" : "Timeline")}
                 </button>
               ))}
             </div>
