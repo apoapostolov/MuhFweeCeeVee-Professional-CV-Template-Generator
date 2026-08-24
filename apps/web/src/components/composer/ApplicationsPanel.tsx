@@ -271,7 +271,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     cancel: bg ? "Отказ" : "Cancel",
     chipCv: "CV",
     chipPhoto: bg ? "Фото" : "Photo",
-    chipCompany: bg ? "Фирма" : "Co",
+    chipCompany: bg ? "Фирма" : "Com",
     chipLetter: bg ? "Писмо" : "Letter",
     chipOk: bg ? "свързано" : "linked",
     chipMissing: bg ? "липсва" : "missing",
