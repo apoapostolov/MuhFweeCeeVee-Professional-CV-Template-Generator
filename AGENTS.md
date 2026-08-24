@@ -7,6 +7,24 @@ MuhFweeCeeVee. It is adapted from the shared defaults in
 `/mnt/c/git/defaults` and extended with product-specific stack, validation, and
 privacy rules.
 
+## Paired Product Contract
+
+`/mnt/c/git-public/MuhFweeCeeVee-Professional-CV-Template-Generator` and
+`/mnt/c/git/CV` are the same product in two data variants. The public checkout
+contains only safe fictional tracked data. The private checkout contains Apo's
+real CV and may contain personal runtime data. For every requested product
+change, apply the behavior and UI change to both checkouts in the same task.
+Never copy private CV data, photos, company data, secrets, or runtime files into
+this checkout.
+
+The live test server on port `10004` must serve `/mnt/c/git/CV`, not this public
+checkout. The legacy WSL `fweecv-dev.service` must remain disabled. It served
+the public checkout with `Restart=always` and could reclaim port `10004` or
+trigger reloads while editing. Before and after code changes, verify the
+server's repository root and health. Restart the tracked server after code
+changes with `npm run dev:windows:restart` from the checkout being tested. This
+app is Next.js with webpack HMR, not Vite.
+
 ## Source Hierarchy
 
 Use this order when instructions conflict:
@@ -165,8 +183,11 @@ Do not ask before:
 
 ## Commit and Push Flow
 
-Do not commit or push unless the user asks, project policy requires it, or the
-task is explicitly release/sync work.
+For requested paired product changes, the user has authorized committing,
+rebasing onto the current remote branch, and pushing both checkouts unless the
+user says otherwise. Stage only the requested changes and preserve unrelated
+working-tree edits. Never commit private data or use the paired workflow to
+push private data to this public remote.
 
 When committing:
 

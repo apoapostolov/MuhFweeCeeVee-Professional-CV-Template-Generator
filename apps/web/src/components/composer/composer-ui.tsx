@@ -58,11 +58,18 @@ export function SettingsStatusIcon({ state }: { state: "not_configured" | "confi
 export type ThemeModeToggleProps = {
   themeMode: ThemeMode;
   onThemeModeChange: (mode: ThemeMode) => void;
+  assistantOpen?: boolean;
 };
 
-export function ThemeModeToggle({ themeMode, onThemeModeChange }: ThemeModeToggleProps): JSX.Element {
+export function ThemeModeToggle({
+  themeMode,
+  onThemeModeChange,
+  assistantOpen = false,
+}: ThemeModeToggleProps): JSX.Element {
   return (
-    <div className="fixed right-4 top-4 z-50 flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface-1)]/85 px-1 py-1 shadow-sm backdrop-blur-sm">
+    <div
+      className={`${assistantOpen ? "absolute right-4 top-4 md:right-6 md:top-6" : "fixed right-4 top-4"} z-40 flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface-1)]/85 px-1 py-1 shadow-sm backdrop-blur-sm`}
+    >
       <button
         className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${themeMode === "light" ? "bg-[var(--surface-2)] text-slate-900" : "text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"}`}
         onClick={() => onThemeModeChange("light")}

@@ -128,7 +128,7 @@ export function AssistantPanel({
         isOpen ? "flex" : "hidden"
       }`}
     >
-      <header className="border-b border-[var(--line)] py-3 pl-4 pr-24">
+      <header className="relative border-b border-[var(--line)] py-3 pl-4 pr-36">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-white">
             <Bot aria-hidden className="h-4 w-4" />
@@ -144,9 +144,16 @@ export function AssistantPanel({
               {statusLabel} · MCP workspace context
             </p>
           </div>
+        </div>
+        <div
+          aria-label="Assistant controls"
+          className="absolute right-3 top-3 inline-flex items-center divide-x divide-[var(--line)] rounded-full border border-[var(--line)] bg-[var(--surface-1)]/85 p-1 shadow-sm backdrop-blur-sm"
+          role="group"
+        >
           <button
             aria-label="Open conversations and playbooks"
-            className="rounded-md border border-[var(--line)] p-1.5"
+            aria-pressed={libraryOpen}
+            className="inline-flex h-7 w-8 items-center justify-center rounded-l-full text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"
             onClick={() => setLibraryOpen((value) => !value)}
             title="Conversations and playbooks"
             type="button"
@@ -155,7 +162,7 @@ export function AssistantPanel({
           </button>
           <button
             aria-label="Archive current conversation"
-            className="rounded-md border border-[var(--line)] p-1.5 disabled:opacity-40"
+            className="inline-flex h-7 w-8 items-center justify-center text-[var(--ink-muted)] hover:bg-[var(--surface-2)] disabled:opacity-40"
             disabled={!assistant.sessionId}
             onClick={() => void assistant.archiveConversation()}
             title="Archive conversation"
@@ -165,7 +172,7 @@ export function AssistantPanel({
           </button>
           <button
             aria-label="Start new conversation"
-            className="rounded-md border border-[var(--line)] p-1.5"
+            className="inline-flex h-7 w-8 items-center justify-center text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"
             onClick={assistant.newConversation}
             title="New conversation"
             type="button"
@@ -174,8 +181,9 @@ export function AssistantPanel({
           </button>
           <button
             aria-label="Close MuhFwee AI"
-            className="rounded-md border border-[var(--line)] p-1.5"
+            className="inline-flex h-7 w-8 items-center justify-center rounded-r-full text-[var(--ink-muted)] hover:bg-[var(--surface-2)]"
             onClick={close}
+            title="Close MuhFwee AI"
             type="button"
           >
             <X aria-hidden className="h-4 w-4" />

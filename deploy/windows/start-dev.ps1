@@ -1,6 +1,7 @@
 param(
   [int]$Port = 10004,
-  [string]$BindHost = "127.0.0.1"
+  [string]$BindHost = "127.0.0.1",
+  [string]$HealthHost = "127.0.0.1"
 )
 
 $ErrorActionPreference = "Stop"
@@ -61,7 +62,7 @@ $process = Start-Process `
   startedAt = (Get-Date).ToString("o")
 } | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding utf8
 
-$healthUrl = "http://${BindHost}:$Port/api/health"
+$healthUrl = "http://${HealthHost}:$Port/api/health"
 $deadline = (Get-Date).AddSeconds(90)
 while ((Get-Date) -lt $deadline) {
   if ($process.HasExited) {

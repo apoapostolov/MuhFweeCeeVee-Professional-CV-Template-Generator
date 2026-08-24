@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
     "127.0.0.1:3005",
     "localhost:10004",
     "127.0.0.1:10004",
+    "localhost",
+    "127.0.0.1",
+    "192.168.1.217",
+    "192.168.1.217:10004",
     "192.168.1.217:3005",
     "localhost:10003",
     "127.0.0.1:10003",
@@ -24,6 +28,18 @@ const nextConfig: NextConfig = {
         "node_modules/nanoid/non-secure/index.js",
       ),
     },
+  },
+  webpack: (config) => {
+    // /mnt/c does not emit inotify events across the Windows->WSL boundary.
+    // Poll source files, but never watch generated output or runtime data. Watching
+    // .next/data made webpack emit periodic full reloads during normal editing.
+    config.watchOptions = {
+      ...(config.watchOptions || {}),
+      poll: 300,
+      aggregateTimeout: 300,
+      ignored: /node_modules|[/\\]\.next[/\\]|[/\\](?:logs|work|data)[/\\]/,
+    };
+    return config;
   },
 };
 

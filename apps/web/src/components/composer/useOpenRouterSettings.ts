@@ -113,12 +113,11 @@ export function useOpenRouterSettings() {
       }
     }
     void loadCreditStatus();
-    const intervalId = window.setInterval(() => {
-      void loadCreditStatus();
-    }, 60_000);
+    // Periodic credit polling removed: it triggered a full interface data reload
+    // every 60s, which combined with webpack poll-mode on /mnt/c caused constant
+    // dev-server recompiles. Credit status now loads once on mount.
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
     };
   }, []);
 

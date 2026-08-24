@@ -44,10 +44,14 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
 
   return (
     <main className="app-shell paper-grid grain-overlay h-screen overflow-hidden px-4 py-4 md:px-8 md:py-6">
-      <ThemeModeToggle themeMode={c.themeMode} onThemeModeChange={c.setThemeMode} />
       <div className="mx-auto flex h-full w-full max-w-[1900px] flex-col">
         <div className="flex min-h-0 flex-1 gap-3">
-          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-1)] p-4 shadow-[0_10px_40px_rgba(31,41,55,0.12)] md:p-6">
+          <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-1)] p-4 shadow-[0_10px_40px_rgba(31,41,55,0.12)] md:p-6">
+            <ThemeModeToggle
+              assistantOpen={assistantOpen}
+              themeMode={c.themeMode}
+              onThemeModeChange={c.setThemeMode}
+            />
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="mt-2 text-3xl font-black text-slate-900 md:text-4xl">MuhFweeCeeVee</h1>
