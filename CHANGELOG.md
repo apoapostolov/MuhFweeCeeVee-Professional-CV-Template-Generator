@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0] - 2026-08-24
 
-1.4.0 is the job-search loop on one local workspace: write a CV, review it, track applications, print a PDF. AI and the copilot stay optional.
+1.4.0 replaces the single OpenRouter account with twenty AI providers. API keys, OAuth subscriptions, and local endpoints each carry a credit or quota you can watch as you work. The rest of the job-search loop stays local.
 
 ### Added
 
-- **Optional AI.** Pick a provider and model when you want help. Hosted and local endpoints both work. Limits and a rough cost show before a large request.
+- **Twenty AI providers.** Leave the single OpenRouter account behind. Add API-key providers, OAuth subscriptions (Codex, xAI), or a local endpoint. Credit and quota remaining stay visible while you use AI features. Limits and a rough cost show before a large request.
 - **MuhFwee AI copilot.** Open a private assistant from any workspace screen. It reads current context, shows its steps, and waits for approval before editing a CV, research record, letter, or application. Conversations can be searched, archived, or saved as playbooks.
 - **CV review stored on the document.** ATS and writing-review findings stay with each CV. Compare by provider or section. Detector hits are findings, not a score when evidence is missing. Skill ratings accept half-steps.
 - **Application trail.** Details and company notes sit with snapshots and a live timeline. Track contacts and next actions, see what is due today, and freeze the exact CV, letter, photo, and PDF that went out.
