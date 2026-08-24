@@ -536,7 +536,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   async function refreshApplication(
     id: string,
     message?: string,
+    preserveEditorTab = false,
   ): Promise<void> {
+    const currentEditorTab = editorTab;
     await loadBoard();
     const response = await fetch(
       `/api/applications/${encodeURIComponent(id)}`,
@@ -544,6 +546,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     const payload = (await response.json()) as { application?: Application };
     if (payload.application) {
       openEdit(payload.application);
+      if (preserveEditorTab) setEditorTab(currentEditorTab);
     }
     if (message) setNotice(message);
   }
@@ -1673,12 +1676,12 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
               {selectedApplication && editorTab === "timeline" ? (
                 <ApplicationActivityTimeline
-                    application={selectedApplication}
-                    disabled={busy}
-                    language={language}
-                    onChanged={(message) =>
-                      void refreshApplication(selectedApplication.id, message)
-                    }
+                  application={selectedApplication}
+                  disabled={busy}
+                  language={language}
+                  onChanged={(message) =>
+                    void refreshApplication(selectedApplication.id, message, true)
+                  }
                 />
               ) : null}
 
