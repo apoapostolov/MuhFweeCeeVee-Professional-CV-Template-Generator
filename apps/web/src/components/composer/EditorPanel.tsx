@@ -616,18 +616,22 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                   >
                     {companyMetadataEditorOpen ? (
                       companyMetadataEditorView === "yaml" ? (
-                        <div className="flex h-full min-h-[400px] flex-col rounded-md border border-[var(--line)] bg-white p-2">
-                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">YAML Editor</p>
+                        <div className={`flex h-full min-h-[400px] flex-col rounded-md border border-[var(--line)] p-2 ${resolvedTheme === "dark" ? "bg-[var(--surface-1)]" : "bg-white"}`}>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">YAML Editor</p>
                           <textarea
-                            className="min-h-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-2 font-mono text-xs"
+                            className="min-h-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--background)] p-2 font-mono text-xs"
                             onChange={(event) => onCompanyMetadataYamlDraftChange(event.target.value.replace(/\t/g, "  "))}
                             value={companyMetadataYamlDraft}
                           />
                           <div
                             className={`mt-2 rounded-md border px-2 py-1.5 text-[11px] ${
                               companyMetadataYamlLintIssues.length === 0
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                                : "border-rose-200 bg-rose-50 text-rose-800"
+                                ? (resolvedTheme === "dark"
+                                  ? "border-emerald-700 bg-emerald-950/30 text-emerald-200"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-800")
+                                : (resolvedTheme === "dark"
+                                  ? "border-rose-700 bg-rose-950/30 text-rose-200"
+                                  : "border-rose-200 bg-rose-50 text-rose-800")
                             }`}
                           >
                             {companyMetadataYamlLintIssues.length === 0 ? (
@@ -656,12 +660,12 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     ) : editorLoading ? (
                       <p className="text-xs text-[var(--ink-muted)]">Loading CV...</p>
                     ) : editorView === "yaml" ? (
-                      <div className="flex h-full min-h-[400px] flex-col rounded-md border border-[var(--line)] bg-white p-2">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">YAML Editor</p>
+                      <div className={`flex h-full min-h-[400px] flex-col rounded-md border border-[var(--line)] p-2 ${resolvedTheme === "dark" ? "bg-[var(--surface-1)]" : "bg-white"}`}>
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">YAML Editor</p>
                         <div
                           className={`relative min-h-0 flex-1 overflow-hidden rounded-md border ${
                             resolvedTheme === "dark"
-                              ? "border-slate-700 bg-slate-900/85"
+                              ? "border-[var(--line)] bg-[var(--surface-1)]"
                               : "border-slate-200 bg-slate-50"
                           }`}
                         >
