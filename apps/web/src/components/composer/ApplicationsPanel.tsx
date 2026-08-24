@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
-import { Archive, BookmarkPlus, Copy, Download, FolderOpen, Search, Trash2 } from "lucide-react";
+import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, Search, Trash2 } from "lucide-react";
 
 import { ApplicationActivityTimeline } from "./ApplicationActivityTimeline";
 import { ApplicationAnalyticsView } from "./ApplicationAnalyticsView";
@@ -836,9 +836,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-        <div className="min-w-0">
-          <h3 className="text-lg font-bold text-slate-900">{t.pageTitle}</h3>
-          <p className="text-xs text-[var(--ink-muted)]">{t.pageSubtitle}</p>
+        <div className="flex min-w-0 flex-1 items-baseline gap-3">
+          <h3 className="shrink-0 text-lg font-bold text-slate-900">{t.pageTitle}</h3>
+          <p className="min-w-0 text-xs text-[var(--ink-muted)]">{t.pageSubtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <ApplicationQuickIntake
@@ -859,15 +859,16 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             }}
           />
           <button
-            className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
             disabled={busy}
             onClick={openNew}
             type="button"
           >
+            <Plus aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} />
             {t.newApplication}
           </button>
           <button
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
             disabled={busy || !defaultCompanyName || !defaultJobTitle}
             onClick={() => {
               openNew();
@@ -875,16 +876,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
             title={t.addFromResearchTitle}
             type="button"
           >
+            <FlaskConical aria-hidden className="h-3.5 w-3.5 text-[var(--accent)]" strokeWidth={2} />
             {t.addFromResearch}
-          </button>
-          <button
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
-            disabled={busy}
-            onClick={() => importInputRef.current?.click()}
-            title={t.importPacketTitle}
-            type="button"
-          >
-            {t.importPacket}
           </button>
           <input
             accept="application/json,.json"
