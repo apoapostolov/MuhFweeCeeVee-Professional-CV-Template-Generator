@@ -312,11 +312,6 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     <p className="text-sm font-semibold text-slate-800">
                       {uiLanguage === "bg" ? "Цел (Research)" : "Job Targeting"}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                      {uiLanguage === "bg"
-                        ? "Само каталог Research. Изборът се записва в CV (metadata.targeting)."
-                        : "Research catalog only. Selection is saved on the CV (metadata.targeting)."}
-                    </p>
 
                     <label className="mt-3 block text-xs font-medium text-slate-700">
                       {uiLanguage === "bg" ? "Компания" : "Company"}

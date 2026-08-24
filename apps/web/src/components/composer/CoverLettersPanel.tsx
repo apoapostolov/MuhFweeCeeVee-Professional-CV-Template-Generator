@@ -353,11 +353,6 @@ export function CoverLettersPanel(props: CoverLettersPanelProps): JSX.Element {
         <p className="text-sm font-semibold text-slate-900">
           {bg ? "Писма" : "Cover letters"}
         </p>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">
-          {bg
-            ? "CV + Research цел. AI и Humanize са отделни стъпки."
-            : "CV + Research target. AI draft and Humanize are separate steps."}
-        </p>
         <button
           className="mx-auto mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
           disabled={busy}

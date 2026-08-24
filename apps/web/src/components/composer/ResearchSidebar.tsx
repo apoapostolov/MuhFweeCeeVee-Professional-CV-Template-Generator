@@ -150,11 +150,6 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
       <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
         {sidebarTab === "companies" ? (
           <>
-            <p className="text-xs text-[var(--ink-muted)]">
-              {language === "bg"
-                ? "Попълнете компанията евтино по подразбиране. Отметнете Research само за уеб търсене."
-                : "Fill company cheaply by default. Check Include Research only for web search."}
-            </p>
             <button
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--accent)] px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
               disabled={loadingCatalog}
