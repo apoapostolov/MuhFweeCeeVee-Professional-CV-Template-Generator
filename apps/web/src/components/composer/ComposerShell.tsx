@@ -82,6 +82,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onPrintTextScaleStep={c.adjustPrintTextScale}
               onPrintTextScaleValueChange={c.setPrintTextScaleValue}
               printTweaks={{
+                intelligentPagination: c.printTweakIntelligentPagination,
                 removePhoto: c.printTweakRemovePhoto,
                 moveSkillsLeft: c.printTweakMoveSkillsLeft,
                 sidebarTextScaleEnabled: c.printTweakSidebarTextScaleEnabled,

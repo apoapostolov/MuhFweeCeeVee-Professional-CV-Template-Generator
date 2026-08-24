@@ -205,6 +205,7 @@ function buildPdfUrl(
   } else if (target.photoId) {
     params.set("photoId", target.photoId);
   }
+  if (tweaks.intelligentPagination) params.set("pagination", "smart");
   if (tweaks.moveSkillsLeft) params.set("moveSkillsLeft", "1");
   if (tweaks.sidebarTextScaleEnabled) {
     params.set("sidebarTextScale", String(tweaks.sidebarTextScale));

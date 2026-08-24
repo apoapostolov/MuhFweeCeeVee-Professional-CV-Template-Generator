@@ -7,6 +7,7 @@ import {
 } from "../../print-text-scale";
 
 export type RenderTweaks = {
+  intelligentPagination: boolean;
   removePhoto: boolean;
   moveSkillsLeft: boolean;
   sidebarTextScale: number;
@@ -16,6 +17,7 @@ export type RenderTweaks = {
 };
 
 export const DEFAULT_RENDER_TWEAKS: RenderTweaks = {
+  intelligentPagination: false,
   removePhoto: false,
   moveSkillsLeft: false,
   sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -58,6 +60,7 @@ export function parseRenderTweaks(
   searchParams: Pick<URLSearchParams, "get">,
 ): RenderTweaks {
   return {
+    intelligentPagination: searchParams.get("pagination") === "smart",
     removePhoto: readTruthyFlag(searchParams, "removePhoto"),
     moveSkillsLeft: readTruthyFlag(searchParams, "moveSkillsLeft"),
     sidebarTextScale: parsePrintTextScaleParam(searchParams, "sidebarTextScale"),
@@ -92,6 +95,57 @@ export function buildPrintTextScaleCss(
   }
 
   return rules.join("\n");
+}
+
+export function buildIntelligentPaginationCss(
+  templateId: string,
+  tweaks: RenderTweaks,
+): string {
+  if (!tweaks.intelligentPagination) {
+    return "";
+  }
+
+  const sidebarSections = templateHasLeftSidebar(templateId)
+    ? ".sidebar > section, .left > section"
+    : ".page > section";
+  const contentSections = templateHasLeftSidebar(templateId)
+    ? ".content > section, .right > section"
+    : ".page > section";
+  const sidebarItems = templateHasLeftSidebar(templateId)
+    ? ".sidebar li, .left li"
+    : ".page li";
+  const contentItems = templateHasLeftSidebar(templateId)
+    ? ".content li, .right li"
+    : ".page li";
+
+  // Conservative order: keep headings with their content, keep short semantic
+  // units together, and let large entries split rather than create blank pages.
+  return `
+${sidebarSections}, ${contentSections} {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+${sidebarSections} > h2, ${sidebarSections} > h3,
+${contentSections} > h2, ${contentSections} > h3,
+.page > .block > .section-title {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+.dated-entry, .timeline-item, .reference-entry, .reference,
+.entry, .ref, .subsection, .erow, .lang-block, .ref-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.dated-entry ul, .timeline-item ul, .entry ul, .subsection ul,
+.evalue ul, .content > section > ul, .right > section > ul {
+  orphans: 3;
+  widows: 3;
+}
+${sidebarItems}, ${contentItems} {
+  orphans: 2;
+  widows: 2;
+}
+`;
 }
 
 export function injectPrintTweakStyles(html: string, tweakCss: string): string {

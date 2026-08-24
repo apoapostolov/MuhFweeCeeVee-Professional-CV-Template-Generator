@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildIntelligentPaginationCss,
   buildPrintTextScaleCss,
   parseRenderTweaks,
   resolveEffectivePhotoMode,
@@ -20,6 +21,8 @@ describe("render tweaks", () => {
       true,
     );
     expect(parseRenderTweaks(new URLSearchParams("removePhoto=true")).removePhoto).toBe(true);
+    expect(parseRenderTweaks(new URLSearchParams("pagination=smart")).intelligentPagination).toBe(true);
+    expect(parseRenderTweaks(new URLSearchParams("pagination=off")).intelligentPagination).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).moveSkillsLeft).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).removePhoto).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).sidebarTextScale).toBe(
@@ -44,6 +47,7 @@ describe("render tweaks", () => {
 
   it("builds zoom css for sidebar and content regions", () => {
     const tweaks = {
+      intelligentPagination: false,
       removePhoto: false,
       moveSkillsLeft: false,
       sidebarTextScale: 90,
@@ -58,8 +62,34 @@ describe("render tweaks", () => {
     expect(css).toContain("zoom: 1.05");
   });
 
+  it("builds conservative pagination css for both regions", () => {
+    const css = buildIntelligentPaginationCss("harvard-v1", {
+      intelligentPagination: true,
+      removePhoto: false,
+      moveSkillsLeft: false,
+      sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
+      sidebarTextScaleActive: false,
+      contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
+      contentTextScaleActive: false,
+    });
+    expect(css).toContain(".sidebar > section, .left > section");
+    expect(css).toContain(".content > section, .right > section");
+    expect(css).toContain("break-after: avoid");
+    expect(css).toContain("orphans: 3");
+    expect(buildIntelligentPaginationCss("harvard-v1", {
+      intelligentPagination: false,
+      removePhoto: false,
+      moveSkillsLeft: false,
+      sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
+      sidebarTextScaleActive: false,
+      contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
+      contentTextScaleActive: false,
+    })).toBe("");
+  });
+
   it("only moves skills for sidebar templates when enabled", () => {
     const enabled = {
+      intelligentPagination: false,
       removePhoto: false,
       moveSkillsLeft: true,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -71,6 +101,7 @@ describe("render tweaks", () => {
     expect(shouldMoveSkillsLeft("europass-v1", enabled)).toBe(false);
     expect(
       shouldMoveSkillsLeft("harvard-v1", {
+        intelligentPagination: false,
         removePhoto: false,
         moveSkillsLeft: false,
         sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -83,6 +114,7 @@ describe("render tweaks", () => {
 
   it("forces photo mode off when removePhoto is enabled", () => {
     const baseTweaks = {
+      intelligentPagination: false,
       moveSkillsLeft: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,

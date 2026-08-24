@@ -62,6 +62,7 @@ describe("print-tweaks-persistence", () => {
 
   it("parses and clamps tweak payloads", () => {
     const parsed = parsePrintTweaksState({
+      intelligentPagination: "1",
       removePhoto: true,
       moveSkillsLeft: "1",
       sidebarTextScaleEnabled: false,
@@ -70,6 +71,7 @@ describe("print-tweaks-persistence", () => {
       contentTextScale: 10,
     });
     expect(parsed).toEqual({
+      intelligentPagination: true,
       removePhoto: true,
       moveSkillsLeft: true,
       sidebarTextScaleEnabled: false,

@@ -55,9 +55,13 @@ export const TEMPLATES_WITH_LEFT_SIDEBAR = new Set([
   "stanford-v1",
 ]);
 
-export type PrintTweakId = "removePhoto" | "moveSkillsLeft";
+export type PrintTweakId =
+  | "intelligentPagination"
+  | "removePhoto"
+  | "moveSkillsLeft";
 
 export const PRINT_TWEAK_OPTIONS: Array<{ id: PrintTweakId; label: string }> = [
+  { id: "intelligentPagination", label: "Intelligent Pagination" },
   { id: "removePhoto", label: "Remove Photo" },
   { id: "moveSkillsLeft", label: "Skills Moved to Sidebar" },
 ];
@@ -80,6 +84,7 @@ export {
 } from "@/lib/print-text-scale";
 
 export type PrintTweaksState = {
+  intelligentPagination: boolean;
   removePhoto: boolean;
   moveSkillsLeft: boolean;
   sidebarTextScaleEnabled: boolean;
@@ -93,6 +98,9 @@ export function appendPrintTweakParams(
   tweaks: PrintTweaksState,
   templateId: string,
 ): void {
+  if (tweaks.intelligentPagination) {
+    params.set("pagination", "smart");
+  }
   if (tweaks.removePhoto) {
     params.set("removePhoto", "1");
   }

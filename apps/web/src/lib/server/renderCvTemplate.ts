@@ -14,6 +14,7 @@ import {
   resolveRenderLanguage,
 } from "./render/shared";
 import {
+  buildIntelligentPaginationCss,
   buildPrintTextScaleCss,
   DEFAULT_RENDER_TWEAKS,
   injectPrintTweakStyles,
@@ -107,7 +108,12 @@ export async function buildCvTemplateHtml(
               ? renderEuropass(cv, template, slots, labels)
               : renderGeneric(cv, template, slots, labels);
 
-  const tweakCss = buildPrintTextScaleCss(input.templateId, tweaks);
+  const tweakCss = [
+    buildIntelligentPaginationCss(input.templateId, tweaks),
+    buildPrintTextScaleCss(input.templateId, tweaks),
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return {
     html: injectPrintTweakStyles(html, tweakCss),

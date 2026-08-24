@@ -13,6 +13,7 @@ import {
 const photoModeSchema = z.enum(["default", "on-circle", "on-square", "on-original", "off"]).optional();
 
 const printTweakSchema = {
+  intelligentPagination: z.boolean().optional(),
   removePhoto: z.boolean().optional(),
   moveSkillsLeft: z.boolean().optional(),
   sidebarTextScale: z.number().int().min(50).max(200).optional(),

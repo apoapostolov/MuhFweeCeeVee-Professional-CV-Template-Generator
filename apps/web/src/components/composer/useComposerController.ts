@@ -146,6 +146,8 @@ export function useComposerController() {
   const [selectedPhotoMode, setSelectedPhotoMode] = useState<
     PhotoModeOption["id"]
   >("default");
+  const [printTweakIntelligentPagination, setPrintTweakIntelligentPagination] =
+    useState(false);
   const [printTweakRemovePhoto, setPrintTweakRemovePhoto] = useState(false);
   const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
   const [printTweakSidebarTextScaleEnabled, setPrintTweakSidebarTextScaleEnabled] =
@@ -397,6 +399,7 @@ export function useComposerController() {
     appendPrintTweakParams(
       params,
       {
+        intelligentPagination: printTweakIntelligentPagination,
         removePhoto: printTweakRemovePhoto,
         moveSkillsLeft: printTweakMoveSkillsLeft,
         sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
@@ -414,6 +417,7 @@ export function useComposerController() {
     selectedTemplateTheme,
     selectedTemplateThemeOptions.length,
     selectedPhotoMode,
+    printTweakIntelligentPagination,
     printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
     printTweakSidebarTextScaleEnabled,
@@ -665,6 +669,7 @@ export function useComposerController() {
     printTweaksScopeKeyRef.current = nextKey;
     skipPrintTweaksPersistRef.current = true;
     const restored = readPrintTweaksForScope(printTweaksScope);
+    setPrintTweakIntelligentPagination(restored.intelligentPagination);
     setPrintTweakRemovePhoto(restored.removePhoto);
     setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
     setPrintTweakSidebarTextScaleEnabled(restored.sidebarTextScaleEnabled);
@@ -683,6 +688,7 @@ export function useComposerController() {
       return;
     }
     writePrintTweaksForScope(printTweaksScope, {
+      intelligentPagination: printTweakIntelligentPagination,
       removePhoto: printTweakRemovePhoto,
       moveSkillsLeft: printTweakMoveSkillsLeft,
       sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
@@ -692,6 +698,7 @@ export function useComposerController() {
     });
   }, [
     printTweaksScope,
+    printTweakIntelligentPagination,
     printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
     printTweakSidebarTextScaleEnabled,
@@ -2823,6 +2830,7 @@ export function useComposerController() {
     appendPrintTweakParams(
       params,
       {
+        intelligentPagination: printTweakIntelligentPagination,
         removePhoto: printTweakRemovePhoto,
         moveSkillsLeft: printTweakMoveSkillsLeft,
         sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
@@ -2836,10 +2844,12 @@ export function useComposerController() {
   }
 
   function setPrintTweakEnabled(
-    tweakId: "removePhoto" | "moveSkillsLeft",
+    tweakId: "intelligentPagination" | "removePhoto" | "moveSkillsLeft",
     enabled: boolean,
   ): void {
-    if (tweakId === "removePhoto") {
+    if (tweakId === "intelligentPagination") {
+      setPrintTweakIntelligentPagination(enabled);
+    } else if (tweakId === "removePhoto") {
       setPrintTweakRemovePhoto(enabled);
     } else {
       setPrintTweakMoveSkillsLeft(enabled);
@@ -3199,6 +3209,7 @@ export function useComposerController() {
     setSelectedTemplateTheme,
     selectedPhotoMode,
     setSelectedPhotoMode,
+    printTweakIntelligentPagination,
     printTweakRemovePhoto,
     printTweakMoveSkillsLeft,
     printTweakSidebarTextScaleEnabled,

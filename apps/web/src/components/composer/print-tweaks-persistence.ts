@@ -15,6 +15,7 @@ export type PrintTweaksScope = {
 export type PrintTweaksByScopeStore = Record<string, PrintTweaksState>;
 
 export const DEFAULT_PRINT_TWEAKS_STATE: PrintTweaksState = {
+  intelligentPagination: false,
   removePhoto: false,
   moveSkillsLeft: false,
   sidebarTextScaleEnabled: false,
@@ -53,6 +54,7 @@ export function parsePrintTweaksState(value: unknown): PrintTweaksState | null {
   }
   const record = value as Record<string, unknown>;
   return {
+    intelligentPagination: asBoolean(record.intelligentPagination),
     removePhoto: asBoolean(record.removePhoto),
     moveSkillsLeft: asBoolean(record.moveSkillsLeft),
     sidebarTextScaleEnabled: asBoolean(
@@ -89,6 +91,7 @@ export function readLegacyGlobalPrintTweaks(
   }
   try {
     return {
+      intelligentPagination: false,
       removePhoto: storage.getItem(STORAGE_KEYS.printTweakRemovePhoto) === "1",
       moveSkillsLeft:
         storage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1",
@@ -192,6 +195,7 @@ export function writePrintTweaksForScope(
   const key = printTweaksScopeKey(scope);
   const store = readPrintTweaksByScopeStore(storage);
   store[key] = {
+    intelligentPagination: Boolean(tweaks.intelligentPagination),
     removePhoto: Boolean(tweaks.removePhoto),
     moveSkillsLeft: Boolean(tweaks.moveSkillsLeft),
     sidebarTextScaleEnabled: Boolean(tweaks.sidebarTextScaleEnabled),
