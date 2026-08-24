@@ -334,7 +334,7 @@ Buttons: Refresh (primary), Open / Print (secondary).
 
 - Collapsible card `rounded-md border ... bg-[var(--surface-1)] p-3`
 - Show/Hide toggles password + model fields
-- Save = primary accent; credit line compact in nav via `settingsCreditCompact`
+- Save = primary accent; provider quota pills sit immediately left of the Settings button
 
 ---
 

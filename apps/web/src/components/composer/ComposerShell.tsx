@@ -65,7 +65,8 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
             activePanel={c.activePanel}
             onPanelChange={c.setActivePanel}
             settingsTabState={c.openRouter.settingsTabState}
-            settingsCreditCompact={c.settingsCreditCompact}
+            providerQuotas={c.aiProviders.aiSettings?.quotas ?? []}
+            providerNames={Object.fromEntries(c.aiProviders.providers.map((provider) => [provider.id, provider.name]))}
           />
 
           {c.activePanel === "workspace" && (

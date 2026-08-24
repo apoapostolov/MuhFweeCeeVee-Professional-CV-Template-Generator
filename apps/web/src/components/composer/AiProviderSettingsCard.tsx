@@ -60,7 +60,7 @@ function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
   const percent = Math.round((ratioQuota?.ratio ?? 0) * 100);
   const period = ratioQuota?.quota.period === "monthly" ? "Monthly" : "Weekly";
   return (
-    <div className="mt-3 w-full rounded-lg border border-violet-300/25 px-3 py-2.5 text-[11px] text-white shadow-inner" style={{ background: "radial-gradient(120% 90% at 18% 0%, #1c1a24 0%, #303040 58%)" }} title={ratioQuota?.quota.label}>
+    <div className="mt-3 w-full rounded-lg px-3 py-2.5 text-[11px] text-white shadow-inner" style={{ background: "radial-gradient(120% 90% at 18% 0%, #1c1a24 0%, #303040 58%)" }} title={ratioQuota?.quota.label}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="font-medium text-slate-300">{period} quota</span>
         <span className="font-bold tabular-nums text-cyan-300">{percent}% remaining</span>

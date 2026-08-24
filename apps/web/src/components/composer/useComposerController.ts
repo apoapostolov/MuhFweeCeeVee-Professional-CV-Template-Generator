@@ -1577,15 +1577,6 @@ export function useComposerController() {
     setCompanyMetadataEditorView(view);
   }, [companyMetadataYamlDraft]);
 
-  const settingsCreditCompact = useMemo<string>(() => {
-    const quota = aiProviders.aiSettings?.quotas[0];
-    if (quota?.available && quota.remaining !== null) {
-      return `${quota.remaining.toFixed(2)} ${quota.unit} left`;
-    }
-    if (aiProviders.loading) return "checking...";
-    return "AI quota n/a";
-  }, [aiProviders.aiSettings?.quotas, aiProviders.loading]);
-
   function switchLanguage(language: string) {
     setSelectedLanguage(language);
     const next = variantGroup?.[language];
@@ -3295,7 +3286,6 @@ export function useComposerController() {
     selectedPairKey,
     languageOptionChoices,
     formRenderer,
-    settingsCreditCompact,
     switchLanguage,
     switchCvPair,
     openLanguageModal,
