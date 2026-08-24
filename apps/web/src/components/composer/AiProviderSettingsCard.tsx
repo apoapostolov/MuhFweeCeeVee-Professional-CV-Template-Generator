@@ -108,14 +108,28 @@ function ProviderBlock({
           </button>
         </div>
       ) : provider.auth === "oauth" ? (
-        <button
-          className="mt-3 rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 disabled:opacity-50"
-          disabled={controller.saving}
-          onClick={() => controller.openOAuthLogin(provider)}
-          type="button"
-        >
-          {provider.connected ? "Reconnect OAuth" : "Log in with OAuth"}
-        </button>
+        <div className="mt-3">
+          <button
+            className="rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 disabled:opacity-50"
+            disabled={controller.saving || controller.oauthActionProviderId === provider.id}
+            onClick={() => void (provider.connected ? controller.disconnectOAuth(provider) : controller.openOAuthLogin(provider))}
+            type="button"
+          >
+            {provider.connected ? "Disconnect" : "Log in with OAuth"}
+          </button>
+          {controller.oauthCode?.providerId === provider.id ? (
+            <div className="mt-2 flex items-center gap-1.5">
+              <code className="rounded border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold tracking-widest text-slate-900">{controller.oauthCode.value}</code>
+              <button
+                className="rounded border border-[var(--line)] px-2 py-1 text-[10px] font-semibold text-slate-700 hover:text-slate-950"
+                onClick={() => void controller.copyOAuthCode(controller.oauthCode?.value ?? "")}
+                type="button"
+              >
+                Copy
+              </button>
+            </div>
+          ) : null}
+        </div>
       ) : (
         <p className="mt-3 text-[11px] text-slate-600">Local endpoint. No API key required.</p>
       )}

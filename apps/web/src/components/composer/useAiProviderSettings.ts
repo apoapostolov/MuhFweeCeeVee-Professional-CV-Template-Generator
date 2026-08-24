@@ -53,6 +53,8 @@ export function useAiProviderSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reloadingProviderId, setReloadingProviderId] = useState<string | null>(null);
+  const [oauthCode, setOauthCode] = useState<{ providerId: string; value: string } | null>(null);
+  const [oauthActionProviderId, setOauthActionProviderId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
 
   const applyResponse = useCallback((next: AiSettingsResponse, preserveProviderIds: string[] = []) => {
@@ -196,22 +198,75 @@ export function useAiProviderSettings() {
     });
   }, []);
 
+  const refreshSettings = useCallback(async (preserveProviderIds: string[] = providerIds) => {
+    const result = await fetch("/api/settings/ai");
+    const payload = (await result.json()) as AiSettingsResponse & { error?: string };
+    if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to refresh AI providers.");
+    applyResponse(payload, preserveProviderIds);
+  }, [applyResponse, providerIds]);
+
+  const copyOAuthCode = useCallback(async (value: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = value;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
+      const copied = document.execCommand("copy");
+      input.remove();
+      return copied;
+    }
+  }, []);
+
+  const waitForCodexOAuth = useCallback(async (sessionId: string, popup: Window | null, interval: number) => {
+    const attempts = Math.ceil((15 * 60) / Math.max(5, interval));
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, Math.max(5, interval) * 1000));
+      const result = await fetch("/api/settings/ai/oauth/openai-codex/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      const payload = (await result.json()) as { status?: "pending" | "connected"; expiresAt?: string; error?: string };
+      if (!result.ok || payload.error) throw new Error(payload.error ?? "OpenAI Codex login failed.");
+      if (payload.status !== "connected") continue;
+      if (popup && !popup.closed) popup.close();
+      setOauthCode(null);
+      await refreshSettings();
+      setOauthActionProviderId(null);
+      setNotice("OpenAI Codex connected.");
+      return;
+    }
+    throw new Error("OpenAI Codex login expired. Start login again.");
+  }, [refreshSettings]);
+
   const openOAuthLogin = useCallback(async (provider: AiProviderStatus) => {
     const popup = window.open("about:blank", "mfcv-ai-oauth", "popup,width=520,height=720");
     if (!popup) {
       setNotice("The OAuth window was blocked. Allow pop-ups for this site and try again.");
       return;
     }
+    setOauthActionProviderId(provider.id);
 
     try {
       if (provider.id === "openai-codex") {
         const result = await fetch("/api/settings/ai/oauth/openai-codex/start", { method: "POST" });
-        const payload = (await result.json()) as { verificationUri?: string; userCode?: string; error?: string };
-        if (!result.ok || !payload.verificationUri || !payload.userCode) {
+        const payload = (await result.json()) as { sessionId?: string; verificationUri?: string; userCode?: string; interval?: number; error?: string };
+        if (!result.ok || !payload.sessionId || !payload.verificationUri || !payload.userCode) {
           throw new Error(payload.error ?? "OpenAI Codex OAuth login could not start.");
         }
         popup.location.assign(payload.verificationUri);
-        setNotice(`Enter code ${payload.userCode} in the OpenAI Codex login window, then reload this provider.`);
+        setOauthCode({ providerId: provider.id, value: payload.userCode });
+        const copied = await copyOAuthCode(payload.userCode);
+        setNotice(copied ? "Login code copied to the clipboard. Complete login in the opened window." : "Copy the login code shown below into the opened window.");
+        void waitForCodexOAuth(payload.sessionId, popup, payload.interval ?? 5).catch((error: unknown) => {
+          setOauthActionProviderId(null);
+          setNotice(error instanceof Error ? error.message : "OpenAI Codex login failed.");
+        });
         return;
       }
 
@@ -220,16 +275,35 @@ export function useAiProviderSettings() {
         : undefined;
       if (!verificationUri) {
         popup.close();
+        setOauthActionProviderId(null);
         setNotice(`${provider.name} OAuth login is not available in this build.`);
         return;
       }
       popup.location.assign(verificationUri);
+      setOauthActionProviderId(null);
       setNotice(`Complete ${provider.name} login in the opened window, then reload this provider.`);
     } catch (error) {
       popup.close();
+      setOauthActionProviderId(null);
       setNotice(error instanceof Error ? error.message : `${provider.name} OAuth login could not start.`);
     }
-  }, [response]);
+  }, [copyOAuthCode, response, waitForCodexOAuth]);
+
+  const disconnectOAuth = useCallback(async (provider: AiProviderStatus) => {
+    setOauthActionProviderId(provider.id);
+    setNotice("");
+    try {
+      const result = await fetch(`/api/settings/ai/oauth/${provider.id}/disconnect`, { method: "POST" });
+      const payload = (await result.json()) as { error?: string };
+      if (!result.ok || payload.error) throw new Error(payload.error ?? `${provider.name} disconnect failed.`);
+      await refreshSettings();
+      setNotice(`${provider.name} disconnected.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : `${provider.name} disconnect failed.`);
+    } finally {
+      setOauthActionProviderId(null);
+    }
+  }, [refreshSettings]);
 
   return {
     aiSettings: response,
@@ -250,6 +324,10 @@ export function useAiProviderSettings() {
     setModel,
     toggleRole,
     openOAuthLogin,
+    disconnectOAuth,
+    oauthCode,
+    copyOAuthCode,
+    oauthActionProviderId,
     roles: AI_ROLES,
   };
 }
