@@ -298,6 +298,31 @@ export function useAiProviderSettings() {
     throw new Error("OpenAI Codex login expired. Start login again.");
   }, [refreshSettings]);
 
+  const waitForXaiOAuth = useCallback(async (sessionId: string, popup: Window | null, interval: number) => {
+    const attempts = Math.ceil((15 * 60) / Math.max(5, interval));
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, Math.max(5, interval) * 1000));
+      const result = await fetch("/api/settings/ai/oauth/xai-oauth/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      const payload = (await result.json()) as { status?: "pending" | "connected"; interval?: number; error?: string };
+      if (!result.ok || payload.error) throw new Error(payload.error ?? "xAI login failed.");
+      if (payload.status !== "connected") {
+        if (payload.interval && payload.interval !== interval) interval = payload.interval;
+        continue;
+      }
+      if (popup && !popup.closed) popup.close();
+      setOauthCode(null);
+      await refreshSettings();
+      setOauthActionProviderId(null);
+      setNotice("xAI connected.");
+      return;
+    }
+    throw new Error("xAI login expired. Start login again.");
+  }, [refreshSettings]);
+
   const openOAuthLogin = useCallback(async (provider: AiProviderStatus) => {
     const popup = window.open("about:blank", "mfcv-ai-oauth", "popup,width=520,height=720");
     if (!popup) {
@@ -324,6 +349,23 @@ export function useAiProviderSettings() {
         return;
       }
 
+      if (provider.id === "xai-oauth") {
+        const result = await fetch("/api/settings/ai/oauth/xai-oauth/start", { method: "POST" });
+        const payload = (await result.json()) as { sessionId?: string; verificationUri?: string; userCode?: string; interval?: number; error?: string };
+        if (!result.ok || !payload.sessionId || !payload.verificationUri || !payload.userCode) {
+          throw new Error(payload.error ?? "xAI OAuth login could not start.");
+        }
+        popup.location.assign(payload.verificationUri);
+        setOauthCode({ providerId: provider.id, value: payload.userCode });
+        const copied = await copyTextToClipboard(payload.userCode);
+        setNotice(copied ? "Login code copied to the clipboard. Complete login in the opened window." : "Copy the login code shown below into the opened window.");
+        void waitForXaiOAuth(payload.sessionId, popup, payload.interval ?? 5).catch((error: unknown) => {
+          setOauthActionProviderId(null);
+          setNotice(error instanceof Error ? error.message : "xAI login failed.");
+        });
+        return;
+      }
+
       const verificationUri = response?.providers.find((item) => item.id === provider.id)?.id === provider.id
         ? provider.oauthVerificationUri
         : undefined;
@@ -341,7 +383,7 @@ export function useAiProviderSettings() {
       setOauthActionProviderId(null);
       setNotice(error instanceof Error ? error.message : `${provider.name} OAuth login could not start.`);
     }
-  }, [copyTextToClipboard, response, waitForCodexOAuth]);
+  }, [copyTextToClipboard, response, waitForCodexOAuth, waitForXaiOAuth]);
 
   const disconnectOAuth = useCallback(async (provider: AiProviderStatus) => {
     setOauthActionProviderId(provider.id);

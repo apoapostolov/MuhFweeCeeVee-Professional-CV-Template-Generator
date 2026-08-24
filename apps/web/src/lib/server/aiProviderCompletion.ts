@@ -1,6 +1,7 @@
 import { getAiProvider } from "./aiProviderRegistry";
 import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
+import { readXaiOAuthAccessToken } from "./xaiOAuth";
 import type { AiRole } from "./aiProviderTypes";
 
 type ChatMessage = {
@@ -78,7 +79,9 @@ export async function completeAiText(input: CompletionInput): Promise<Completion
   if (!binding) throw new Error(`No AI provider is configured for ${input.role}.`);
   const provider = getAiProvider(binding.providerId);
   if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for ${input.role}.`);
-  const apiKey = await readAiProviderKey(provider.id);
+  const apiKey = provider.id === "xai-oauth"
+    ? await readXaiOAuthAccessToken()
+    : await readAiProviderKey(provider.id);
   if (provider.auth !== "none" && !apiKey) {
     throw new Error(`AI provider ${provider.name} is not configured for ${input.role}.`);
   }

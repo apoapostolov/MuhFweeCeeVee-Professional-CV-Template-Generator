@@ -11,6 +11,7 @@ import {
 } from "./aiModelCache";
 import { maskApiKey, readOpenRouterSettings, writeOpenRouterSettings } from "./openRouterSettings";
 import { repoPath } from "./repoPaths";
+import { readXaiOAuthAccessToken } from "./xaiOAuth";
 import { AI_PROVIDER_REGISTRY, getAiProvider } from "./aiProviderRegistry";
 import type {
   AiCapability,
@@ -207,6 +208,7 @@ function seedModels(providerId: string): AiModel[] {
     openai: ["gpt-4o-mini", "gpt-4.1-mini"],
     anthropic: ["claude-sonnet-4-6", "claude-haiku-4-5"],
     gemini: ["gemini-2.5-flash", "gemini-2.5-pro"],
+    "xai-oauth": ["grok-4", "grok-3-mini"],
     xai: ["grok-4", "grok-3-mini"],
     deepseek: ["deepseek-chat", "deepseek-reasoner"],
     mistral: ["mistral-large-latest", "mistral-small-latest"],
@@ -282,8 +284,13 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
   const seed = seedModels(providerId);
   if (!provider.modelsEndpoint) return providerId === "openai-codex" ? seed : cache?.models ?? seed;
 
-  const apiKey = await readProviderKey(providerId);
-  if (provider.auth === "api_key" && !apiKey) return cache?.models ?? seed;
+  let apiKey = "";
+  try {
+    apiKey = providerId === "xai-oauth" ? await readXaiOAuthAccessToken() : await readProviderKey(providerId);
+  } catch {
+    return cache?.models ?? seed;
+  }
+  if (provider.auth !== "none" && !apiKey) return cache?.models ?? seed;
 
   try {
     const response = await fetch(provider.modelsEndpoint, {
@@ -307,6 +314,7 @@ async function providerStatus(providerId: string): Promise<AiProviderStatus> {
   let expiresAt: string | undefined;
   if (provider.auth === "oauth") {
     try {
+      if (providerId === "xai-oauth") await readXaiOAuthAccessToken();
       const session = JSON.parse(await fs.readFile(path.join(OAUTH_DIR, `${providerId}.json`), "utf8")) as { expiresAt?: string };
       connected = Boolean(session.expiresAt && Date.parse(session.expiresAt) > Date.now());
       expiresAt = session.expiresAt;
