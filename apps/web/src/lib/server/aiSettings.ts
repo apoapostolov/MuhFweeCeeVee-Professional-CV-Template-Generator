@@ -54,7 +54,7 @@ function defaults(model: string, researchModel: string, imageModel: string): AiS
       } satisfies AiRoleBinding,
     ]),
   ) as Record<AiRole, AiRoleBinding>;
-  return { schemaVersion: 1, updatedAt: "", roles, providerModels: {}, thinkingModes: {}, disabledRoles: [] };
+  return { schemaVersion: 1, updatedAt: "", roles, enabledProviders: ["openrouter"], providerModels: {}, thinkingModes: {}, disabledRoles: [] };
 }
 
 function parseEnv(input: string, key: string): string {
@@ -125,6 +125,9 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
         const modelId = typeof record.modelId === "string" ? record.modelId.trim() : "";
         if (getAiProvider(providerId) && modelId) roles[role] = { providerId, modelId };
       }
+      const enabledProviders = Array.isArray(value.enabledProviders)
+        ? [...new Set(value.enabledProviders.filter((providerId): providerId is string => typeof providerId === "string" && Boolean(getAiProvider(providerId))))]
+        : [...new Set(Object.values(roles).map((binding) => binding.providerId).filter((providerId) => Boolean(getAiProvider(providerId))))];
       const providerModels = value.providerModels && typeof value.providerModels === "object" && !Array.isArray(value.providerModels)
         ? Object.fromEntries(Object.entries(value.providerModels).filter(([providerId, modelId]) => getAiProvider(providerId) && typeof modelId === "string" && modelId.trim()).map(([providerId, modelId]) => [providerId, (modelId as string).trim()]))
         : {};
@@ -139,7 +142,7 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
       const disabledRoles = Array.isArray(value.disabledRoles)
         ? value.disabledRoles.filter((role): role is AiRole => typeof role === "string" && AI_ROLES.includes(role as AiRole))
         : [];
-      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, providerModels, thinkingModes, disabledRoles };
+      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, enabledProviders, providerModels, thinkingModes, disabledRoles };
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -155,10 +158,14 @@ export async function writeAiSettingsDocument(
     apiKeys?: Record<string, string>;
     providerModels?: Record<string, string>;
     thinkingModes?: Record<string, string>;
+    enabledProviders?: string[];
   },
 ): Promise<AiSettingsDocument> {
   const current = await readAiSettingsDocument();
   const roles = { ...current.roles };
+  const enabledProviders = input.enabledProviders
+    ? [...new Set(input.enabledProviders.filter((providerId) => Boolean(getAiProvider(providerId))))]
+    : [...(current.enabledProviders ?? [])];
   const providerModels = { ...(current.providerModels ?? {}) };
   const thinkingModes = { ...(current.thinkingModes ?? {}) };
   for (const [key, mode] of Object.entries(input.thinkingModes ?? {})) {
@@ -208,6 +215,7 @@ export async function writeAiSettingsDocument(
     schemaVersion: 1 as const,
     updatedAt: new Date().toISOString(),
     roles,
+    enabledProviders,
     providerModels,
     thinkingModes,
     disabledRoles: [...disabledRoles],

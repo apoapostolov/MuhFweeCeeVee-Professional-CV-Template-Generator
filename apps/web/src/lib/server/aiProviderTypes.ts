@@ -52,6 +52,7 @@ export type AiSettingsDocument = {
   schemaVersion: 1;
   updatedAt: string;
   roles: Record<AiRole, AiRoleBinding>;
+  enabledProviders?: string[];
   providerModels?: Record<string, string>;
   thinkingModes?: Record<string, string>;
   disabledRoles: AiRole[];

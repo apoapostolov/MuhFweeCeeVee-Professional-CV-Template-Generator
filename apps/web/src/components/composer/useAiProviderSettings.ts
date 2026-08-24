@@ -27,16 +27,11 @@ const AI_ROLES: readonly AiRole[] = [
 
 function uniqueProviderIds(response: AiSettingsResponse): string[] {
   const disabledRoles = new Set(response.disabledRoles);
-  const configuredProviderIds = new Set(
-    response.providers.filter((provider) => provider.configured).map((provider) => provider.id),
-  );
-  return [
-    ...new Set(
-      AI_ROLES.filter((role) => !disabledRoles.has(role)).map((role) => response.roles[role]?.providerId)
-        .filter((providerId): providerId is string => Boolean(providerId))
-        .filter((providerId) => configuredProviderIds.has(providerId)),
-    ),
-  ];
+  return [...new Set([
+    ...(response.enabledProviders ?? []),
+    ...AI_ROLES.filter((role) => !disabledRoles.has(role)).map((role) => response.roles[role]?.providerId)
+      .filter((providerId): providerId is string => Boolean(providerId)),
+  ])];
 }
 
 function modelForProvider(response: AiSettingsResponse, providerId: string): string {
@@ -123,18 +118,42 @@ export function useAiProviderSettings() {
     [providerIds, selectedModels, selectedRoles],
   );
 
+  const persistEnabledProviders = useCallback(async (enabledProviders: string[]) => {
+    const result = await fetch("/api/settings/ai", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabledProviders }),
+    });
+    const payload = (await result.json()) as AiSettingsResponse & { error?: string };
+    if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to save AI providers.");
+    applyResponse(payload, enabledProviders);
+  }, [applyResponse]);
+
   const addProvider = useCallback((providerId: string) => {
     if (!providerId || providerIds.includes(providerId)) return;
-    setProviderIds((current) => [...current, providerId]);
+    const next = [...providerIds, providerId];
+    setProviderIds(next);
     setSelectedModels((current) => ({ ...current, [providerId]: "" }));
     setSelectedRoles((current) => ({ ...current, [providerId]: [] }));
     setNotice("");
-  }, [providerIds]);
+    setSaving(true);
+    void persistEnabledProviders(next).catch((error: unknown) => setNotice(error instanceof Error ? error.message : "Failed to save AI providers.")).finally(() => setSaving(false));
+  }, [persistEnabledProviders, providerIds]);
 
-  const removeProvider = useCallback((providerId: string) => {
+  const removeProvider = useCallback(async (providerId: string) => {
     if (AI_ROLES.some((role) => !response?.disabledRoles.includes(role) && response?.roles[role]?.providerId === providerId)) return;
-    setProviderIds((current) => current.filter((id) => id !== providerId));
-  }, [response]);
+    const next = providerIds.filter((id) => id !== providerId);
+    setProviderIds(next);
+    setSaving(true);
+    try {
+      await persistEnabledProviders(next);
+    } catch (error) {
+      setProviderIds(providerIds);
+      setNotice(error instanceof Error ? error.message : "Failed to remove AI provider.");
+    } finally {
+      setSaving(false);
+    }
+  }, [persistEnabledProviders, providerIds, response]);
 
   const reloadProvider = useCallback(async (providerId: string) => {
     setReloadingProviderId(providerId);
