@@ -28,7 +28,7 @@ import {
   readTemplateVisibility,
   writeTemplateVisibility,
 } from "@/lib/cvTemplateVisibility";
-import { cvVariantGroupKey } from "@/lib/server/cvVariants";
+import { cvVariantGroupKeyWithVersion } from "@/lib/server/cvVariants";
 import {
   appendToArrayAtPath,
   asRecord,
@@ -348,7 +348,7 @@ export function useComposerController() {
   const cvPairs = useMemo<CvPair[]>(() => {
     const pairs = new Map<string, CvPair>();
     for (const item of cvItems) {
-      const key = cvVariantGroupKey(item) ?? item.id;
+      const key = cvVariantGroupKeyWithVersion(item) ?? item.id;
       const ts = item.git?.lastCommitAt ? Date.parse(item.git.lastCommitAt) : 0;
       const existing = pairs.get(key);
 
@@ -894,14 +894,14 @@ export function useComposerController() {
     if (!selectedCvMeta) {
       return null;
     }
-    const groupKey = cvVariantGroupKey(selectedCvMeta);
+    const groupKey = cvVariantGroupKeyWithVersion(selectedCvMeta);
     if (!groupKey) {
       const fallbackLang = (selectedCvMeta.language ?? "").toLowerCase();
       return fallbackLang ? { [fallbackLang]: selectedCvMeta } : null;
     }
     const variants: Record<string, CvListResponse["items"][number]> = {};
     for (const item of cvItems) {
-      if (cvVariantGroupKey(item) !== groupKey) {
+      if (cvVariantGroupKeyWithVersion(item) !== groupKey) {
         continue;
       }
       const language = (item.language ?? "").toLowerCase();
@@ -1055,7 +1055,7 @@ export function useComposerController() {
 
   const selectedPairKey = useMemo(() => {
     if (!selectedCvMeta) return "";
-    return cvVariantGroupKey(selectedCvMeta) ?? selectedCvMeta.id;
+    return cvVariantGroupKeyWithVersion(selectedCvMeta) ?? selectedCvMeta.id;
   }, [selectedCvMeta]);
 
   useEffect(() => {

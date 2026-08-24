@@ -1,6 +1,6 @@
 import { STORAGE_KEYS, themeOptionsForTemplate } from "./constants";
 import type { CvListResponse } from "./types";
-import { cvVariantGroupKey } from "@/lib/server/cvVariants";
+import { cvVariantGroupKeyWithVersion } from "@/lib/server/cvVariants";
 
 export type PersistedWorkspacePrefs = {
   cvId: string;
@@ -11,7 +11,7 @@ export type PersistedWorkspacePrefs = {
 };
 
 export function cvPairKeyForItem(item: CvListResponse["items"][number]): string {
-  return cvVariantGroupKey(item) ?? item.id;
+  return cvVariantGroupKeyWithVersion(item) ?? item.id;
 }
 
 export function readPersistedWorkspacePrefs(): PersistedWorkspacePrefs {

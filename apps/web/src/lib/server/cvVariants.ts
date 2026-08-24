@@ -165,6 +165,7 @@ export function siblingLanguage(language: SyncLanguage): SyncLanguage {
 
 export type CvVariantListItem = {
   id: string;
+  displayVersion?: string | null;
   language?: string | null;
   iteration?: string | null;
   target?: string | null;
@@ -192,4 +193,12 @@ export function cvVariantGroupKey(item: CvVariantListItem): string | null {
   }
 
   return null;
+}
+
+/** Groups language variants without collapsing different internal CV versions. */
+export function cvVariantGroupKeyWithVersion(item: CvVariantListItem): string | null {
+  const groupKey = cvVariantGroupKey(item);
+  if (!groupKey) return null;
+  const version = typeof item.displayVersion === "string" ? item.displayVersion.trim() : "";
+  return version ? `${groupKey}:version:${version}` : groupKey;
 }

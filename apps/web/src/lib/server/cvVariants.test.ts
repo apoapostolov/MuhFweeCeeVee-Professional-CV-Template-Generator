@@ -5,6 +5,7 @@ import {
   buildCvVariantId,
   buildCvVariantIdLoose,
   cvVariantGroupKey,
+  cvVariantGroupKeyWithVersion,
   parseCvProfileVariantId,
   parseCvVariantId,
   parseCvVariantIdLoose,
@@ -74,6 +75,22 @@ describe("profile CV ids", () => {
     });
     expect(enKey).toBe("profile:apoapostolov:001");
     expect(bgKey).toBe(enKey);
+  });
+
+  it("keeps different internal versions in separate pairs", () => {
+    const v10 = cvVariantGroupKeyWithVersion({
+      id: "cv_apoapostolov_en_001",
+      displayVersion: "1.0",
+      language: "en",
+    });
+    const v11 = cvVariantGroupKeyWithVersion({
+      id: "cv_apoapostolov_en_001",
+      displayVersion: "1.1",
+      language: "en",
+    });
+    expect(v10).not.toBe(v11);
+    expect(v10).toBe("profile:apoapostolov:001:version:1.0");
+    expect(v11).toBe("profile:apoapostolov:001:version:1.1");
   });
 });
 
