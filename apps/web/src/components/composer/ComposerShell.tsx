@@ -98,7 +98,6 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               loadingWorkspace={c.loadingWorkspace}
               onDownloadPdf={c.downloadPdf}
               onOpenPdf={c.openPdf}
-              onRefreshPreview={c.refreshPreview}
               onSelectPhotoMode={c.setSelectedPhotoMode}
               onPrintTweakChange={c.setPrintTweakEnabled}
               onPrintTextScaleEnabledChange={c.setPrintTextScaleEnabled}

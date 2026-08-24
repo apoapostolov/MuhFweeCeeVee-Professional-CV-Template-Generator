@@ -37,7 +37,6 @@ export type WorkspacePanelProps = {
   selectedCvId: string;
   loadingWorkspace: boolean;
   pdfUrl: string;
-  onRefreshPreview: () => void;
   onOpenPdf: () => void;
   onDownloadPdf: () => void;
 };
@@ -66,7 +65,6 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     selectedCvId,
     loadingWorkspace,
     pdfUrl,
-    onRefreshPreview,
     onOpenPdf,
     onDownloadPdf,
   } = props;
@@ -224,29 +222,33 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
           </div>
         </div>
 
-        <div className="mt-4 grid w-full grid-cols-3 gap-2">
+        <div className="mt-4 grid w-full grid-cols-2 gap-2">
           <button
-            className="min-w-0 rounded-md bg-[var(--accent)] px-1.5 py-2 text-center text-xs font-semibold text-white disabled:opacity-60 sm:text-sm"
-            disabled={!selectedCvId || !selectedTemplateId || loadingWorkspace}
-            onClick={onRefreshPreview}
-            type="button"
-          >
-            Refresh
-          </button>
-          <button
-            className="min-w-0 rounded-md border border-[var(--line)] bg-white px-1.5 py-2 text-center text-xs font-semibold text-slate-800 disabled:opacity-60 sm:text-sm"
+            className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-2 py-2 text-xs font-semibold text-slate-800 disabled:opacity-60 sm:text-sm"
             disabled={!pdfUrl}
             onClick={onOpenPdf}
             type="button"
           >
+            <span aria-hidden="true" className="text-sky-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            </span>
             Open
           </button>
           <button
-            className="min-w-0 rounded-md border border-[var(--line)] bg-[var(--surface-2)] px-1.5 py-2 text-center text-xs font-semibold text-slate-800 disabled:opacity-60 sm:text-sm"
+            className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[var(--line)] bg-[var(--surface-2)] px-2 py-2 text-xs font-semibold text-slate-800 disabled:opacity-60 sm:text-sm"
             disabled={!pdfUrl}
             onClick={onDownloadPdf}
             type="button"
           >
+            <span aria-hidden="true" className="text-violet-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <path d="M6 9V4h12v5M6 18H4a1 1 0 0 1-1-1v-5a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v5a1 1 0 0 1-1 1h-2M6 14h12v6H6v-6Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                <path d="M18 12h.01" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" />
+              </svg>
+            </span>
             Print
           </button>
         </div>
