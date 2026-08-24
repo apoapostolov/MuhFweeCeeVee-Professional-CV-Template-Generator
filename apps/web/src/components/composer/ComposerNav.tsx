@@ -33,11 +33,11 @@ function ProviderQuotaPill({ quota, providerName }: { quota: AiQuota; providerNa
     ? `$${Math.round(quota.remaining ?? 0)}`
     : `${Math.round((quota.remaining ?? 0))}%`;
   return (
-    <span aria-label={`${providerName} quota ${value}`} className="inline-flex min-w-[4.5rem] flex-col rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-1.5 py-1 leading-none shadow-sm" title={quota.label}>
-      <span className="truncate text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">{providerName}</span>
-      <span className="mt-1 flex items-center gap-1 text-[10px] font-bold tabular-nums text-[var(--ink)]">
-        <span>{value}</span>
-        <span aria-hidden="true" className="h-1 w-5 overflow-hidden rounded-full bg-[var(--surface-2)]">
+    <span aria-label={`${providerName} quota ${value}`} className="inline-flex w-max max-w-[12rem] flex-col rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-1.5 py-1 leading-none shadow-sm" title={quota.label}>
+      <span className="max-w-[10rem] truncate text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">{providerName.replace(/\s*\(OAuth\)$/i, "")}</span>
+      <span className="mt-1 flex w-full items-center gap-1 text-[10px] font-bold tabular-nums text-[var(--ink)]">
+        <span className="shrink-0">{value}</span>
+        <span aria-hidden="true" className="h-1 min-w-[1.25rem] flex-1 overflow-hidden rounded-full bg-[var(--surface-2)]">
           <span className="block h-full rounded-full bg-emerald-500" style={{ width: `${Math.round(ratio * 100)}%` }} />
         </span>
       </span>
