@@ -52,11 +52,11 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               themeMode={c.themeMode}
               onThemeModeChange={c.setThemeMode}
             />
-          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="mt-2 text-3xl font-black text-slate-900 md:text-4xl">MuhFweeCeeVee</h1>
-              <p className="mt-2 max-w-3xl text-sm text-[var(--ink-muted)]">
-                Build, edit, and score bilingual CV variants with template-accurate PDF previews.
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-1 md:flex-row md:items-end md:gap-4">
+              <h1 className="text-3xl font-black leading-none text-slate-900 md:text-4xl">MuhFweeCeeVee</h1>
+              <p className="max-w-3xl text-sm leading-tight text-[var(--ink-muted)] md:mb-0.5">
+                Build, edit, and score multilingual CV with wide variety of PDF templates.
               </p>
             </div>
           </div>
