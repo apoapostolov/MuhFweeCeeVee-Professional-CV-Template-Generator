@@ -2817,37 +2817,12 @@ export function useComposerController() {
   }
 
   function downloadPdf() {
-    if (!selectedCvId || !selectedTemplateId) {
+    if (!pdfUrl) {
       return;
     }
-    const approvedPhoto = photoBoothItems.find((item) => item.id === approvedPhotoId) ?? null;
-    const params = new URLSearchParams({
-      cvId: selectedCvId,
-      templateId: selectedTemplateId,
-      download: "1",
-      v: String(Date.now()),
-    });
-    if (selectedTemplateThemeOptions.length > 0) {
-      params.set("theme", selectedTemplateTheme);
-    }
-    params.set("photo", selectedPhotoMode);
-    if (approvedPhoto) {
-      params.set("photoId", approvedPhoto.id);
-    }
-    appendPrintTweakParams(
-      params,
-      {
-        intelligentPagination: printTweakIntelligentPagination,
-        removePhoto: printTweakRemovePhoto,
-        moveSkillsLeft: printTweakMoveSkillsLeft,
-        sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
-        sidebarTextScale: printTweakSidebarTextScale,
-        contentTextScaleEnabled: printTweakContentTextScaleEnabled,
-        contentTextScale: printTweakContentTextScale,
-      },
-      selectedTemplateId,
-    );
-    window.open(`/api/export/pdf?${params.toString()}`, "_blank", "noopener,noreferrer");
+    const url = new URL(pdfUrl, window.location.origin);
+    url.searchParams.set("download", "1");
+    window.open(url.toString(), "_blank", "noopener,noreferrer");
   }
 
   function setPrintTweakEnabled(
