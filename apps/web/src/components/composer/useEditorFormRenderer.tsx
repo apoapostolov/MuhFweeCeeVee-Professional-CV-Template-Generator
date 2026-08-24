@@ -606,7 +606,6 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               {allSubsectionsCollapsed ? "▾" : "▴"}
             </button>
           ) : null}
-          {removeButton}
           <button
             aria-label={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
@@ -625,6 +624,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           >
             ✎
           </button>
+          {removeButton}
         </div>
       );
       const arrayHeaderTitle = (
