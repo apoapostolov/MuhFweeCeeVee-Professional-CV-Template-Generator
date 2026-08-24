@@ -57,6 +57,11 @@ import {
   sectionDraftNeedsSync,
 } from "@/components/composer/section-draft";
 import {
+  mergeYamlVisibility,
+  parseYamlWithVisibilityMarkers,
+  stringifyYamlWithVisibility,
+} from "@/components/composer/yaml-visibility";
+import {
   DEFAULT_UI_LANGUAGE,
   normalizeUiLanguage,
   readUiLanguage,
@@ -1296,12 +1301,14 @@ export function useComposerController() {
 
     if (editorPath === "metadata" && section && typeof section === "object" && !Array.isArray(section)) {
       const { template_visibility: _ignored, ...rest } = section as Record<string, unknown>;
-      const yaml = stringifyYaml(rest);
+      const visibility = readTemplateVisibility(editorCv);
+      const yaml = stringifyYamlWithVisibility(rest, editorPath, visibility);
       setSectionDraft(rest);
       setYamlDraft(yaml);
       setEditorSavedFingerprint(yaml);
     } else {
-      const yaml = stringifyYaml(section);
+      const visibility = readTemplateVisibility(editorCv);
+      const yaml = stringifyYamlWithVisibility(section, editorPath, visibility);
       setSectionDraft(section);
       setYamlDraft(yaml);
       setEditorSavedFingerprint(yaml);
@@ -1432,8 +1439,8 @@ export function useComposerController() {
       return;
     }
     try {
-      const parsed = parseYaml(value);
-      setSectionDraft(coerceSectionDraftForEditorPath(editorPath, parsed));
+      const parsed = parseYamlWithVisibilityMarkers(editorPath, value);
+      setSectionDraft(coerceSectionDraftForEditorPath(editorPath, parsed.value));
       scheduleEditorAutosave();
     } catch {
       // Keep sectionDraft until YAML parses; form still reads via resolveSectionDraftForForm.
@@ -1740,20 +1747,22 @@ export function useComposerController() {
       sectionDraftRef.current,
       yamlDraftRef.current,
     );
+    let parsedYamlVisibility: ReturnType<typeof parseYamlWithVisibilityMarkers> | null = null;
     if (editorViewRef.current === "yaml") {
       try {
-        parsedSection = coerceSectionDraftForEditorPath(sectionKey, parseYaml(yamlDraftRef.current));
+        parsedYamlVisibility = parseYamlWithVisibilityMarkers(sectionKey, yamlDraftRef.current);
+        parsedSection = coerceSectionDraftForEditorPath(sectionKey, parsedYamlVisibility.value);
       } catch {
         return false;
       }
     }
 
     let updated = setByPath(cv, sectionKey, parsedSection) as Record<string, unknown>;
-    if (sectionKey === "metadata") {
-      const visibility = readTemplateVisibility(cv);
-      if (Object.keys(visibility).length > 0) {
-        updated = writeTemplateVisibility(updated, visibility);
-      }
+    const visibility = parsedYamlVisibility
+      ? mergeYamlVisibility(readTemplateVisibility(cv), parsedYamlVisibility)
+      : readTemplateVisibility(cv);
+    if (Object.keys(visibility).length > 0) {
+      updated = writeTemplateVisibility(updated, visibility);
     }
 
     const response = await fetch(`/api/cvs/${encodeURIComponent(cvId)}`, {
@@ -2298,9 +2307,11 @@ export function useComposerController() {
     }
 
     let parsedSection = resolveSectionDraftForForm(editorPath, sectionDraft, yamlDraft);
+    let parsedYamlVisibility: ReturnType<typeof parseYamlWithVisibilityMarkers> | null = null;
     if (editorView === "yaml") {
       try {
-        parsedSection = coerceSectionDraftForEditorPath(editorPath, parseYaml(yamlDraft));
+        parsedYamlVisibility = parseYamlWithVisibilityMarkers(editorPath, yamlDraft);
+        parsedSection = coerceSectionDraftForEditorPath(editorPath, parsedYamlVisibility.value);
       } catch {
         setEditorNotice(uiIsBg(uiLanguage) ? "Невалиден YAML." : "Invalid YAML.");
         return;
@@ -2311,11 +2322,11 @@ export function useComposerController() {
     setEditorNotice("");
     try {
       let updated = setByPath(editorCv, editorPath, parsedSection) as Record<string, unknown>;
-      if (editorPath === "metadata") {
-        const visibility = readTemplateVisibility(editorCv);
-        if (Object.keys(visibility).length > 0) {
-          updated = writeTemplateVisibility(updated, visibility);
-        }
+      const visibility = parsedYamlVisibility
+        ? mergeYamlVisibility(readTemplateVisibility(editorCv), parsedYamlVisibility)
+        : readTemplateVisibility(editorCv);
+      if (Object.keys(visibility).length > 0) {
+        updated = writeTemplateVisibility(updated, visibility);
       }
       const response = await fetch(`/api/cvs/${encodeURIComponent(selectedCvId)}`, {
         method: "PUT",

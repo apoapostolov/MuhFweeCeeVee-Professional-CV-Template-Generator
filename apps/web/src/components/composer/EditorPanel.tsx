@@ -618,6 +618,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                       companyMetadataEditorView === "yaml" ? (
                         <div className={`flex h-full min-h-[400px] flex-col rounded-md border border-[var(--line)] p-2 ${resolvedTheme === "dark" ? "bg-[var(--surface-1)]" : "bg-white"}`}>
                           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">YAML Editor</p>
+                          <p className="mb-2 text-[10px] text-[var(--ink-muted)]">Append ! to a key, for example <code>language!: en</code>, to hide it from the template. Prefix form <code>!language:</code> is also accepted.</p>
                           <textarea
                             className="min-h-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--background)] p-2 font-mono text-xs"
                             onChange={(event) => onCompanyMetadataYamlDraftChange(event.target.value.replace(/\t/g, "  "))}
@@ -662,6 +663,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     ) : editorView === "yaml" ? (
                       <div className={`flex h-full min-h-[400px] flex-col rounded-md border border-[var(--line)] p-2 ${resolvedTheme === "dark" ? "bg-[var(--surface-1)]" : "bg-white"}`}>
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">YAML Editor</p>
+                        <p className="mb-2 text-[10px] text-[var(--ink-muted)]">Append ! to a key, for example <code>language!: en</code>, to hide it from the template. Prefix form <code>!language:</code> is also accepted.</p>
                         <div
                           className={`relative min-h-0 flex-1 overflow-hidden rounded-md border ${
                             resolvedTheme === "dark"
