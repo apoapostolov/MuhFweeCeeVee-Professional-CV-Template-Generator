@@ -1123,7 +1123,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     >
                       {/* Header: click opens details; drag starts after small move */}
                       <div
-                        className={`flex select-none items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(app.priority)} ${
+                        className={`relative flex select-none items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(app.priority)} ${
                           busy
                             ? "cursor-default"
                             : "cursor-grab active:cursor-grabbing"
@@ -1136,8 +1136,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             : "Click: details · drag: move column"
                         }
                       >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[11px] font-bold leading-snug text-white">
+                        <div className="min-w-0 w-full">
+                          <p className="truncate pr-8 text-[11px] font-bold leading-snug text-white">
                             {app.job_title || app.packet_title || "—"}
                           </p>
                           <div className="mt-0.5 flex min-w-0 items-baseline justify-between gap-2">
@@ -1154,7 +1154,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           const stale = days > 30;
                           return (
                             <span
-                              className={`shrink-0 pt-0.5 text-[13px] font-bold tabular-nums leading-none ${
+                              className={`absolute right-2.5 top-2.5 text-[13px] font-bold tabular-nums leading-none ${
                                 stale ? "text-rose-300" : "text-white/90"
                               }`}
                               title={
@@ -1289,9 +1289,9 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
         {view === "board" && drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
-            <div className={`flex items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(dragApp.priority)}`}>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold leading-snug text-white">
+            <div className={`relative flex items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(dragApp.priority)}`}>
+              <div className="min-w-0 w-full">
+                <p className="truncate pr-8 text-[11px] font-bold leading-snug text-white">
                   {dragApp.job_title || dragApp.packet_title || "—"}
                 </p>
                 <div className="mt-0.5 flex min-w-0 items-baseline justify-between gap-2">
@@ -1308,7 +1308,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 const stale = days > 30;
                 return (
                   <span
-                    className={`shrink-0 pt-0.5 text-[13px] font-bold tabular-nums leading-none ${
+                    className={`absolute right-2.5 top-2.5 text-[13px] font-bold tabular-nums leading-none ${
                       stale ? "text-rose-300" : "text-white/90"
                     }`}
                   >
