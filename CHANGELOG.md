@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0] - 2026-08-24
 
-1.4.0 adds per-job AI providers, an approve-before-edit copilot, a fuller application trail with backups, and Print Room version order. Local editing and ATS checks still work with no model.
+1.4.0 is the job-search loop on one local workspace: write a CV, review it, track applications, print a PDF. AI and the copilot stay optional.
 
 ### Added
 
-- **Per-job AI providers.** Pick a provider and model for a given job. Codex signs in with a weekly quota; xAI uses device login and reasoning levels. Hosted and local endpoints both work. Limits and a rough cost show before a large request.
+- **Optional AI.** Pick a provider and model when you want help. Hosted and local endpoints both work. Limits and a rough cost show before a large request.
 - **MuhFwee AI copilot.** Open a private assistant from any workspace screen. It reads current context, shows its steps, and waits for approval before editing a CV, research record, letter, or application. Conversations can be searched, archived, or saved as playbooks.
-- **CV review stored on the document.** ATS and writing-review findings stay with each CV. Compare by provider or section. Detector hits are findings, not a score when evidence is missing. Skill ratings accept half-steps. Experience subsections can be added or removed. Hidden YAML fields are preserved.
+- **CV review stored on the document.** ATS and writing-review findings stay with each CV. Compare by provider or section. Detector hits are findings, not a score when evidence is missing. Skill ratings accept half-steps.
 - **Application trail.** Details and company notes sit with snapshots and a live timeline. Track contacts and next actions, see what is due today, and freeze the exact CV, letter, photo, and PDF that went out.
 - **Portable workspace backups.** Export the workspace records plus photos, evidence, and submitted materials. Restore merges matching records and leaves other local work alone.
 - **Print Room version order.** Presentation choices are remembered per CV, language, and template. Page-break help stays conservative. Exported PDFs keep author, title, and subject. Matching names sit together, newest semantic version first. Clone a version from the editor or Print Room.
