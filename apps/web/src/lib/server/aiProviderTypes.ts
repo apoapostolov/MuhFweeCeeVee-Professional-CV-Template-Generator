@@ -38,18 +38,22 @@ export type AiModel = {
   contextLength: number | null;
   inputPricePer1M: number | null;
   outputPricePer1M: number | null;
+  thinkingLevels?: string[];
   live: boolean;
 };
 
 export type AiRoleBinding = {
   providerId: string;
   modelId: string;
+  thinkingMode?: string;
 };
 
 export type AiSettingsDocument = {
   schemaVersion: 1;
   updatedAt: string;
   roles: Record<AiRole, AiRoleBinding>;
+  providerModels?: Record<string, string>;
+  thinkingModes?: Record<string, string>;
   disabledRoles: AiRole[];
 };
 

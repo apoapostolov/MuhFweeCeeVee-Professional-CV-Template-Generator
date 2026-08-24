@@ -18,6 +18,7 @@ export type OpenRouterModelOption = {
   mixedPricePer1M: number | null;
   isFree: boolean;
   supportsImageGeneration: boolean;
+  thinkingLevels?: string[];
   pricePerImageUsd?: number | null;
   pricePerImageMaxUsd?: number | null;
   pricePerImageNote?: string | null;
@@ -177,6 +178,9 @@ async function fetchModelsFromOpenRouter(apiKey?: string): Promise<OpenRouterMod
       const isFree =
         (promptPricePer1M ?? 0) <= 0.0000001 &&
         (completionPricePer1M ?? 0) <= 0.0000001;
+      const thinkingLevels = Array.isArray(item.supported_parameters) && item.supported_parameters.some((parameter) => String(parameter).toLowerCase().includes("reasoning"))
+        ? ["low", "medium", "high", "xhigh"]
+        : [];
       return {
         id,
         name: (item.name ?? "").trim() || id,
@@ -189,6 +193,7 @@ async function fetchModelsFromOpenRouter(apiKey?: string): Promise<OpenRouterMod
         mixedPricePer1M,
         isFree,
         supportsImageGeneration: supportsImageGenerationFromModel(item),
+        ...(thinkingLevels.length > 0 ? { thinkingLevels } : {}),
       } satisfies OpenRouterModelOption;
     })
     .filter((item): item is OpenRouterModelOption => Boolean(item))

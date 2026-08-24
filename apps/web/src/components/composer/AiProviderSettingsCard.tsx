@@ -30,6 +30,13 @@ function roleLabel(role: AiRole, language: UiLanguageCode): string {
   return ROLE_LABELS[role][language === "bg" ? 1 : 0];
 }
 
+function thinkingLabel(level: string): string {
+  const normalized = level.trim().toLowerCase();
+  if (normalized === "none") return "None";
+  if (normalized === "xhigh") return "Very High";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 function StatusLine({ provider }: { provider: AiProviderStatus }): JSX.Element {
   const status = provider.auth === "oauth"
     ? provider.connected ? "Connected" : "Not connected"
@@ -172,7 +179,7 @@ function ProviderBlock({
       )}
 
       <div className="mt-3 flex items-end gap-1.5">
-        <label className="min-w-0 flex-1 text-[11px] font-medium text-slate-700">
+        <label className="min-w-0 flex-[2_2_0%] text-[11px] font-medium text-slate-700">
           {isBg ? "Модел" : "Model"}
           <select
             className={`${CONTROL_CLASS} mt-1`}
@@ -186,6 +193,20 @@ function ProviderBlock({
             ) : null}
             {models.map((model) => (
               <option key={model.id} value={model.id}>{model.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="min-w-0 flex-[1_1_0%] text-[11px] font-medium text-slate-700">
+          {isBg ? "Мислене" : "Thinking"}
+          <select
+            className={`${CONTROL_CLASS} mt-1`}
+            disabled={!block?.modelId}
+            onChange={(event) => controller.setThinking(provider.id, event.target.value)}
+            value={controller.selectedThinking[provider.id] ?? "none"}
+          >
+            <option value="none">None</option>
+            {(models.find((model) => model.id === block?.modelId)?.thinkingLevels ?? []).map((level) => (
+              <option key={level} value={level}>{thinkingLabel(level)}</option>
             ))}
           </select>
         </label>

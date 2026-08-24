@@ -29,6 +29,8 @@ export async function PUT(request: Request): Promise<NextResponse> {
       roles?: Partial<Record<AiRole, { providerId?: unknown; modelId?: unknown }>>;
       clearRoles?: unknown;
       apiKeys?: Record<string, unknown>;
+      providerModels?: Record<string, unknown>;
+      thinkingModes?: Record<string, unknown>;
     };
     const roles = Object.fromEntries(
       Object.entries(body.roles ?? []).flatMap(([role, value]) => {
@@ -44,7 +46,13 @@ export async function PUT(request: Request): Promise<NextResponse> {
     const apiKeys = Object.fromEntries(
       Object.entries(body.apiKeys ?? []).filter(([, value]) => typeof value === "string"),
     ) as Record<string, string>;
-    await writeAiSettingsDocument({ roles, clearRoles, apiKeys });
+    const providerModels = Object.fromEntries(
+      Object.entries(body.providerModels ?? []).filter(([, value]) => typeof value === "string"),
+    ) as Record<string, string>;
+    const thinkingModes = Object.fromEntries(
+      Object.entries(body.thinkingModes ?? []).filter(([, value]) => typeof value === "string"),
+    ) as Record<string, string>;
+    await writeAiSettingsDocument({ roles, clearRoles, apiKeys, providerModels, thinkingModes });
     return NextResponse.json({ ok: true, ...(await getAiSettingsResponse(true)) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save AI settings.";

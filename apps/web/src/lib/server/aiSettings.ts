@@ -54,7 +54,7 @@ function defaults(model: string, researchModel: string, imageModel: string): AiS
       } satisfies AiRoleBinding,
     ]),
   ) as Record<AiRole, AiRoleBinding>;
-  return { schemaVersion: 1, updatedAt: "", roles, disabledRoles: [] };
+  return { schemaVersion: 1, updatedAt: "", roles, providerModels: {}, thinkingModes: {}, disabledRoles: [] };
 }
 
 function parseEnv(input: string, key: string): string {
@@ -125,10 +125,21 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
         const modelId = typeof record.modelId === "string" ? record.modelId.trim() : "";
         if (getAiProvider(providerId) && modelId) roles[role] = { providerId, modelId };
       }
+      const providerModels = value.providerModels && typeof value.providerModels === "object" && !Array.isArray(value.providerModels)
+        ? Object.fromEntries(Object.entries(value.providerModels).filter(([providerId, modelId]) => getAiProvider(providerId) && typeof modelId === "string" && modelId.trim()).map(([providerId, modelId]) => [providerId, (modelId as string).trim()]))
+        : {};
+      const thinkingModes = value.thinkingModes && typeof value.thinkingModes === "object" && !Array.isArray(value.thinkingModes)
+        ? Object.fromEntries(Object.entries(value.thinkingModes).filter(([, mode]) => typeof mode === "string" && mode.trim()).map(([key, mode]) => [key, (mode as string).trim()]))
+        : {};
+      for (const role of AI_ROLES) {
+        const binding = roles[role];
+        const mode = binding ? thinkingModes[`${binding.providerId}:${binding.modelId}`] : undefined;
+        if (binding && mode && mode !== "none") roles[role] = { ...binding, thinkingMode: mode };
+      }
       const disabledRoles = Array.isArray(value.disabledRoles)
         ? value.disabledRoles.filter((role): role is AiRole => typeof role === "string" && AI_ROLES.includes(role as AiRole))
         : [];
-      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, disabledRoles };
+      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, providerModels, thinkingModes, disabledRoles };
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -142,10 +153,26 @@ export async function writeAiSettingsDocument(
     roles?: Partial<Record<AiRole, AiRoleBinding>>;
     clearRoles?: AiRole[];
     apiKeys?: Record<string, string>;
+    providerModels?: Record<string, string>;
+    thinkingModes?: Record<string, string>;
   },
 ): Promise<AiSettingsDocument> {
   const current = await readAiSettingsDocument();
   const roles = { ...current.roles };
+  const providerModels = { ...(current.providerModels ?? {}) };
+  const thinkingModes = { ...(current.thinkingModes ?? {}) };
+  for (const [key, mode] of Object.entries(input.thinkingModes ?? {})) {
+    if (typeof mode === "string" && mode.trim()) thinkingModes[key] = mode.trim();
+  }
+  for (const [providerId, modelId] of Object.entries(input.providerModels ?? {})) {
+    if (!getAiProvider(providerId) || typeof modelId !== "string" || !modelId.trim()) continue;
+    const normalizedModelId = modelId.trim();
+    providerModels[providerId] = normalizedModelId;
+    const thinkingMode = thinkingModes[`${providerId}:${normalizedModelId}`];
+    for (const role of AI_ROLES) {
+      if (roles[role]?.providerId === providerId) roles[role] = { providerId, modelId: normalizedModelId, ...(thinkingMode && thinkingMode !== "none" ? { thinkingMode } : {}) };
+    }
+  }
   const disabledRoles = new Set(current.disabledRoles);
   for (const role of input.clearRoles ?? []) {
     if (AI_ROLES.includes(role)) disabledRoles.add(role);
@@ -155,7 +182,9 @@ export async function writeAiSettingsDocument(
     if (!candidate) continue;
     const provider = getAiProvider(candidate.providerId);
     if (!provider || !candidate.modelId.trim()) throw new Error(`Unknown provider or empty model for ${role}.`);
-    roles[role] = { providerId: provider.id, modelId: candidate.modelId.trim() };
+    const modelId = candidate.modelId.trim();
+    const thinkingMode = thinkingModes[`${provider.id}:${modelId}`];
+    roles[role] = { providerId: provider.id, modelId, ...(thinkingMode && thinkingMode !== "none" ? { thinkingMode } : {}) };
     disabledRoles.delete(role);
   }
   const openRouterRoles = Object.fromEntries(
@@ -179,6 +208,8 @@ export async function writeAiSettingsDocument(
     schemaVersion: 1 as const,
     updatedAt: new Date().toISOString(),
     roles,
+    providerModels,
+    thinkingModes,
     disabledRoles: [...disabledRoles],
   };
   await fs.mkdir(path.dirname(SETTINGS_FILE), { recursive: true });
@@ -231,6 +262,7 @@ function seedModels(providerId: string): AiModel[] {
     id,
     name: names[providerId]?.[id] ?? id,
     capabilities: providerId === "openai-codex" && id !== "gpt-5.3-codex-spark" ? ["chat", "vision"] as AiCapability[] : ["chat"] as AiCapability[],
+    thinkingLevels: providerId === "openai-codex" ? ["low", "medium", "high", "xhigh"] : undefined,
     contextLength: null,
     inputPricePer1M: null,
     outputPricePer1M: null,
@@ -253,6 +285,10 @@ function normalizeModels(providerId: string, payload: unknown): AiModel[] {
       id,
       name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : id,
       capabilities: ["chat"] as AiCapability[],
+      thinkingLevels: (() => {
+        const parameters = Array.isArray(value.supported_parameters) ? value.supported_parameters.map((item) => String(item).toLowerCase()) : [];
+        return parameters.some((item) => item.includes("reasoning")) ? ["low", "medium", "high", "xhigh"] : undefined;
+      })(),
       contextLength: typeof value.context_length === "number" ? value.context_length : null,
       inputPricePer1M: null,
       outputPricePer1M: null,
@@ -276,6 +312,7 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
       contextLength: model.contextLength,
       inputPricePer1M: model.promptPricePer1M,
       outputPricePer1M: model.completionPricePer1M,
+      thinkingLevels: model.thinkingLevels,
       live: !result.fromCache,
     }));
   }

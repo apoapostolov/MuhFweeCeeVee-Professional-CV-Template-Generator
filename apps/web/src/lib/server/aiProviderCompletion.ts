@@ -146,6 +146,7 @@ export async function completeAiText(input: CompletionInput): Promise<Completion
       messages: input.messages,
       temperature: input.temperature,
       max_tokens: input.maxTokens,
+      ...(binding.thinkingMode && binding.thinkingMode !== "none" ? { reasoning_effort: binding.thinkingMode } : {}),
     }),
     signal: AbortSignal.timeout(30000),
   });

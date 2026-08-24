@@ -41,13 +41,14 @@ function uniqueProviderIds(response: AiSettingsResponse): string[] {
 
 function modelForProvider(response: AiSettingsResponse, providerId: string): string {
   const role = AI_ROLES.find((candidate) => !response.disabledRoles.includes(candidate) && response.roles[candidate]?.providerId === providerId);
-  return role ? response.roles[role].modelId : response.models.find((model) => model.providerId === providerId)?.id ?? "";
+  return response.providerModels?.[providerId] ?? (role ? response.roles[role].modelId : response.models.find((model) => model.providerId === providerId)?.id ?? "");
 }
 
 export function useAiProviderSettings() {
   const [response, setResponse] = useState<AiSettingsResponse | null>(null);
   const [providerIds, setProviderIds] = useState<string[]>([]);
   const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
+  const [selectedThinking, setSelectedThinking] = useState<Record<string, string>>({});
   const [selectedRoles, setSelectedRoles] = useState<Record<string, AiRole[]>>({});
   const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,14 @@ export function useAiProviderSettings() {
       const updated = { ...current };
       for (const providerId of nextProviderIds) {
         updated[providerId] = modelForProvider(next, providerId) || updated[providerId] || "";
+      }
+      return updated;
+    });
+    setSelectedThinking((current) => {
+      const updated = { ...current };
+      for (const providerId of nextProviderIds) {
+        const modelId = modelForProvider(next, providerId);
+        updated[providerId] = next.thinkingModes?.[`${providerId}:${modelId}`] ?? updated[providerId] ?? "none";
       }
       return updated;
     });
@@ -168,9 +177,42 @@ export function useAiProviderSettings() {
     }
   }, [apiKeyInputs, applyResponse, providerIds]);
 
+  const persistProviderSelection = useCallback(async (providerId: string, modelId: string, thinkingMode?: string) => {
+    const result = await fetch("/api/settings/ai", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        providerModels: { [providerId]: modelId },
+        ...(thinkingMode ? { thinkingModes: { [`${providerId}:${modelId}`]: thinkingMode } } : {}),
+      }),
+    });
+    const payload = (await result.json()) as AiSettingsResponse & { error?: string };
+    if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to save AI model settings.");
+    applyResponse(payload, providerIds);
+  }, [applyResponse, providerIds]);
+
   const setModel = useCallback((providerId: string, modelId: string) => {
+    const model = models.find((candidate) => candidate.providerId === providerId && candidate.id === modelId);
+    const thinkingMode = model?.thinkingLevels?.includes(selectedThinking[providerId] ?? "") ? selectedThinking[providerId] : "none";
     setSelectedModels((current) => ({ ...current, [providerId]: modelId }));
-  }, []);
+    setSelectedThinking((current) => ({ ...current, [providerId]: thinkingMode ?? "none" }));
+    setSaving(true);
+    setNotice("");
+    void persistProviderSelection(providerId, modelId, thinkingMode ?? "none").catch((error: unknown) => {
+      setNotice(error instanceof Error ? error.message : "Failed to save AI model settings.");
+    }).finally(() => setSaving(false));
+  }, [models, persistProviderSelection, selectedThinking]);
+
+  const setThinking = useCallback((providerId: string, thinkingMode: string) => {
+    const modelId = selectedModels[providerId] ?? "";
+    if (!modelId) return;
+    setSelectedThinking((current) => ({ ...current, [providerId]: thinkingMode }));
+    setSaving(true);
+    setNotice("");
+    void persistProviderSelection(providerId, modelId, thinkingMode).catch((error: unknown) => {
+      setNotice(error instanceof Error ? error.message : "Failed to save thinking mode.");
+    }).finally(() => setSaving(false));
+  }, [persistProviderSelection, selectedModels]);
 
   const toggleRole = useCallback(async (providerId: string, role: AiRole) => {
     const block = blocks.find((item) => item.providerId === providerId);
@@ -422,6 +464,8 @@ export function useAiProviderSettings() {
     getModelPricingForRole,
     saveApiKey,
     setModel,
+    setThinking,
+    selectedThinking,
     toggleRole,
     openOAuthLogin,
     disconnectOAuth,
