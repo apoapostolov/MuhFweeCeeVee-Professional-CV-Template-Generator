@@ -33,42 +33,36 @@ export function EditorAutosaveStatusPill({
   if (!label) {
     return null;
   }
-  if (activity === "pending" || activity === "saving") {
-    return (
-      <span
-        aria-label={label}
-        className="inline-flex h-6 w-6 items-center justify-center text-amber-700"
-        role="status"
-        title={label}
-      >
-        <svg
-          aria-hidden="true"
-          className={`h-4 w-4 motion-reduce:animate-none ${activity === "saving" ? "animate-pulse" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M5 3.75h11.69L19.25 6.3V20.25H5V3.75Z"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="M8 3.75v5h7v-5M8.25 20.25v-5.5h7.5v5.5"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-        </svg>
-        <span className="sr-only">{label}</span>
-      </span>
-    );
-  }
+  const isSaving = activity === "pending" || activity === "saving";
   return (
-    <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
-      {label}
+    <span
+      aria-label={label}
+      className={`inline-flex h-6 w-6 items-center justify-center ${isSaving ? "text-amber-700" : "text-emerald-600"}`}
+      role="status"
+      title={label}
+    >
+      <svg
+        aria-hidden="true"
+        className={`h-4 w-4 motion-reduce:animate-none ${activity === "saving" ? "animate-pulse" : ""}`}
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M5 3.75h11.69L19.25 6.3V20.25H5V3.75Z"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.7"
+        />
+        <path
+          d="M8 3.75v5h7v-5M8.25 20.25v-5.5h7.5v5.5"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.7"
+        />
+      </svg>
+      <span className="sr-only">{label}</span>
     </span>
   );
 }
