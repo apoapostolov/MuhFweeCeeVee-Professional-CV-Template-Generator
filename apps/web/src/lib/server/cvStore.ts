@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { parse, stringify } from "yaml";
+import { withCvReviewScoreDefaults } from "@muhfweeceevee/schemas";
 
 import { repoPath } from "./repoPaths";
 import {
@@ -88,6 +89,7 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
     metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
       ? (metadataRaw as Record<string, unknown>)
       : {};
+  const reviewMetadata = withCvReviewScoreDefaults(metadata);
 
   const cvId = String(input.id ?? "");
   const profile = parseCvProfileVariantId(cvId);
@@ -98,7 +100,7 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
   return {
     ...input,
     metadata: {
-      ...metadata,
+      ...reviewMetadata,
       language:
         (inferred?.language as string | undefined) ??
         (metadata.language as string | undefined) ??
@@ -221,7 +223,16 @@ export async function readCv(cvId: string): Promise<CvDocument | null> {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new Error(`CV file ${cvId} is not a YAML object.`);
     }
-    return parsed as CvDocument;
+    const document = parsed as CvDocument;
+    const metadataRaw = document.metadata;
+    const metadata =
+      metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
+        ? (metadataRaw as Record<string, unknown>)
+        : {};
+    return {
+      ...document,
+      metadata: withCvReviewScoreDefaults(metadata),
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return null;

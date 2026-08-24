@@ -1,11 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  defaultArrayEntry,
   defaultWrapCharsPerLine,
   editorFormWrapCharsPerLine,
   estimateTextareaRows,
   shouldUseTextarea,
 } from "./form-path-utils";
+
+describe("review score array defaults", () => {
+  it("creates editable provider and score rows", () => {
+    expect(defaultArrayEntry("metadata.ats_scores", null)).toEqual({ label: "", score: "" });
+    expect(defaultArrayEntry("metadata.detector_scores", null)).toEqual({
+      label: "",
+      score: "",
+      section_scores: [],
+    });
+    expect(defaultArrayEntry("metadata.detector_scores[0].section_scores", null)).toEqual({
+      label: "",
+      score: "",
+    });
+  });
+});
 
 describe("shouldUseTextarea", () => {
   it("keeps short EN copy on a single-line input when under wrap width", () => {

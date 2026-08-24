@@ -45,6 +45,10 @@ metadata:
 - `experience.start_date <= experience.end_date` when `end_date` exists.
 - Overlapping roles require explicit `parallel_role: true`.
 - Unknown fields are allowed for forward compatibility.
+- Review scores are optional metadata arrays. Each entry stores the provider in
+  `label` and its exact result in free-form string `score`. Detector entries may
+  include `section_scores[]` using the same `label` and `score` shape for jobs,
+  frontmatter, backmatter, or other stable scan scopes.
 - Experience publication links are supported as:
   `experience[].publication_links[]` with object shape:
   - `url` (required for rendering link)
@@ -57,6 +61,25 @@ metadata:
 - Supported languages: `bg`, `en`
 - Iteration format: 4 digits (`0001`, `0002`, ...)
 - Example: `data/cvs/cv_en_john_doe.yaml`
+
+## Review Score Metadata
+
+```yaml
+metadata:
+  ats_scores:
+    - label: ApplyCove
+      score: "81/100; parseability 100"
+  detector_scores:
+    - label: Sapling
+      score: "mixed section results"
+      section_scores:
+        - label: Main experience section
+          score: "5.1% AI"
+```
+
+Scores remain strings because providers expose incompatible scales,
+classifications, compound results, and invalid or stale statuses. Do not average
+providers or convert missing, blocked, stale, or invalid results to zero.
 
 ## Seed Example in this repo
 

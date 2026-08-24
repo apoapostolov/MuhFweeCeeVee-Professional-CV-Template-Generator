@@ -17,6 +17,20 @@ documentation changes. User-facing summaries belong in `CHANGELOG.md`.
 
 ## Recent Entries
 
+### 2026-08-24 - Versioned ATS and detector score metadata
+
+- Context: Keep historical résumé-review results attached to the exact CV
+  version and scan scope that produced them.
+- Contracts: Added typed `metadata.ats_scores[]` and
+  `metadata.detector_scores[]` entries with free-form provider results;
+  detector rows may contain `section_scores[]`.
+- Workflow: Missing groups receive presets for ApplyCove, CVParserPro, the local
+  ATS checker, Sapling, QuillBot, GPTZero, and the local writing detector. The
+  Metadata editor supports additional provider and section rows.
+- Validation: Focused schema and editor tests pass in both paired repositories.
+- Follow-up risk: Provider scores remain user-entered until the supported
+  Sapling and GPTZero backend connectors are implemented.
+
 ### 2026-07-29 - MuhFwee AI Phase 3 power-user workflows
 
 - Context: Make the copilot reusable across a large job-search portfolio

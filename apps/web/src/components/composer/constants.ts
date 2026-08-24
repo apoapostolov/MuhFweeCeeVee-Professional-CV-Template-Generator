@@ -274,7 +274,43 @@ export const FIELD_META: Record<string, FieldMeta> = {
     bg: { label: "Допълнителни секции", description: "Проекти, публикации, интереси и допълнения." },
   },
   metadata: {
-    en: { label: "Metadata", description: "Internal CV naming, versioning, and variant tags." },
-    bg: { label: "Метаданни", description: "Вътрешно име, версия и варианти на CV." },
+    en: { label: "Metadata", description: "Internal CV naming, versioning, review scores, and variant tags." },
+    bg: { label: "Метаданни", description: "Вътрешно име, версия, оценки и варианти на CV." },
+  },
+  "metadata.ats_scores": {
+    en: { label: "ATS Scores", description: "Provider results kept as free-form text." },
+    bg: { label: "ATS оценки", description: "Резултати от доставчици като свободен текст." },
+  },
+  "metadata.ats_scores[].label": {
+    en: { label: "Provider", description: "ATS grader or parser name." },
+    bg: { label: "Доставчик", description: "Име на ATS оценителя или парсера." },
+  },
+  "metadata.ats_scores[].score": {
+    en: { label: "Score", description: "Exact provider result or concise notes." },
+    bg: { label: "Оценка", description: "Точен резултат или кратка бележка." },
+  },
+  "metadata.detector_scores": {
+    en: { label: "Detector Scores", description: "AI-writing detector results and section-level checks." },
+    bg: { label: "Детекторни оценки", description: "Резултати от AI детектори и проверки по секция." },
+  },
+  "metadata.detector_scores[].label": {
+    en: { label: "Provider", description: "Detector provider name." },
+    bg: { label: "Доставчик", description: "Име на детектора." },
+  },
+  "metadata.detector_scores[].score": {
+    en: { label: "Overall Score", description: "Exact full-scope result or status." },
+    bg: { label: "Обща оценка", description: "Точен общ резултат или статус." },
+  },
+  "metadata.detector_scores[].section_scores": {
+    en: { label: "Section Scores", description: "Optional results for jobs, frontmatter, or backmatter." },
+    bg: { label: "Оценки по секция", description: "Резултати за позиции, начало или край на CV." },
+  },
+  "metadata.detector_scores[].section_scores[].label": {
+    en: { label: "Section", description: "Job or major CV section checked." },
+    bg: { label: "Секция", description: "Проверена позиция или основна CV секция." },
+  },
+  "metadata.detector_scores[].section_scores[].score": {
+    en: { label: "Score", description: "Exact detector result for this section." },
+    bg: { label: "Оценка", description: "Точен резултат за тази секция." },
   },
 };

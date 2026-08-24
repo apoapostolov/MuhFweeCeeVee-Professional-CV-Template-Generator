@@ -35,13 +35,13 @@ describe("workspace-persistence", () => {
   ];
 
   it("builds stable pair keys", () => {
-    expect(cvPairKeyForItem(items[0])).toBe("iter:1:acme");
+    expect(cvPairKeyForItem(items[0])).toBe("iter:1:acme:version:v1");
   });
 
   it("restores CV variant by pair key and language", () => {
     const selected = resolveCvItemFromPersistedPrefs(items, {
       cvId: "stale-id",
-      cvPairKey: "iter:1:acme",
+      cvPairKey: "iter:1:acme:version:v1",
       language: "bg",
       templateId: "",
       templateTheme: "default",

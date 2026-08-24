@@ -55,6 +55,27 @@ describe("validateCvV1", () => {
     expect(validateCvV1JsonSchema(doc).valid).toBe(false);
   });
 
+  it("accepts free-form ATS and detector scores with section results", () => {
+    const raw = readFileSync(personalCvPath, "utf8");
+    const doc = parse(raw) as Record<string, unknown>;
+    const metadata = doc.metadata as Record<string, unknown>;
+    metadata.ats_scores = [{ label: "ApplyCove", score: "81/100" }];
+    metadata.detector_scores = [{
+      label: "Sapling",
+      score: "mixed section results",
+      section_scores: [{ label: "Frontmatter", score: "5.1% AI" }],
+    }];
+    expect(validateCvV1(doc).valid).toBe(true);
+  });
+
+  it("rejects numeric review scores because provider results are stored verbatim", () => {
+    const raw = readFileSync(personalCvPath, "utf8");
+    const doc = parse(raw) as Record<string, unknown>;
+    const metadata = doc.metadata as Record<string, unknown>;
+    metadata.ats_scores = [{ label: "ApplyCove", score: 81 }];
+    expect(validateCvV1JsonSchema(doc).valid).toBe(false);
+  });
+
   it("json schema rejects object missing required top-level keys", () => {
     const result = validateCvV1JsonSchema({ schema: { id: "x", version: "1", profile_type: "a", locale: "en" } });
     expect(result.valid).toBe(false);

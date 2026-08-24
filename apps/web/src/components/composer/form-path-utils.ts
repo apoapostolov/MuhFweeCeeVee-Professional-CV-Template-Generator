@@ -210,6 +210,19 @@ export const ARRAY_ITEM_TEMPLATES: Record<string, unknown> = {
     application_context: "",
     interview_context: "",
   },
+  "metadata.ats_scores": {
+    label: "",
+    score: "",
+  },
+  "metadata.detector_scores": {
+    label: "",
+    score: "",
+    section_scores: [],
+  },
+  "metadata.detector_scores[].section_scores": {
+    label: "",
+    score: "",
+  },
 };
 
 export function defaultArrayEntry(pathLabel: string, sample: unknown): unknown {

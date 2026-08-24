@@ -100,11 +100,41 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
       required: ["status", "updated_at", "language"],
       properties: {
         language: { type: "string", enum: ["bg", "en"] },
+        ats_scores: {
+          type: "array",
+          items: { $ref: "#/$defs/reviewScore" },
+        },
+        detector_scores: {
+          type: "array",
+          items: { $ref: "#/$defs/reviewScore" },
+        },
       },
       additionalProperties: true,
     },
   },
   $defs: {
+    reviewSectionScore: {
+      type: "object",
+      required: ["label", "score"],
+      properties: {
+        label: { type: "string" },
+        score: { type: "string" },
+      },
+      additionalProperties: true,
+    },
+    reviewScore: {
+      type: "object",
+      required: ["label", "score"],
+      properties: {
+        label: { type: "string" },
+        score: { type: "string" },
+        section_scores: {
+          type: "array",
+          items: { $ref: "#/$defs/reviewSectionScore" },
+        },
+      },
+      additionalProperties: true,
+    },
     skillRating: {
       type: "number",
       minimum: 0.5,

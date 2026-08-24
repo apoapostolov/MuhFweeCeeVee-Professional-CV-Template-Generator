@@ -42,6 +42,16 @@ describe("editor-form-fields", () => {
     expect(primitiveFieldSupportsAiRewrite("personal.start_date", "start_date", "")).toBe(false);
   });
 
+  it("keeps review provider labels and score text out of rewrite actions", () => {
+    expect(primitiveFieldSupportsAiRewrite("metadata.ats_scores[0].score", "score", "81/100"))
+      .toBe(false);
+    expect(primitiveFieldSupportsAiRewrite(
+      "metadata.detector_scores[0].section_scores[0].label",
+      "label",
+      "Frontmatter",
+    )).toBe(false);
+  });
+
   it("orders visible AI-eligible fields for separator logic", () => {
     const draft = {
       summary: "A",

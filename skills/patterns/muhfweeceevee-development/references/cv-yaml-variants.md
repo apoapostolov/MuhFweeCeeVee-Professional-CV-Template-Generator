@@ -13,7 +13,7 @@ positioning: # headline, profile_summary
 experience:  # array (may be empty in draft)
 education:   # array
 skills:      # technical | languages | core_strengths
-metadata:    # created_at, updated_at, language, variant?, template_visibility?
+metadata:    # dates, language, variant?, visibility?, ATS/detector scores?
 ```
 
 Optional: `references`, `compliance`, `optional_sections`, custom fields via editor.
@@ -63,7 +63,21 @@ metadata:
   updated_at: "2026-06-04"
   template_visibility:
     experience.2: false
+  ats_scores:
+    - label: ApplyCove
+      score: "81/100"
+  detector_scores:
+    - label: Sapling
+      score: "mixed section results"
+      section_scores:
+        - label: Frontmatter
+          score: "5.1% AI"
 ```
+
+`ats_scores[]` and `detector_scores[]` use free-form string scores so exact
+provider wording survives. Detector entries can add `section_scores[]` for
+stable per-job, frontmatter, or backmatter scopes. Missing groups receive the
+built-in provider presets when a CV is loaded; initialized arrays are preserved.
 
 ## Target companies (external)
 

@@ -119,6 +119,9 @@ export function primitiveFieldSupportsAiRewrite(
   keyName: string,
   primitive: unknown,
 ): boolean {
+  if (/^metadata\.(ats_scores|detector_scores)(\.|\[)/i.test(pathLabel.trim())) {
+    return false;
+  }
   const isBool = typeof primitive === "boolean";
   const isNum = typeof primitive === "number";
   const isDate =
