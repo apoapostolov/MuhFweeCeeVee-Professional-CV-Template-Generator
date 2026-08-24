@@ -1311,19 +1311,17 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         ) : null}
 
         <aside className="flex min-h-0 min-w-0 flex-col rounded-xl border border-[var(--line)] bg-white p-3">
-          <p className="text-sm font-semibold text-slate-900">
-            {editorOpen
-              ? draft.id
-                ? t.editorEdit
-                : t.editorNew
-              : t.editorIdleTitle}
-          </p>
-          <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
-            {editorOpen ? t.editorHint : t.editorIdleHint}
-          </p>
+          {!editorOpen || draft.id ? (
+            <p className="text-sm font-semibold text-slate-900">
+              {editorOpen ? t.editorEdit : t.editorIdleTitle}
+            </p>
+          ) : null}
+          {!editorOpen ? (
+            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{t.editorIdleHint}</p>
+          ) : null}
 
           {editorOpen ? (
-            <div className="mt-3 grid grid-cols-2 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5" role="tablist">
+            <div className="mx-auto mt-3 grid w-full grid-cols-2 gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-2)] p-0.5 text-center" role="tablist">
               {(["application", "company"] as const).map((tab) => (
                 <button
                   aria-selected={editorTab === tab}
