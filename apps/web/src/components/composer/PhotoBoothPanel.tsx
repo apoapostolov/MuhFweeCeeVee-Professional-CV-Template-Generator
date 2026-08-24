@@ -127,7 +127,6 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
               <div className="grid grid-cols-2 gap-2">
                 {photoBoothItems.map((item) => {
                   const isApproved = item.id === approvedPhotoId;
-                  const isFocused = analysisFocus?.id === item.id;
                   const isCompareSelected = photoBoothCompareIds.includes(item.id);
                   return (
                     <article
@@ -137,9 +136,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                           ? "border-emerald-500 ring-2 ring-inset ring-emerald-300 shadow-[0_0_0_1px_rgba(16,185,129,0.35)]"
                           : isCompareSelected
                             ? "border-amber-400 ring-2 ring-amber-200"
-                          : isFocused
-                            ? "border-sky-400 ring-2 ring-sky-200"
-                            : "border-slate-200"
+                          : "border-slate-200"
                       }`}
                       onClick={() => onSetAnalysisFocusId(item.id)}
                     >
