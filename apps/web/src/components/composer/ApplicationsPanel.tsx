@@ -1178,12 +1178,12 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </div>
 
                       <button
-                        className="w-full px-1.5 py-1.5 text-left"
+                        className="w-full px-1.5 py-1 text-left"
                         data-no-dnd
                         onClick={() => openEdit(app)}
                         type="button"
                       >
-                        <div className="flex flex-nowrap items-center justify-center gap-px overflow-hidden">
+                        <div className="app-kanban-chip-row flex min-h-4 flex-nowrap items-center justify-center gap-0.5 overflow-hidden leading-none">
                           <Chip
                             label={t.chipCv}
                             ok={hasCv}
@@ -1223,7 +1223,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
-                        className="app-kanban-footer flex h-7 border-t"
+                        className="app-kanban-footer flex h-7 border-t border-[var(--kanban-footer-divider)]"
                         data-no-dnd
                       >
                         <button
@@ -1326,7 +1326,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
               })()}
             </div>
             <div className="px-1.5 py-1.5">
-              <div className="flex flex-nowrap items-center justify-center gap-px overflow-hidden">
+              <div className="app-kanban-chip-row flex min-h-4 flex-nowrap items-center justify-center gap-0.5 overflow-hidden leading-none">
                 <Chip
                   label={t.chipCv}
                   ok={Boolean(dragApp.cv_id)}
