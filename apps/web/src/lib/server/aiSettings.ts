@@ -294,8 +294,8 @@ function seedModels(providerId: string): AiModel[] {
     openai: ["gpt-4o-mini", "gpt-4.1-mini"],
     anthropic: ["claude-sonnet-4-6", "claude-haiku-4-5"],
     gemini: ["gemini-2.5-flash", "gemini-2.5-pro"],
-    "xai-oauth": ["grok-4", "grok-3-mini"],
-    xai: ["grok-4", "grok-3-mini"],
+    "xai-oauth": ["grok-4.6", "grok-4.5", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
+    xai: ["grok-4.6", "grok-4.5", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
     deepseek: ["deepseek-chat", "deepseek-reasoner"],
     mistral: ["mistral-large-latest", "mistral-small-latest"],
     ollama: [],
@@ -324,6 +324,26 @@ function seedModels(providerId: string): AiModel[] {
   }));
 }
 
+function xaiThinkingLevels(modelId: string): string[] | undefined {
+  const id = modelId.toLowerCase();
+  if (id.includes("grok-4.6") || id.includes("grok-4.20-multi-agent")) {
+    return ["low", "medium", "high", "xhigh"];
+  }
+  if (id.includes("grok-4.5") || (id.includes("grok-4.20") && id.includes("reasoning") && !id.includes("non-reasoning"))) {
+    return ["low", "medium", "high"];
+  }
+  return undefined;
+}
+
+function decorateProviderModels(providerId: string, models: AiModel[]): AiModel[] {
+  if (providerId !== "xai-oauth" && providerId !== "xai") return models;
+  return models.map((model) => {
+    if (model.thinkingLevels?.length) return model;
+    const thinkingLevels = xaiThinkingLevels(model.id);
+    return thinkingLevels ? { ...model, thinkingLevels } : model;
+  });
+}
+
 function normalizeModels(providerId: string, payload: unknown): AiModel[] {
   const rows = payload && typeof payload === "object" && !Array.isArray(payload)
     ? (payload as Record<string, unknown>).data
@@ -341,7 +361,7 @@ function normalizeModels(providerId: string, payload: unknown): AiModel[] {
       capabilities: ["chat"] as AiCapability[],
       thinkingLevels: (() => {
         const parameters = Array.isArray(value.supported_parameters) ? value.supported_parameters.map((item) => String(item).toLowerCase()) : [];
-        return parameters.some((item) => item.includes("reasoning")) ? ["low", "medium", "high", "xhigh"] : undefined;
+        return xaiThinkingLevels(id) ?? (parameters.some((item) => item.includes("reasoning")) ? ["low", "medium", "high", "xhigh"] : undefined);
       })(),
       contextLength: typeof value.context_length === "number" ? value.context_length : null,
       inputPricePer1M: null,
@@ -375,20 +395,20 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
   const localEndpoint = provider.kind === "local" ? settings.providerEndpoints?.[providerId] ?? "" : "";
   if (provider.kind === "local" && !(await checkLocalProviderEndpoint(localEndpoint))) return [];
   const cache = await readAiModelCache(providerId);
-  if (!forceRefresh && isAiModelCacheFresh(cache)) return cache?.models ?? [];
+  if (!forceRefresh && isAiModelCacheFresh(cache)) return decorateProviderModels(providerId, cache?.models ?? []);
   const seed = seedModels(providerId);
   const modelsEndpoint = provider.kind === "local"
     ? localModelsEndpoint(localEndpoint)
     : provider.modelsEndpoint;
-  if (!modelsEndpoint) return providerId === "openai-codex" ? seed : cache?.models ?? seed;
+  if (!modelsEndpoint) return decorateProviderModels(providerId, providerId === "openai-codex" ? seed : cache?.models ?? seed);
 
   let apiKey = "";
   try {
     apiKey = providerId === "xai-oauth" ? await readXaiOAuthAccessToken() : await readProviderKey(providerId);
   } catch {
-    return cache?.models ?? seed;
+    return decorateProviderModels(providerId, cache?.models ?? seed);
   }
-  if (provider.auth !== "none" && !apiKey) return cache?.models ?? seed;
+  if (provider.auth !== "none" && !apiKey) return decorateProviderModels(providerId, cache?.models ?? seed);
 
   try {
     const response = await fetch(modelsEndpoint, {
@@ -397,11 +417,12 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
     });
     if (!response.ok) throw new Error(`Model request failed (${response.status}).`);
     const models = normalizeModels(providerId, await response.json());
-    if (!models.length) return cache?.models ?? seed;
-    await writeAiModelCache(providerId, models);
-    return models;
+    if (!models.length) return decorateProviderModels(providerId, cache?.models ?? seed);
+    const decorated = decorateProviderModels(providerId, models);
+    await writeAiModelCache(providerId, decorated);
+    return decorated;
   } catch {
-    return cache?.models ?? seed;
+    return decorateProviderModels(providerId, cache?.models ?? seed);
   }
 }
 
