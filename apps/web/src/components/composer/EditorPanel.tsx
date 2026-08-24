@@ -193,6 +193,15 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     editorNotice,
   } = props;
 
+  const selectedResearchCompanyName = researchCompanies.find((company) => company.id === selectedResearchCompanyId)?.name;
+  const analysisTargetLabel = selectedResearchCompanyName
+    ? uiLanguage === "bg"
+      ? `AI анализ: въз основа на компания ${selectedResearchCompanyName}`
+      : `AI analysis: based on company ${selectedResearchCompanyName}`
+    : uiLanguage === "bg"
+      ? "AI анализ: общ"
+      : "AI analysis: generic";
+
   const manualSaveEnabled =
     !editorAutoSaveEnabled && editorHasUnsavedChanges && !editorSaving && !editorLoading && Boolean(selectedCvId);
 
@@ -582,20 +591,14 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     Edit the selected metadata source in Form or YAML mode. Research Company uses web AI to fill empty fields.
                   </p>
                 ) : (
-                  <>
-                    <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-[var(--ink-muted)]">
+                    <p>
                       {uiLanguage === "bg"
-                        ? "Редактирайте секцията във форма или YAML. Записът обновява YAML варианта и snapshot историята."
-                        : "Edit the section in form or YAML mode. Save updates the YAML variant and snapshot history."}
+                        ? "Можете да редактирате CV-то си във форма или YAML формат. Не забравяйте да правите snapshot-и и нови версии."
+                        : "You can edit your CV in form mode or YAML format. Remember to take snapshots and make new versions."}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                      {selectedResearchJobPositionId
-                        ? `AI + field rewrite target: ${researchJobsForCompany.find((j) => j.id === selectedResearchJobPositionId)?.title ?? selectedResearchJobPositionId}`
-                        : selectedResearchCompanyId
-                          ? `Company selected; pick a job position for keyword highlighting and AI targeting.`
-                          : "AI analysis: generic (no job target selected)."}
-                    </p>
-                  </>
+                    <p className="shrink-0 text-right">{analysisTargetLabel}</p>
+                  </div>
                 )}
                 {companyMetadataEditorOpen && companyMetadataNotice ? (
                   <p className="mt-1 text-xs text-[var(--ink-muted)]">{companyMetadataNotice}</p>
