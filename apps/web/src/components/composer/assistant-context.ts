@@ -74,12 +74,12 @@ export function buildAssistantComposerContext(
 }
 
 export function assistantContextLabel(context: AssistantContextEnvelope): string {
-  const recordLabels = context.records
-    .map((record) => record.label || record.id)
-    .slice(0, 2);
+  const cv = context.records.find((record) => record.type === "cv");
+  const template = context.records.find((record) => record.type === "template");
+  const templateLabel = template ? `${template.label || template.id} Template` : "";
   return [
-    context.activePanel.replaceAll("_", " "),
-    ...recordLabels,
+    cv?.label || cv?.id || "",
+    templateLabel,
     context.hasUnsavedChanges ? "unsaved draft" : "",
   ]
     .filter(Boolean)
