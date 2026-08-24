@@ -85,6 +85,36 @@ export async function readAiProviderKey(providerId: string): Promise<string> {
   return readProviderKey(providerId);
 }
 
+function normalizeLocalEndpoint(value: string): string {
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed) return "";
+  try {
+    const parsed = new URL(trimmed);
+    if (!["http:", "https:"].includes(parsed.protocol)) return "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function localModelsEndpoint(endpoint: string): string {
+  return endpoint.endsWith("/models") ? endpoint : `${endpoint}/models`;
+}
+
+export async function checkLocalProviderEndpoint(endpoint: string): Promise<boolean> {
+  const normalized = normalizeLocalEndpoint(endpoint);
+  if (!normalized) return false;
+  try {
+    const response = await fetch(localModelsEndpoint(normalized), {
+      method: "GET",
+      signal: AbortSignal.timeout(8000),
+    });
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+}
+
 async function writeProviderKey(providerId: string, value: string): Promise<void> {
   if (providerId === "openrouter") {
     await writeOpenRouterSettings({ apiKey: value });
@@ -128,6 +158,13 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
       const enabledProviders = Array.isArray(value.enabledProviders)
         ? [...new Set(value.enabledProviders.filter((providerId): providerId is string => typeof providerId === "string" && Boolean(getAiProvider(providerId))))]
         : [...new Set(Object.values(roles).map((binding) => binding.providerId).filter((providerId) => Boolean(getAiProvider(providerId))))];
+      const providerEndpoints = value.providerEndpoints && typeof value.providerEndpoints === "object" && !Array.isArray(value.providerEndpoints)
+        ? Object.fromEntries(Object.entries(value.providerEndpoints).flatMap(([providerId, endpoint]) => {
+          const provider = getAiProvider(providerId);
+          const normalized = provider?.kind === "local" && typeof endpoint === "string" ? normalizeLocalEndpoint(endpoint) : "";
+          return normalized ? [[providerId, normalized]] : [];
+        }))
+        : {};
       const providerModels = value.providerModels && typeof value.providerModels === "object" && !Array.isArray(value.providerModels)
         ? Object.fromEntries(Object.entries(value.providerModels).filter(([providerId, modelId]) => getAiProvider(providerId) && typeof modelId === "string" && modelId.trim()).map(([providerId, modelId]) => [providerId, (modelId as string).trim()]))
         : {};
@@ -142,7 +179,7 @@ export async function readAiSettingsDocument(): Promise<AiSettingsDocument> {
       const disabledRoles = Array.isArray(value.disabledRoles)
         ? value.disabledRoles.filter((role): role is AiRole => typeof role === "string" && AI_ROLES.includes(role as AiRole))
         : [];
-      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, enabledProviders, providerModels, thinkingModes, disabledRoles };
+      return { schemaVersion: 1, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "", roles, enabledProviders, providerEndpoints, providerModels, thinkingModes, disabledRoles };
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -159,6 +196,7 @@ export async function writeAiSettingsDocument(
     providerModels?: Record<string, string>;
     thinkingModes?: Record<string, string>;
     enabledProviders?: string[];
+    providerEndpoints?: Record<string, string>;
   },
 ): Promise<AiSettingsDocument> {
   const current = await readAiSettingsDocument();
@@ -166,6 +204,13 @@ export async function writeAiSettingsDocument(
   const enabledProviders = input.enabledProviders
     ? [...new Set(input.enabledProviders.filter((providerId) => Boolean(getAiProvider(providerId))))]
     : [...(current.enabledProviders ?? [])];
+  const providerEndpoints = { ...(current.providerEndpoints ?? {}) };
+  for (const [providerId, endpoint] of Object.entries(input.providerEndpoints ?? {})) {
+    if (getAiProvider(providerId)?.kind !== "local") continue;
+    const normalized = typeof endpoint === "string" ? normalizeLocalEndpoint(endpoint) : "";
+    if (normalized) providerEndpoints[providerId] = normalized;
+    else delete providerEndpoints[providerId];
+  }
   const providerModels = { ...(current.providerModels ?? {}) };
   const thinkingModes = { ...(current.thinkingModes ?? {}) };
   for (const [key, mode] of Object.entries(input.thinkingModes ?? {})) {
@@ -216,6 +261,7 @@ export async function writeAiSettingsDocument(
     updatedAt: new Date().toISOString(),
     roles,
     enabledProviders,
+    providerEndpoints,
     providerModels,
     thinkingModes,
     disabledRoles: [...disabledRoles],
@@ -308,10 +354,11 @@ function normalizeModels(providerId: string, payload: unknown): AiModel[] {
 export async function fetchAiModels(providerId: string, forceRefresh = false): Promise<AiModel[]> {
   const provider = getAiProvider(providerId);
   if (!provider) return [];
+  const settings = await readAiSettingsDocument();
 
   if (providerId === "openrouter") {
-    const settings = await readOpenRouterSettings();
-    const result = await getOpenRouterModels({ apiKey: settings.apiKey, forceRefresh });
+    const openRouter = await readOpenRouterSettings();
+    const result = await getOpenRouterModels({ apiKey: openRouter.apiKey, forceRefresh });
     return result.models.map((model) => ({
       providerId,
       id: model.id,
@@ -325,10 +372,15 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
     }));
   }
 
+  const localEndpoint = provider.kind === "local" ? settings.providerEndpoints?.[providerId] ?? "" : "";
+  if (provider.kind === "local" && !(await checkLocalProviderEndpoint(localEndpoint))) return [];
   const cache = await readAiModelCache(providerId);
   if (!forceRefresh && isAiModelCacheFresh(cache)) return cache?.models ?? [];
   const seed = seedModels(providerId);
-  if (!provider.modelsEndpoint) return providerId === "openai-codex" ? seed : cache?.models ?? seed;
+  const modelsEndpoint = provider.kind === "local"
+    ? localModelsEndpoint(localEndpoint)
+    : provider.modelsEndpoint;
+  if (!modelsEndpoint) return providerId === "openai-codex" ? seed : cache?.models ?? seed;
 
   let apiKey = "";
   try {
@@ -339,7 +391,7 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
   if (provider.auth !== "none" && !apiKey) return cache?.models ?? seed;
 
   try {
-    const response = await fetch(provider.modelsEndpoint, {
+    const response = await fetch(modelsEndpoint, {
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
       signal: AbortSignal.timeout(8000),
     });
@@ -353,10 +405,11 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
   }
 }
 
-async function providerStatus(providerId: string): Promise<AiProviderStatus> {
+async function providerStatus(providerId: string, settings: AiSettingsDocument): Promise<AiProviderStatus> {
   const provider = getAiProvider(providerId)!;
   const apiKey = provider.auth === "api_key" ? await readProviderKey(providerId) : "";
-  let connected = false;
+  const endpoint = provider.kind === "local" ? settings.providerEndpoints?.[providerId] : undefined;
+  let connected = provider.kind === "local" ? await checkLocalProviderEndpoint(endpoint ?? "") : false;
   let expiresAt: string | undefined;
   if (provider.auth === "oauth") {
     try {
@@ -373,8 +426,9 @@ async function providerStatus(providerId: string): Promise<AiProviderStatus> {
     name: provider.name,
     kind: provider.kind,
     auth: provider.auth,
-    configured: provider.auth === "none" || Boolean(apiKey) || connected,
+    configured: provider.kind === "local" ? connected : Boolean(apiKey) || connected,
     connected,
+    endpoint,
     apiKeyMasked: apiKey ? maskApiKey(apiKey) : undefined,
     expiresAt,
     oauthVerificationUri: provider.oauthVerificationUri,
@@ -387,15 +441,21 @@ export async function getAiSettingsResponse(
   requestedProviderIds: string[] = [],
 ): Promise<AiSettingsResponse> {
   const document = await readAiSettingsDocument();
-  const providers = await Promise.all(AI_PROVIDER_REGISTRY.map((provider) => providerStatus(provider.id)));
+  const providers = await Promise.all(AI_PROVIDER_REGISTRY.map((provider) => providerStatus(provider.id, document)));
   const roleProviderIds = AI_ROLES
     .filter((role) => !document.disabledRoles.includes(role))
     .map((role) => document.roles[role].providerId);
   const requested = requestedProviderIds.filter((providerId) => getAiProvider(providerId));
   const modelProviderIds = [...new Set([
-    ...roleProviderIds,
-    ...requested,
-    ...providers.filter((provider) => provider.auth === "none" || provider.configured).map((provider) => provider.id),
+    ...roleProviderIds.filter((providerId) => {
+      const status = providers.find((provider) => provider.id === providerId);
+      return status?.kind !== "local" || status.connected;
+    }),
+    ...requested.filter((providerId) => {
+      const status = providers.find((provider) => provider.id === providerId);
+      return status?.kind !== "local" || status.connected;
+    }),
+    ...providers.filter((provider) => provider.configured).map((provider) => provider.id),
   ])];
   const modelGroups = await Promise.all(
     modelProviderIds.map((providerId) => fetchAiModels(providerId, forceRefresh && (requested.length === 0 || requested.includes(providerId)))),

@@ -380,7 +380,12 @@ export const configuredAssistantModel: AssistantModelClient = {
       return modelResponse({ content: text || null, tool_calls: toolCalls }, { inputTokens: payload.usageMetadata?.promptTokenCount, outputTokens: payload.usageMetadata?.candidatesTokenCount }, binding.modelId);
     }
 
-    const endpoint = provider.id === "openrouter" ? (await readOpenRouterSettings()).baseUrl : `${provider.endpoint?.replace(/\/$/, "")}/chat/completions`;
+    const baseEndpoint = provider.kind === "local"
+      ? settings.providerEndpoints?.[provider.id]
+      : provider.id === "openrouter"
+        ? (await readOpenRouterSettings()).baseUrl
+        : provider.endpoint;
+    const endpoint = baseEndpoint ? `${baseEndpoint.replace(/\/$/, "")}/chat/completions` : "";
     if (!endpoint) throw new Error(`AI provider ${provider.name} has no Assistant completion endpoint.`);
     const response = await fetch(endpoint, { method: "POST", headers: { ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}), "content-type": "application/json" }, signal, body: JSON.stringify({ model: binding.modelId, messages, tools: modelTools(tools), tool_choice: tools.length > 0 ? "auto" : "none", parallel_tool_calls: false, temperature: 0.2, max_completion_tokens: 1_200, ...thinking }) });
     const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string }; choices?: Array<{ message?: { content?: string | null; tool_calls?: ModelToolCall[] } }>; usage?: { prompt_tokens?: number; completion_tokens?: number }; model?: string };

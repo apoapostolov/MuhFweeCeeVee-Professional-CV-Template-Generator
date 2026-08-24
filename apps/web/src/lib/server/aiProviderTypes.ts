@@ -53,6 +53,7 @@ export type AiSettingsDocument = {
   updatedAt: string;
   roles: Record<AiRole, AiRoleBinding>;
   enabledProviders?: string[];
+  providerEndpoints?: Record<string, string>;
   providerModels?: Record<string, string>;
   thinkingModes?: Record<string, string>;
   disabledRoles: AiRole[];
@@ -68,6 +69,7 @@ export type AiProviderStatus = {
   apiKeyMasked?: string;
   expiresAt?: string;
   oauthVerificationUri?: string;
+  endpoint?: string;
   capabilities: AiCapability[];
 };
 

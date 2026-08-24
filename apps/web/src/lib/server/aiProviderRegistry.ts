@@ -28,10 +28,10 @@ export const AI_PROVIDER_REGISTRY: readonly AiProviderDefinition[] = [
   { id: "moonshot", name: "Moonshot AI", kind: "openai-compatible", auth: "api_key", endpoint: "https://api.moonshot.ai/v1", modelsEndpoint: "https://api.moonshot.ai/v1/models", capabilities: chatVision },
   { id: "minimax", name: "MiniMax", kind: "openai-compatible", auth: "api_key", endpoint: "https://api.minimax.io/v1", modelsEndpoint: "https://api.minimax.io/v1/models", capabilities: chatVision },
   { id: "cerebras", name: "Cerebras", kind: "openai-compatible", auth: "api_key", endpoint: "https://api.cerebras.ai/v1", modelsEndpoint: "https://api.cerebras.ai/v1/models", capabilities: chat },
-  { id: "ollama", name: "Ollama", kind: "local", auth: "none", endpoint: "http://127.0.0.1:11434/v1", modelsEndpoint: "http://127.0.0.1:11434/v1/models", capabilities: chatVision },
-  { id: "vllm", name: "vLLM", kind: "local", auth: "none", endpoint: "http://127.0.0.1:8000/v1", modelsEndpoint: "http://127.0.0.1:8000/v1/models", capabilities: chatVision },
-  { id: "lmstudio", name: "LM Studio", kind: "local", auth: "none", endpoint: "http://127.0.0.1:1234/v1", modelsEndpoint: "http://127.0.0.1:1234/v1/models", capabilities: chatVision },
-  { id: "llamacpp", name: "llama.cpp", kind: "local", auth: "none", endpoint: "http://127.0.0.1:8080/v1", modelsEndpoint: "http://127.0.0.1:8080/v1/models", capabilities: chatVision },
+  { id: "ollama", name: "Ollama", kind: "local", auth: "none", capabilities: chatVision },
+  { id: "vllm", name: "vLLM", kind: "local", auth: "none", capabilities: chatVision },
+  { id: "lmstudio", name: "LM Studio", kind: "local", auth: "none", capabilities: chatVision },
+  { id: "llamacpp", name: "llama.cpp", kind: "local", auth: "none", capabilities: chatVision },
 ] as const;
 
 export function getAiProvider(providerId: string): AiProviderDefinition | null {

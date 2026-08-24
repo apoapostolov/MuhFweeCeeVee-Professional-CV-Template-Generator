@@ -47,6 +47,7 @@ export function useAiProviderSettings() {
   const [selectedThinking, setSelectedThinking] = useState<Record<string, string>>({});
   const [selectedRoles, setSelectedRoles] = useState<Record<string, AiRole[]>>({});
   const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({});
+  const [endpointInputs, setEndpointInputs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reloadingProviderId, setReloadingProviderId] = useState<string | null>(null);
@@ -62,6 +63,11 @@ export function useAiProviderSettings() {
     setResponse(next);
     const nextProviderIds = [...new Set([...preserveProviderIds, ...uniqueProviderIds(next)])];
     setProviderIds(nextProviderIds);
+    setEndpointInputs((current) => {
+      const updated = { ...current };
+      for (const providerId of nextProviderIds) updated[providerId] = next.providerEndpoints?.[providerId] ?? current[providerId] ?? "";
+      return updated;
+    });
     if (preserveSelections) return;
     setSelectedModels((current) => {
       const updated = { ...current };
@@ -174,6 +180,30 @@ export function useAiProviderSettings() {
       setReloadingProviderId(null);
     }
   }, [applyResponse, providerIds]);
+
+  const setEndpointInput = useCallback((providerId: string, value: string) => {
+    setEndpointInputs((current) => ({ ...current, [providerId]: value }));
+  }, []);
+
+  const saveEndpoint = useCallback(async (providerId: string) => {
+    setSaving(true);
+    setNotice("");
+    try {
+      const result = await fetch("/api/settings/ai", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ providerEndpoints: { [providerId]: endpointInputs[providerId]?.trim() ?? "" } }),
+      });
+      const payload = (await result.json()) as AiSettingsResponse & { error?: string };
+      if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to save local endpoint.");
+      applyResponse(payload, providerIds);
+      setNotice(payload.providers.find((provider) => provider.id === providerId)?.connected ? "Local endpoint connected." : "Endpoint saved, but it did not return HTTP 200.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Failed to save local endpoint.");
+    } finally {
+      setSaving(false);
+    }
+  }, [applyResponse, endpointInputs, providerIds]);
 
   const saveApiKey = useCallback(async (providerId: string) => {
     const apiKey = apiKeyInputs[providerId]?.trim() ?? "";
@@ -475,6 +505,9 @@ export function useAiProviderSettings() {
     reloadingProviderId,
     reloadedProviderId,
     apiKeyInputs,
+    endpointInputs,
+    setEndpointInput,
+    saveEndpoint,
     setApiKeyInput: (providerId: string, value: string) => setApiKeyInputs((current) => ({ ...current, [providerId]: value })),
     addProvider,
     removeProvider,

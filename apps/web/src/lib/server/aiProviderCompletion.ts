@@ -131,9 +131,12 @@ export async function completeAiText(input: CompletionInput): Promise<Completion
     return { text, providerId: provider.id, modelId: binding.modelId };
   }
 
-  const endpoint = provider.id === "openrouter"
-    ? (await readOpenRouterSettings()).baseUrl
-    : `${provider.endpoint?.replace(/\/$/, "")}/chat/completions`;
+  const baseEndpoint = provider.kind === "local"
+    ? settings.providerEndpoints?.[provider.id]
+    : provider.id === "openrouter"
+      ? (await readOpenRouterSettings()).baseUrl
+      : provider.endpoint;
+  const endpoint = baseEndpoint ? `${baseEndpoint.replace(/\/$/, "")}/chat/completions` : "";
   if (!endpoint) throw new Error(`AI provider ${provider.name} has no completion endpoint.`);
   const response = await fetch(endpoint, {
     method: "POST",

@@ -38,9 +38,11 @@ function thinkingLabel(level: string): string {
 }
 
 function StatusLine({ provider }: { provider: AiProviderStatus }): JSX.Element {
-  const status = provider.auth === "oauth"
-    ? provider.connected ? "Connected" : "Not connected"
-    : provider.configured ? "Configured" : "Not configured";
+  const status = provider.kind === "local"
+    ? provider.connected ? "Connected" : provider.endpoint ? "Endpoint unavailable" : "Endpoint not configured"
+    : provider.auth === "oauth"
+      ? provider.connected ? "Connected" : "Not connected"
+      : provider.configured ? "Configured" : "Not configured";
   return (
     <span className={provider.configured ? "text-emerald-700" : "text-slate-500"}>
       {status}
@@ -151,7 +153,28 @@ function ProviderBlock({
           </button>
         </div>
       </div>
-      <ProviderQuota quotas={quotas} />
+      {provider.kind === "local" ? (
+        <div className="mt-3 flex items-end gap-2">
+          <label className="min-w-0 flex-1 text-[11px] font-medium text-slate-700">
+            {isBg ? "URL на endpoint" : "Endpoint URL"}
+            <input
+              className={`${CONTROL_CLASS} mt-1`}
+              onChange={(event) => controller.setEndpointInput(provider.id, event.target.value)}
+              placeholder="http://127.0.0.1:11434/v1"
+              type="url"
+              value={controller.endpointInputs[provider.id] ?? provider.endpoint ?? ""}
+            />
+          </label>
+          <button
+            className="rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+            disabled={!controller.endpointInputs[provider.id]?.trim() || controller.saving}
+            onClick={() => void controller.saveEndpoint(provider.id)}
+            type="button"
+          >
+            {isBg ? "Запази" : "Save URL"}
+          </button>
+        </div>
+      ) : <ProviderQuota quotas={quotas} />}
 
       {provider.auth === "api_key" ? (
         <div className="mt-3 flex items-end gap-2">
@@ -174,9 +197,7 @@ function ProviderBlock({
             Save key
           </button>
         </div>
-      ) : provider.auth === "oauth" ? null : (
-        <p className="mt-3 text-[11px] text-slate-600">Local endpoint. No API key required.</p>
-      )}
+      ) : null}
 
       <div className="mt-3 flex items-end gap-1.5">
         <label className="min-w-0 flex-[2_2_0%] text-[11px] font-medium text-slate-700">
