@@ -72,10 +72,6 @@ export function AssistantPanel({
       "Summarize the current workspace context.",
       "What should I review next?",
     ];
-  const hasPendingApproval = timeline.some(
-    (item) => item.kind === "approval" && item.status === "pending",
-  );
-
   useEffect(() => {
     if (isOpen && assistant.state !== "connecting") {
       textareaRef.current?.focus();
@@ -120,18 +116,7 @@ export function AssistantPanel({
     assistant.usage.outputTokens +
     Math.ceil(assistant.draft.trim().length / 4);
 
-  const statusLabel =
-    assistant.resolvingApprovalId
-      ? "Applying approved operation"
-      : hasPendingApproval
-        ? "Approval needed"
-        : assistant.state === "streaming"
-          ? "Responding"
-          : assistant.state === "connecting"
-            ? "Connecting"
-            : assistant.state === "disconnected"
-              ? "Disconnected"
-              : "Confirmed management";
+  const contextReady = context.records.some((record) => record.type === "cv");
 
   return (
     <aside
@@ -153,7 +138,7 @@ export function AssistantPanel({
               aria-live="polite"
               className="text-xs text-[var(--ink-muted)]"
             >
-              {statusLabel} · MCP workspace context
+              {contextReady ? "Context ON" : "Context OFF"} · {assistant.mcpReady ? "MCP ON" : "MCP OFF"}
             </p>
           </div>
         </div>

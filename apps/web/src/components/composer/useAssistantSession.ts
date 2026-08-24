@@ -50,6 +50,7 @@ export function useAssistantSession(isOpen: boolean) {
   const [state, setState] = useState<AssistantConnectionState>("idle");
   const [error, setError] = useState("");
   const [usage, setUsage] = useState({ inputTokens: 0, outputTokens: 0 });
+  const [mcpReady, setMcpReady] = useState(false);
   const [resolvingApprovalId, setResolvingApprovalId] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const initializedRef = useRef(false);
@@ -97,6 +98,8 @@ export function useAssistantSession(isOpen: boolean) {
         } else {
           setDraftState(readStorage(draftKey(null)));
         }
+        const mcpResponse = await fetch("/api/assistant/reconnect", { method: "POST" });
+        setMcpReady(mcpResponse.ok);
         setState("ready");
       } catch (caught) {
         setError(
@@ -357,6 +360,7 @@ export function useAssistantSession(isOpen: boolean) {
     state,
     error,
     usage,
+    mcpReady,
     resolvingApprovalId,
     isStreaming: state === "streaming",
     send,
