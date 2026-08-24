@@ -11,7 +11,7 @@ import {
 } from "./aiModelCache";
 import { maskApiKey, readOpenRouterSettings, writeOpenRouterSettings } from "./openRouterSettings";
 import { repoPath } from "./repoPaths";
-import { readXaiOAuthAccessToken } from "./xaiOAuth";
+import { fetchXaiQuotas, readXaiOAuthAccessToken } from "./xaiOAuth";
 import { AI_PROVIDER_REGISTRY, getAiProvider } from "./aiProviderRegistry";
 import type {
   AiCapability,
@@ -360,5 +360,7 @@ export async function getAiSettingsResponse(
     const credit = await fetchOpenRouterCredit(await readProviderKey("openrouter"));
     quotas.push({ providerId: "openrouter", available: credit.available, label: credit.label, remaining: credit.remainingUsd, limit: credit.limitUsd, unit: "USD", period: "monthly", checkedAt: credit.checkedAt });
   }
+  const xaiOAuth = providers.find((provider) => provider.id === "xai-oauth");
+  if (xaiOAuth?.configured) quotas.push(...await fetchXaiQuotas());
   return { ...document, providers, models: modelGroups.flat(), quotas };
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import { repoPath } from "./repoPaths";
+import type { AiQuota } from "./aiProviderTypes";
 
 const ISSUER = "https://auth.x.ai";
 const CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828";
@@ -177,6 +178,88 @@ export async function readXaiOAuthAccessToken(): Promise<string> {
   if (!response.ok) throw new Error(`xAI OAuth token refresh failed (${response.status}).`);
   const refreshed = await writeSession(payload, session.refreshToken);
   return refreshed.accessToken;
+}
+
+export async function fetchXaiQuotas(): Promise<AiQuota[]> {
+  try {
+    const accessToken = await readXaiOAuthAccessToken();
+    if (!accessToken) return [];
+    const headers = {
+      accept: "application/json",
+      authorization: `Bearer ${accessToken}`,
+      "user-agent": "MFCV/1.0",
+      "x-grok-client-surface": "grok-build",
+      "x-grok-client-version": "1.0.0",
+    };
+    const creditsResponse = await fetch(`${ISSUER.replace("auth.x.ai", "cli-chat-proxy.grok.com")}/v1/billing?format=credits`, {
+      headers,
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!creditsResponse.ok) return [];
+    const credits = (await creditsResponse.json().catch(() => ({}))) as Record<string, unknown>;
+    const config = credits.config && typeof credits.config === "object" && !Array.isArray(credits.config)
+      ? credits.config as Record<string, unknown>
+      : credits;
+    const usedPercent = typeof config.creditUsagePercent === "number" && Number.isFinite(config.creditUsagePercent)
+      ? Math.max(0, Math.min(100, config.creditUsagePercent))
+      : null;
+    const period = config.currentPeriod && typeof config.currentPeriod === "object" && !Array.isArray(config.currentPeriod)
+      ? config.currentPeriod as Record<string, unknown>
+      : {};
+    const periodType = typeof period.type === "string" ? period.type.toLowerCase() : "weekly";
+    const periodName = periodType.includes("month") ? "monthly" : "weekly";
+    const checkedAt = new Date().toISOString();
+    const quotas: AiQuota[] = [];
+    if (usedPercent !== null) {
+      quotas.push({
+        providerId: "xai-oauth",
+        available: true,
+        label: `xAI ${periodName} quota`,
+        remaining: 100 - usedPercent,
+        limit: 100,
+        unit: "ratio",
+        period: periodName,
+        checkedAt,
+      });
+    }
+
+    const billingResponse = await fetch(`${ISSUER.replace("auth.x.ai", "cli-chat-proxy.grok.com")}/v1/billing`, {
+      headers,
+      signal: AbortSignal.timeout(15000),
+    });
+    if (billingResponse.ok) {
+      const billing = (await billingResponse.json().catch(() => ({}))) as Record<string, unknown>;
+      const billingConfig = billing.config && typeof billing.config === "object" && !Array.isArray(billing.config)
+        ? billing.config as Record<string, unknown>
+        : billing;
+      const moneyValue = (value: unknown): number | null => {
+        if (typeof value === "number" && Number.isFinite(value)) return value;
+        if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+          const raw = (value as Record<string, unknown>).val;
+          if (typeof raw === "number" && Number.isFinite(raw)) return raw / 100;
+          if (typeof raw === "string" && Number.isFinite(Number(raw))) return Number(raw) / 100;
+        }
+        return null;
+      };
+      const monthlyLimit = moneyValue(billingConfig.monthlyLimit ?? billingConfig.monthlyAllowance ?? billingConfig.limit);
+      const monthlyUsed = moneyValue(billingConfig.used ?? billingConfig.monthlyUsed ?? billingConfig.spent);
+      if (monthlyLimit !== null && monthlyLimit > 0 && monthlyUsed !== null) {
+        quotas.push({
+          providerId: "xai-oauth",
+          available: true,
+          label: "xAI monthly quota",
+          remaining: Math.max(0, 100 * (1 - monthlyUsed / monthlyLimit)),
+          limit: 100,
+          unit: "ratio",
+          period: "monthly",
+          checkedAt,
+        });
+      }
+    }
+    return quotas;
+  } catch {
+    return [];
+  }
 }
 
 export async function disconnectXaiOAuth(): Promise<void> {

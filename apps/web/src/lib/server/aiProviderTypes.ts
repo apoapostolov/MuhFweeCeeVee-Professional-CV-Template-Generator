@@ -72,7 +72,7 @@ export type AiQuota = {
   label: string;
   remaining: number | null;
   limit: number | null;
-  unit: "USD" | "tokens" | "requests";
+  unit: "USD" | "tokens" | "requests" | "ratio";
   period: "monthly" | "weekly" | "daily" | "rolling" | "unknown";
   checkedAt: string;
 };

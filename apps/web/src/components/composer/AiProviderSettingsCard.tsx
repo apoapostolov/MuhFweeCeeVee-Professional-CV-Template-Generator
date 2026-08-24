@@ -44,31 +44,31 @@ function StatusLine({ provider }: { provider: AiProviderStatus }): JSX.Element {
 
 function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
   const creditQuota = quotas.find((quota) => quota.unit === "USD");
-  if (creditQuota) {
-    return (
-      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-700" title={creditQuota.label}>
-        {creditQuota.remaining === null ? "$—" : `$${creditQuota.remaining.toFixed(2)}`}
-      </span>
-    );
-  }
   const ratioQuota = quotas
     .filter((quota) => (quota.period === "weekly" || quota.period === "monthly") && quota.limit !== null && quota.limit > 0 && quota.remaining !== null)
     .map((quota) => ({ quota, ratio: Math.max(0, Math.min(1, (quota.remaining ?? 0) / (quota.limit ?? 1))) }))
     .sort((a, b) => b.ratio - a.ratio)[0];
-  if (!ratioQuota) return null;
-  const percent = Math.round(ratioQuota.ratio * 100);
+  if (!creditQuota && !ratioQuota) return null;
+  if (creditQuota && !ratioQuota) {
+    return (
+      <div className="mt-3 flex w-full items-center justify-between rounded-lg border border-emerald-400/30 px-3 py-2 text-xs font-semibold tabular-nums" style={{ background: "radial-gradient(120% 90% at 18% 0%, #1c1a24 0%, #303040 58%)" }} title={creditQuota.label}>
+        <span className="text-slate-300">Available credit</span>
+        <span className="text-emerald-300">{creditQuota.remaining === null ? "$—" : `$${creditQuota.remaining.toFixed(2)}`}</span>
+      </div>
+    );
+  }
+  const percent = Math.round((ratioQuota?.ratio ?? 0) * 100);
+  const period = ratioQuota?.quota.period === "monthly" ? "Monthly" : "Weekly";
   return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold tabular-nums text-slate-700" title={ratioQuota.quota.label}>
-      <span>{percent}%</span>
-      <span
-        aria-label={`${percent}% quota remaining`}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full"
-        role="img"
-        style={{ background: `conic-gradient(#10b981 ${percent * 3.6}deg, #e2e8f0 0deg)` }}
-      >
-        <span className="h-3.5 w-3.5 rounded-full bg-white" />
-      </span>
-    </span>
+    <div className="mt-3 w-full rounded-lg border border-violet-300/25 px-3 py-2.5 text-[11px] text-white shadow-inner" style={{ background: "radial-gradient(120% 90% at 18% 0%, #1c1a24 0%, #303040 58%)" }} title={ratioQuota?.quota.label}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="font-medium text-slate-300">{period} quota</span>
+        <span className="font-bold tabular-nums text-cyan-300">{percent}% remaining</span>
+      </div>
+      <div aria-label={`${period} quota: ${percent}% remaining`} className="h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemax={100} aria-valuemin={0} aria-valuenow={percent}>
+        <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400 transition-[width] duration-500" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
   );
 }
 
@@ -98,27 +98,53 @@ function ProviderBlock({
 
   return (
     <section className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-      <div className="flex items-start justify-between gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-slate-900">{provider.name}</h3>
-            <ProviderQuota quotas={quotas} />
-          </div>
-          <p className="mt-0.5 text-[11px]">
-            <StatusLine provider={provider} />
-          </p>
+          <h3 className="truncate text-sm font-semibold text-slate-900">{provider.name}</h3>
+          <p className="mt-0.5 text-[11px]"><StatusLine provider={provider} /></p>
         </div>
-        <button
-          aria-label={isBg ? `Премахни ${provider.name}` : `Remove ${provider.name}`}
-          className="inline-flex h-6 w-6 items-center justify-center text-sm text-slate-500 hover:text-slate-900"
-          disabled={assignedRoles.length > 0}
-          onClick={() => controller.removeProvider(provider.id)}
-          title={assignedRoles.length > 0 ? "Remove role assignments first" : "Remove provider"}
-          type="button"
-        >
-          ×
-        </button>
+        {controller.oauthCode?.providerId === provider.id ? (
+          <div className="flex items-center justify-center gap-1.5">
+            <code className="rounded border border-[var(--line)] bg-[var(--surface-2)] px-2 py-1 text-xs font-semibold tracking-widest text-[var(--ink)]">{controller.oauthCode.value}</code>
+            <button
+              aria-label={controller.oauthCodeCopiedProviderId === provider.id ? "OAuth login code copied" : "Copy OAuth login code"}
+              className="inline-flex h-7 w-7 items-center justify-center border-0 text-[var(--ink-muted)] hover:text-[var(--ink)]"
+              onClick={() => void controller.copyOAuthCode(provider.id, controller.oauthCode?.value ?? "")}
+              title={controller.oauthCodeCopiedProviderId === provider.id ? "Copied" : "Copy OAuth login code"}
+              type="button"
+            >
+              {controller.oauthCodeCopiedProviderId === provider.id ? "✓" : "⧉"}
+            </button>
+          </div>
+        ) : <span />}
+        <div className="flex items-center justify-end gap-1">
+          {provider.auth === "oauth" ? (
+            <button
+              className={provider.connected
+                ? "rounded-md border border-[var(--line)] bg-[var(--surface-2)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink)] disabled:opacity-50"
+                : "rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"}
+              disabled={controller.saving || controller.oauthActionProviderId === provider.id}
+              onClick={() => void (provider.connected ? controller.disconnectOAuth(provider) : controller.openOAuthLogin(provider))}
+              type="button"
+            >
+              {provider.connected ? (isBg ? "Прекъсни" : "Disconnect") : (isBg ? "Свържи" : "Connect")}
+            </button>
+          ) : null}
+          <button
+            aria-label={isBg ? `Премахни ${provider.name}` : `Remove ${provider.name}`}
+            className="inline-flex h-7 w-7 items-center justify-center rounded border border-transparent text-sm text-slate-500 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+            disabled={assignedRoles.length > 0}
+            onClick={() => {
+              if (window.confirm(isBg ? `Премахване на ${provider.name}?` : `Remove ${provider.name} from AI providers?`)) controller.removeProvider(provider.id);
+            }}
+            title={assignedRoles.length > 0 ? "Remove role assignments first" : "Remove provider"}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
       </div>
+      <ProviderQuota quotas={quotas} />
 
       {provider.auth === "api_key" ? (
         <div className="mt-3 flex items-end gap-2">
@@ -141,43 +167,7 @@ function ProviderBlock({
             Save key
           </button>
         </div>
-      ) : provider.auth === "oauth" ? (
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            className={provider.connected
-              ? "rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 disabled:opacity-50"
-              : "rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"}
-            disabled={controller.saving || controller.oauthActionProviderId === provider.id}
-            onClick={() => void (provider.connected ? controller.disconnectOAuth(provider) : controller.openOAuthLogin(provider))}
-            type="button"
-          >
-            {provider.connected ? "Disconnect" : "Log in with OAuth"}
-          </button>
-          {controller.oauthCode?.providerId === provider.id ? (
-            <>
-              <code className="rounded border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold tracking-widest text-slate-900">{controller.oauthCode.value}</code>
-              <button
-                aria-label={controller.oauthCodeCopiedProviderId === provider.id ? "OAuth login code copied" : "Copy OAuth login code"}
-                className="inline-flex h-7 w-7 items-center justify-center border-0 text-slate-600 hover:text-slate-950"
-                onClick={() => void controller.copyOAuthCode(provider.id, controller.oauthCode?.value ?? "")}
-                title={controller.oauthCodeCopiedProviderId === provider.id ? "Copied" : "Copy OAuth login code"}
-                type="button"
-              >
-                {controller.oauthCodeCopiedProviderId === provider.id ? (
-                  <svg aria-hidden="true" className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24">
-                    <path d="m5 12 4 4L19 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                  </svg>
-                ) : (
-                  <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <rect height="12" rx="2" stroke="currentColor" strokeWidth="1.7" width="12" x="8" y="8" />
-                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
-                  </svg>
-                )}
-              </button>
-            </>
-          ) : null}
-        </div>
-      ) : (
+      ) : provider.auth === "oauth" ? null : (
         <p className="mt-3 text-[11px] text-slate-600">Local endpoint. No API key required.</p>
       )}
 
@@ -281,11 +271,7 @@ export function AiProviderSettingsCard({ controller, uiLanguage }: AiProviderSet
         return provider ? <ProviderBlock controller={controller} key={provider.id} provider={provider} uiLanguage={uiLanguage} /> : null;
       })}
       {controller.notice ? <p className="text-xs text-[var(--ink-muted)]">{controller.notice}</p> : null}
-      {controller.aiSettings?.quotas.length ? (
-        <div className="rounded-md border border-[var(--line)] bg-white p-2 text-[11px] text-slate-600">
-          {controller.aiSettings.quotas.map((quota) => <p key={quota.providerId}>{quota.label}</p>)}
-        </div>
-      ) : null}
+
     </div>
   );
 }
