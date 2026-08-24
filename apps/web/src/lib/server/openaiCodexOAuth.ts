@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import { repoPath } from "./repoPaths";
+import type { AiQuota } from "./aiProviderTypes";
 
 const ISSUER = "https://auth.openai.com";
 const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
@@ -49,6 +50,21 @@ async function deletePendingLogin(sessionId: string): Promise<void> {
   await fs.unlink(pendingFile(sessionId)).catch((error: unknown) => {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   });
+}
+
+function accountIdFromIdToken(idToken: string): string | undefined {
+  try {
+    const payload = idToken.split(".")[1];
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Record<string, unknown>;
+    const auth = claims["https://api.openai.com/auth"];
+    if (auth && typeof auth === "object" && !Array.isArray(auth)) {
+      const accountId = (auth as Record<string, unknown>).chatgpt_account_id;
+      if (typeof accountId === "string" && accountId.trim()) return accountId.trim();
+    }
+  } catch {
+    // The usage endpoint can still work without the optional account header.
+  }
+  return undefined;
 }
 
 function expiresAtFromToken(idToken: string, expiresIn?: number): string {
@@ -138,6 +154,7 @@ export async function pollCodexOAuth(sessionId: string): Promise<
     refreshToken: tokens.refresh_token,
     expiresAt,
     connectedAt: new Date().toISOString(),
+    accountId: accountIdFromIdToken(tokens.id_token),
   }, null, 2), "utf8");
   try {
     await fs.rename(temporary, SESSION_FILE);
@@ -148,6 +165,51 @@ export async function pollCodexOAuth(sessionId: string): Promise<
   }
   await deletePendingLogin(sessionId);
   return { status: "connected", expiresAt };
+}
+
+export async function fetchCodexQuotas(): Promise<AiQuota[]> {
+  try {
+    const session = JSON.parse(await fs.readFile(SESSION_FILE, "utf8")) as { accessToken?: string; accountId?: string; idToken?: string };
+    if (!session.accessToken) return [];
+    const accountId = session.accountId ?? (session.idToken ? accountIdFromIdToken(session.idToken) : undefined);
+    const response = await fetch("https://chatgpt.com/backend-api/wham/usage", {
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${session.accessToken}`,
+        ...(accountId ? { "ChatGPT-Account-Id": accountId } : {}),
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return [];
+    const payload = (await response.json().catch(() => ({}))) as {
+      rate_limit?: {
+        primary_window?: { used_percent?: number; limit_window_seconds?: number } | null;
+        secondary_window?: { used_percent?: number; limit_window_seconds?: number } | null;
+      };
+    };
+    const periodForWindow = (window: { limit_window_seconds?: number } | null | undefined): "weekly" | "rolling" =>
+      window?.limit_window_seconds !== undefined && window.limit_window_seconds >= 6 * 24 * 60 * 60 ? "weekly" : "rolling";
+    const windows = [
+      { window: payload.rate_limit?.secondary_window, period: periodForWindow(payload.rate_limit?.secondary_window), label: "OpenAI Codex quota" },
+      { window: payload.rate_limit?.primary_window, period: periodForWindow(payload.rate_limit?.primary_window), label: "OpenAI Codex quota" },
+    ];
+    const checkedAt = new Date().toISOString();
+    return windows.flatMap(({ window, period, label }) => {
+      if (!window || typeof window.used_percent !== "number" || !Number.isFinite(window.used_percent)) return [];
+      return [{
+        providerId: "openai-codex",
+        available: true,
+        label,
+        remaining: Math.max(0, Math.min(100, 100 - window.used_percent)),
+        limit: 100,
+        unit: "ratio",
+        period,
+        checkedAt,
+      } satisfies AiQuota];
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function disconnectCodexOAuth(): Promise<void> {

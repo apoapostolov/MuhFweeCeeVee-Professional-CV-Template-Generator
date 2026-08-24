@@ -4,6 +4,7 @@ import { parse, stringify } from "yaml";
 
 import { getOpenRouterModels } from "./openRouterModels";
 import { fetchOpenRouterCredit } from "./openRouterCredit";
+import { fetchCodexQuotas } from "./openaiCodexOAuth";
 import {
   isAiModelCacheFresh,
   readAiModelCache,
@@ -355,6 +356,8 @@ export async function getAiSettingsResponse(
     modelProviderIds.map((providerId) => fetchAiModels(providerId, forceRefresh && (requested.length === 0 || requested.includes(providerId)))),
   );
   const quotas: AiQuota[] = [];
+  const codex = providers.find((provider) => provider.id === "openai-codex");
+  if (codex?.configured) quotas.push(...await fetchCodexQuotas());
   const openRouter = providers.find((provider) => provider.id === "openrouter");
   if (openRouter?.configured) {
     const credit = await fetchOpenRouterCredit(await readProviderKey("openrouter"));
