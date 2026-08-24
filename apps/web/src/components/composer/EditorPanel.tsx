@@ -45,6 +45,7 @@ export type EditorPanelProps = {
   cvTemplatesForLanguage: CvPair[];
   selectedPairKey: string;
   onSwitchCvPair: (pairKey: string) => void;
+  onRequestDuplicateCv: () => void;
   editorTab: EditorTabKey;
   onEditorTabChange: (tab: EditorTabKey) => void;
   companyMetadataEditorOpen: boolean;
@@ -124,6 +125,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     cvTemplatesForLanguage,
     selectedPairKey,
     onSwitchCvPair,
+    onRequestDuplicateCv,
     editorTab,
     onEditorTabChange,
     companyMetadataEditorOpen,
@@ -256,20 +258,23 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     ) : null}
                   </div>
 
-                  <label className="block text-sm font-medium text-slate-800">
-                    CV Template
-                    <select
-                      className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
-                      onChange={(event) => onSwitchCvPair(event.target.value)}
-                      value={selectedPairKey}
-                    >
-                      {cvTemplatesForLanguage.map((pair) => (
-                        <option key={pair.key} value={pair.key}>
-                          {pair.displayName} {pair.displayVersion}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-800">CV Template</label>
+                    <div className="mt-1 flex gap-1.5">
+                      <select
+                        className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
+                        onChange={(event) => onSwitchCvPair(event.target.value)}
+                        value={selectedPairKey}
+                      >
+                        {cvTemplatesForLanguage.map((pair) => (
+                          <option key={pair.key} value={pair.key}>
+                            {pair.displayName} {pair.displayVersion}
+                          </option>
+                        ))}
+                      </select>
+                      <button aria-label="Create a copy of this CV version" className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold" disabled={!selectedCvId} onClick={onRequestDuplicateCv} title="Create CV version" type="button">+</button>
+                    </div>
+                  </div>
 
                   <div>
                     <p className="mb-1 text-sm font-medium text-slate-800">Section Sub-tabs</p>

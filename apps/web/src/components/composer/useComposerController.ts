@@ -1577,6 +1577,23 @@ export function useComposerController() {
     setCompanyMetadataEditorView(view);
   }, [companyMetadataYamlDraft]);
 
+  async function duplicateCurrentCv(name: string): Promise<void> {
+    if (!selectedCvId) throw new Error("Select a CV first.");
+    const response = await fetch("/api/cvs/clone", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sourceCvId: selectedCvId, name }),
+    });
+    const payload = (await response.json()) as { cvId?: string; error?: string };
+    if (!response.ok || !payload.cvId) throw new Error(payload.error ?? "Failed to copy CV version.");
+    const cvsRes = await fetch("/api/cvs");
+    const cvsPayload = (await cvsRes.json()) as CvListResponse;
+    const nextItems = cvsPayload.items ?? [];
+    setCvItems(nextItems);
+    setSelectedCvId(payload.cvId);
+    setPreviewNonce(Date.now());
+  }
+
   function switchLanguage(language: string) {
     setSelectedLanguage(language);
     const next = variantGroup?.[language];
@@ -3287,6 +3304,7 @@ export function useComposerController() {
     languageOptionChoices,
     formRenderer,
     switchLanguage,
+    duplicateCurrentCv,
     switchCvPair,
     openLanguageModal,
     openSyncModal,

@@ -11,7 +11,6 @@ import {
   buildCvVariantIdLoose,
   isSupportedLanguage,
   parseCvProfileVariantId,
-  parseCvVariantId,
   parseCvVariantIdLoose,
   type CvLanguage,
 } from "./cvVariants";
@@ -280,6 +279,29 @@ export async function writeCv(
     await fs.copyFile(tempPath, destination);
     await fs.unlink(tempPath);
   }
+}
+
+export async function cloneCvVersion(sourceCvId: string, requestedName: string): Promise<{ cvId: string; displayName: string; displayVersion: string }> {
+  const source = await readCv(sourceCvId);
+  if (!source) throw new Error(`Source CV '${sourceCvId}' does not exist.`);
+  const name = requestedName.trim();
+  if (!name) throw new Error("A new CV name is required.");
+  const parsed = parseCvVariantIdLoose(sourceCvId);
+  if (!parsed) throw new Error("The selected CV has no supported variant id.");
+  const ids = await listCvIds();
+  const matching = ids.map((id) => parseCvVariantIdLoose(id)).filter((item): item is NonNullable<typeof item> => {
+    return item !== null && item.language === parsed.language && item.target === parsed.target;
+  });
+  const nextIteration = String(Math.max(0, ...matching.map((item) => Number(item.iteration) || 0)) + 1).padStart(3, "0");
+  const cvId = buildCvVariantIdLoose({ language: parsed.language, iteration: nextIteration, target: parsed.target });
+  const metadataRaw = source.metadata && typeof source.metadata === "object" && !Array.isArray(source.metadata) ? source.metadata as Record<string, unknown> : {};
+  const previousVersion = typeof metadataRaw.internal_version === "string" ? Number(metadataRaw.internal_version) : NaN;
+  const displayVersion = Number.isFinite(previousVersion) ? (previousVersion + 0.1).toFixed(1) : nextIteration;
+  await writeCv(cvId, {
+    ...cloneCvDocument(source),
+    metadata: { ...metadataRaw, internal_name: name, internal_version: displayVersion },
+  });
+  return { cvId, displayName: name, displayVersion };
 }
 
 export async function deleteCv(cvId: string): Promise<boolean> {

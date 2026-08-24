@@ -21,6 +21,7 @@ import { ApplicationsPanel } from "./ApplicationsPanel";
 import { WorkspacePanel } from "./WorkspacePanel";
 import { asRecord } from "./form-path-utils";
 import { ComposerToastHost } from "./composer-toast";
+import { DuplicateCvDialog } from "./DuplicateCvDialog";
 
 export type ComposerShellProps = {
   controller: ComposerController;
@@ -28,6 +29,9 @@ export type ComposerShellProps = {
 
 export function ComposerShell({ controller: c }: ComposerShellProps) {
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [duplicateCvOpen, setDuplicateCvOpen] = useState(false);
+  const [duplicateCvBusy, setDuplicateCvBusy] = useState(false);
+  const [duplicateCvError, setDuplicateCvError] = useState("");
   const [assistantApplication, setAssistantApplication] =
     useState<AssistantRecordReference | null>(null);
   const assistantLauncherRef = useRef<HTMLButtonElement>(null);
@@ -36,6 +40,24 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
     new Date().toISOString(),
     assistantApplication ? [assistantApplication] : [],
   );
+
+  function openDuplicateCv(): void {
+    setDuplicateCvError("");
+    setDuplicateCvOpen(true);
+  }
+
+  async function submitDuplicateCv(name: string): Promise<void> {
+    setDuplicateCvBusy(true);
+    setDuplicateCvError("");
+    try {
+      await c.duplicateCurrentCv(name);
+      setDuplicateCvOpen(false);
+    } catch (error) {
+      setDuplicateCvError(error instanceof Error ? error.message : "Failed to create CV version.");
+    } finally {
+      setDuplicateCvBusy(false);
+    }
+  }
 
   function closeAssistant(): void {
     setAssistantOpen(false);
@@ -94,6 +116,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onSelectTemplateId={c.setSelectedTemplateId}
               onSelectTemplateTheme={c.setSelectedTemplateTheme}
               onSwitchCvPair={c.switchCvPair}
+              onRequestDuplicateCv={openDuplicateCv}
               onSwitchLanguage={c.switchLanguage}
               orderedTemplateItems={c.orderedTemplateItems}
               pdfUrl={c.pdfUrl}
@@ -198,6 +221,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onSaveCompanyMetadata={() => void c.saveCompanyMetadataSource()}
               onSaveEditor={() => void c.saveEditorSection()}
               onSwitchCvPair={c.switchCvPair}
+              onRequestDuplicateCv={openDuplicateCv}
               onSwitchLanguage={c.switchLanguage}
 
               onToggleAnalysisDrawer={() => c.setAnalysisDrawerCollapsed((v) => !v)}
@@ -323,6 +347,15 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
         />
       ) : null}
       <ComposerToastHost onDismiss={c.dismissComposerToast} toasts={c.composerToasts} />
+      <DuplicateCvDialog
+        key={`${duplicateCvOpen}:${c.selectedCvId}`}
+        busy={duplicateCvBusy}
+        error={duplicateCvError}
+        initialName={`${c.cvItems.find((item) => item.id === c.selectedCvId)?.displayName ?? "CV"} copy`}
+        onClose={() => setDuplicateCvOpen(false)}
+        onSubmit={(name) => void submitDuplicateCv(name)}
+        open={duplicateCvOpen}
+      />
     </main>
   );
 }
