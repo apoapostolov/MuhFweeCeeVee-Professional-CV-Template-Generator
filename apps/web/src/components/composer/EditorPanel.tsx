@@ -703,7 +703,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             AI Analysis
                           </p>
                           {!analysisDrawerCollapsed ? (
-                            <div className="flex shrink-0 gap-1.5">
+                            <div className="ml-auto flex shrink-0 gap-1.5">
                               <button
                                 className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-transparent px-2 py-1 text-[11px] font-semibold text-slate-800 disabled:opacity-60"
                                 disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
