@@ -1566,12 +1566,13 @@ export function useComposerController() {
   }, [companyMetadataYamlDraft]);
 
   const settingsCreditCompact = useMemo<string>(() => {
-    if (typeof openRouter.creditStatus?.remainingUsd === "number") {
-      return `${formatUsd(openRouter.creditStatus.remainingUsd)} left`;
+    const quota = aiProviders.aiSettings?.quotas[0];
+    if (quota?.available && quota.remaining !== null) {
+      return `${quota.remaining.toFixed(2)} ${quota.unit} left`;
     }
-    if (openRouter.settingsLoading) return "checking...";
-    return openRouter.creditStatus?.available ? "credit ready" : "credit n/a";
-  }, [openRouter.creditStatus, openRouter.settingsLoading]);
+    if (aiProviders.loading) return "checking...";
+    return "AI quota n/a";
+  }, [aiProviders.aiSettings?.quotas, aiProviders.loading]);
 
   function switchLanguage(language: string) {
     setSelectedLanguage(language);

@@ -175,7 +175,9 @@ function ProviderBlock({
 export function AiProviderSettingsCard({ controller, uiLanguage }: AiProviderSettingsCardProps): JSX.Element {
   const isBg = uiLanguage === "bg";
   const selectedIds = new Set(controller.blocks.map((block) => block.providerId));
-  const availableProviders = controller.providers.filter((provider) => !selectedIds.has(provider.id));
+  const availableProviders = controller.providers.filter(
+    (provider) => !selectedIds.has(provider.id) && (provider.id !== "openrouter" || provider.configured),
+  );
   const [selectedProviderId, setSelectedProviderId] = useState("");
 
   return (

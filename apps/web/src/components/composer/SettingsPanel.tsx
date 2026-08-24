@@ -77,7 +77,7 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
           <p className="mt-1 text-[11px] text-slate-600">
             {bg
               ? "Груби токени и USD според размера на CV и тарифите на OpenRouter. Редовете за проучване на компания/позиция използват Research модела по-горе (живо търсене). Реалните разходи може да се различават."
-              : "Rough tokens and USD from CV size and OpenRouter model rates. Research company/job lines use the Research model selected above (live web search). Actual spend may differ."}
+              : "Rough tokens and USD from CV size and selected model rates. Research company/job lines use the selected Research model (live web search). Actual spend may differ."}
           </p>
           <div className="mt-2 grid gap-2">
             {analysisCostEstimate.lines.map((line) => (
