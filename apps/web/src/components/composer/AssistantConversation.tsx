@@ -93,8 +93,8 @@ export function AssistantConversation({
           <article
             className={`max-w-[92%] rounded-lg border px-3 py-2 text-sm ${
               item.role === "user"
-                ? "ml-auto border-[var(--accent)] bg-[var(--accent)] text-white"
-                : "border-[var(--line)] bg-[var(--surface-2)]"
+                ? "ml-auto border-[var(--assistant-user-border)] bg-[var(--assistant-user-bg)] text-[var(--assistant-user-ink)]"
+                : "border-[var(--assistant-ai-border)] bg-[var(--assistant-ai-bg)] text-[var(--assistant-ai-ink)]"
             }`}
             key={item.id}
           >
