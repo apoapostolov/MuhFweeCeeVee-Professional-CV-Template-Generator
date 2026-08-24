@@ -2,6 +2,7 @@ import { getAiProvider } from "./aiProviderRegistry";
 import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
 import { readXaiOAuthAccessToken } from "./xaiOAuth";
+import { readCodexOAuthAccessToken } from "./openaiCodexOAuth";
 import type { AiRole } from "./aiProviderTypes";
 
 type ChatMessage = {
@@ -89,7 +90,9 @@ export async function completeAiText(input: CompletionInput): Promise<Completion
   if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for ${input.role}.`);
   const apiKey = provider.id === "xai-oauth"
     ? await readXaiOAuthAccessToken()
-    : await readAiProviderKey(provider.id);
+    : provider.id === "openai-codex"
+      ? await readCodexOAuthAccessToken()
+      : await readAiProviderKey(provider.id);
   if (provider.auth !== "none" && !apiKey) {
     throw new Error(`AI provider ${provider.name} is not configured for ${input.role}.`);
   }
@@ -173,7 +176,11 @@ export async function completeAiVision(input: VisionCompletionInput): Promise<Co
   if (!binding) throw new Error("No AI provider is configured for the vision role.");
   const provider = getAiProvider(binding.providerId);
   if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for the vision role.`);
-  const apiKey = provider.id === "xai-oauth" ? await readXaiOAuthAccessToken() : await readAiProviderKey(provider.id);
+  const apiKey = provider.id === "xai-oauth"
+    ? await readXaiOAuthAccessToken()
+    : provider.id === "openai-codex"
+      ? await readCodexOAuthAccessToken()
+      : await readAiProviderKey(provider.id);
   if (provider.auth !== "none" && !apiKey) throw new Error(`AI provider ${provider.name} is not configured for the vision role.`);
   const images = input.images.filter((image) => image.startsWith("data:image/"));
   if (images.length === 0) throw new Error("At least one valid image is required.");

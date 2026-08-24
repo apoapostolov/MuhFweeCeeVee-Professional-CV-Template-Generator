@@ -26,6 +26,7 @@ import { getAiProvider } from "./aiProviderRegistry";
 import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
 import { readXaiOAuthAccessToken } from "./xaiOAuth";
+import { readCodexOAuthAccessToken } from "./openaiCodexOAuth";
 
 const MAX_TOOL_ROUNDS = 8;
 const MAX_TOOL_CALLS = 25;
@@ -350,7 +351,11 @@ export const configuredAssistantModel: AssistantModelClient = {
     const binding = settings.roles.assistant;
     const provider = getAiProvider(binding.providerId);
     if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for the Assistant role.`);
-    const apiKey = provider.id === "xai-oauth" ? await readXaiOAuthAccessToken() : await readAiProviderKey(provider.id);
+    const apiKey = provider.id === "xai-oauth"
+      ? await readXaiOAuthAccessToken()
+      : provider.id === "openai-codex"
+        ? await readCodexOAuthAccessToken()
+        : await readAiProviderKey(provider.id);
     if (provider.auth !== "none" && !apiKey) throw new Error(`AI provider ${provider.name} is not configured for the Assistant role.`);
     const thinking = binding.thinkingMode && binding.thinkingMode !== "none" ? { reasoning_effort: binding.thinkingMode } : {};
 

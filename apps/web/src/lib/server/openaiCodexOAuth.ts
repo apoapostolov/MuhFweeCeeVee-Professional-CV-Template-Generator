@@ -32,6 +32,16 @@ type OAuthTokenResponse = {
   expires_in?: number;
 };
 
+type CodexSession = {
+  providerId?: string;
+  idToken?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  connectedAt?: string;
+  accountId?: string;
+};
+
 function pendingFile(sessionId: string): string {
   if (!/^[a-f0-9-]+$/i.test(sessionId)) throw new Error("Invalid OAuth session.");
   return path.join(PENDING_DIR, `${sessionId}.json`);
@@ -76,6 +86,88 @@ function expiresAtFromToken(idToken: string, expiresIn?: number): string {
     // Use the OAuth response lifetime when the ID token is not a JWT.
   }
   return new Date(Date.now() + Math.max(300, expiresIn ?? 3600) * 1000).toISOString();
+}
+
+async function readCodexSession(): Promise<CodexSession | null> {
+  try {
+    return JSON.parse(await fs.readFile(SESSION_FILE, "utf8")) as CodexSession;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function writeCodexSession(session: CodexSession): Promise<void> {
+  await fs.mkdir(path.dirname(SESSION_FILE), { recursive: true });
+  const temporary = `${SESSION_FILE}.${process.pid}.tmp`;
+  await fs.writeFile(temporary, JSON.stringify(session, null, 2), "utf8");
+  try {
+    await fs.rename(temporary, SESSION_FILE);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EPERM") throw error;
+    await fs.copyFile(temporary, SESSION_FILE);
+    await fs.unlink(temporary).catch(() => undefined);
+  }
+}
+
+async function refreshCodexSession(session: CodexSession): Promise<CodexSession | null> {
+  if (!session.refreshToken) return null;
+  const form = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: session.refreshToken,
+    client_id: CLIENT_ID,
+  });
+  try {
+    const response = await fetch(`${ISSUER}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: form,
+      signal: AbortSignal.timeout(15000),
+    });
+    const tokens = (await response.json().catch(() => ({}))) as OAuthTokenResponse;
+    if (!response.ok || !tokens.access_token) return null;
+    const idToken = tokens.id_token || session.idToken || "";
+    const next: CodexSession = {
+      ...session,
+      providerId: "openai-codex",
+      idToken,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token || session.refreshToken,
+      expiresAt: expiresAtFromToken(idToken, tokens.expires_in),
+      connectedAt: session.connectedAt || new Date().toISOString(),
+      accountId: idToken ? accountIdFromIdToken(idToken) || session.accountId : session.accountId,
+    };
+    await writeCodexSession(next);
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+export async function readCodexOAuthAccessToken(): Promise<string> {
+  const session = await readCodexSession();
+  if (!session?.accessToken) throw new Error("OpenAI Codex is not connected.");
+  const expiresAt = session.expiresAt ? Date.parse(session.expiresAt) : 0;
+  if (expiresAt > Date.now() + 60_000) return session.accessToken;
+  const refreshed = await refreshCodexSession(session);
+  if (refreshed?.accessToken) return refreshed.accessToken;
+  throw new Error("OpenAI Codex session expired. Reconnect the provider.");
+}
+
+export async function getCodexOAuthStatus(): Promise<{ connected: boolean; expiresAt?: string }> {
+  try {
+    const session = await readCodexSession();
+    if (!session?.accessToken) return { connected: false };
+    const expiresAt = session.expiresAt ? Date.parse(session.expiresAt) : 0;
+    if (expiresAt <= Date.now() + 60_000) {
+      const refreshed = await refreshCodexSession(session);
+      if (refreshed?.accessToken) return { connected: true, expiresAt: refreshed.expiresAt };
+      return { connected: false, expiresAt: session.expiresAt };
+    }
+    return { connected: true, expiresAt: session.expiresAt };
+  } catch {
+    return { connected: false };
+  }
 }
 
 export async function startCodexOAuth(): Promise<{
@@ -169,13 +261,14 @@ export async function pollCodexOAuth(sessionId: string): Promise<
 
 export async function fetchCodexQuotas(): Promise<AiQuota[]> {
   try {
-    const session = JSON.parse(await fs.readFile(SESSION_FILE, "utf8")) as { accessToken?: string; accountId?: string; idToken?: string };
-    if (!session.accessToken) return [];
+    const accessToken = await readCodexOAuthAccessToken();
+    const session = await readCodexSession();
+    if (!session) return [];
     const accountId = session.accountId ?? (session.idToken ? accountIdFromIdToken(session.idToken) : undefined);
     const response = await fetch("https://chatgpt.com/backend-api/wham/usage", {
       headers: {
         accept: "application/json",
-        authorization: `Bearer ${session.accessToken}`,
+        authorization: `Bearer ${accessToken}`,
         ...(accountId ? { "ChatGPT-Account-Id": accountId } : {}),
       },
       signal: AbortSignal.timeout(15000),

@@ -4,7 +4,7 @@ import { parse, stringify } from "yaml";
 
 import { getOpenRouterModels } from "./openRouterModels";
 import { fetchOpenRouterCredit } from "./openRouterCredit";
-import { fetchCodexQuotas } from "./openaiCodexOAuth";
+import { fetchCodexQuotas, getCodexOAuthStatus } from "./openaiCodexOAuth";
 import {
   isAiModelCacheFresh,
   readAiModelCache,
@@ -413,10 +413,16 @@ async function providerStatus(providerId: string, settings: AiSettingsDocument):
   let expiresAt: string | undefined;
   if (provider.auth === "oauth") {
     try {
-      if (providerId === "xai-oauth") await readXaiOAuthAccessToken();
-      const session = JSON.parse(await fs.readFile(path.join(OAUTH_DIR, `${providerId}.json`), "utf8")) as { expiresAt?: string };
-      connected = Boolean(session.expiresAt && Date.parse(session.expiresAt) > Date.now());
-      expiresAt = session.expiresAt;
+      if (providerId === "xai-oauth") {
+        await readXaiOAuthAccessToken();
+        const session = JSON.parse(await fs.readFile(path.join(OAUTH_DIR, `${providerId}.json`), "utf8")) as { expiresAt?: string };
+        connected = Boolean(session.expiresAt && Date.parse(session.expiresAt) > Date.now());
+        expiresAt = session.expiresAt;
+      } else if (providerId === "openai-codex") {
+        const status = await getCodexOAuthStatus();
+        connected = status.connected;
+        expiresAt = status.expiresAt;
+      }
     } catch {
       connected = false;
     }
