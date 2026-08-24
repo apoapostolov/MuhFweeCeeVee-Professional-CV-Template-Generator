@@ -10,9 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **CV review score metadata** — every CV version can retain free-form ATS and
-  AI-writing detector results by provider, including optional detector scores
-  for individual jobs, frontmatter, backmatter, or other stable sections. New
-  score groups start with the graders used by the Review Lab workflow.
+  AI-writing detector results by provider. Detector records distinguish a
+  whole-CV result from provider-reported or separately tested sidebar,
+  frontmatter, per-position, and backmatter results; absent section data is not
+  fabricated. New score groups start with the graders used by Review Lab.
 - **MuhFwee AI Phases 1–3** — a lower-right launcher opens a responsive, contextual
   copilot with private local conversations, streamed responses, visible MCP
   tool activity, cancellation, reconnect/retry recovery, draft persistence,

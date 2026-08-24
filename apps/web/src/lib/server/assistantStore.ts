@@ -21,7 +21,8 @@ export type AssistantSessionSummary = Pick<
   "id" | "title" | "status" | "createdAt" | "updatedAt" | "context"
 >;
 
-const DEFAULT_STORE_PATH = repoPath("data", "assistant", "sessions.json");
+const DEFAULT_STORE_PATH = repoPath("work", "assistant", "sessions.json");
+const LEGACY_STORE_PATH = repoPath("data", "assistant", "sessions.json");
 const EMPTY_STORE: AssistantStoreDocument = { version: 1, sessions: [] };
 const MAX_EVENTS_PER_SESSION = 1_200;
 
@@ -39,10 +40,8 @@ export class AssistantSessionStore {
   constructor(private readonly filePath = DEFAULT_STORE_PATH) {}
 
   private async readDocument(): Promise<AssistantStoreDocument> {
-    try {
-      const parsed = JSON.parse(
-        await fs.readFile(this.filePath, "utf8"),
-      ) as Partial<AssistantStoreDocument>;
+    const parseDocument = (raw: string): AssistantStoreDocument => {
+      const parsed = JSON.parse(raw) as Partial<AssistantStoreDocument>;
       return {
         version: 1,
         sessions: Array.isArray(parsed.sessions)
@@ -54,11 +53,20 @@ export class AssistantSessionStore {
             )
           : [],
       };
+    };
+    try {
+      return parseDocument(await fs.readFile(this.filePath, "utf8"));
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return cloneStore(EMPTY_STORE);
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      if (this.filePath !== DEFAULT_STORE_PATH) return cloneStore(EMPTY_STORE);
+      try {
+        // Read the old tracked location once so existing local sessions survive
+        // the move to ignored runtime storage. New writes use DEFAULT_STORE_PATH.
+        return parseDocument(await fs.readFile(LEGACY_STORE_PATH, "utf8"));
+      } catch (legacyError) {
+        if ((legacyError as NodeJS.ErrnoException).code === "ENOENT") return cloneStore(EMPTY_STORE);
+        throw legacyError;
       }
-      throw error;
     }
   }
 

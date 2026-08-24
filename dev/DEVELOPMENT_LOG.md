@@ -17,6 +17,16 @@ documentation changes. User-facing summaries belong in `CHANGELOG.md`.
 
 ## Recent Entries
 
+### 2026-08-24 - Detector scope provenance
+
+- Context: Distinguish whole-CV detector results from separately tested or
+  provider-reported results for major CV sections.
+- Contracts: Section results now identify sidebar, frontmatter, a specific
+  experience position, backmatter, or a legacy mixed scope, plus their source.
+- Validation: Schema and editor checks were run in the paired repositories.
+- Follow-up risk: Legacy chunk scans cannot be split into finer scopes without
+  rerunning the detector.
+
 ### 2026-08-24 - Versioned ATS and detector score metadata
 
 - Context: Keep historical résumé-review results attached to the exact CV

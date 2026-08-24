@@ -112,6 +112,20 @@ A provider result should retain `provider`, `providerUrl`, `checkedAt`, `model`,
 notes. Status must distinguish `measured`, `blocked`, `invalid`, `stale`, and
 `incomparable`.
 
+## CV section result model
+
+Keep the whole-CV result separate from section results. A provider record may
+contain an overall result and optional results for sidebar, frontmatter, each
+experience position, and backmatter. Use the experience ID for a position so
+two roles at one company remain distinct.
+
+Record whether section values came from provider-reported granular signals or
+from separate submissions. Sapling and GPTZero can return sentence-level
+signals through their APIs, but these become CV-section results only after the
+application maps them to the submitted scope. Manual free-page chunk scans are
+`separate_tests`, not a provider-native breakdown and not a whole-CV score.
+Providers scanned only as one document have no section values.
+
 ## Consent, cost, and failure handling
 
 - External submission must begin with a visible user action after showing the

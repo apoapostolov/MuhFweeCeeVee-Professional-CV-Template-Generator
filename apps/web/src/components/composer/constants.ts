@@ -298,12 +298,16 @@ export const FIELD_META: Record<string, FieldMeta> = {
     bg: { label: "Доставчик", description: "Име на детектора." },
   },
   "metadata.detector_scores[].score": {
-    en: { label: "Overall Score", description: "Exact full-scope result or status." },
-    bg: { label: "Обща оценка", description: "Точен общ резултат или статус." },
+    en: { label: "Overall Score", description: "Whole-CV result, or why no global result exists." },
+    bg: { label: "Обща оценка", description: "Резултат за цялото CV или защо няма общ резултат." },
+  },
+  "metadata.detector_scores[].section_score_source": {
+    en: { label: "Section Source", description: "Provider breakdown or separately submitted section tests." },
+    bg: { label: "Източник на секциите", description: "Разбивка от доставчика или отделни тестове на секции." },
   },
   "metadata.detector_scores[].section_scores": {
-    en: { label: "Section Scores", description: "Optional results for jobs, frontmatter, or backmatter." },
-    bg: { label: "Оценки по секции", description: "Резултати за позиции, начало или край на CV." },
+    en: { label: "Section Scores", description: "Only sections actually reported or tested: sidebar, frontmatter, each position, and backmatter." },
+    bg: { label: "Оценки по секции", description: "Само отчетени или тествани секции: странична колона, начало, всяка позиция и край." },
   },
   "metadata.detector_scores[].section_scores[].label": {
     en: { label: "Section", description: "Job or major CV section checked." },
@@ -312,5 +316,13 @@ export const FIELD_META: Record<string, FieldMeta> = {
   "metadata.detector_scores[].section_scores[].score": {
     en: { label: "Score", description: "Exact detector result for this section." },
     bg: { label: "Оценка", description: "Точен резултат за тази секция." },
+  },
+  "metadata.detector_scores[].section_scores[].scope": {
+    en: { label: "Scope", description: "sidebar, frontmatter, experience, backmatter, or mixed." },
+    bg: { label: "Обхват", description: "sidebar, frontmatter, experience, backmatter или mixed." },
+  },
+  "metadata.detector_scores[].section_scores[].experience_id": {
+    en: { label: "Position ID", description: "Experience ID when this result covers one specific position." },
+    bg: { label: "ID на позиция", description: "ID на опита, когато резултатът е за една конкретна позиция." },
   },
 };

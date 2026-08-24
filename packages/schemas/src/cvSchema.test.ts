@@ -63,7 +63,13 @@ describe("validateCvV1", () => {
     metadata.detector_scores = [{
       label: "Sapling",
       score: "mixed section results",
-      section_scores: [{ label: "Frontmatter", score: "5.1% AI" }],
+      section_score_source: "separate_tests",
+      section_scores: [{
+        label: "Gameloft — Tracking Data Manager",
+        score: "5.1% AI",
+        scope: "experience",
+        experience_id: "exp_gameloft_data_manager",
+      }],
     }];
     expect(validateCvV1(doc).valid).toBe(true);
   });
@@ -73,6 +79,19 @@ describe("validateCvV1", () => {
     const doc = parse(raw) as Record<string, unknown>;
     const metadata = doc.metadata as Record<string, unknown>;
     metadata.ats_scores = [{ label: "ApplyCove", score: 81 }];
+    expect(validateCvV1JsonSchema(doc).valid).toBe(false);
+  });
+
+  it("rejects unknown detector section scopes", () => {
+    const raw = readFileSync(personalCvPath, "utf8");
+    const doc = parse(raw) as Record<string, unknown>;
+    const metadata = doc.metadata as Record<string, unknown>;
+    metadata.detector_scores = [{
+      label: "Sapling",
+      score: "No whole-CV score",
+      section_score_source: "separate_tests",
+      section_scores: [{ label: "Unknown", score: "5.1% AI", scope: "company" }],
+    }];
     expect(validateCvV1JsonSchema(doc).valid).toBe(false);
   });
 

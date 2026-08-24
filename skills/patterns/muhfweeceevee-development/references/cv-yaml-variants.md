@@ -68,16 +68,22 @@ metadata:
       score: "81/100"
   detector_scores:
     - label: Sapling
-      score: "mixed section results"
+      score: "No whole-CV score; tested as separate sections"
+      section_score_source: separate_tests
       section_scores:
-        - label: Frontmatter
+        - label: Gameloft — Tracking Data Manager
           score: "5.1% AI"
+          scope: experience
+          experience_id: exp_gameloft_data_manager
 ```
 
 `ats_scores[]` and `detector_scores[]` use free-form string scores so exact
-provider wording survives. Detector entries can add `section_scores[]` for
-stable per-job, frontmatter, or backmatter scopes. Missing groups receive the
-built-in provider presets when a CV is loaded; initialized arrays are preserved.
+provider wording survives. `detector_scores[].score` is the whole-CV result or
+an explicit unavailable status. Add `section_scores[]` only when the provider
+reported section data or each scope was separately submitted. Use sidebar,
+frontmatter, one `experience` scope per position, and backmatter; add
+`experience_id` when the scope is a position. Missing groups receive the built-in
+provider presets when a CV is loaded; initialized arrays are preserved.
 
 ## Target companies (external)
 

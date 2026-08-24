@@ -1,9 +1,12 @@
 export type CvReviewSectionScore = {
   label: string;
   score: string;
+  scope?: "sidebar" | "frontmatter" | "experience" | "backmatter" | "mixed";
+  experience_id?: string;
 };
 
 export type CvReviewScore = CvReviewSectionScore & {
+  section_score_source?: "provider_reported" | "separate_tests";
   section_scores?: CvReviewSectionScore[];
 };
 

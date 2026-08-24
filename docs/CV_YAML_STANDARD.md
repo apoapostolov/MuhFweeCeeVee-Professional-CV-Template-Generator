@@ -47,8 +47,9 @@ metadata:
 - Unknown fields are allowed for forward compatibility.
 - Review scores are optional metadata arrays. Each entry stores the provider in
   `label` and its exact result in free-form string `score`. Detector entries may
-  include `section_scores[]` using the same `label` and `score` shape for jobs,
-  frontmatter, backmatter, or other stable scan scopes.
+  include `section_scores[]` only for scopes the provider reported or that were
+  submitted as separate tests. Stable scopes are sidebar, frontmatter, each
+  experience position, and backmatter.
 - Experience publication links are supported as:
   `experience[].publication_links[]` with object shape:
   - `url` (required for rendering link)
@@ -71,15 +72,25 @@ metadata:
       score: "81/100; parseability 100"
   detector_scores:
     - label: Sapling
-      score: "mixed section results"
+      score: "No whole-CV score; tested as separate sections"
+      section_score_source: separate_tests
       section_scores:
-        - label: Main experience section
+        - label: Gameloft — Tracking Data Manager
           score: "5.1% AI"
+          scope: experience
+          experience_id: exp_gameloft_data_manager
 ```
 
 Scores remain strings because providers expose incompatible scales,
 classifications, compound results, and invalid or stale statuses. Do not average
 providers or convert missing, blocked, stale, or invalid results to zero.
+
+`score` is the whole-CV result when one was measured. If the provider could not
+scan the full CV, it records that status instead of combining section scores.
+`section_score_source` distinguishes a provider-native breakdown
+(`provider_reported`) from independent submissions (`separate_tests`). Omit
+`section_scores` when no section data exists. Use one `experience` result per
+position; `experience_id` disambiguates multiple roles at the same company.
 
 ## Seed Example in this repo
 

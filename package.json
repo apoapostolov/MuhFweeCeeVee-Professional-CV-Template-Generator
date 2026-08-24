@@ -22,6 +22,7 @@
     "typecheck": "npm run typecheck --workspace @muhfweeceevee/web",
     "typecheck:web": "npm run typecheck --workspace @muhfweeceevee/web",
     "check": "npm run lint && npm run typecheck",
+    "check:public-sync": "node scripts/check-public-sync.mjs",
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
     "test": "vitest run",

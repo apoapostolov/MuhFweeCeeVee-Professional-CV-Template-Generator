@@ -119,6 +119,11 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
       properties: {
         label: { type: "string" },
         score: { type: "string" },
+        scope: {
+          type: "string",
+          enum: ["sidebar", "frontmatter", "experience", "backmatter", "mixed"],
+        },
+        experience_id: { type: "string" },
       },
       additionalProperties: true,
     },
@@ -128,6 +133,10 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
       properties: {
         label: { type: "string" },
         score: { type: "string" },
+        section_score_source: {
+          type: "string",
+          enum: ["provider_reported", "separate_tests"],
+        },
         section_scores: {
           type: "array",
           items: { $ref: "#/$defs/reviewSectionScore" },
