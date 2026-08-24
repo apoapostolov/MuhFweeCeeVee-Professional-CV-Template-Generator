@@ -60,22 +60,25 @@ function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
   if (!creditQuota && !ratioQuota) return null;
   if (creditQuota && !ratioQuota) {
     return (
-      <div className="mt-3 flex w-full items-center justify-between rounded-lg border border-emerald-400/30 px-3 py-2 text-xs font-semibold tabular-nums" style={{ background: "radial-gradient(120% 90% at 18% 0%, #1c1a24 0%, #303040 58%)" }} title={creditQuota.label}>
-        <span className="text-slate-300">Available credit</span>
-        <span className="text-emerald-300">{creditQuota.remaining === null ? "$—" : `$${creditQuota.remaining.toFixed(2)}`}</span>
+      <div className="mt-3 flex w-full items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold tabular-nums" title={creditQuota.label}>
+        <span className="text-slate-700">Available credit</span>
+        <span className="text-emerald-700">{creditQuota.remaining === null ? "$—" : `$${creditQuota.remaining.toFixed(2)}`}</span>
       </div>
     );
   }
   const percent = Math.round((ratioQuota?.ratio ?? 0) * 100);
   const period = ratioQuota?.quota.period === "monthly" ? "Monthly" : "Weekly";
+  const progressBackground = percent < 80
+    ? "#67e8f9"
+    : "linear-gradient(90deg, #67e8f9 0%, #67e8f9 25%, #a78bfa 65%, #f0abfc 100%)";
   return (
-    <div className="mt-3 w-full rounded-lg px-3 py-2.5 text-[11px] text-white shadow-inner" style={{ background: "radial-gradient(120% 90% at 18% 0%, #1c1a24 0%, #303040 58%)" }} title={ratioQuota?.quota.label}>
+    <div className="mt-3 w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2.5 text-[11px] text-slate-800" title={ratioQuota?.quota.label}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="font-medium text-slate-300">{period} quota</span>
-        <span className="font-bold tabular-nums text-cyan-300">{percent}% remaining</span>
+        <span className="font-medium text-slate-700">{period} quota</span>
+        <span className="font-bold tabular-nums text-slate-800">{percent}% remaining</span>
       </div>
       <div aria-label={`${period} quota: ${percent}% remaining`} className="h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemax={100} aria-valuemin={0} aria-valuenow={percent}>
-        <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400 transition-[width] duration-500" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full transition-[width] duration-500" style={{ background: progressBackground, width: `${percent}%` }} />
       </div>
     </div>
   );
