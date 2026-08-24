@@ -58,10 +58,11 @@ export function useAiProviderSettings() {
   const [modelPricing, setModelPricing] = useState<Record<string, AiModelPricing>>({});
   const [modelPricingLoading, setModelPricingLoading] = useState(false);
 
-  const applyResponse = useCallback((next: AiSettingsResponse, preserveProviderIds: string[] = []) => {
+  const applyResponse = useCallback((next: AiSettingsResponse, preserveProviderIds: string[] = [], preserveSelections = false) => {
     setResponse(next);
     const nextProviderIds = [...new Set([...preserveProviderIds, ...uniqueProviderIds(next)])];
     setProviderIds(nextProviderIds);
+    if (preserveSelections) return;
     setSelectedModels((current) => {
       const updated = { ...current };
       for (const providerId of nextProviderIds) {
@@ -208,7 +209,7 @@ export function useAiProviderSettings() {
     });
     const payload = (await result.json()) as AiSettingsResponse & { error?: string };
     if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to save AI model settings.");
-    applyResponse(payload, providerIds);
+    applyResponse(payload, providerIds, true);
   }, [applyResponse, providerIds]);
 
   const setModel = useCallback((providerId: string, modelId: string) => {
