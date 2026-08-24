@@ -197,7 +197,7 @@ export function useAiProviderSettings() {
   }, []);
 
   const openOAuthLogin = useCallback(async (provider: AiProviderStatus) => {
-    const popup = window.open("about:blank", "mfcv-ai-oauth", "noopener,noreferrer");
+    const popup = window.open("about:blank", "mfcv-ai-oauth", "popup,width=520,height=720");
     if (!popup) {
       setNotice("The OAuth window was blocked. Allow pop-ups for this site and try again.");
       return;
@@ -210,7 +210,7 @@ export function useAiProviderSettings() {
         if (!result.ok || !payload.verificationUri || !payload.userCode) {
           throw new Error(payload.error ?? "OpenAI Codex OAuth login could not start.");
         }
-        popup.location.href = payload.verificationUri;
+        popup.location.assign(payload.verificationUri);
         setNotice(`Enter code ${payload.userCode} in the OpenAI Codex login window, then reload this provider.`);
         return;
       }
@@ -223,7 +223,7 @@ export function useAiProviderSettings() {
         setNotice(`${provider.name} OAuth login is not available in this build.`);
         return;
       }
-      popup.location.href = verificationUri;
+      popup.location.assign(verificationUri);
       setNotice(`Complete ${provider.name} login in the opened window, then reload this provider.`);
     } catch (error) {
       popup.close();
