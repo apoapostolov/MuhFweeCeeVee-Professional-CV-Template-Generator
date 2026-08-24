@@ -22,6 +22,14 @@ export type AiProviderDefinition = {
   oauthVerificationUri?: string;
 };
 
+export type AiModelPricing = {
+  providerId: string;
+  modelId: string;
+  inputPer1M: number | null;
+  outputPer1M: number | null;
+  checkedAt: string;
+};
+
 export type AiModel = {
   providerId: string;
   id: string;

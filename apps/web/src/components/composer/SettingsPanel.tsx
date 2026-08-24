@@ -19,6 +19,14 @@ export type SettingsPanelProps = {
 const SETTINGS_COLUMN_CLASS =
   "flex min-h-0 min-w-0 flex-col overflow-auto rounded-xl border border-[var(--line)] bg-white p-4";
 
+function RefreshIcon(): JSX.Element {
+  return (
+    <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+      <path d="M20 11a8 8 0 0 0-14.7-4L4 9m0 0V4m0 5h5M4 13a8 8 0 0 0 14.7 4L20 15m0 0v5m0-5h-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function CostEstimateCard({
   label,
   inputTokens,
@@ -71,13 +79,25 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
           <AiProviderSettingsCard controller={aiProviders} uiLanguage={uiLanguage} />
         </div>
         <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
-          <p className="text-sm font-semibold text-slate-800">
-            {bg ? "Приблизителна цена на проверка" : "Approximate Cost per Check"}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-slate-800">
+              {bg ? "Приблизителна цена на проверка" : "Approximate Cost per Check"}
+            </p>
+            <button
+              aria-label={bg ? "Обнови цените на моделите" : "Refresh model pricing"}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[var(--line)] text-slate-600 hover:bg-slate-50 hover:text-slate-950 disabled:opacity-40"
+              disabled={aiProviders.modelPricingLoading}
+              onClick={() => void aiProviders.refreshModelPricing()}
+              title={bg ? "Обнови цените на моделите" : "Refresh model pricing"}
+              type="button"
+            >
+              <span className={aiProviders.modelPricingLoading ? "animate-spin" : ""}><RefreshIcon /></span>
+            </button>
+          </div>
           <p className="mt-1 text-[11px] text-slate-600">
             {bg
-              ? "Груби токени и USD според размера на CV и тарифите на OpenRouter. Редовете за проучване на компания/позиция използват Research модела по-горе (живо търсене). Реалните разходи може да се различават."
-              : "Rough tokens and USD from CV size and selected model rates. Research company/job lines use the selected Research model (live web search). Actual spend may differ."}
+              ? "Груби токени и USD според размера на CV и цените на избраните модели от models.dev. Редовете за проучване използват Research модела. Реалните разходи може да се различават."
+              : "Rough tokens and USD from the selected models' prices on models.dev. Research lines use the selected Research model. Actual spend may differ."}
           </p>
           <div className="mt-2 grid gap-2">
             {analysisCostEstimate.lines.map((line) => (

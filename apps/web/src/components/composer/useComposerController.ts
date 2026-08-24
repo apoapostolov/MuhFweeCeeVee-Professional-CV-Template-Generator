@@ -135,6 +135,7 @@ export function useComposerController() {
   const openRouter = useOpenRouterSettings();
   const aiProviders = useAiProviderSettings();
   const refreshAiSettings = aiProviders.refreshSettings;
+  const getAiModelPricingForRole = aiProviders.getModelPricingForRole;
   const previousActivePanel = useRef<ActivePanel | null>(null);
   useEffect(() => {
     if (activePanel === "settings" && previousActivePanel.current !== "settings") {
@@ -456,12 +457,15 @@ export function useComposerController() {
         fullCvOutputTokenEstimate,
         openRouter.selectedAnalysisModelOption,
         selectedResearchModelOption,
+        getAiModelPricingForRole("analysis"),
+        getAiModelPricingForRole("research"),
       ),
     [
       cvSizeTokenEstimate,
       fullCvOutputTokenEstimate,
       openRouter.selectedAnalysisModelOption,
       selectedResearchModelOption,
+      getAiModelPricingForRole,
     ],
   );
 

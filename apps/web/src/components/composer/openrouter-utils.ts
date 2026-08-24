@@ -20,6 +20,11 @@ export type OpenRouterModelOption = {
   pricePerImageNote?: string | null;
 };
 
+export type ModelPricing = {
+  inputPer1M: number | null;
+  outputPer1M: number | null;
+};
+
 export type AnalysisCostLine = {
   label: string;
   inputTokens: number;
@@ -110,6 +115,15 @@ export function researchModelUsesWebSearch(modelId: string): boolean {
   return isWebCapableModelId(resolveOpenRouterResearchModelId(modelId));
 }
 
+export function estimateModelCost(
+  pricing: ModelPricing,
+  inputTokens: number,
+  outputTokens: number,
+): number | null {
+  if (pricing.inputPer1M === null || pricing.outputPer1M === null) return null;
+  return (inputTokens / 1_000_000) * pricing.inputPer1M + (outputTokens / 1_000_000) * pricing.outputPer1M;
+}
+
 export function estimateOpenRouterCost(
   model: OpenRouterModelOption | null,
   inputTokens: number,
@@ -128,6 +142,8 @@ export function buildAnalysisCostEstimate(
   fullCvOutputTokenEstimate: number,
   selectedAnalysisModel: OpenRouterModelOption | null,
   selectedResearchModel: OpenRouterModelOption | null,
+  selectedAnalysisPricing?: ModelPricing | null,
+  selectedResearchPricing?: ModelPricing | null,
 ): AnalysisCostEstimate {
   const overhead = 1.4;
   const analysisInputTokens = Math.round((cvSizeTokenEstimate + 1100) * overhead);
@@ -146,46 +162,26 @@ export function buildAnalysisCostEstimate(
   const researchCompanyOutputTokens = Math.round(3600 * overhead);
   const researchJobPositionInputTokens = Math.round((2800 + 1100) * overhead);
   const researchJobPositionOutputTokens = Math.round(6200 * overhead);
-  const analysisCost = estimateOpenRouterCost(
-    selectedAnalysisModel,
-    analysisInputTokens,
-    analysisOutputTokens,
-  );
-  const photoAnalysisCost = estimateOpenRouterCost(
-    selectedAnalysisModel,
-    photoAnalysisInputTokens,
-    photoAnalysisOutputTokens,
-  );
-  const photoComparisonCost = estimateOpenRouterCost(
-    selectedAnalysisModel,
-    photoComparisonInputTokens,
-    photoComparisonOutputTokens,
-  );
-  const fieldRewriteCost = estimateOpenRouterCost(
-    selectedAnalysisModel,
-    fieldRewriteInputTokens,
-    fieldRewriteOutputTokens,
-  );
-  const fieldShortenCost = estimateOpenRouterCost(
-    selectedAnalysisModel,
-    fieldShortenInputTokens,
-    fieldShortenOutputTokens,
-  );
-  const fieldTranslateCost = estimateOpenRouterCost(
-    selectedAnalysisModel,
-    fieldTranslateInputTokens,
-    fieldTranslateOutputTokens,
-  );
-  const researchCompanyCost = estimateOpenRouterCost(
-    selectedResearchModel,
-    researchCompanyInputTokens,
-    researchCompanyOutputTokens,
-  );
-  const researchJobPositionCost = estimateOpenRouterCost(
-    selectedResearchModel,
-    researchJobPositionInputTokens,
-    researchJobPositionOutputTokens,
-  );
+  const estimateAnalysisCost = (inputTokens: number, outputTokens: number): number | null =>
+    selectedAnalysisPricing === undefined
+      ? estimateOpenRouterCost(selectedAnalysisModel, inputTokens, outputTokens)
+      : selectedAnalysisPricing === null
+        ? null
+        : estimateModelCost(selectedAnalysisPricing, inputTokens, outputTokens);
+  const estimateResearchCost = (inputTokens: number, outputTokens: number): number | null =>
+    selectedResearchPricing === undefined
+      ? estimateOpenRouterCost(selectedResearchModel, inputTokens, outputTokens)
+      : selectedResearchPricing === null
+        ? null
+        : estimateModelCost(selectedResearchPricing, inputTokens, outputTokens);
+  const analysisCost = estimateAnalysisCost(analysisInputTokens, analysisOutputTokens);
+  const photoAnalysisCost = estimateAnalysisCost(photoAnalysisInputTokens, photoAnalysisOutputTokens);
+  const photoComparisonCost = estimateAnalysisCost(photoComparisonInputTokens, photoComparisonOutputTokens);
+  const fieldRewriteCost = estimateAnalysisCost(fieldRewriteInputTokens, fieldRewriteOutputTokens);
+  const fieldShortenCost = estimateAnalysisCost(fieldShortenInputTokens, fieldShortenOutputTokens);
+  const fieldTranslateCost = estimateAnalysisCost(fieldTranslateInputTokens, fieldTranslateOutputTokens);
+  const researchCompanyCost = estimateResearchCost(researchCompanyInputTokens, researchCompanyOutputTokens);
+  const researchJobPositionCost = estimateResearchCost(researchJobPositionInputTokens, researchJobPositionOutputTokens);
   const lines: AnalysisCostLine[] = [
     {
       label: "CV scoring (section or full CV)",

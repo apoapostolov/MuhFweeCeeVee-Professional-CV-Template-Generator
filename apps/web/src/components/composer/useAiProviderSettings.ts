@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
+  AiModelPricing,
   AiProviderStatus,
   AiRole,
   AiSettingsResponse,
@@ -56,6 +57,8 @@ export function useAiProviderSettings() {
   const [oauthCodeCopiedProviderId, setOauthCodeCopiedProviderId] = useState<string | null>(null);
   const [oauthActionProviderId, setOauthActionProviderId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [modelPricing, setModelPricing] = useState<Record<string, AiModelPricing>>({});
+  const [modelPricingLoading, setModelPricingLoading] = useState(false);
 
   const applyResponse = useCallback((next: AiSettingsResponse, preserveProviderIds: string[] = []) => {
     setResponse(next);
@@ -219,6 +222,35 @@ export function useAiProviderSettings() {
     applyResponse(payload, preserveProviderIds);
   }, [applyResponse, providerIds]);
 
+  const refreshModelPricing = useCallback(async () => {
+    const requestedModels = blocks
+      .filter((block) => block.modelId && block.roles.length > 0)
+      .map((block) => ({ providerId: block.providerId, modelId: block.modelId }));
+    if (requestedModels.length === 0) return;
+    setModelPricingLoading(true);
+    setNotice("");
+    try {
+      const result = await fetch("/api/settings/ai/model-pricing", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ models: requestedModels, refresh: true }),
+      });
+      const payload = (await result.json()) as { prices?: AiModelPricing[]; error?: string };
+      if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to load model pricing.");
+      setModelPricing(Object.fromEntries((payload.prices ?? []).map((price) => [`${price.providerId}:${price.modelId}`, price])));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Failed to load model pricing.");
+    } finally {
+      setModelPricingLoading(false);
+    }
+  }, [blocks]);
+
+  const getModelPricingForRole = useCallback((role: AiRole): AiModelPricing | null | undefined => {
+    const block = blocks.find((item) => item.roles.includes(role));
+    if (!block?.modelId) return undefined;
+    return modelPricing[`${block.providerId}:${block.modelId}`] ?? null;
+  }, [blocks, modelPricing]);
+
   const copyTextToClipboard = useCallback(async (value: string): Promise<boolean> => {
     try {
       await navigator.clipboard.writeText(value);
@@ -343,6 +375,9 @@ export function useAiProviderSettings() {
     removeProvider,
     reloadProvider,
     refreshSettings,
+    refreshModelPricing,
+    modelPricingLoading,
+    getModelPricingForRole,
     saveApiKey,
     setModel,
     toggleRole,
