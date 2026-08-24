@@ -133,10 +133,10 @@ export function EditorFlatSubsectionsToggle({
   return (
     <div
       aria-label={ariaLabel}
-      className="inline-flex overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
+      className="inline-flex w-full overflow-hidden rounded-md border border-[var(--line)] text-xs font-semibold"
       role="group"
     >
-      <span className="border-r border-[var(--line)] bg-white px-2.5 py-1.5 text-slate-800">{label}</span>
+      <span className="flex-1 border-r border-[var(--line)] bg-white px-2.5 py-1.5 text-slate-800">{label}</span>
       <button
         className={`px-2.5 py-1.5 ${
           flat ? "bg-[var(--accent)] text-white" : "bg-white text-slate-600 hover:bg-slate-50"

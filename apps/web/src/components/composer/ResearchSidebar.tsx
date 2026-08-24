@@ -281,7 +281,7 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                 </span>
               </label>
               <button
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-2.5 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
                 disabled={researchingCompany || !companyName.trim() || !officeCountry.trim()}
                 onClick={onResearchCompany}
                 type="button"
@@ -296,8 +296,8 @@ export function ResearchSidebar(props: ResearchSidebarProps): JSX.Element {
                       ? "Research компания (уеб)"
                       : "Research company (web)"
                     : language === "bg"
-                      ? "Попълни identity (евтино)"
-                      : "Fill identity (cheap)"}
+                      ? "Попълни identity"
+                      : "Fill identity"}
               </button>
             </div>
 

@@ -227,7 +227,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
               Multimodal photo assessment using your configured vision provider.
             </p>
             <button
-              className="mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+              className="mt-3 inline-flex h-9 items-center gap-2 rounded-md bg-[var(--accent)] px-3 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
               disabled={!analyzeTargetId || photoBoothAnalyzingId.length > 0}
               onClick={() => {
                 if (!analyzeTargetId) return;
@@ -239,7 +239,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
               type="button"
             >
               {photoBoothAnalyzingId ? (
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-500 border-t-transparent" />
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
               ) : (
                 <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
                   <path d="M12 3 14.4 8.1 20 10l-5.6 1.9L12 17l-2.4-5.1L4 10l5.6-1.9Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
