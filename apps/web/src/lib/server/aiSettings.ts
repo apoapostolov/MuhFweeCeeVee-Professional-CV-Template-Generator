@@ -9,7 +9,7 @@ import {
   readAiModelCache,
   writeAiModelCache,
 } from "./aiModelCache";
-import { maskApiKey, readOpenRouterSettings } from "./openRouterSettings";
+import { maskApiKey, readOpenRouterSettings, writeOpenRouterSettings } from "./openRouterSettings";
 import { repoPath } from "./repoPaths";
 import { AI_PROVIDER_REGISTRY, getAiProvider } from "./aiProviderRegistry";
 import type {
@@ -80,6 +80,10 @@ async function readProviderKey(providerId: string): Promise<string> {
 }
 
 async function writeProviderKey(providerId: string, value: string): Promise<void> {
+  if (providerId === "openrouter") {
+    await writeOpenRouterSettings({ apiKey: value });
+    return;
+  }
   const envName = `MFCV_AI_API_KEY_${providerId.replace(/[^A-Za-z0-9]/g, "_").toUpperCase()}`;
   let current = "";
   try {
@@ -135,6 +139,19 @@ export async function writeAiSettingsDocument(
     const provider = getAiProvider(candidate.providerId);
     if (!provider || !candidate.modelId.trim()) throw new Error(`Unknown provider or empty model for ${role}.`);
     roles[role] = { providerId: provider.id, modelId: candidate.modelId.trim() };
+  }
+  const openRouterRoles = Object.fromEntries(
+    ["analysis", "research", "image-generation"].flatMap((role) => {
+      const binding = roles[role as AiRole];
+      return binding?.providerId === "openrouter" ? [[role, binding.modelId]] : [];
+    }),
+  ) as Partial<Record<"analysis" | "research" | "image-generation", string>>;
+  if (Object.keys(openRouterRoles).length > 0) {
+    await writeOpenRouterSettings({
+      model: openRouterRoles.analysis,
+      researchModel: openRouterRoles.research,
+      imageModel: openRouterRoles["image-generation"],
+    });
   }
   for (const [providerId, key] of Object.entries(input.apiKeys ?? {})) {
     if (!getAiProvider(providerId)) throw new Error(`Unknown AI provider '${providerId}'.`);
