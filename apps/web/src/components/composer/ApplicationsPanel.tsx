@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
-import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, Search, Trash2, UserPlus } from "lucide-react";
+import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, Save, Search, Trash2, UserPlus, X } from "lucide-react";
 import type { RenderTweaks } from "@/lib/server/render/tweaks";
 
 import { ApplicationActivityTimeline } from "./ApplicationActivityTimeline";
@@ -228,7 +228,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     importPacketTitle: bg
       ? "Импортира JSON пакет като ново кандидатстване"
       : "Import a saved packet file as a new application",
-    exportPacket: bg ? "Изтегли пакет" : "Download pack",
+    exportPacket: bg ? "Изтегли" : "Download",
     exportPacketTitle: bg
       ? "Запазва CV, писмо и връзки във файл"
       : "Save CV, letter, and links to a file",
@@ -1092,6 +1092,11 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
         </div>
       ) : (
       <div className="relative grid min-h-0 flex-1 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+        {boardLoading ? (
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 text-xs font-semibold text-[var(--ink-muted)] shadow-sm" role="status">
+            {bg ? "Зареждане на кандидатствания…" : "Loading applications…"}
+          </div>
+        ) : null}
         {view === "today" ? (
           <ApplicationTodayView
             applications={filteredApplications}
@@ -1390,7 +1395,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
           ) : null}
 
           {editorOpen ? (
-            <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto">
+            <>
+              <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto">
               <label className="block text-[10px] font-medium text-slate-700">
                 {t.applicationName}
                 <input
@@ -1686,23 +1692,26 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 />
               ) : null}
 
-              <div className="mt-auto flex flex-wrap gap-2 pt-2">
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2 border-t border-[var(--line)] bg-[var(--surface-1)] px-0 py-2">
                 <button
-                  className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
                   disabled={busy}
                   onClick={() => void saveDraft()}
                   type="button"
                 >
+                  <Save aria-hidden className="h-3.5 w-3.5" />
                   {t.save}
                 </button>
                 {draft.id ? (
                   <button
-                    className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
                     disabled={busy}
                     onClick={() => void exportPacket(draft.id!)}
                     title={t.exportPacketTitle}
                     type="button"
                   >
+                    <Download aria-hidden className="h-3.5 w-3.5" />
                     {t.exportPacket}
                   </button>
                 ) : null}
@@ -1724,7 +1733,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   </button>
                 ) : null}
                 <button
-                  className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold"
+                  aria-label={bg ? "Затвори" : "Close"}
+                  className="inline-flex items-center justify-center rounded-md border border-[var(--line)] bg-white p-1.5 text-xs font-semibold"
                   disabled={busy}
                   onClick={() => {
                     onAssistantSelectionChange?.(null);
@@ -1733,10 +1743,10 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   }}
                   type="button"
                 >
-                  {t.cancel}
+                  <X aria-hidden className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </div>
+            </>
           ) : null}
         </aside>
       </div>
