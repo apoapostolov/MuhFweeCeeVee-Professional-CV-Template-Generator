@@ -155,9 +155,9 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                             {item.analysis.verdict}
                           </span>
                         ) : null}
-                        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-1 bg-gradient-to-t from-black/80 to-transparent p-1.5">
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20">
                           <button
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm ${
+                            className={`pointer-events-auto absolute bottom-1 right-1 inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm ${
                               isApproved
                                 ? "border-emerald-400/80 bg-emerald-600/90 text-white"
                                 : "border-white/50 bg-black/55 text-white hover:bg-black/70"
@@ -174,7 +174,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                             </svg>
                           </button>
                           <button
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-rose-300/80 bg-rose-700/90 text-white shadow-sm hover:bg-rose-800/90"
+                            className="pointer-events-auto absolute left-1 top-1 inline-flex h-7 w-7 items-center justify-center rounded-md border border-rose-300/80 bg-rose-700/90 text-white shadow-sm hover:bg-rose-800/90"
                             onClick={(event) => {
                               event.stopPropagation();
                               onRequestDelete(item.id);
@@ -187,7 +187,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                             </svg>
                           </button>
                           <button
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm ${
+                            className={`pointer-events-auto absolute bottom-1 left-1 inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm ${
                               isCompareSelected
                                 ? "border-amber-400/80 bg-amber-600/90 text-white"
                                 : "border-white/50 bg-black/55 text-white hover:bg-black/70"
