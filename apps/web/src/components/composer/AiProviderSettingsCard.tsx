@@ -108,9 +108,11 @@ function ProviderBlock({
           </button>
         </div>
       ) : provider.auth === "oauth" ? (
-        <div className="mt-3">
+        <div className="mt-3 flex items-center gap-2">
           <button
-            className="rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 disabled:opacity-50"
+            className={provider.connected
+              ? "rounded-md border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 disabled:opacity-50"
+              : "rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"}
             disabled={controller.saving || controller.oauthActionProviderId === provider.id}
             onClick={() => void (provider.connected ? controller.disconnectOAuth(provider) : controller.openOAuthLogin(provider))}
             type="button"
@@ -118,16 +120,21 @@ function ProviderBlock({
             {provider.connected ? "Disconnect" : "Log in with OAuth"}
           </button>
           {controller.oauthCode?.providerId === provider.id ? (
-            <div className="mt-2 flex items-center gap-1.5">
+            <>
               <code className="rounded border border-[var(--line)] bg-white px-2 py-1 text-xs font-semibold tracking-widest text-slate-900">{controller.oauthCode.value}</code>
               <button
-                className="rounded border border-[var(--line)] px-2 py-1 text-[10px] font-semibold text-slate-700 hover:text-slate-950"
+                aria-label="Copy OAuth login code"
+                className="inline-flex h-7 w-7 items-center justify-center border-0 text-slate-600 hover:text-slate-950"
                 onClick={() => void controller.copyOAuthCode(controller.oauthCode?.value ?? "")}
+                title="Copy OAuth login code"
                 type="button"
               >
-                Copy
+                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <rect height="12" rx="2" stroke="currentColor" strokeWidth="1.7" width="12" x="8" y="8" />
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+                </svg>
               </button>
-            </div>
+            </>
           ) : null}
         </div>
       ) : (
