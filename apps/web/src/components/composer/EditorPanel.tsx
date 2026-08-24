@@ -697,13 +697,43 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                     }`}
                   >
                     <div className={`border-b border-[var(--line)] px-2 py-2 ${analysisDrawerCollapsed ? "" : "space-y-2"}`}>
-                      <div className={`flex items-center justify-between gap-2 ${analysisDrawerCollapsed ? "md:justify-center" : ""}`}>
-                        <p className={`text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)] ${analysisDrawerCollapsed ? "md:hidden" : ""}`}>
-                          AI Scoring Analysis
-                        </p>
+                      <div className={`flex items-center gap-2 ${analysisDrawerCollapsed ? "justify-center" : ""}`}>
+                        <div className={`flex min-w-0 flex-1 items-center gap-2 ${analysisDrawerCollapsed ? "md:justify-center" : ""}`}>
+                          <p className={`min-w-0 truncate text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)] ${analysisDrawerCollapsed ? "md:hidden" : ""}`}>
+                            AI Scoring Analysis
+                          </p>
+                          {!analysisDrawerCollapsed ? (
+                            <div className="flex shrink-0 gap-1.5">
+                              <button
+                                className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-transparent px-2 py-1 text-[11px] font-semibold text-slate-800 disabled:opacity-60"
+                                disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
+                                onClick={onRunAnalysisSection}
+                                type="button"
+                              >
+                                <AiStarsIcon
+                                  className={`h-3 w-3 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
+                                  variant={resolvedTheme === "dark" ? "default" : "on-light"}
+                                />
+                                Section
+                              </button>
+                              <button
+                                className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-transparent px-2 py-1 text-[11px] font-semibold text-slate-800 disabled:opacity-60"
+                                disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
+                                onClick={onRunAnalysisFull}
+                                type="button"
+                              >
+                                <AiStarsIcon
+                                  className={`h-3 w-3 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
+                                  variant={resolvedTheme === "dark" ? "default" : "on-light"}
+                                />
+                                Whole CV
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                         <button
                           aria-label={analysisDrawerCollapsed ? "Expand AI Scoring Analysis drawer" : "Collapse AI Scoring Analysis drawer"}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--line)] bg-white text-[var(--accent)] hover:bg-slate-50"
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-white text-[var(--accent)] hover:bg-slate-50"
                           onClick={() => onToggleAnalysisDrawer()}
                           title={analysisDrawerCollapsed ? "Expand analysis" : "Minimize analysis"}
                           type="button"
@@ -711,34 +741,6 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           {analysisDrawerCollapsed ? "◀" : "▶"}
                         </button>
                       </div>
-                      {!analysisDrawerCollapsed ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          <button
-                            className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-transparent px-2 py-1 text-[11px] font-semibold text-slate-800 disabled:opacity-60"
-                            disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
-                            onClick={onRunAnalysisSection}
-                            type="button"
-                          >
-                            <AiStarsIcon
-                              className={`h-3 w-3 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
-                              variant={resolvedTheme === "dark" ? "default" : "on-light"}
-                            />
-                            Score Section
-                          </button>
-                          <button
-                            className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-transparent px-2 py-1 text-[11px] font-semibold text-slate-800 disabled:opacity-60"
-                            disabled={analysisLoading || !selectedCvId || !selectedTemplateId}
-                            onClick={onRunAnalysisFull}
-                            type="button"
-                          >
-                            <AiStarsIcon
-                              className={`h-3 w-3 shrink-0 ${resolvedTheme === "dark" ? "text-white" : ""}`}
-                              variant={resolvedTheme === "dark" ? "default" : "on-light"}
-                            />
-                            Score Whole CV
-                          </button>
-                        </div>
-                      ) : null}
                     </div>
 
                     {analysisDrawerCollapsed ? (
