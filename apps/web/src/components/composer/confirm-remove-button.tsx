@@ -110,6 +110,14 @@ function CatalogRemoveIcon(): JSX.Element {
   );
 }
 
+function SectionRemoveIcon(): JSX.Element {
+  return (
+    <svg aria-hidden className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ConfirmRemoveButton({
   language,
   kind,
@@ -157,6 +165,8 @@ export function ConfirmRemoveButton({
         <ApproveIcon compact={isCatalog} />
       ) : isCatalog ? (
         <CatalogRemoveIcon />
+      ) : kind === "section" ? (
+        <SectionRemoveIcon />
       ) : (
         <span aria-hidden>✕</span>
       )}

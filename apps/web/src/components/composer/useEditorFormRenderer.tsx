@@ -606,7 +606,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               {allSubsectionsCollapsed ? "▾" : "▴"}
             </button>
           ) : null}
-          {!isExperienceSubsectionPath(pathLabel) ? removeButton : null}
+          {removeButton}
           <button
             aria-label={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
@@ -636,7 +636,6 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               <p className="min-w-0 truncate text-xs text-[var(--ink-muted)]">{headerSubtitle}</p>
             </>
           ) : null}
-          {isExperienceSubsectionPath(pathLabel) ? removeButton : null}
         </div>
       );
       const showArrayChildren = expanded;
