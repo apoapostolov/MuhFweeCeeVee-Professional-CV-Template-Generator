@@ -26,7 +26,7 @@ import { getAiProvider } from "./aiProviderRegistry";
 import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
 import { readXaiOAuthAccessToken } from "./xaiOAuth";
-import { readCodexOAuthAccessToken } from "./openaiCodexOAuth";
+import { readCodexOAuthAccessToken, readCodexOAuthCredentials } from "./openaiCodexOAuth";
 
 const MAX_TOOL_ROUNDS = 8;
 const MAX_TOOL_CALLS = 25;
@@ -383,6 +383,46 @@ export const configuredAssistantModel: AssistantModelClient = {
       const text = parts.filter((part) => typeof part.text === "string").map((part) => String(part.text)).join("");
       const toolCalls = parts.filter((part) => part.functionCall && typeof part.functionCall === "object").map((part) => { const call = part.functionCall as Record<string, unknown>; return { id: id("tool"), type: "function" as const, function: { name: String(call.name ?? ""), arguments: JSON.stringify(call.args ?? {}) } }; });
       return modelResponse({ content: text || null, tool_calls: toolCalls }, { inputTokens: payload.usageMetadata?.promptTokenCount, outputTokens: payload.usageMetadata?.candidatesTokenCount }, binding.modelId);
+    }
+
+    if (provider.id === "openai-codex") {
+      const credentials = await readCodexOAuthCredentials();
+      const input = messages.map((message) => {
+        if (message.role === "tool") return { type: "function_call_output", call_id: message.tool_call_id, output: message.content };
+        const role = message.role === "assistant" ? "assistant" : "user";
+        return { type: "message", role, content: [{ type: role === "assistant" ? "output_text" : "input_text", text: message.content ?? "" }] };
+      });
+      const instructions = messages.find((message) => message.role === "system")?.content;
+      const response = await fetch("https://chatgpt.com/backend-api/codex/responses", {
+        method: "POST",
+        headers: { authorization: `Bearer ${credentials.accessToken}`, "content-type": "application/json", ...(credentials.accountId ? { "ChatGPT-Account-Id": credentials.accountId } : {}) },
+        signal,
+        body: JSON.stringify({ model: binding.modelId, store: false, stream: true, ...(instructions ? { instructions } : {}), input, tools: modelTools(tools).map((tool) => ({ type: "function", name: tool.function.name, description: tool.function.description, parameters: tool.function.parameters })), parallel_tool_calls: false }),
+      });
+      const raw = await response.text();
+      if (!response.ok) throw new Error(`OpenAI Codex request failed with HTTP ${response.status}: ${raw}`);
+      let text = "";
+      const toolCalls: ModelToolCall[] = [];
+      let usage: { inputTokens?: number; outputTokens?: number } = {};
+      for (const line of raw.split(/\r?\n/)) {
+        if (!line.startsWith("data: ")) continue;
+        const event = JSON.parse(line.slice(6)) as Record<string, unknown>;
+        if (event.type === "response.output_text.delta" && typeof event.delta === "string") text += event.delta;
+        if (event.type === "response.completed" && event.response && typeof event.response === "object") {
+          const completed = event.response as Record<string, unknown>;
+          const completedUsage = completed.usage && typeof completed.usage === "object" ? completed.usage as Record<string, unknown> : {};
+          usage = { inputTokens: Number(completedUsage.input_tokens ?? 0), outputTokens: Number(completedUsage.output_tokens ?? 0) };
+          const output = Array.isArray(completed.output) ? completed.output : [];
+          for (const item of output) {
+            if (!item || typeof item !== "object") continue;
+            const call = item as Record<string, unknown>;
+            if (call.type !== "function_call") continue;
+            toolCalls.push({ id: String(call.call_id ?? call.id ?? id("tool")), type: "function", function: { name: String(call.name ?? ""), arguments: String(call.arguments ?? "{}") } });
+          }
+        }
+      }
+      if (!text && toolCalls.length === 0) throw new Error("OpenAI Codex returned no assistant message.");
+      return modelResponse({ content: text || null, tool_calls: toolCalls }, usage, binding.modelId);
     }
 
     const baseEndpoint = provider.kind === "local"

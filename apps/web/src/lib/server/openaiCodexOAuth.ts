@@ -144,6 +144,15 @@ async function refreshCodexSession(session: CodexSession): Promise<CodexSession 
   }
 }
 
+export async function readCodexOAuthCredentials(): Promise<{ accessToken: string; accountId?: string }> {
+  const accessToken = await readCodexOAuthAccessToken();
+  const session = await readCodexSession();
+  return {
+    accessToken,
+    accountId: session?.accountId ?? (session?.idToken ? accountIdFromIdToken(session.idToken) : undefined),
+  };
+}
+
 export async function readCodexOAuthAccessToken(): Promise<string> {
   const session = await readCodexSession();
   if (!session?.accessToken) throw new Error("OpenAI Codex is not connected.");
