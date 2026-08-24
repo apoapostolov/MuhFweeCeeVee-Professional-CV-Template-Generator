@@ -20,10 +20,9 @@ MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applica
 
 ## What’s New in 1.4.0
 
-- **Write and review a CV.** Rate skills in half-steps. Keep ATS and writing-review findings on the document. Clone a revision when you want a new version.
+- **Twenty AI providers.** The workspace is no longer tied to a single OpenRouter account. Use API keys, OAuth subscriptions, or a local endpoint. Each provider has a credit or quota you can watch as you work.
 - **Track applications.** Details, contacts, and next actions live on the application. The timeline is editable. Freeze the exact pack you submitted.
 - **Print a PDF.** Print Room remembers your print choices and lists CVs by real version, newest first.
-- **Optional AI.** Pick a provider when you want one. MuhFwee AI can read the workspace and wait for approval before it edits.
 
 See the full [changelog](./CHANGELOG.md).
 
