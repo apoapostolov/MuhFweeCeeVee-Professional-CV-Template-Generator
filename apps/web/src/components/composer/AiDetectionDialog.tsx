@@ -48,7 +48,7 @@ export function AiDetectionDialog({
       <div aria-labelledby="ai-detection-title" aria-modal="true" className="max-h-[85vh] w-full max-w-xl overflow-auto rounded-xl border border-[var(--line)] bg-[var(--surface-1)] p-4 shadow-xl" role="dialog">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-slate-900" id="ai-detection-title">AI Detection</h2>
-          <button className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-[var(--surface-2)]" onClick={onClose} type="button">×</button>
+          <button aria-label="Close" className="rounded px-2 py-1 text-sm font-semibold text-[var(--accent)] hover:bg-[var(--surface-2)]" onClick={onClose} type="button">×</button>
         </div>
         <p className="mt-2 text-xs text-[var(--ink-muted)]">
           AI detectors look for writing patterns that can resemble AI-generated text. They are not proof of authorship, and even a CV written entirely by you can trigger a false positive. Checking your CV helps catch wording that sounds generic or overly polished before it raises questions in a screening process. We check the visible CV text with several detectors; external services receive a sanitized copy and may use paid quota.

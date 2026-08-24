@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChangeEvent, JSX, KeyboardEvent, RefObject, UIEvent } from "react";
+import { ClipboardCheck, ScanSearch } from "lucide-react";
 
 import { defaultSectionDraftForEditorPath, EDITOR_TABS } from "./constants";
 import {
@@ -223,7 +224,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           </option>
                         ))}
                       </select>
-                      <button aria-label="Create a copy of this CV version" className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold" disabled={!selectedCvId} onClick={onRequestDuplicateCv} title="Create CV version" type="button">+</button>
+                      <button aria-label="Create a copy of this CV version" className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold text-[var(--accent)]" disabled={!selectedCvId} onClick={onRequestDuplicateCv} title="Create CV version" type="button">+</button>
                     </div>
                   </div>
 
@@ -523,19 +524,21 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           Score Whole CV
                         </button>
                         <button
-                          className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
                           disabled={aiDetectionLoading || !selectedCvId || !selectedTemplateId}
                           onClick={onOpenAiDetection}
                           type="button"
                         >
+                          <ScanSearch aria-hidden className="h-3.5 w-3.5 text-[var(--accent)]" />
                           AI Detection
                         </button>
                         <button
-                          className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
                           disabled={atsCheckLoading || !selectedCvId}
                           onClick={onRunAtsCheck}
                           type="button"
                         >
+                          <ClipboardCheck aria-hidden className="h-3.5 w-3.5 text-[var(--accent)]" />
                           {atsCheckLoading
                             ? uiLanguage === "bg"
                               ? "ATS…"
@@ -722,7 +725,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                       </p>
                       <button
                         aria-label={analysisDrawerCollapsed ? "Expand AI Scoring Analysis drawer" : "Collapse AI Scoring Analysis drawer"}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--line)] bg-white text-slate-700 hover:bg-slate-50"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--line)] bg-white text-[var(--accent)] hover:bg-slate-50"
                         onClick={() => onToggleAnalysisDrawer()}
                         title={analysisDrawerCollapsed ? "Expand analysis" : "Minimize analysis"}
                         type="button"

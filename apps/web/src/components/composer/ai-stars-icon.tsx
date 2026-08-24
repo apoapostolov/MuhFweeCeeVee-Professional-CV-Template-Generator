@@ -24,9 +24,9 @@ export function AiStarsIcon({
         className={`${className} drop-shadow-[0_0_1.5px_rgba(15,23,42,0.55)]`}
         viewBox="0 0 24 24"
       >
-        <path d={starPath} fill="#ffffff" />
-        <path d={smallStarA} fill="#ffffff" opacity="0.9" />
-        <path d={smallStarB} fill="#ffffff" opacity="0.9" />
+        <path d={starPath} fill="var(--accent)" />
+        <path d={smallStarA} fill="var(--accent)" opacity="0.9" />
+        <path d={smallStarB} fill="var(--accent)" opacity="0.9" />
       </svg>
     );
   }
