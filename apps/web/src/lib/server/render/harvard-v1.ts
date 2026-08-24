@@ -16,6 +16,7 @@ import {
   renderSimpleList,
   resolveMargins,
   skillDotCount,
+  skillRatingValue,
   splitName,
   textList,
 } from "./shared";
@@ -114,9 +115,8 @@ export function renderHarvard(
   )
     ? (slots["skills.languages"] ?? getByPath(cv, "skills.languages"))
     : [];
-  const technicalSkills = textList(
-    slots["skills.technical"] ?? getByPath(cv, "skills.technical"),
-  );
+  const technicalSkillsValue = slots["skills.technical"] ?? getByPath(cv, "skills.technical");
+  const technicalSkills = Array.isArray(technicalSkillsValue) ? technicalSkillsValue : [];
   const experiences = Array.isArray(
     slots["experience.items"] ?? getByPath(cv, "experience"),
   )
@@ -270,14 +270,16 @@ export function renderHarvard(
 
   const skillRows = technicalSkills
     .map((item, index) => {
-      const score = skillDotCount(index);
+      const score = skillRatingValue(item, index);
+      const record = asRecord(item);
+      const itemLabel = record ? record.name ?? record.skill ?? "" : item;
       const stars = Array.from({ length: 5 })
-        .map(
-          (_, starIndex) =>
-            `<span class="star ${starIndex < score ? "on" : ""}">★</span>`,
-        )
+        .map((_, starIndex) => {
+          const state = starIndex + 1 <= score ? "on" : starIndex + 0.5 === score ? "half" : "";
+          return `<span class="star ${state}">★</span>`;
+        })
         .join("");
-      return `<li><span class="label">${escapeHtml(item)}</span><span class="stars">${stars}</span></li>`;
+      return `<li><span class="label">${escapeHtml(itemLabel)}</span><span class="stars">${stars}</span></li>`;
     })
     .join("");
 
@@ -368,6 +370,7 @@ export function renderHarvard(
     }
     .star { color: ${theme.starOff}; font-size: 3.8mm; }
     .star.on { color: ${theme.starOn}; }
+    .star.half { background: linear-gradient(90deg, ${theme.starOn} 50%, ${theme.starOff} 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
     .name { margin: 0; font-size: 8.4mm; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.08; font-weight: 600; color: #1f2937; }
     .summary { margin-top: 3.4mm; margin-bottom: 4.2mm; color: #394150; font-size: 4.05mm; line-height: 1.45; }

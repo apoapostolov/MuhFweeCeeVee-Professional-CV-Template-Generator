@@ -1,5 +1,5 @@
 import type { CvDocument } from "../cvStore";
-import { languageLevelLabel, skillBarPercent } from "./cambridge-v1";
+import { languageLevelLabel } from "./cambridge-v1";
 import { toPublicationLinks } from "./profile-links";
 import { toProductLines } from "./europass-v1";
 import type { StanfordThemePalette, TemplateFile } from "./types";
@@ -17,6 +17,7 @@ import {
   renderParagraphs,
   renderSimpleList,
   resolveMargins,
+  skillRatingPercent,
   splitName,
   textList,
 } from "./shared";
@@ -79,7 +80,8 @@ export function renderStanford(
   const languages = Array.isArray(slots["skills.languages"] ?? getByPath(cv, "skills.languages"))
     ? (slots["skills.languages"] ?? getByPath(cv, "skills.languages"))
     : [];
-  const technicalSkills = textList(slots["skills.technical"] ?? getByPath(cv, "skills.technical"));
+  const technicalSkillsValue = slots["skills.technical"] ?? getByPath(cv, "skills.technical");
+  const technicalSkills = Array.isArray(technicalSkillsValue) ? technicalSkillsValue : [];
   const experiences = Array.isArray(slots["experience.items"] ?? getByPath(cv, "experience"))
     ? (slots["experience.items"] ?? getByPath(cv, "experience"))
     : [];
@@ -160,7 +162,11 @@ export function renderStanford(
     .join("");
 
   const skillsHtml = technicalSkills
-    .map((entry, index) => `<div class="skill"><span class="skill-name">${escapeHtml(entry)}</span><div class="bar"><div class="fill" style="width:${skillBarPercent(index)}%"></div></div></div>`)
+    .map((entry, index) => {
+      const record = asRecord(entry);
+      const itemLabel = record ? record.name ?? record.skill ?? "" : entry;
+      return `<div class="skill"><span class="skill-name">${escapeHtml(itemLabel)}</span><div class="bar"><div class="fill" style="width:${skillRatingPercent(entry, index)}%"></div></div></div>`;
+    })
     .join("");
 
   const referenceItem = asRecord(references[0]);

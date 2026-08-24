@@ -73,6 +73,26 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
     skills: {
       type: "object",
       required: ["technical", "social", "languages"],
+      properties: {
+        technical: { type: "array", items: { $ref: "#/$defs/skillEntry" } },
+        social: { type: "array", items: { $ref: "#/$defs/skillEntry" } },
+        core_strengths: { type: "array", items: { $ref: "#/$defs/skillEntry" } },
+        languages: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              language: { type: "string" },
+              proficiency_cefr: { type: "string" },
+              reading: { type: "string" },
+              writing: { type: "string" },
+              speaking: { type: "string" },
+              rating: { $ref: "#/$defs/skillRating" },
+            },
+            additionalProperties: true,
+          },
+        },
+      },
       additionalProperties: true,
     },
     metadata: {
@@ -82,6 +102,28 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
         language: { type: "string", enum: ["bg", "en"] },
       },
       additionalProperties: true,
+    },
+  },
+  $defs: {
+    skillRating: {
+      type: "number",
+      minimum: 0.5,
+      maximum: 5,
+      multipleOf: 0.5,
+    },
+    skillEntry: {
+      oneOf: [
+        { type: "string" },
+        {
+          type: "object",
+          properties: {
+            name: { type: "string", minLength: 1 },
+            rating: { $ref: "#/$defs/skillRating" },
+          },
+          required: ["name"],
+          additionalProperties: true,
+        },
+      ],
     },
   },
   additionalProperties: true,

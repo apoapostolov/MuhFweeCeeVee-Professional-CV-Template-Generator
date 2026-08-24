@@ -75,6 +75,31 @@ import type { WeightedKeyword } from "@/lib/research/types";
 import type { PathSegment } from "./types";
 import { VisibilityToggleButton } from "./visibility-toggle";
 
+const SKILL_RATING_OPTIONS = ["", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"] as const;
+
+function isRatedSkillListPath(pathLabel: string): boolean {
+  return [
+    "skills.technical",
+    "skills.social",
+    "skills.core_strengths",
+    "optional_sections.other_skills",
+  ].includes(pathLabel);
+}
+
+function skillNameValue(item: unknown): string {
+  if (item && typeof item === "object" && !Array.isArray(item)) {
+    const record = item as Record<string, unknown>;
+    return String(record.name ?? record.skill ?? "");
+  }
+  return String(item ?? "");
+}
+
+function skillRatingValue(item: unknown): string {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return "";
+  const rating = (item as Record<string, unknown>).rating;
+  return typeof rating === "number" && Number.isFinite(rating) ? String(rating) : "";
+}
+
 export type EditorFormRendererContext = {
   resolvedTheme: "light" | "dark";
   selectedCvId: string;
@@ -633,6 +658,67 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                 const childPath = [...path, index];
                 const childLabel = `${pathLabel}[${index}]`;
                 const primitive = item === null || ["string", "number", "boolean"].includes(typeof item);
+                if (isRatedSkillListPath(pathLabel)) {
+                  const skillName = skillNameValue(item);
+                  const skillRating = skillRatingValue(item);
+                  const listItemLabel = `${copy.label} ${index + 1}`;
+                  const childVisibilityKey = pathSegmentsToVisibilityKey(childPath, editorPath);
+                  const childVisible = isTemplatePathVisible(childVisibilityKey, templateVisibility);
+                  const updateSkillName = (next: string): void => {
+                    if (item && typeof item === "object" && !Array.isArray(item)) {
+                      updateTextDraftAt([...childPath, "name"], next, { fieldLabel: listItemLabel });
+                    } else {
+                      updateTextDraftAt(childPath, next, { fieldLabel: listItemLabel });
+                    }
+                  };
+                  const updateSkillRating = (next: string): void => {
+                    if (!next && (item === null || primitive)) return;
+                    const record: Record<string, unknown> = item && typeof item === "object" && !Array.isArray(item)
+                      ? { ...(item as Record<string, unknown>) }
+                      : { name: skillName };
+                    if (next) record.rating = Number(next);
+                    else delete record.rating;
+                    updateDraftAt(childPath, record);
+                  };
+                  const useTextarea = shouldUseTextarea(skillName, selectedLanguage);
+                  const skillInput = renderKeywordAwareTextControl({
+                    onChange: updateSkillName,
+                    rows: Math.min(3, estimateTextareaRows(skillName)),
+                    singleLineClassName: "w-full min-w-0 rounded border border-[var(--line)] bg-white px-2 py-1 text-xs",
+                    textareaClassName: "w-full min-w-0 resize-y rounded border border-[var(--line)] bg-white px-2 py-1 text-xs leading-5",
+                    useTextarea,
+                    value: skillName,
+                  });
+                  return (
+                    <div key={childLabel} className="flex min-w-0 items-center gap-2 rounded-md border border-transparent px-1 py-0.5 hover:border-[var(--line)]">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center">
+                        <VisibilityToggleButton
+                          label={listItemLabel}
+                          language={uiLanguage}
+                          onToggle={() => onToggleTemplateVisibility(childVisibilityKey)}
+                          visible={childVisible}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">{skillInput}</div>
+                      <select
+                        aria-label={uiLanguage === "bg" ? `Рейтинг: ${listItemLabel}` : `Rating for ${listItemLabel}`}
+                        className="shrink-0 rounded border border-[var(--line)] bg-white px-1.5 py-1 text-xs text-slate-800"
+                        onChange={(event) => updateSkillRating(event.target.value)}
+                        value={skillRating}
+                      >
+                        <option value="">{uiLanguage === "bg" ? "Рейтинг" : "Rating"}</option>
+                        {SKILL_RATING_OPTIONS.slice(1).map((rating) => (
+                          <option key={rating} value={rating}>{rating} / 5</option>
+                        ))}
+                      </select>
+                      <ConfirmRemoveButton
+                        kind="item"
+                        language={uiLanguage}
+                        onConfirm={() => removeDraftAt(childPath)}
+                      />
+                    </div>
+                  );
+                }
                 if (primitive) {
                   const stringValue = String(item ?? "");
                   const useTextarea = shouldUseTextarea(stringValue, selectedLanguage);

@@ -16,6 +16,7 @@ import {
   renderSimpleList,
   resolveMargins,
   skillDotCount,
+  skillRatingValue,
   textList,
 } from "./shared";
 import {
@@ -128,9 +129,8 @@ export function renderCambridge(
   )
     ? (slots["skills.languages"] ?? getByPath(cv, "skills.languages"))
     : [];
-  const technicalSkills = textList(
-    slots["skills.technical"] ?? getByPath(cv, "skills.technical"),
-  );
+  const technicalSkillsValue = slots["skills.technical"] ?? getByPath(cv, "skills.technical");
+  const technicalSkills = Array.isArray(technicalSkillsValue) ? technicalSkillsValue : [];
   const experiences = Array.isArray(
     slots["experience.items"] ?? getByPath(cv, "experience"),
   )
@@ -261,14 +261,16 @@ export function renderCambridge(
 
   const skillsHtml = technicalSkills
     .map((entry, index) => {
-      const score = skillDotCount(index);
+      const score = skillRatingValue(entry, index);
+      const record = asRecord(entry);
+      const itemLabel = record ? record.name ?? record.skill ?? "" : entry;
       const dots = Array.from({ length: 5 })
-        .map(
-          (_, idx) =>
-            `<span class="dot ${idx < score ? "on" : ""}"></span>`,
-        )
+        .map((_, idx) => {
+          const state = idx + 1 <= score ? "on" : idx + 0.5 === score ? "half" : "";
+          return `<span class="dot ${state}"></span>`;
+        })
         .join("");
-      return `<li><span class="label">${escapeHtml(entry)}</span><span class="dots">${dots}</span></li>`;
+      return `<li><span class="label">${escapeHtml(itemLabel)}</span><span class="dots">${dots}</span></li>`;
     })
     .join("");
 
@@ -354,6 +356,7 @@ export function renderCambridge(
     .dots { display: inline-flex; gap: 1.6mm; }
     .dot { width: 2.2mm; height: 2.2mm; border-radius: 999px; background: ${theme.dotOff}; display: inline-block; }
     .dot.on { background: ${theme.dotOn}; }
+    .dot.half { background: linear-gradient(90deg, ${theme.dotOn} 50%, ${theme.dotOff} 50%); }
 
     .summary { margin: 0 0 3.6mm; color: #343d49; font-size: 4.15mm; line-height: 1.45; }
     .content section { margin-bottom: 5.6mm; }

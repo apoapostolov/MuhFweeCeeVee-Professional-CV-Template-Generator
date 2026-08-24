@@ -51,7 +51,10 @@ export function textList(value: unknown): string[] {
   }
   if (Array.isArray(value)) {
     return value
-      .map((item) => String(item))
+      .map((item) => {
+        const record = asRecord(item);
+        return record ? String(record.name ?? record.skill ?? "") : String(item);
+      })
       .filter((item) => item.trim().length > 0);
   }
   return [String(value)];
@@ -112,6 +115,18 @@ export function skillDotCount(index: number): number {
   if (index === 2) return 3;
   if (index === 3) return 2;
   return 3;
+}
+
+export function skillRatingValue(value: unknown, index: number): number {
+  const record = asRecord(value);
+  const rating = typeof record?.rating === "number" && Number.isFinite(record.rating)
+    ? record.rating
+    : skillDotCount(index);
+  return Math.max(0, Math.min(5, Math.round(rating * 2) / 2));
+}
+
+export function skillRatingPercent(value: unknown, index: number): number {
+  return skillRatingValue(value, index) * 20;
 }
 
 export function splitName(fullName: string): { top: string; bottom: string } {

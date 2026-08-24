@@ -11,7 +11,7 @@ import {
 } from "./cvSchema";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
-const johnDoePath = join(repoRoot, "data/cvs/cv_en_john_doe.yaml");
+const personalCvPath = join(repoRoot, "data/cvs/cv_apoapostolov_en_001.yaml");
 
 describe("validateCvV1Structural", () => {
   it("rejects non-objects", () => {
@@ -28,13 +28,31 @@ describe("validateCvV1Structural", () => {
 });
 
 describe("validateCvV1", () => {
-  it("accepts public John Doe sample YAML", () => {
-    const raw = readFileSync(johnDoePath, "utf8");
+  it("accepts the personal English CV YAML", () => {
+    const raw = readFileSync(personalCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const structural = validateCvV1Structural(doc);
     expect(structural.valid).toBe(true);
     const full = validateCvV1(doc);
     expect(full.valid).toBe(true);
+  });
+
+  it("accepts half-step skill ratings while preserving legacy string rows", () => {
+    const raw = readFileSync(personalCvPath, "utf8");
+    const doc = parse(raw) as Record<string, unknown>;
+    const skills = doc.skills as Record<string, unknown>;
+    const technical = skills.technical as unknown[];
+    technical[0] = { name: "SQL", rating: 4.5 };
+    expect(validateCvV1(doc).valid).toBe(true);
+  });
+
+  it("rejects skill ratings outside the half-step five-point scale", () => {
+    const raw = readFileSync(personalCvPath, "utf8");
+    const doc = parse(raw) as Record<string, unknown>;
+    const skills = doc.skills as Record<string, unknown>;
+    const technical = skills.technical as unknown[];
+    technical[0] = { name: "SQL", rating: 4.25 };
+    expect(validateCvV1JsonSchema(doc).valid).toBe(false);
   });
 
   it("json schema rejects object missing required top-level keys", () => {

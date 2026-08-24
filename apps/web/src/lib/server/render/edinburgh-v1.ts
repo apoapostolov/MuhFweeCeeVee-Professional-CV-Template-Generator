@@ -17,6 +17,7 @@ import {
   renderSimpleList,
   resolveMargins,
   skillDotCount,
+  skillRatingValue,
   splitName,
   textList,
 } from "./shared";
@@ -133,18 +134,22 @@ export function renderEdinburghSkills(
   accent: string,
   labels: Record<string, unknown>,
 ): string {
-  const list = textList(value);
+  const list = Array.isArray(value) ? value : [];
   if (!list.length) return "";
   const rows = list
     .map((item, index) => {
-      const score = skillDotCount(index);
+      const record = asRecord(item);
+      const itemLabel = record ? record.name ?? record.skill ?? "" : item;
+      const score = skillRatingValue(item, index);
       const dots = Array.from({ length: 5 })
         .map(
-          (_, dotIndex) =>
-            `<span class=\"dot ${dotIndex < score ? "on" : ""}\" style=\"${dotIndex < score ? `background:${accent};` : ""}\"></span>`,
+          (_, dotIndex) => {
+            const state = dotIndex + 1 <= score ? "on" : dotIndex + 0.5 === score ? "half" : "";
+            return `<span class=\"dot ${state}\" style=\"${state === "on" ? `background:${accent};` : ""}\"></span>`;
+          },
         )
         .join("");
-      return `<li><span class=\"label\">${escapeHtml(item)}</span><span class=\"dots\">${dots}</span></li>`;
+      return `<li><span class=\"label\">${escapeHtml(itemLabel)}</span><span class=\"dots\">${dots}</span></li>`;
     })
     .join("");
   return `<section><h3>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h3><ul class=\"edinburgh-skills\">${rows}</ul></section>`;
@@ -361,6 +366,7 @@ export function renderEdinburgh(
     }
     .edinburgh-languages .dot,
     .edinburgh-skills .dot { width: 8px; height: 8px; border-radius: 999px; background: ${theme.dotOff}; display: inline-block; }
+    .edinburgh-skills .dot.half { background: linear-gradient(90deg, ${accent} 50%, ${theme.dotOff} 50%); }
 
     .right { padding: 6mm 7mm 10mm; background: #fff; }
     .headline { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #202124; }
