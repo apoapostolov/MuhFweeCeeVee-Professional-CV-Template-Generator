@@ -613,10 +613,15 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         </div>
       );
       const arrayHeaderTitle = (
-        <>
-          <p className="text-sm font-semibold text-slate-900">{headerTitle}</p>
-          {headerSubtitle ? <p className="text-xs text-[var(--ink-muted)]">{headerSubtitle}</p> : null}
-        </>
+        <div className="flex min-w-0 items-baseline gap-2">
+          <p className="shrink-0 text-sm font-semibold text-slate-900">{headerTitle}</p>
+          {headerSubtitle ? (
+            <>
+              <span aria-hidden="true" className="shrink-0 text-xs text-[var(--ink-muted)]">•</span>
+              <p className="min-w-0 truncate text-xs text-[var(--ink-muted)]">{headerSubtitle}</p>
+            </>
+          ) : null}
+        </div>
       );
       const showArrayChildren = expanded;
 
@@ -907,10 +912,15 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         </div>
       );
       const objectHeaderTitle = (
-        <>
-          <p className="text-sm font-semibold text-slate-900">{headerTitle}</p>
-          {headerSubtitle ? <p className="text-xs text-[var(--ink-muted)]">{headerSubtitle}</p> : null}
-        </>
+        <div className="flex min-w-0 items-baseline gap-2">
+          <p className="shrink-0 text-sm font-semibold text-slate-900">{headerTitle}</p>
+          {headerSubtitle ? (
+            <>
+              <span aria-hidden="true" className="shrink-0 text-xs text-[var(--ink-muted)]">•</span>
+              <p className="min-w-0 truncate text-xs text-[var(--ink-muted)]">{headerSubtitle}</p>
+            </>
+          ) : null}
+        </div>
       );
       const experienceCurrentRoleControl = experienceItem
         ? renderIsCurrentHeaderControl({
