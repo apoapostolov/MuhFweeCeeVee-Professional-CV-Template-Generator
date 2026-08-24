@@ -700,7 +700,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                       <div className={`flex items-center gap-2 ${analysisDrawerCollapsed ? "justify-center" : ""}`}>
                         <div className={`flex min-w-0 flex-1 items-center gap-2 ${analysisDrawerCollapsed ? "md:justify-center" : ""}`}>
                           <p className={`min-w-0 truncate text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)] ${analysisDrawerCollapsed ? "md:hidden" : ""}`}>
-                            AI Scoring Analysis
+                            AI Analysis
                           </p>
                           {!analysisDrawerCollapsed ? (
                             <div className="flex shrink-0 gap-1.5">
@@ -732,7 +732,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                           ) : null}
                         </div>
                         <button
-                          aria-label={analysisDrawerCollapsed ? "Expand AI Scoring Analysis drawer" : "Collapse AI Scoring Analysis drawer"}
+                          aria-label={analysisDrawerCollapsed ? "Expand AI Analysis drawer" : "Collapse AI Analysis drawer"}
                           className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-white text-[var(--accent)] hover:bg-slate-50"
                           onClick={() => onToggleAnalysisDrawer()}
                           title={analysisDrawerCollapsed ? "Expand analysis" : "Minimize analysis"}
