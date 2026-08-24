@@ -83,6 +83,13 @@ export function AssistantPanel({
   }, [assistant.state, isOpen]);
 
   useEffect(() => {
+    const element = textareaRef.current;
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${Math.min(Math.max(element.scrollHeight, 72), 192)}px`;
+  }, [assistant.draft]);
+
+  useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ block: "nearest" });
   }, [timeline.length, assistant.isStreaming]);
 
@@ -102,11 +109,16 @@ export function AssistantPanel({
     if (event.key === "Escape") {
       event.preventDefault();
       close();
-    } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    } else if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submit();
     }
   }
+
+  const displayedTokenCount =
+    assistant.usage.inputTokens +
+    assistant.usage.outputTokens +
+    Math.ceil(assistant.draft.trim().length / 4);
 
   const statusLabel =
     assistant.resolvingApprovalId
@@ -231,44 +243,52 @@ export function AssistantPanel({
         resolvingApprovalId={assistant.resolvingApprovalId}
       />
 
-      <footer className="border-t border-[var(--line)] p-3">
+      <footer className="shrink-0 border-t border-[var(--line)] p-3">
         <label className="sr-only" htmlFor="assistant-composer">
           Message MuhFwee AI
         </label>
-        <textarea
-          className="min-h-20 w-full resize-none rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 text-sm"
-          disabled={assistant.state === "connecting"}
-          id="assistant-composer"
-          onChange={(event) => assistant.setDraft(event.target.value)}
-          onKeyDown={handleComposerKeyDown}
-          placeholder="Ask about this CV workspace…"
-          ref={textareaRef}
-          value={assistant.draft}
-        />
-        <div className="mt-2 flex items-center gap-2">
-          <p className="min-w-0 flex-1 text-[10px] text-[var(--ink-muted)]">
-            Ctrl/⌘ + Enter · {assistant.usage.inputTokens + assistant.usage.outputTokens} tokens
-          </p>
-          {assistant.isStreaming ? (
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] px-3 py-1.5 text-xs font-semibold"
-              onClick={assistant.stop}
-              type="button"
-            >
-              <Square aria-hidden className="h-3 w-3 fill-current" />
-              Stop
-            </button>
-          ) : (
-            <button
-              className="inline-flex items-center gap-1 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-              disabled={!assistant.draft.trim()}
-              onClick={() => submit()}
-              type="button"
-            >
-              <Send aria-hidden className="h-3 w-3" />
-              Send
-            </button>
-          )}
+        <div className="relative">
+          <textarea
+            className="min-h-[4.5rem] max-h-48 w-full resize-none overflow-y-auto rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 pb-10 pt-2 text-sm"
+            disabled={assistant.state === "connecting"}
+            id="assistant-composer"
+            onChange={(event) => {
+              assistant.setDraft(event.target.value);
+              const element = event.currentTarget;
+              element.style.height = "auto";
+              element.style.height = `${Math.min(Math.max(element.scrollHeight, 72), 192)}px`;
+            }}
+            onKeyDown={handleComposerKeyDown}
+            placeholder="Ask about this CV workspace…"
+            ref={textareaRef}
+            rows={3}
+            value={assistant.draft}
+          />
+          <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between gap-2">
+            <p className="min-w-0 truncate text-[10px] text-[var(--ink-muted)]">
+              Enter · {displayedTokenCount} tokens
+            </p>
+            {assistant.isStreaming ? (
+              <button
+                className="pointer-events-auto inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-2.5 py-1 text-xs font-semibold"
+                onClick={assistant.stop}
+                type="button"
+              >
+                <Square aria-hidden className="h-3 w-3 fill-current" />
+                Stop
+              </button>
+            ) : (
+              <button
+                className="pointer-events-auto inline-flex items-center gap-1 rounded-md bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                disabled={!assistant.draft.trim()}
+                onClick={() => submit()}
+                type="button"
+              >
+                <Send aria-hidden className="h-3 w-3" />
+                Send
+              </button>
+            )}
+          </div>
         </div>
       </footer>
     </aside>
