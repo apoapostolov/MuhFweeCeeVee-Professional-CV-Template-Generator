@@ -4,12 +4,14 @@ import type { JSX } from "react";
 
 import { SettingsDataBackupCard } from "./SettingsDataBackupCard";
 import { SettingsInterfaceLanguageCard } from "./SettingsInterfaceLanguageCard";
-import { OpenRouterSettingsCard, type OpenRouterSettingsCardProps } from "./OpenRouterSettingsCard";
+import { AiProviderSettingsCard } from "./AiProviderSettingsCard";
+import type { useAiProviderSettings } from "./useAiProviderSettings";
 import { formatUsd, type AnalysisCostEstimate } from "./openrouter-utils";
 import { uiIsBg, type UiLanguageCode } from "./ui-language";
 
-export type SettingsPanelProps = OpenRouterSettingsCardProps & {
+export type SettingsPanelProps = {
   analysisCostEstimate: AnalysisCostEstimate;
+  aiProviders: ReturnType<typeof useAiProviderSettings>;
   uiLanguage: UiLanguageCode;
   onUiLanguageChange: (language: UiLanguageCode) => void;
 };
@@ -42,8 +44,7 @@ function CostEstimateCard({
 }
 
 export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
-  const { analysisCostEstimate, creditStatus, uiLanguage, onUiLanguageChange, ...cardProps } =
-    props;
+  const { analysisCostEstimate, aiProviders, uiLanguage, onUiLanguageChange } = props;
   const bg = uiIsBg(uiLanguage);
 
   return (
@@ -63,11 +64,11 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
         <h2 className="text-xl font-bold text-slate-900">{bg ? "AI доставчик" : "AI Provider"}</h2>
         <p className="mt-2 text-sm text-[var(--ink-muted)]">
           {bg
-            ? "Конфигурирайте достъп до модели и следете оставащия кредит в OpenRouter."
-            : "Configure external model access and monitor remaining OpenRouter credit."}
+            ? "Добавяйте доставчици, пазете ключове, презареждайте модели и задавайте роли."
+            : "Add providers, save credentials, reload cached models, and assign AI roles."}
         </p>
         <div className="mt-4">
-          <OpenRouterSettingsCard {...cardProps} creditStatus={creditStatus} />
+          <AiProviderSettingsCard controller={aiProviders} uiLanguage={uiLanguage} />
         </div>
         <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
           <p className="text-sm font-semibold text-slate-800">

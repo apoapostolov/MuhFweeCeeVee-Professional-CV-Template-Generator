@@ -63,6 +63,9 @@ export async function translateFieldText(args: {
         { role: "user", content: prompt },
       ],
       temperature: 0.1,
+      // Keep translations within the remaining OpenRouter credit instead of
+      // inheriting a model's 65k completion limit.
+      max_tokens: 1024,
     }),
   });
 

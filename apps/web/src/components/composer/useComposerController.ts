@@ -103,6 +103,7 @@ import {
   orderTemplateItems,
 } from "@/components/composer/openrouter-utils";
 import { useOpenRouterSettings } from "@/components/composer/useOpenRouterSettings";
+import { useAiProviderSettings } from "@/components/composer/useAiProviderSettings";
 import type { AddCustomFieldPayload } from "@/components/composer/custom-field-types";
 import { CUSTOM_FIELD_DEFS_KEY } from "@/components/composer/custom-field-types";
 import {
@@ -132,6 +133,7 @@ export function useComposerController() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("workspace");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const openRouter = useOpenRouterSettings();
+  const aiProviders = useAiProviderSettings();
   const {
     toasts: composerToasts,
     showToast: showComposerToast,
@@ -161,6 +163,7 @@ export function useComposerController() {
     PRINT_TEXT_SCALE_DEFAULT,
   );
   const [photoBoothItems, setPhotoBoothItems] = useState<PhotoBoothItem[]>([]);
+  const [photoBoothGalleryReady, setPhotoBoothGalleryReady] = useState(false);
   const [approvedPhotoId, setApprovedPhotoId] = useState("");
   const [photoBoothNotice, setPhotoBoothNotice] = useState("");
   const [photoBoothDragging, setPhotoBoothDragging] = useState(false);
@@ -455,6 +458,7 @@ export function useComposerController() {
   );
 
   const loadPhotoBoothGallery = useCallback(async (): Promise<void> => {
+    setPhotoBoothGalleryReady(false);
     try {
       const response = await fetch("/api/photos");
       const payload = (await response.json()) as PhotoBoothListResponse;
@@ -463,6 +467,7 @@ export function useComposerController() {
       }
       const items = Array.isArray(payload.items) ? payload.items : [];
       setPhotoBoothItems(items);
+      setPhotoBoothGalleryReady(true);
     } catch (error) {
       setPhotoBoothNotice(error instanceof Error ? error.message : "Could not load photos.");
       setPhotoBoothItems([]);
@@ -720,6 +725,7 @@ export function useComposerController() {
   }, [loadPhotoBoothGallery]);
 
   useEffect(() => {
+    if (!photoBoothGalleryReady) return;
     try {
       if (approvedPhotoId) {
         window.localStorage.setItem(STORAGE_KEYS.approvedPhotoId, approvedPhotoId);
@@ -729,13 +735,13 @@ export function useComposerController() {
     } catch {
       // no-op
     }
-  }, [approvedPhotoId]);
+  }, [approvedPhotoId, photoBoothGalleryReady]);
 
   useEffect(() => {
-    if (!approvedPhotoId) return;
+    if (!photoBoothGalleryReady || !approvedPhotoId) return;
     if (photoBoothItems.some((item) => item.id === approvedPhotoId)) return;
     setApprovedPhotoId("");
-  }, [approvedPhotoId, photoBoothItems]);
+  }, [approvedPhotoId, photoBoothGalleryReady, photoBoothItems]);
 
   useEffect(() => {
     if (!photoBoothAnalysisFocusId) return;
@@ -3199,6 +3205,7 @@ export function useComposerController() {
     themeMode,
     setThemeMode,
     openRouter,
+    aiProviders,
     resolvedTheme,
     cvItems,
     templateItems,

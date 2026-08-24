@@ -4,6 +4,11 @@ import { parse, stringify } from "yaml";
 
 import { getOpenRouterModels } from "./openRouterModels";
 import { fetchOpenRouterCredit } from "./openRouterCredit";
+import {
+  isAiModelCacheFresh,
+  readAiModelCache,
+  writeAiModelCache,
+} from "./aiModelCache";
 import { maskApiKey, readOpenRouterSettings } from "./openRouterSettings";
 import { repoPath } from "./repoPaths";
 import { AI_PROVIDER_REGISTRY, getAiProvider } from "./aiProviderRegistry";
@@ -139,7 +144,14 @@ export async function writeAiSettingsDocument(
   await fs.mkdir(path.dirname(SETTINGS_FILE), { recursive: true });
   const temporary = `${SETTINGS_FILE}.${process.pid}.tmp`;
   await fs.writeFile(temporary, stringify(next), "utf8");
-  await fs.rename(temporary, SETTINGS_FILE);
+  try {
+    await fs.rename(temporary, SETTINGS_FILE);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EPERM") throw error;
+    // Windows can reject rename when Next.js still has the destination open.
+    await fs.copyFile(temporary, SETTINGS_FILE);
+    await fs.unlink(temporary).catch(() => undefined);
+  }
   return next;
 }
 
@@ -191,6 +203,7 @@ function normalizeModels(providerId: string, payload: unknown): AiModel[] {
 export async function fetchAiModels(providerId: string, forceRefresh = false): Promise<AiModel[]> {
   const provider = getAiProvider(providerId);
   if (!provider) return [];
+
   if (providerId === "openrouter") {
     const settings = await readOpenRouterSettings();
     const result = await getOpenRouterModels({ apiKey: settings.apiKey, forceRefresh });
@@ -205,8 +218,15 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
       live: !result.fromCache,
     }));
   }
-  if (!provider.modelsEndpoint) return seedModels(providerId);
+
+  const cache = await readAiModelCache(providerId);
+  if (!forceRefresh && isAiModelCacheFresh(cache)) return cache?.models ?? [];
+  const seed = seedModels(providerId);
+  if (!provider.modelsEndpoint) return cache?.models ?? seed;
+
   const apiKey = await readProviderKey(providerId);
+  if (provider.auth === "api_key" && !apiKey) return cache?.models ?? seed;
+
   try {
     const response = await fetch(provider.modelsEndpoint, {
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
@@ -214,9 +234,11 @@ export async function fetchAiModels(providerId: string, forceRefresh = false): P
     });
     if (!response.ok) throw new Error(`Model request failed (${response.status}).`);
     const models = normalizeModels(providerId, await response.json());
-    return models.length ? models : seedModels(providerId);
+    if (!models.length) return cache?.models ?? seed;
+    await writeAiModelCache(providerId, models);
+    return models;
   } catch {
-    return seedModels(providerId);
+    return cache?.models ?? seed;
   }
 }
 
@@ -247,12 +269,22 @@ async function providerStatus(providerId: string): Promise<AiProviderStatus> {
   };
 }
 
-export async function getAiSettingsResponse(forceRefresh = false): Promise<AiSettingsResponse> {
+export async function getAiSettingsResponse(
+  forceRefresh = false,
+  requestedProviderIds: string[] = [],
+): Promise<AiSettingsResponse> {
   const document = await readAiSettingsDocument();
-  const [providers, modelGroups] = await Promise.all([
-    Promise.all(AI_PROVIDER_REGISTRY.map((provider) => providerStatus(provider.id))),
-    Promise.all(AI_PROVIDER_REGISTRY.filter((provider) => provider.auth === "none" || provider.id === "openrouter").map((provider) => fetchAiModels(provider.id, forceRefresh))),
-  ]);
+  const providers = await Promise.all(AI_PROVIDER_REGISTRY.map((provider) => providerStatus(provider.id)));
+  const roleProviderIds = AI_ROLES.map((role) => document.roles[role].providerId);
+  const requested = requestedProviderIds.filter((providerId) => getAiProvider(providerId));
+  const modelProviderIds = [...new Set([
+    ...roleProviderIds,
+    ...requested,
+    ...providers.filter((provider) => provider.auth === "none" || provider.configured).map((provider) => provider.id),
+  ])];
+  const modelGroups = await Promise.all(
+    modelProviderIds.map((providerId) => fetchAiModels(providerId, forceRefresh && requested.includes(providerId))),
+  );
   const quotas: AiQuota[] = [];
   const openRouter = providers.find((provider) => provider.id === "openrouter");
   if (openRouter?.configured) {

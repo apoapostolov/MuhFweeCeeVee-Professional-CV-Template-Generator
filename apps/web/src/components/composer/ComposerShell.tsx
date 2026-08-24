@@ -293,29 +293,9 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
           {c.activePanel === "settings" && (
             <SettingsPanel
               analysisCostEstimate={c.analysisCostEstimate}
+              aiProviders={c.aiProviders}
               onUiLanguageChange={c.setUiLanguage}
               uiLanguage={c.uiLanguage}
-              apiKeyInput={c.openRouter.apiKeyInput}
-              creditStatus={c.openRouter.creditStatus}
-              imageGenerationModelInput={c.openRouter.imageGenerationModelInput}
-              imageGenerationModelOptions={c.openRouter.imageGenerationModelOptions}
-              modelInput={c.openRouter.modelInput}
-              modelOptions={c.openRouter.modelOptions}
-              researchModelInput={c.openRouter.researchModelInput}
-              onApiKeyInputChange={c.openRouter.setApiKeyInput}
-              onImageGenerationModelInputChange={c.openRouter.setImageGenerationModelInput}
-              onModelInputChange={c.openRouter.setModelInput}
-              onResearchModelInputChange={c.openRouter.setResearchModelInput}
-              onSave={() => void c.openRouter.saveAiSettings()}
-              onToggleShow={() => c.openRouter.setShowAiSettings((value) => !value)}
-              selectedAnalysisModelOption={c.openRouter.selectedAnalysisModelOption}
-              selectedResearchModelOption={c.openRouter.selectedResearchModelOption}
-              selectedImageGenerationModelOption={c.openRouter.selectedImageGenerationModelOption}
-              settings={c.openRouter.settings}
-              settingsLoading={c.openRouter.settingsLoading}
-              settingsNotice={c.openRouter.settingsNotice}
-              settingsSaving={c.openRouter.settingsSaving}
-              showAiSettings={c.openRouter.showAiSettings}
             />
           )}
           <ComposerOverlays controller={c} />

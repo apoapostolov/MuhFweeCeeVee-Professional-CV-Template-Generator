@@ -31,7 +31,7 @@ type ModelCacheFile = {
 const MODELS_DIR = repoPath("data", "settings");
 const MODELS_FILE = path.join(MODELS_DIR, "openrouter_models.yaml");
 const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
-const CACHE_MAX_AGE_MS = 72 * 60 * 60 * 1000;
+const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function parseNumberish(input: unknown): number | null {
   if (typeof input === "number" && Number.isFinite(input)) {

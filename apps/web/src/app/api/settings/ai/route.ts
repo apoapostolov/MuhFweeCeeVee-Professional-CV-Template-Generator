@@ -8,8 +8,13 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    const forceRefresh = new URL(request.url).searchParams.get("refresh") === "1";
-    return NextResponse.json(await getAiSettingsResponse(forceRefresh));
+    const searchParams = new URL(request.url).searchParams;
+    const forceRefresh = searchParams.get("refresh") === "1";
+    const requestedProviderIds = (searchParams.get("providers") ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    return NextResponse.json(await getAiSettingsResponse(forceRefresh, requestedProviderIds));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load AI settings.";
     return NextResponse.json({ error: message }, { status: 500 });
