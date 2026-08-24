@@ -63,6 +63,7 @@ export function normalizeMetaPath(path: string): string {
 }
 
 export function prettyKey(raw: string): string {
+  if (raw.trim().toLowerCase() === "phone_e164") return "Phone";
   return raw
     .replace(/_/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
