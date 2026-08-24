@@ -27,7 +27,16 @@ const AI_ROLES: readonly AiRole[] = [
 ];
 
 function uniqueProviderIds(response: AiSettingsResponse): string[] {
-  return [...new Set(AI_ROLES.map((role) => response.roles[role]?.providerId).filter(Boolean))];
+  const configuredProviderIds = new Set(
+    response.providers.filter((provider) => provider.configured).map((provider) => provider.id),
+  );
+  return [
+    ...new Set(
+      AI_ROLES.map((role) => response.roles[role]?.providerId)
+        .filter((providerId): providerId is string => Boolean(providerId))
+        .filter((providerId) => configuredProviderIds.has(providerId)),
+    ),
+  ];
 }
 
 function modelForProvider(response: AiSettingsResponse, providerId: string): string {
