@@ -64,7 +64,7 @@ export function normalizeProfileLink(
         const host = parsed.hostname.toLowerCase();
         const path = parsed.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
         if (host.includes("linkedin.com")) {
-          return { href: directHref, display: path || "linkedin.com" };
+          return { href: directHref, display: path ? `linkedin.com/${path}` : "linkedin.com" };
         }
         return { href: directHref, display: compactDisplayFromUrl(directHref) };
       } catch {
@@ -74,7 +74,7 @@ export function normalizeProfileLink(
     if (/^(in|company|school|pub)\/[^\s]+$/i.test(cleaned)) {
       return {
         href: `https://www.linkedin.com/${cleaned}`,
-        display: cleaned,
+        display: `linkedin.com/${cleaned}`,
       };
     }
     if (/^[a-z0-9][a-z0-9-]{1,99}$/i.test(cleaned)) {
@@ -92,7 +92,7 @@ export function normalizeProfileLink(
       const host = parsed.hostname.toLowerCase();
       const path = parsed.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
       if (host.includes("github.com")) {
-        return { href: directHref, display: path || "github.com" };
+        return { href: directHref, display: path ? `github.com/${path}` : "github.com" };
       }
       return { href: directHref, display: compactDisplayFromUrl(directHref) };
     } catch {
@@ -100,7 +100,7 @@ export function normalizeProfileLink(
     }
   }
   if (/^[a-z0-9][a-z0-9-]{0,38}(\/[a-z0-9._-]+)?$/i.test(cleaned)) {
-    return { href: `https://github.com/${cleaned}`, display: cleaned };
+    return { href: `https://github.com/${cleaned}`, display: `github.com/${cleaned}` };
   }
   return null;
 }
