@@ -79,7 +79,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
       <article className="min-h-0 min-w-0 overflow-x-hidden overflow-y-auto rounded-xl border border-[var(--line)] bg-white p-4 pb-6">
         <h2 className="text-xl font-bold text-slate-900">Print Controls</h2>
         <p className="mt-2 text-sm text-[var(--ink-muted)]">
-          Select CV pair and template to render a real PDF preview.
+          Select CV and template to preview.
         </p>
 
         <div className="mt-4 space-y-3">
