@@ -13,7 +13,7 @@ diagnostic inputs, not authorities and not authorship proof.
 
 ## Load only what the task needs
 
-- For the end-to-end review sequence, read
+- For the end-to-end review sequence or final version selection, read
   [references/review-workflow.md](references/review-workflow.md).
 - For the free local and online tools, limits, and interpretation rules, read
   [references/free-services.md](references/free-services.md).
@@ -45,9 +45,15 @@ diagnostic inputs, not authorities and not authorship proof.
 9. Treat sharp score changes or disagreement between providers as detector
    instability. Retest the prior text in the same session/model when possible,
    then report the anomaly instead of rewriting around it.
+10. When choosing a version to send, apply factual accuracy, ATS coverage, and
+    layout as gates. Among the versions that pass, choose the one that reads
+    best to a hiring manager. Use comparable detector results as secondary
+    evidence, not as an arithmetic target.
 
 ## Required handoff
 
-Report the selected source version and PDF, layout status, ATS coverage, exact
-scan scope, provider results, factual changes, and any results rejected as
-unstable. Distinguish local validation from online third-party scores.
+Lead with a clear `Send version X` recommendation. Report the selected source
+version and PDF, layout status, ATS coverage, exact scan scope, provider
+results, factual changes, and any results rejected as unstable. Name at most
+one fallback and the condition that would make it preferable. Distinguish
+local validation from online third-party scores.

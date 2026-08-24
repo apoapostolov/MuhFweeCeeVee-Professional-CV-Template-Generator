@@ -119,3 +119,56 @@ record provider drift and exclude it from the selection decision.
 - No artificial mistakes or detector-evasion artifacts were introduced.
 - The selected source and exported PDF correspond to the same version.
 - The report distinguishes measured results from judgment and provider noise.
+
+## 9. Choose the version to send
+
+Do not select a winner by averaging ATS and detector scores. Make the decision
+in three stages.
+
+### Gate the candidates
+
+Exclude a version when it has a material factual problem, an unsupported claim,
+a missing must-have ATS term with truthful evidence elsewhere in the CV, an
+interview-indefensible proficiency rating, or a visible PDF layout defect.
+Compare rendered, visible content rather than hidden fields or stale metadata.
+
+### Read the viable versions as hiring documents
+
+Judge the remaining versions primarily on:
+
+- clarity of the target role and seniority;
+- specific ownership, decisions, evidence, and results;
+- natural voice without generic corporate or template language;
+- concision, scanning rhythm, and information hierarchy;
+- consistency across the summary, experience, strengths, and skills.
+
+Prefer the strongest hiring document that passes the gates. A version with a
+slightly weaker detector result can still be the right choice when it is more
+specific, credible, and readable.
+
+### Use detector evidence conservatively
+
+Compare detector results only when provider, model, scope, session conditions,
+and chunk boundaries are equivalent. An acceptable result is enough; there is
+no universal percentage that proves human authorship. Reduce the weight of a
+provider when small edits cause sharp reversals or when providers disagree.
+
+A missing fresh result is an uncertainty, not a measured pass or failure. State
+it rather than inferring a score from nearby versions. Never disqualify a sound
+CV solely because one short section receives a high and unstable result.
+
+### Make one recommendation
+
+End the review with:
+
+1. `Send version X`, linked to the exact source and matching PDF.
+2. Two to four reasons based first on hiring quality, then ATS coverage and
+   comparable detector evidence.
+3. The most important caveat, including any unmeasured or unstable result.
+4. At most one fallback version and the specific condition for choosing it.
+5. Confirmation that the selected PDF has no overflow or visibility defect.
+
+Do not create another version solely to improve a detector once a credible,
+ATS-complete, layout-safe candidate has acceptable overall signals. Reopen the
+loop only for a new job target, a material content defect, or meaningful new
+evidence.
