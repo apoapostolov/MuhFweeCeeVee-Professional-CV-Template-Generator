@@ -21,6 +21,7 @@ import { ApplicationsPanel } from "./ApplicationsPanel";
 import { WorkspacePanel } from "./WorkspacePanel";
 import { asRecord } from "./form-path-utils";
 import { ComposerToastHost } from "./composer-toast";
+import { AiDetectionDialog } from "./AiDetectionDialog";
 import { DuplicateCvDialog } from "./DuplicateCvDialog";
 
 export type ComposerShellProps = {
@@ -183,6 +184,8 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               atsCheckLoading={c.atsCheckLoading}
               atsCheckText={c.atsCheckText}
               onRunAtsCheck={() => void c.runAtsCheck()}
+              onOpenAiDetection={() => c.setAiDetectionDialogOpen(true)}
+              aiDetectionLoading={c.aiDetectionLoading}
               availableLanguages={c.availableLanguages}
               companyMetadataDraft={asRecord(c.companyMetadataDraft)}
               analysisCompanySource={c.analysisCompanySource}
@@ -346,6 +349,14 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
         />
       ) : null}
       <ComposerToastHost onDismiss={c.dismissComposerToast} toasts={c.composerToasts} />
+      <AiDetectionDialog
+        busy={c.aiDetectionLoading}
+        error={c.aiDetectionError}
+        onClose={() => c.setAiDetectionDialogOpen(false)}
+        onRun={() => void c.runAiDetection()}
+        open={c.aiDetectionDialogOpen}
+        report={c.aiDetectionReport}
+      />
       <DuplicateCvDialog
         key={`${duplicateCvOpen}:${c.selectedCvId}`}
         busy={duplicateCvBusy}

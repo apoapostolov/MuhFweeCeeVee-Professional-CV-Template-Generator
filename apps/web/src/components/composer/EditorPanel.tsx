@@ -103,6 +103,8 @@ export type EditorPanelProps = {
   onRunAnalysisSection: () => void;
   onRunAnalysisFull: () => void;
   onRunAtsCheck: () => void;
+  onOpenAiDetection: () => void;
+  aiDetectionLoading: boolean;
   atsCheckLoading: boolean;
   atsCheckText: string;
   editorNotice: string;
@@ -183,6 +185,8 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
     onRunAnalysisSection,
     onRunAnalysisFull,
     onRunAtsCheck,
+    onOpenAiDetection,
+    aiDetectionLoading,
     atsCheckLoading,
     atsCheckText,
     editorNotice,
@@ -517,6 +521,14 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                             variant={resolvedTheme === "dark" ? "default" : "on-light"}
                           />
                           Score Whole CV
+                        </button>
+                        <button
+                          className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"
+                          disabled={aiDetectionLoading || !selectedCvId || !selectedTemplateId}
+                          onClick={onOpenAiDetection}
+                          type="button"
+                        >
+                          AI Detection
                         </button>
                         <button
                           className="rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"

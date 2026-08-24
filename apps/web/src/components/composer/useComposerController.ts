@@ -70,6 +70,7 @@ import {
   resolveTemplateSelection,
   writePersistedWorkspacePrefs,
 } from "@/components/composer/workspace-persistence";
+import type { AiDetectionReport } from "@/lib/server/aiDetection";
 import type {
   ActivePanel,
   CompanyListResponse,
@@ -257,6 +258,10 @@ export function useComposerController() {
   const [keywordGapReport, setKeywordGapReport] = useState<KeywordGapReport | null>(null);
   const [atsCheckLoading, setAtsCheckLoading] = useState(false);
   const [atsCheckText, setAtsCheckText] = useState("");
+  const [aiDetectionDialogOpen, setAiDetectionDialogOpen] = useState(false);
+  const [aiDetectionLoading, setAiDetectionLoading] = useState(false);
+  const [aiDetectionReport, setAiDetectionReport] = useState<AiDetectionReport | null>(null);
+  const [aiDetectionError, setAiDetectionError] = useState("");
   const [selectedResearchCompanyId, setSelectedResearchCompanyId] = useState(
     () => readStoredResearchSelection().companyId,
   );
@@ -2666,6 +2671,26 @@ export function useComposerController() {
     }
   }
 
+  async function runAiDetection() {
+    if (!selectedCvId || !selectedTemplateId) return;
+    setAiDetectionLoading(true);
+    setAiDetectionError("");
+    try {
+      const response = await fetch("/api/analysis/ai-detection", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cvId: selectedCvId, templateId: selectedTemplateId }),
+      });
+      const payload = (await response.json()) as { report?: AiDetectionReport; error?: string };
+      if (!response.ok || !payload.report) throw new Error(payload.error ?? "AI detection failed.");
+      setAiDetectionReport(payload.report);
+    } catch (error) {
+      setAiDetectionError(error instanceof Error ? error.message : "AI detection failed.");
+    } finally {
+      setAiDetectionLoading(false);
+    }
+  }
+
   async function runAnalysis(scope: "section" | "full") {
     if (!selectedCvId || !selectedTemplateId) {
       return;
@@ -3330,6 +3355,12 @@ export function useComposerController() {
     runAtsCheck,
     atsCheckLoading,
     atsCheckText,
+    aiDetectionDialogOpen,
+    setAiDetectionDialogOpen,
+    aiDetectionLoading,
+    aiDetectionReport,
+    aiDetectionError,
+    runAiDetection,
     toggleAnalysisCompanySelection,
     syncLanguagePair,
     createLanguageVariant,
