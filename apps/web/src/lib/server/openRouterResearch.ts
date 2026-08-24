@@ -87,7 +87,25 @@ export async function callOpenRouterResearchChat(
   const settings = await readOpenRouterSettings();
   const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
   if (!apiKey) {
-    return { ok: false, error: "OpenRouter API key is not configured." };
+    try {
+      const completion = await completeAiText({
+        role: "research",
+        messages: [
+          { role: "system", content: systemContent },
+          { role: "user", content: prompt },
+        ],
+        temperature,
+        maxTokens: 4000,
+      });
+      return {
+        ok: true,
+        content: extractOpenRouterTextContent(completion.text),
+        model: completion.modelId,
+        useWebSearch: false,
+      };
+    } catch {
+      return { ok: false, error: "No configured research provider is available.", status: 502 };
+    }
   }
 
   // Legacy callers (company/job research) omit options → keep web research model.
