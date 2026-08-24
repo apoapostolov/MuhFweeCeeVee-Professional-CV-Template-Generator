@@ -106,7 +106,7 @@ export function ApplicationSubmissionHistory({
         <LockKeyhole aria-hidden className="h-4 w-4 text-[var(--ink-muted)]" />
       </div>
 
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+      <div className="mt-2 grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <input
           aria-label={bg ? "Източник на кандидатстването" : "Application source"}
           className="rounded border border-[var(--line)] px-2 py-1.5 text-xs"
@@ -121,9 +121,8 @@ export function ApplicationSubmissionHistory({
           placeholder={bg ? "Референтен номер (по избор)" : "Confirmation/reference (optional)"}
           value={reference}
         />
-      </div>
       <button
-        className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         disabled={disabled || busy || !application.cv_id}
         onClick={() => void freezeSubmission()}
         type="button"
@@ -134,9 +133,10 @@ export function ApplicationSubmissionHistory({
             ? "Замразяване…"
             : "Freezing…"
           : bg
-            ? "Замрази и маркирай като подадено"
-            : "Freeze & mark applied"}
+            ? "Замрази"
+            : "Freeze"}
       </button>
+      </div>
 
       {comparison ? (
         <div className="mt-2 rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-2 text-[10px]">
