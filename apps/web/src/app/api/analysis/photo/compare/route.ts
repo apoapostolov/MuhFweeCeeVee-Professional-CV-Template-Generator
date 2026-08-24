@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { completeAiVision } from "@/lib/server/aiProviderCompletion";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { appendPhotoComparison, getPhotoComparisonHistory } from "@/lib/server/photoAnalysisStore";
-import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
 export const runtime = "nodejs";
 
@@ -208,13 +208,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ ok: true, comparison: null, history: [], cached: false });
   }
 
-  const settings = await readOpenRouterSettings();
-  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) {
-    return NextResponse.json({ error: "OpenRouter API key is not configured." }, { status: 400 });
-  }
-
-  const model = settings.model || "openai/gpt-4o-mini";
   const prompt = [
     "You compare multiple CV profile photos for professional hiring contexts.",
     "Score each image (0-100) and compare all images using these factors: composition/crop, lighting/sharpness, expression/posture, professionalism/background, print readability.",
@@ -226,44 +219,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     'Return strict JSON only with this schema: {"criteria":[{"name":"...","summary":"cross-image comparison summary"}],"ranked":[{"name":"...","score":0-100,"verdict":"excellent|good|usable|weak","strengths":["..."],"risks":["..."],"improvements":["..."]}],"winnerName":"name of best image","recommendation":"...","recommendationDetails":["..."]}',
   ].join("\n");
 
-  const response = await fetch(settings.baseUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `${prompt}\nImages (${normalizedImages.length}):\n${normalizedImages
-                .map((image, index) => `${index + 1}. ${image.name}`)
-                .join("\n")}`,
-            },
-            ...normalizedImages.map((image) => ({ type: "image_url", image_url: { url: image.imageDataUrl } })),
-          ],
-        },
-      ],
+  let content = "";
+  let model = "configured-vision-provider";
+  try {
+    const completion = await completeAiVision({
+      role: "vision",
+      prompt: `${prompt}\nImages (${normalizedImages.length}):\n${normalizedImages.map((image, index) => `${index + 1}. ${image.name}`).join("\n")}`,
+      images: normalizedImages.map((image) => image.imageDataUrl),
       temperature: 0.1,
-    }),
-  });
-
-  if (!response.ok) {
-    const raw = await response.text();
+      maxTokens: 3_000,
+    });
+    content = completion.text;
+    model = completion.modelId;
+  } catch (error) {
     return NextResponse.json(
-      { error: "OpenRouter request failed.", status: response.status, raw },
+      { error: error instanceof Error ? error.message : "Configured vision provider failed." },
       { status: 502 },
     );
   }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content ?? "";
   const parsed = extractFirstJsonBlock(content);
   const comparison = normalizeCompare(parsed, model);
   let history = [comparison];

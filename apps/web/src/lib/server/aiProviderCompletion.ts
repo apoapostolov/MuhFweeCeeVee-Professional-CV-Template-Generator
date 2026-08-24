@@ -73,6 +73,14 @@ function extractGeminiText(payload: unknown): string {
     .join("");
 }
 
+export type VisionCompletionInput = {
+  role: Extract<AiRole, "vision">;
+  prompt: string;
+  images: string[];
+  temperature?: number;
+  maxTokens: number;
+};
+
 export async function completeAiText(input: CompletionInput): Promise<CompletionResponse> {
   const settings = await readAiSettingsDocument();
   const binding = settings.disabledRoles.includes(input.role) ? null : settings.roles[input.role];
@@ -152,6 +160,63 @@ export async function completeAiText(input: CompletionInput): Promise<Completion
       ...(binding.thinkingMode && binding.thinkingMode !== "none" ? { reasoning_effort: binding.thinkingMode } : {}),
     }),
     signal: AbortSignal.timeout(30000),
+  });
+  const payload = await readResponseBody(response, provider.name);
+  const text = extractOpenAiText(payload);
+  if (!text.trim()) throw new Error(`AI provider ${provider.name} returned an empty response.`);
+  return { text, providerId: provider.id, modelId: binding.modelId };
+}
+
+export async function completeAiVision(input: VisionCompletionInput): Promise<CompletionResponse> {
+  const settings = await readAiSettingsDocument();
+  const binding = settings.disabledRoles.includes(input.role) ? null : settings.roles[input.role];
+  if (!binding) throw new Error("No AI provider is configured for the vision role.");
+  const provider = getAiProvider(binding.providerId);
+  if (!provider) throw new Error(`AI provider '${binding.providerId}' is not configured for the vision role.`);
+  const apiKey = provider.id === "xai-oauth" ? await readXaiOAuthAccessToken() : await readAiProviderKey(provider.id);
+  if (provider.auth !== "none" && !apiKey) throw new Error(`AI provider ${provider.name} is not configured for the vision role.`);
+  const images = input.images.filter((image) => image.startsWith("data:image/"));
+  if (images.length === 0) throw new Error("At least one valid image is required.");
+
+  if (provider.id === "gemini") {
+    const endpoint = `${provider.endpoint}/models/${encodeURIComponent(binding.modelId)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: input.prompt }, ...images.map((image) => { const [header, data] = image.split(",", 2); return { inlineData: { mimeType: header.match(/^data:([^;]+);/)?.[1] ?? "image/jpeg", data } }; })] }],
+        generationConfig: { temperature: input.temperature, maxOutputTokens: input.maxTokens },
+      }),
+    });
+    const payload = await readResponseBody(response, provider.name);
+    const text = extractGeminiText(payload);
+    if (!text.trim()) throw new Error(`AI provider ${provider.name} returned an empty response.`);
+    return { text, providerId: provider.id, modelId: binding.modelId };
+  }
+
+  if (provider.id === "anthropic") {
+    const response = await fetch(`${provider.endpoint}/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: binding.modelId, max_tokens: input.maxTokens, temperature: input.temperature, messages: [{ role: "user", content: [{ type: "text", text: input.prompt }, ...images.map((image) => { const [header, data] = image.split(",", 2); return { type: "image", source: { type: "base64", media_type: header.match(/^data:([^;]+);/)?.[1] ?? "image/jpeg", data } }; })] }] }),
+    });
+    const payload = await readResponseBody(response, provider.name);
+    const text = extractAnthropicText(payload);
+    if (!text.trim()) throw new Error(`AI provider ${provider.name} returned an empty response.`);
+    return { text, providerId: provider.id, modelId: binding.modelId };
+  }
+
+  const baseEndpoint = provider.kind === "local"
+    ? settings.providerEndpoints?.[provider.id]
+    : provider.id === "openrouter"
+      ? (await readOpenRouterSettings()).baseUrl
+      : provider.endpoint;
+  const endpoint = baseEndpoint ? `${baseEndpoint.replace(/\/$/, "")}/chat/completions` : "";
+  if (!endpoint) throw new Error(`AI provider ${provider.name} has no vision endpoint.`);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}) },
+    body: JSON.stringify({ model: binding.modelId, messages: [{ role: "user", content: [{ type: "text", text: input.prompt }, ...images.map((image) => ({ type: "image_url", image_url: { url: image } }))] }], temperature: input.temperature, max_tokens: input.maxTokens }),
   });
   const payload = await readResponseBody(response, provider.name);
   const text = extractOpenAiText(payload);

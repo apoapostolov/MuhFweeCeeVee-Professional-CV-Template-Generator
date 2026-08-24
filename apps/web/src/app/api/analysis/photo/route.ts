@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { completeAiVision } from "@/lib/server/aiProviderCompletion";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { appendPhotoAnalysis } from "@/lib/server/photoAnalysisStore";
-import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
 export const runtime = "nodejs";
 
@@ -94,13 +94,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "imageDataUrl must be a data:image/* URL." }, { status: 400 });
   }
 
-  const settings = await readOpenRouterSettings();
-  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) {
-    return NextResponse.json({ error: "OpenRouter API key is not configured." }, { status: 400 });
-  }
-
-  const model = settings.model || "openai/gpt-4o-mini";
   const prompt = [
     "You are a professional CV/headshot reviewer for corporate and tech hiring contexts.",
     "Evaluate this image only for CV/profile-photo readiness using practical recruiter standards.",
@@ -119,39 +112,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     'Return strict JSON only: {"score":0-100,"verdict":"excellent|good|usable|weak","notes":["4-8 concise action items"],"clothingProposals":["4-8 concrete outfit/color suggestions"]}',
   ].join("\n");
 
-  const response = await fetch(settings.baseUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: `${prompt}\nImage name: ${fileName}` },
-            { type: "image_url", image_url: { url: imageDataUrl } },
-          ],
-        },
-      ],
+  let content = "";
+  let model = "configured-vision-provider";
+  try {
+    const completion = await completeAiVision({
+      role: "vision",
+      prompt: `${prompt}\nImage name: ${fileName}`,
+      images: [imageDataUrl],
       temperature: 0.1,
-    }),
-  });
-
-  if (!response.ok) {
-    const raw = await response.text();
+      maxTokens: 2_000,
+    });
+    content = completion.text;
+    model = completion.modelId;
+  } catch (error) {
     return NextResponse.json(
-      { error: "OpenRouter request failed.", status: response.status, raw },
+      { error: error instanceof Error ? error.message : "Configured vision provider failed." },
       { status: 502 },
     );
   }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content ?? "";
   const parsed = extractFirstJsonBlock(content);
   const analysis = normalizeAnalysis(parsed, model);
   let history: PhotoAnalysis[] | undefined;
