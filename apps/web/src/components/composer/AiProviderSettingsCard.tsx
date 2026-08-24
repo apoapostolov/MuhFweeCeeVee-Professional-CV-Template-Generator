@@ -69,15 +69,15 @@ function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
   const percent = Math.round((ratioQuota?.ratio ?? 0) * 100);
   const period = ratioQuota?.quota.period === "monthly" ? "Monthly" : "Weekly";
   const progressBackground = percent < 80
-    ? "#67e8f9"
-    : "linear-gradient(90deg, #67e8f9 0%, #67e8f9 25%, #a78bfa 65%, #f0abfc 100%)";
+    ? "var(--quota-fill)"
+    : "var(--quota-gradient)";
   return (
     <div className="mt-3 w-full text-[11px] text-slate-800" title={ratioQuota?.quota.label}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="font-medium text-slate-700">{period} quota</span>
         <span className="font-bold tabular-nums text-slate-800">{percent}% remaining</span>
       </div>
-      <div aria-label={`${period} quota: ${percent}% remaining`} className="h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemax={100} aria-valuemin={0} aria-valuenow={percent}>
+      <div aria-label={`${period} quota: ${percent}% remaining`} className="h-2 w-full overflow-hidden rounded-full bg-[var(--quota-track)]" role="progressbar" aria-valuemax={100} aria-valuemin={0} aria-valuenow={percent}>
         <div className="h-full rounded-full transition-[width] duration-500" style={{ background: progressBackground, width: `${percent}%` }} />
       </div>
     </div>
@@ -255,6 +255,7 @@ function ProviderBlock({
                 checked={assignedRoles.includes(role)}
                 disabled={!block?.modelId || controller.saving}
                 onChange={() => void controller.toggleRole(provider.id, role)}
+                className="accent-[var(--accent)]"
                 type="checkbox"
               />
               {roleLabel(role, uiLanguage)}

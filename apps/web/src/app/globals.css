@@ -19,6 +19,9 @@
   --assistant-ai-bg: #efe9da;
   --assistant-ai-border: #b8ac8e;
   --assistant-ai-ink: #1f2937;
+  --quota-track: #e6dcc7;
+  --quota-fill: #0d5c63;
+  --quota-gradient: linear-gradient(90deg, #0d5c63 0%, #2a9d8f 55%, #76c893 100%);
 }
 
 :root[data-theme="dark"] {
@@ -40,6 +43,9 @@
   --assistant-ai-bg: #373e47;
   --assistant-ai-border: #545d68;
   --assistant-ai-ink: #cdd9e5;
+  --quota-track: #20262d;
+  --quota-fill: #67e8f9;
+  --quota-gradient: linear-gradient(90deg, #67e8f9 0%, #67e8f9 25%, #a78bfa 65%, #f0abfc 100%);
 }
 
 @theme inline {
