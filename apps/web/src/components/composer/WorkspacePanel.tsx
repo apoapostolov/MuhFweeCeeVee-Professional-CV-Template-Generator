@@ -102,7 +102,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-800">CV Template</label>
+            <label className="block text-sm font-medium text-slate-800">Résumé (CV)</label>
             <div className="mt-1 flex gap-1.5">
             <select
               className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"

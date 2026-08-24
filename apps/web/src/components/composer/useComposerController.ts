@@ -130,6 +130,19 @@ export type ComposerController = ReturnType<typeof useComposerController>;
 
 const TEXT_FIELD_AUTOSAVE_MS = 2500;
 
+function compareSemanticVersions(left: string, right: string): number {
+  const parse = (value: string): number[] => {
+    const match = value.trim().match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+    return match ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)] : [0, 0, 0];
+  };
+  const leftParts = parse(left);
+  const rightParts = parse(right);
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+  }
+  return 0;
+}
+
 export function useComposerController() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("workspace");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
@@ -397,7 +410,15 @@ export function useComposerController() {
 
   const cvTemplatesForLanguage = useMemo(() => {
     const lang = selectedLanguage.toLowerCase();
-    return cvPairs.filter((pair) => Boolean(pair.variants[lang]));
+    return cvPairs
+      .filter((pair) => Boolean(pair.variants[lang]))
+      .sort((a, b) => {
+        const nameOrder = a.displayName.localeCompare(b.displayName, undefined, {
+          sensitivity: "base",
+        });
+        if (nameOrder !== 0) return nameOrder;
+        return compareSemanticVersions(b.displayVersion, a.displayVersion);
+      });
   }, [cvPairs, selectedLanguage]);
 
   const pdfUrl = useMemo(() => {
