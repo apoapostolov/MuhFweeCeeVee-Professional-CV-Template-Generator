@@ -224,7 +224,7 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
           <div>
             <h3 className="text-base font-bold text-slate-900">AI Analysis</h3>
             <p className="mt-1 text-xs text-[var(--ink-muted)]">
-              Multimodal photo assessment using your configured OpenRouter model.
+              Multimodal photo assessment using your configured vision provider.
             </p>
             <button
               className="mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"

@@ -8,8 +8,8 @@ import {
   findResearchedJobPosition,
   readResearchCatalog,
 } from "@/lib/server/researchStore";
+import { completeAiText } from "@/lib/server/aiProviderCompletion";
 import { readCv } from "@/lib/server/cvStore";
-import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
 export const runtime = "nodejs";
 
@@ -240,15 +240,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "CV not found." }, { status: 404 });
   }
 
-  const settings = await readOpenRouterSettings();
-  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "OpenRouter API key is not configured." },
-      { status: 400 },
-    );
-  }
-
   const sectionValue = scope === "section" ? getByPath(cv, sectionKey) : null;
   const jobPositionId =
     typeof payload.jobPositionId === "string" ? payload.jobPositionId.trim() : "";
@@ -274,34 +265,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     jobTargetingNote,
   );
 
-  const response = await fetch(settings.baseUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: settings.model || "openai/gpt-4o-mini",
+  let content = "";
+  try {
+    const completion = await completeAiText({
+      role: "analysis",
       messages: [
         { role: "system", content: "You are a strict JSON generator." },
         { role: "user", content: prompt },
       ],
       temperature: 0.2,
-    }),
-  });
-
-  if (!response.ok) {
-    const raw = await response.text();
+      maxTokens: 8_000,
+    });
+    content = completion.text;
+  } catch (error) {
     return NextResponse.json(
-      { error: "OpenRouter request failed.", status: response.status, raw },
+      { error: error instanceof Error ? error.message : "Configured analysis provider failed." },
       { status: 502 },
     );
   }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content ?? "";
   const parsed = extractFirstJsonBlock(content);
   return NextResponse.json({
     ok: true,

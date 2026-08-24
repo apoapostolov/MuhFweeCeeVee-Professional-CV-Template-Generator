@@ -14,7 +14,7 @@ import {
   parseCvVariantIdLoose,
   type CvLanguage,
 } from "./cvVariants";
-import { readOpenRouterSettings } from "./openRouterSettings";
+import { completeAiText } from "./aiProviderCompletion";
 
 export type CvDocument = Record<string, unknown>;
 export type CvGitVersionInfo = {
@@ -378,50 +378,24 @@ async function maybeTranslateCvDocument(args: {
   sourceLanguage: string;
   targetLanguage: string;
 }): Promise<{ cv: CvDocument; status: string; mode: string }> {
-  const settings = await readOpenRouterSettings();
-  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey.trim()) {
-    return {
-      cv: cloneCvDocument(args.sourceCv),
-      status: "auto-generated-pending-review",
-      mode: "fallback-copy-no-api-key",
-    };
-  }
-
-  const response = await fetch(settings.baseUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: settings.model || "openai/gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a strict JSON translator." },
-        { role: "user", content: buildTranslationPrompt(args.sourceCv, args.sourceLanguage, args.targetLanguage) },
-      ],
-      temperature: 0.1,
-    }),
+  const completion = await completeAiText({
+    role: "translation",
+    messages: [
+      { role: "system", content: "You are a strict JSON translator." },
+      { role: "user", content: buildTranslationPrompt(args.sourceCv, args.sourceLanguage, args.targetLanguage) },
+    ],
+    temperature: 0.1,
+    maxTokens: 16_000,
   });
-
-  if (!response.ok) {
-    const raw = await response.text();
-    throw new Error(`OpenRouter request failed (${response.status}): ${raw}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content ?? "";
-  const translated = extractFirstJsonBlock(content);
+  const translated = extractFirstJsonBlock(completion.text);
   if (!translated || typeof translated !== "object" || Array.isArray(translated)) {
-    throw new Error("Could not parse translated CV JSON from OpenRouter response.");
+    throw new Error("Could not parse translated CV JSON from the configured translation provider.");
   }
 
   return {
     cv: translated as CvDocument,
     status: "auto-generated-pending-review",
-    mode: "openrouter-json-translation",
+    mode: "configured-provider-json-translation",
   };
 }
 

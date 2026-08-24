@@ -465,7 +465,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       return { title, subtitle };
     }
 
-    const copy = resolveFieldCopy(pathLabel, keyName, uiLanguage);
+    const copy = resolveFieldCopy(pathLabel, keyName, selectedLanguage);
     const visibilityKey = pathSegmentsToVisibilityKey(path, editorPath);
     const templateVisible = isTemplatePathVisible(visibilityKey, templateVisibility);
     const visibilityToggle = (
@@ -1249,7 +1249,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
     const depth = options?.depth ?? 0;
     const childDepth = depth + 1;
     const compactFieldLayout = true;
-    const copy = resolveFieldCopy(pathLabel, keyName, uiLanguage);
+    const copy = resolveFieldCopy(pathLabel, keyName, selectedLanguage);
     const removeButton = options?.onRemove ? (
       <ConfirmRemoveButton kind="field" language={uiLanguage} onConfirm={options.onRemove} />
     ) : null;

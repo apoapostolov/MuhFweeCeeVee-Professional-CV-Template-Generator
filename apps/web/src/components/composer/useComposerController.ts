@@ -1642,7 +1642,7 @@ export function useComposerController() {
     }
 
     const wantsAiTranslation = window.confirm(
-      `Create ${languageModalSelection.toUpperCase()} with AI translation (if OpenRouter is configured)?`,
+      `Create ${languageModalSelection.toUpperCase()} with AI translation using the configured translation provider?`,
     );
 
     setCreatingLanguage(true);
@@ -3090,7 +3090,7 @@ export function useComposerController() {
         const message =
           payload.error ??
           (payload.status === 400
-            ? "Configure OpenRouter API key before AI image analysis."
+            ? "Configure the provider assigned to the vision role before AI image analysis."
             : "AI image analysis failed.");
         throw new Error(message);
       }
@@ -3177,7 +3177,7 @@ export function useComposerController() {
         const message =
           payload.error ??
           (payload.status === 400
-            ? "Configure OpenRouter API key before AI image comparison."
+            ? "Configure the provider assigned to the vision role before AI image comparison."
             : "AI image comparison failed.");
         throw new Error(message);
       }

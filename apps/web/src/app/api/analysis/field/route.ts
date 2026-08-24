@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { completeAiText } from "@/lib/server/aiProviderCompletion";
 import { parseFieldRewriteResponse } from "@/lib/field-ai-rewrite";
 import { buildFieldAiJobContext } from "@/lib/research/research-prompts";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
-import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 import {
   findResearchedCompany,
   findResearchedJobPosition,
@@ -144,15 +144,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  const settings = await readOpenRouterSettings();
-  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "OpenRouter API key is not configured." },
-      { status: 400 },
-    );
-  }
-
   const prompt = buildPrompt({
     mode,
     text,
@@ -171,34 +162,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       ? "You score and rewrite CV field copy. Output valid JSON only."
       : "You rewrite CV field copy. Output plain text only.";
 
-  const response = await fetch(settings.baseUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: settings.model || "openai/gpt-4o-mini",
+  let content = "";
+  try {
+    const completion = await completeAiText({
+      role: "field-rewrite",
       messages: [
         { role: "system", content: systemContent },
         { role: "user", content: prompt },
       ],
       temperature: 0.35,
-    }),
-  });
-
-  if (!response.ok) {
-    const raw = await response.text();
+      maxTokens: 2_000,
+    });
+    content = extractTextContent(completion.text);
+  } catch (error) {
     return NextResponse.json(
-      { error: "OpenRouter request failed.", status: response.status, raw },
+      { error: error instanceof Error ? error.message : "Configured field-rewrite provider failed." },
       { status: 502 },
     );
   }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = extractTextContent(data.choices?.[0]?.message?.content ?? "");
   if (!content) {
     return NextResponse.json({ error: "Empty model response." }, { status: 502 });
   }

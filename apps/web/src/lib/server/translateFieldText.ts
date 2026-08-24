@@ -56,7 +56,7 @@ export async function translateFieldText(args: {
   const content = completion.text;
   const translated = extractTextContent(content);
   if (!translated) {
-    throw new Error("OpenRouter returned an empty translation.");
+    throw new Error("Configured translation provider returned an empty translation.");
   }
   return translated;
 }

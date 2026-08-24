@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
+import { completeAiText } from "@/lib/server/aiProviderCompletion";
 import { readCv, writeCv } from "@/lib/server/cvStore";
 import {
   isSupportedLanguage,
   parseCvVariantId,
   type CvLanguage,
 } from "@/lib/server/cvVariants";
-import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
 
 export const runtime = "nodejs";
 
@@ -213,12 +213,6 @@ async function translateFragment(
   sourceLanguage: CvLanguage,
   targetLanguage: CvLanguage,
 ): Promise<unknown> {
-  const settings = await readOpenRouterSettings();
-  const apiKey = settings.apiKey || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) {
-    throw new Error("OpenRouter API key is not configured.");
-  }
-
   const prompt = [
     "Translate string values in this JSON object from source language to target language.",
     "Preserve object keys, structure, arrays, booleans, numbers, dates, ids, and emails exactly.",
@@ -229,34 +223,18 @@ async function translateFragment(
     `JSON:\n${JSON.stringify(fragment, null, 2)}`,
   ].join("\n");
 
-  const response = await fetch(settings.baseUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: settings.model || "openai/gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a strict JSON translator." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.1,
-    }),
+  const completion = await completeAiText({
+    role: "translation",
+    messages: [
+      { role: "system", content: "You are a strict JSON translator." },
+      { role: "user", content: prompt },
+    ],
+    temperature: 0.1,
+    maxTokens: 8_000,
   });
-
-  if (!response.ok) {
-    const raw = await response.text();
-    throw new Error(`OpenRouter request failed (${response.status}): ${raw}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content ?? "";
-  const parsed = extractFirstJsonBlock(content);
+  const parsed = extractFirstJsonBlock(completion.text);
   if (!parsed) {
-    throw new Error("Could not parse translated JSON from OpenRouter response.");
+    throw new Error("Could not parse translated JSON from the configured translation provider.");
   }
   return parsed;
 }
