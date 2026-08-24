@@ -20,10 +20,10 @@ MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applica
 
 ## What’s New in 1.4.0
 
-- **Per-job AI providers.** Pick which service and model handles a given job. Codex signs in with a weekly quota; xAI uses device login and reasoning levels. Hosted and local endpoints both work. Limits and a rough cost show before a large request.
-- **Copilot with approval.** MuhFwee AI can read the current workspace, show its steps, and wait before it edits a CV, research record, letter, or application. Conversations can be archived or saved as playbooks.
-- **Application trail and backups.** Each application keeps details, contacts, next actions, and a freeze of what you sent. Workspace backups export records, photos, evidence, and submissions, then merge on restore.
-- **Editor and Print Room.** Half-step skill ratings. ATS and writing-review findings stay on the CV (findings, not a fake score). Hidden YAML fields and experience subsections are editable. Clone versions; Print Room orders them newest first and remembers print choices.
+- **Write and review a CV.** Rate skills in half-steps. Keep ATS and writing-review findings on the document. Clone a revision when you want a new version.
+- **Track applications.** Details, contacts, and next actions live on the application. The timeline is editable. Freeze the exact pack you submitted.
+- **Print a PDF.** Print Room remembers your print choices and lists CVs by real version, newest first.
+- **Optional AI.** Pick a provider when you want one. MuhFwee AI can read the workspace and wait for approval before it edits.
 
 See the full [changelog](./CHANGELOG.md).
 
