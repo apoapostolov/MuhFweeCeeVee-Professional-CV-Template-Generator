@@ -205,10 +205,10 @@ export function PhotoBoothPanel(props: PhotoBoothPanelProps): JSX.Element {
                           </button>
                         </div>
                       </div>
-                      <p className="mt-1 truncate text-[10px] font-semibold text-slate-800">{item.name}</p>
-                      <p className="mt-0.5 text-[10px] text-slate-600">
-                        {item.width}x{item.height}
-                      </p>
+                      <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                        <p className="min-w-0 truncate text-[10px] font-semibold text-slate-800" title={item.name}>{item.name}</p>
+                        <span className="shrink-0 text-[10px] tabular-nums text-slate-600">{item.width}x{item.height}</span>
+                      </div>
                     </article>
                   );
                 })}
