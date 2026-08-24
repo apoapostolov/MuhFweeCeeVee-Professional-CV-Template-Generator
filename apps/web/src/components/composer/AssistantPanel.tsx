@@ -279,7 +279,7 @@ export function AssistantPanel({
               </button>
             ) : (
               <button
-                className="pointer-events-auto inline-flex items-center gap-1 rounded-md bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                className="pointer-events-auto relative -top-1 inline-flex items-center gap-1 rounded-md border-0 bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-white shadow-none disabled:opacity-50"
                 disabled={!assistant.draft.trim()}
                 onClick={() => submit()}
                 type="button"

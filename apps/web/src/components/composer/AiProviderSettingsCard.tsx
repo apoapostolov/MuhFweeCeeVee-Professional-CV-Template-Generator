@@ -60,7 +60,7 @@ function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
   if (!creditQuota && !ratioQuota) return null;
   if (creditQuota && !ratioQuota) {
     return (
-      <div className="mt-3 flex w-full items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold tabular-nums" title={creditQuota.label}>
+      <div className="mt-3 flex w-full items-center justify-between px-1 text-xs font-semibold tabular-nums" title={creditQuota.label}>
         <span className="text-slate-700">Available credit</span>
         <span className="text-emerald-700">{creditQuota.remaining === null ? "$—" : `$${creditQuota.remaining.toFixed(2)}`}</span>
       </div>
@@ -72,7 +72,7 @@ function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
     ? "#67e8f9"
     : "linear-gradient(90deg, #67e8f9 0%, #67e8f9 25%, #a78bfa 65%, #f0abfc 100%)";
   return (
-    <div className="mt-3 w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2.5 text-[11px] text-slate-800" title={ratioQuota?.quota.label}>
+    <div className="mt-3 w-full text-[11px] text-slate-800" title={ratioQuota?.quota.label}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="font-medium text-slate-700">{period} quota</span>
         <span className="font-bold tabular-nums text-slate-800">{percent}% remaining</span>

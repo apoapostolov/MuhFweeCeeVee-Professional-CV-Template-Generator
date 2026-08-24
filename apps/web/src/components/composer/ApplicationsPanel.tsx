@@ -61,7 +61,7 @@ function formatDaysLabel(days: number, bg: boolean): string {
   return `${days}d`;
 }
 
-type CvOption = { id: string; displayName?: string };
+type CvOption = { id: string; displayName?: string; displayVersion?: string | null };
 type PhotoOption = { id: string; name: string; mediaUrl?: string };
 type LetterOption = { id: string; title: string };
 type CompanyOption = { id: string; name: string };
@@ -241,7 +241,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     applicationNameHint: bg
       ? "Кратко име за дъската (напр. „Acme — Senior FE“)"
       : "Short board label (e.g. “Acme — Senior FE”)",
-    resumeCv: bg ? "CV / автобиография" : "Resume (CV)",
+    resumeCv: bg ? "Резюме (CV)" : "Résumé (CV)",
     noneSelected: bg ? "— не е избрано —" : "— none selected —",
     profilePhoto: bg ? "Профилна снимка" : "Profile photo",
     researchCompany: bg ? "Компания от Research" : "Company from Research",
@@ -1443,7 +1443,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       value={draft.cv_id || ""}
                     >
                       <option value="">{t.noneSelected}</option>
-                      {cvOptions.map((cv) => <option key={cv.id} value={cv.id}>{cv.displayName || cv.id}</option>)}
+                      {cvOptions.map((cv) => <option key={cv.id} value={cv.id}>{[cv.displayName || cv.id, cv.displayVersion].filter(Boolean).join(" ")}</option>)}
                     </select>
                   </label>
                   <label className="block text-[10px] font-medium text-slate-700">
