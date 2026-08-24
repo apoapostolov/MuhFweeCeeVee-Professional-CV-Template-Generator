@@ -7,41 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-24
+
+MuhFweeCeeVee now covers the daily job-search loop with a clearer handoff between writing, research, review, applications, and final submission. The work stays local by default, while AI remains something you can choose and control.
+
 ### Added
 
-- **CV review score metadata** — every CV version can retain free-form ATS and
-  AI-writing detector results by provider. Detector records distinguish a
-  whole-CV result from provider-reported or separately tested sidebar,
-  frontmatter, per-position, and backmatter results; absent section data is not
-  fabricated. New score groups start with the graders used by Review Lab.
-- **MuhFwee AI Phases 1–3** — a lower-right launcher opens a responsive, contextual
-  copilot with private local conversations, streamed responses, visible MCP
-  tool activity, cancellation, reconnect/retry recovery, draft persistence,
-  token usage, multi-step plans, saved playbooks, searchable/archiveable
-  conversations, direct workspace handoffs, and keyboard-complete controls.
-  Reads run automatically; CV,
-  Research, cover-letter, and application changes pause on field-level approval
-  cards with target revisions, recovery guidance, proportional destructive or
-  paid wording, and pricing estimates when available. Server-issued tokens,
-  target rechecks, exactly-once execution, and a private audit ledger prevent
-  stale or duplicated writes. Coherent pending operations can be reviewed and
-  applied as one batch without weakening their individual checks. Assistant
-  history stays out of backups by default; an explicit opt-in exports redacted
-  history and restores it archived. Sensitive settings and bulk operations
-  remain unavailable.
-- **Power-user application operations** — Board now includes immutable
-  submission snapshots with checksummed CV/PDF/letter/photo/target/ATS assets,
-  submitted-vs-current comparison, activity and contact timelines, next-action
-  scheduling with a Today queue, Quick Intake from pasted listings, search and
-  saved views, archive/duplicate controls, reusable career evidence with CV
-  provenance, and event-derived funnel analytics.
-- **Portable session ZIP backups** — downloads now combine the v4 session
-  manifest with structured CV sources, photos actually referenced by
-  applications or approved in Photo Booth, per-photo analysis history, career
-  evidence, immutable submission assets, and optional generated application
-  PDFs. ZIP imports preserve photo and submission IDs while merging matching
-  CVs, applications, cover letters, and evidence; records absent from the
-  backup remain untouched.
+- **Provider choices for every AI job** — choose which service handles translation, research, CV review, photo feedback, writing help, and the built-in assistant. Connect Codex or xAI with a sign-in flow, choose a model and reasoning level where available, see usage limits, and get a rough cost before sending a larger request. Local model endpoints can be used alongside hosted providers.
+- **MuhFwee AI copilot** — open a private assistant from any workspace screen, ask it to inspect the current CV or job-search material, follow its visible actions, and approve proposed changes before they are applied. Conversations can be searched, resumed, archived, and saved as reusable playbooks. The assistant can also hand you back to the exact CV, research record, letter, or application it was discussing.
+- **CV review and AI-writing checks** — keep ATS results and writing-review findings with each CV, compare results by provider and by section, and review detector findings without pretending that missing evidence is a score. Skill ratings accept half-steps, and the editor now gives you clearer control over optional experience sections and hidden YAML fields.
+- **A fuller application workspace** — work through application details, company information, saved snapshots, and a live timeline without losing your place. Track contacts and next actions, see what is due today, search and save useful board views, reuse career evidence, and freeze the exact CV, letter, photo, and PDF that went out.
+- **Portable workspace backups** — export the records, photos, evidence, letters, application history, and submitted materials that belong to the workspace. Restoring a backup merges matching records without wiping work that is not in the archive.
+- **More deliberate printing and version selection** — Print Room remembers presentation choices for each CV, language, and template, offers conservative help with page breaks, keeps exported documents properly identified, and puts matching CV names together with the newest semantic version first. Older versions remain easy to find below.
+
+### Changed
+
+- **Research now feeds the whole workflow** — a company and its roles can carry through targeting, keyword checks, letters, applications, and the final print step instead of living in separate screens.
+- **Cover letters have a clearer writing loop** — create a letter from the selected CV and target, keep its history, draft with AI when wanted, and run humanizing as a separate deliberate pass.
+- **Applications are easier to read at a glance** — stages, cards, colors, photos, locations, actions, and loading states now behave consistently in both light and dark themes. The editor actions stay where you need them while the board refreshes.
+- **The editor is more legible and less surprising** — language follows the selected CV, nested sections are easier to scan, action controls have clearer labels and contrast, and the most important scoring actions sit beside the analysis heading.
+- **Photos and exported files carry more context** — Photo Booth makes the approved state and available actions clearer, while PDF output preserves useful author, title, and subject information.
+
+### Fixed
+
+- **AI connections survive ordinary refreshes** — signed-in provider sessions remain available instead of silently dropping out, and workflows no longer disappear just because a provider has no API key.
+- **Assistant responses stay in the conversation** — Codex replies render normally, the assistant shows the workspace context it is using, and reconnecting does not throw away the current draft.
+- **Application changes are not lost during board activity** — saves remain durable while the board loads or refreshes, and timeline edits stay on the selected timeline.
+- **CV and print selections stop following incidental file order** — names stay together, semantic versions sort from the newest at the top to the oldest at the bottom, and last-edited information settles ties when it exists.
 
 ## [1.3.1] - 2026-07-29
 

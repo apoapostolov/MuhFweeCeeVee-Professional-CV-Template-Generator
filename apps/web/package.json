@@ -1,6 +1,6 @@
 {
   "name": "@muhfweeceevee/web",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -p 10004 -H 127.0.0.1",

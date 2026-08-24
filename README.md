@@ -2,7 +2,7 @@
 
 *A self-hosted CV and job-search workspace you own instead of renting by the month.*
 
-[![Repository Version](https://img.shields.io/badge/version-1.3.1-blue)](./package.json)
+[![Repository Version](https://img.shields.io/badge/version-1.4.0-blue)](./package.json)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933)](https://nodejs.org/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED)](./deploy/docker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -16,16 +16,17 @@ optional AI help, and can preserve the exact documents submitted for each job.
   <img src="images/SCREENSHOT_01.png" alt="Print Room with a live PDF preview and template controls" width="100%">
 </p>
 
-## What's New in 1.3.1
+## What's New in 1.4.0
 
-- Run the complete web app through Docker Compose on a local host.
-- Keep CVs, photos, and runtime settings in durable named volumes.
-- Export PDF and PNG files from an unprivileged container with health checks.
-- Bind to localhost by default and require an explicit API token for protected access.
+This update makes the workspace feel much more like one place to do the whole job search, not a collection of disconnected tools.
 
-The repository's current `main` branch also contains application operations and
-the MuhFwee AI copilot listed under **Unreleased** in the
-[changelog](./CHANGELOG.md).
+- **A much richer AI workspace.** Choose the provider and model behind each job, connect Codex or xAI when you want OAuth instead of an API key, see usage limits and cost estimates, and use the same setup for translation, research, CV review, photo feedback, and writing help.
+- **A deeper CV editing and review loop.** Rate skills in half-steps, keep ATS and writing-review results with the CV, inspect AI-detection findings by section, add or remove experience subsections, preserve hidden fields in YAML, and work in a clearer light or dark editor.
+- **A real application trail.** Organize each application across its details, company, snapshots, and timeline; schedule the next action, keep contacts and activity together, save reusable evidence, and freeze the exact materials you submitted.
+- **More confidence at the finish line.** Print Room keeps revisions in sensible version order, remembers print choices, offers conservative pagination help, and carries useful document details into exported PDFs. Letters, photos, and application controls also got a broad usability pass.
+- **A copilot that stays in your hands.** MuhFwee AI can read the current workspace, show what it is doing, and ask before it changes a CV, research record, letter, or application.
+
+See the [changelog](./CHANGELOG.md) for the full 1.4.0 story.
 
 ## What You Can Do
 
