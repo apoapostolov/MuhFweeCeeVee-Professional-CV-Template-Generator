@@ -4,7 +4,8 @@ import { getAtPath, setAtPath } from "@/components/composer/form-path-utils";
 import { parseFieldPath } from "@/lib/field-path-key";
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { readCv, writeCv } from "@/lib/server/cvStore";
-import { readOpenRouterSettings } from "@/lib/server/openRouterSettings";
+import { getAiProvider } from "@/lib/server/aiProviderRegistry";
+import { readAiProviderKey, readAiSettingsDocument } from "@/lib/server/aiSettings";
 import {
   isDefinedLanguageCode,
   languageDisplayName,
@@ -93,15 +94,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const openRouterSettings = await readOpenRouterSettings();
-  if (!openRouterSettings.apiKey.trim()) {
+  const aiSettings = await readAiSettingsDocument();
+  const translationBinding = aiSettings.roles.translation;
+  const translationProvider = getAiProvider(translationBinding.providerId);
+  const translationKey = translationProvider ? await readAiProviderKey(translationProvider.id) : "";
+  if (!translationProvider || (translationProvider.auth !== "none" && !translationKey.trim())) {
     return NextResponse.json({
       ok: true,
       sourceCvId,
       targetCvId,
       targetLanguage: targetLanguageRaw,
       skipped: true,
-      message: "OpenRouter is not configured; translation skipped.",
+      message: "AI translation provider is not configured; translation skipped.",
     });
   }
 

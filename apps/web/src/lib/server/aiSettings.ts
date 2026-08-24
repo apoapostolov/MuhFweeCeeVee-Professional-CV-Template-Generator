@@ -79,6 +79,10 @@ async function readProviderKey(providerId: string): Promise<string> {
   }
 }
 
+export async function readAiProviderKey(providerId: string): Promise<string> {
+  return readProviderKey(providerId);
+}
+
 async function writeProviderKey(providerId: string, value: string): Promise<void> {
   if (providerId === "openrouter") {
     await writeOpenRouterSettings({ apiKey: value });
