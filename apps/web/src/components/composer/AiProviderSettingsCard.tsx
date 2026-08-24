@@ -2,7 +2,7 @@
 
 import { useState, type JSX } from "react";
 
-import type { AiProviderStatus, AiRole } from "@/lib/server/aiProviderTypes";
+import type { AiProviderStatus, AiQuota, AiRole } from "@/lib/server/aiProviderTypes";
 import type { useAiProviderSettings } from "./useAiProviderSettings";
 import type { UiLanguageCode } from "./ui-language";
 
@@ -42,6 +42,36 @@ function StatusLine({ provider }: { provider: AiProviderStatus }): JSX.Element {
   );
 }
 
+function ProviderQuota({ quotas }: { quotas: AiQuota[] }): JSX.Element | null {
+  const creditQuota = quotas.find((quota) => quota.unit === "USD");
+  if (creditQuota) {
+    return (
+      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-700" title={creditQuota.label}>
+        {creditQuota.remaining === null ? "$—" : `$${creditQuota.remaining.toFixed(2)}`}
+      </span>
+    );
+  }
+  const ratioQuota = quotas
+    .filter((quota) => (quota.period === "weekly" || quota.period === "monthly") && quota.limit !== null && quota.limit > 0 && quota.remaining !== null)
+    .map((quota) => ({ quota, ratio: Math.max(0, Math.min(1, (quota.remaining ?? 0) / (quota.limit ?? 1))) }))
+    .sort((a, b) => b.ratio - a.ratio)[0];
+  if (!ratioQuota) return null;
+  const percent = Math.round(ratioQuota.ratio * 100);
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold tabular-nums text-slate-700" title={ratioQuota.quota.label}>
+      <span>{percent}%</span>
+      <span
+        aria-label={`${percent}% quota remaining`}
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full"
+        role="img"
+        style={{ background: `conic-gradient(#10b981 ${percent * 3.6}deg, #e2e8f0 0deg)` }}
+      >
+        <span className="h-3.5 w-3.5 rounded-full bg-white" />
+      </span>
+    </span>
+  );
+}
+
 function ReloadIcon(): JSX.Element {
   return (
     <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -64,12 +94,16 @@ function ProviderBlock({
   const isBg = uiLanguage === "bg";
   const assignedRoles = block?.roles ?? [];
   const roleNames = assignedRoles.map((role) => roleLabel(role, uiLanguage)).join(", ");
+  const quotas = controller.aiSettings?.quotas.filter((quota) => quota.providerId === provider.id) ?? [];
 
   return (
     <section className="rounded-md border border-[var(--line)] bg-[var(--surface-1)] p-3">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">{provider.name}</h3>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-sm font-semibold text-slate-900">{provider.name}</h3>
+            <ProviderQuota quotas={quotas} />
+          </div>
           <p className="mt-0.5 text-[11px]">
             <StatusLine provider={provider} />
           </p>
@@ -173,7 +207,7 @@ function ProviderBlock({
           title={isBg ? "Обнови моделите" : "Reload models"}
           type="button"
         >
-          <span className={controller.reloadingProviderId === provider.id ? "animate-spin" : ""}><ReloadIcon /></span>
+          <span className={`${controller.reloadingProviderId === provider.id ? "animate-spin" : ""} ${controller.reloadedProviderId === provider.id ? "text-emerald-500" : ""}`}><ReloadIcon /></span>
         </button>
       </div>
 

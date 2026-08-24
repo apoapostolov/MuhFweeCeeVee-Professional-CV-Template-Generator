@@ -53,6 +53,7 @@ export function useAiProviderSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reloadingProviderId, setReloadingProviderId] = useState<string | null>(null);
+  const [reloadedProviderId, setReloadedProviderId] = useState<string | null>(null);
   const [oauthCode, setOauthCode] = useState<{ providerId: string; value: string } | null>(null);
   const [oauthCodeCopiedProviderId, setOauthCodeCopiedProviderId] = useState<string | null>(null);
   const [oauthActionProviderId, setOauthActionProviderId] = useState<string | null>(null);
@@ -134,17 +135,15 @@ export function useAiProviderSettings() {
       const payload = (await result.json()) as AiSettingsResponse & { error?: string };
       if (!result.ok || payload.error) throw new Error(payload.error ?? "Failed to reload models.");
       applyResponse(payload, [...providerIds, providerId]);
-      if (payload.models.some((model) => model.providerId === providerId)) {
-        setNotice(`Models reloaded for ${providers.find((provider) => provider.id === providerId)?.name ?? providerId}.`);
-      } else {
-        setNotice("");
-      }
+      setNotice("");
+      setReloadedProviderId(providerId);
+      window.setTimeout(() => setReloadedProviderId((current) => current === providerId ? null : current), 600);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Failed to reload models.");
     } finally {
       setReloadingProviderId(null);
     }
-  }, [applyResponse, providerIds, providers]);
+  }, [applyResponse, providerIds]);
 
   const saveApiKey = useCallback(async (providerId: string) => {
     const apiKey = apiKeyInputs[providerId]?.trim() ?? "";
@@ -369,6 +368,7 @@ export function useAiProviderSettings() {
     saving,
     notice,
     reloadingProviderId,
+    reloadedProviderId,
     apiKeyInputs,
     setApiKeyInput: (providerId: string, value: string) => setApiKeyInputs((current) => ({ ...current, [providerId]: value })),
     addProvider,
