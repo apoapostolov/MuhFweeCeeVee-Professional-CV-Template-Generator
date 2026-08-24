@@ -269,14 +269,15 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
   function renderYamlLine(line: string, index: number): JSX.Element {
     const keyValueMatch = /^(\s*)(-\s+)?([A-Za-z0-9_.-]+):(.*)$/.exec(line);
     const lineNumber = String(index + 1).padStart(3, " ");
-    const lineNumberClass = "select-none text-[10px] text-[var(--yaml-empty)]";
-    const blankClass = "text-xs leading-5 text-[var(--yaml-empty)]";
-    const commentClass = "whitespace-pre text-xs italic leading-5 text-[var(--yaml-comment)]";
-    const indentClass = "text-[var(--yaml-empty)]";
-    const keyClass = "font-semibold text-[var(--yaml-key)]";
-    const listClass = "font-semibold text-[var(--yaml-list)]";
-    const colonClass = "text-[var(--yaml-punctuation)]";
-    const fallbackLineClass = "whitespace-pre text-xs leading-5 text-[var(--yaml-text)]";
+    const isDark = resolvedTheme === "dark";
+    const lineNumberClass = isDark ? "select-none text-[10px] text-slate-500" : "select-none text-[10px] text-slate-400";
+    const blankClass = isDark ? "text-xs leading-5 text-slate-500" : "text-xs leading-5 text-slate-500";
+    const commentClass = isDark ? "whitespace-pre text-xs italic leading-5 text-slate-400" : "whitespace-pre text-xs italic leading-5 text-slate-500";
+    const indentClass = isDark ? "text-slate-500" : "text-slate-500";
+    const keyClass = isDark ? "font-semibold text-sky-300" : "font-semibold text-sky-700";
+    const listClass = isDark ? "font-semibold text-fuchsia-300" : "font-semibold text-fuchsia-700";
+    const colonClass = isDark ? "text-slate-400" : "text-slate-600";
+    const fallbackLineClass = isDark ? "whitespace-pre text-xs leading-5 text-slate-300" : "whitespace-pre text-xs leading-5 text-slate-700";
 
     if (line.trim().length === 0) {
       return (
@@ -300,13 +301,13 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       const [, leading, listPrefix = "", key, rawValue] = keyValueMatch;
       const value = rawValue ?? "";
       const valueTrim = value.trim();
-      let valueClass = "text-[var(--yaml-string)]";
+      let valueClass = isDark ? "text-emerald-300" : "text-emerald-700";
       if (/^(true|false|null)$/i.test(valueTrim)) {
-        valueClass = "text-[var(--yaml-boolean)]";
+        valueClass = isDark ? "text-violet-300" : "text-violet-700";
       } else if (/^-?\d+(\.\d+)?$/.test(valueTrim)) {
-        valueClass = "text-[var(--yaml-number)]";
+        valueClass = isDark ? "text-amber-300" : "text-amber-700";
       } else if (valueTrim.length === 0) {
-        valueClass = "text-[var(--yaml-empty)]";
+        valueClass = isDark ? "text-slate-500" : "text-slate-400";
       }
       return (
         <div key={`yaml-line-${index}`} className="grid grid-cols-[36px_1fr] gap-2">
@@ -331,7 +332,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
             <span className="whitespace-pre text-xs leading-5">
               <span className={indentClass}>{listMatch[1]}</span>
               <span className={listClass}>{listMatch[2]}</span>
-              <span className="text-[var(--yaml-string)]">{listMatch[3]}</span>
+              <span className={isDark ? "text-emerald-300" : "text-emerald-700"}>{listMatch[3]}</span>
             </span>
           </div>
         );
