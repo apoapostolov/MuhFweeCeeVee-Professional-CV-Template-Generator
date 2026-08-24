@@ -930,7 +930,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
       const objectArrayIndex = path[path.length - 1];
       const isTopLevelStructure = compactFieldLayout && depth === 1 && isTabulatedArrayEditorPath(editorPath);
       const alternatingStructureClass = isTopLevelStructure && typeof objectArrayIndex === "number"
-        ? `col-span-full grid grid-cols-subgrid gap-y-2 rounded-md px-2 py-2 ${objectArrayIndex % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
+        ? `col-span-full grid grid-cols-subgrid gap-y-2 rounded-md -mx-3 px-5 py-2 ${objectArrayIndex % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
         : compactContainerShellClass(compactFieldLayout, editorPath, depth);
 
       return (
