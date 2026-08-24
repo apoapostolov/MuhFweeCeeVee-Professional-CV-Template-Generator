@@ -291,7 +291,7 @@ export const FIELD_META: Record<string, FieldMeta> = {
   },
   "metadata.detector_scores": {
     en: { label: "Detector Scores", description: "AI-writing detector results and section-level checks." },
-    bg: { label: "Детекторни оценки", description: "Резултати от AI детектори и проверки по секция." },
+    bg: { label: "Детекторни оценки", description: "Резултати от AI детектори и проверки по секции." },
   },
   "metadata.detector_scores[].label": {
     en: { label: "Provider", description: "Detector provider name." },
@@ -303,7 +303,7 @@ export const FIELD_META: Record<string, FieldMeta> = {
   },
   "metadata.detector_scores[].section_scores": {
     en: { label: "Section Scores", description: "Optional results for jobs, frontmatter, or backmatter." },
-    bg: { label: "Оценки по секция", description: "Резултати за позиции, начало или край на CV." },
+    bg: { label: "Оценки по секции", description: "Резултати за позиции, начало или край на CV." },
   },
   "metadata.detector_scores[].section_scores[].label": {
     en: { label: "Section", description: "Job or major CV section checked." },
