@@ -90,8 +90,8 @@ function isRatedSkillListPath(pathLabel: string): boolean {
 const EXPERIENCE_SUBSECTION_OPTIONS = [
   { key: "responsibilities", en: "Responsibilities", bg: "Отговорности", value: [] },
   { key: "products", en: "Products", bg: "Продукти", value: [] },
-  { key: "publication_links", en: "Links", bg: "Връзки", value: [] },
-  { key: "quantified_results", en: "Results", bg: "Резултати", value: [] },
+  { key: "publication_links", en: "Publication Links", bg: "Публикационни връзки", value: [] },
+  { key: "quantified_results", en: "Quantified Results", bg: "Количествени резултати", value: [] },
   { key: "tools", en: "Tools", bg: "Инструменти", value: [] },
 ] as const;
 
@@ -997,11 +997,11 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           )}
           {missingExperienceSubsections.length > 0 ? (
             <div
-              className={`${compactFieldLayout ? `${EDITOR_COMPACT_FIELD_TRACKS_CLASS} col-span-full` : ""} mb-2 flex w-full items-center justify-between gap-3 text-[11px] text-[var(--ink-muted)]`}
+              className={`${compactFieldLayout ? "col-span-full col-start-1 col-end-[-1]" : ""} mb-2 flex w-full min-w-0 items-center justify-between gap-3 text-[11px] text-[var(--ink-muted)]`}
               style={compactFieldLayout ? leadingGroupIndentStyle : sectionIndentStyle}
             >
               <span className="shrink-0">{uiLanguage === "bg" ? "Добави подраздел:" : "Add subsection:"}</span>
-              <div className="flex flex-wrap justify-end gap-1.5">
+              <div className="ml-auto flex shrink-0 flex-wrap justify-end gap-1.5">
                 {missingExperienceSubsections.map((subsection) => (
                   <button
                     className="rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1 font-medium text-[var(--foreground)] hover:bg-[var(--surface-2)]"
