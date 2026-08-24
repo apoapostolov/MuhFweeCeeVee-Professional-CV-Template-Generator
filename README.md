@@ -13,6 +13,10 @@ source material under your control, supports local ATS checks alongside
 optional AI help, and can preserve the exact documents submitted for each job.
 
 <p align="center">
+  <img src="images/muhfweeceevee-hero.jpg" alt="MuhFweeCeeVee hero" width="100%">
+</p>
+
+<p align="center">
   <img src="images/SCREENSHOT_01.png" alt="Print Room with a live PDF preview and template controls" width="100%">
 </p>
 
