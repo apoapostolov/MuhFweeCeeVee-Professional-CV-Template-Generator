@@ -195,7 +195,15 @@ export async function writeAiSettingsDocument(
 
 function seedModels(providerId: string): AiModel[] {
   const seeds: Record<string, string[]> = {
-    "openai-codex": ["gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark"],
+    "openai-codex": [
+      "gpt-5.3-codex-spark",
+      "gpt-5.4",
+      "gpt-5.4-mini",
+      "gpt-5.5",
+      "gpt-5.6-luna",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+    ],
     openai: ["gpt-4o-mini", "gpt-4.1-mini"],
     anthropic: ["claude-sonnet-4-6", "claude-haiku-4-5"],
     gemini: ["gemini-2.5-flash", "gemini-2.5-pro"],
@@ -204,11 +212,22 @@ function seedModels(providerId: string): AiModel[] {
     mistral: ["mistral-large-latest", "mistral-small-latest"],
     ollama: [],
   };
+  const names: Record<string, Record<string, string>> = {
+    "openai-codex": {
+      "gpt-5.3-codex-spark": "GPT-5.3 Codex Spark",
+      "gpt-5.4": "GPT-5.4",
+      "gpt-5.4-mini": "GPT-5.4 mini",
+      "gpt-5.5": "GPT-5.5",
+      "gpt-5.6-luna": "GPT-5.6 Luna",
+      "gpt-5.6-sol": "GPT-5.6 Sol",
+      "gpt-5.6-terra": "GPT-5.6 Terra",
+    },
+  };
   return (seeds[providerId] ?? []).map((id) => ({
     providerId,
     id,
-    name: id,
-    capabilities: ["chat"] as AiCapability[],
+    name: names[providerId]?.[id] ?? id,
+    capabilities: providerId === "openai-codex" && id !== "gpt-5.3-codex-spark" ? ["chat", "vision"] as AiCapability[] : ["chat"] as AiCapability[],
     contextLength: null,
     inputPricePer1M: null,
     outputPricePer1M: null,
