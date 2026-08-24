@@ -7,6 +7,7 @@ import {
   restoreApplicationSubmissionAsset,
 } from "@/lib/server/applicationSubmissionStore";
 import type { ApplicationSubmissionSnapshot } from "@/lib/server/applicationStore";
+import type { RenderTweaks } from "@/lib/server/render/tweaks";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,11 @@ export async function POST(
     const snapshot = await createApplicationSubmissionSnapshot(applicationId, {
       templateId,
       theme: typeof body.theme === "string" ? body.theme : undefined,
+      photoMode: typeof body.photoMode === "string" ? body.photoMode : undefined,
+      tweaks:
+        body.tweaks && typeof body.tweaks === "object"
+          ? (body.tweaks as RenderTweaks)
+          : undefined,
       source: typeof body.source === "string" ? body.source : undefined,
       submissionUrl:
         typeof body.submissionUrl === "string" ? body.submissionUrl : undefined,

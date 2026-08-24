@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { Archive, BookmarkPlus, Copy, Download, FlaskConical, FolderOpen, Plus, Search, Trash2, UserPlus } from "lucide-react";
+import type { RenderTweaks } from "@/lib/server/render/tweaks";
 
 import { ApplicationActivityTimeline } from "./ApplicationActivityTimeline";
 import { ApplicationAnalyticsView } from "./ApplicationAnalyticsView";
@@ -87,6 +88,8 @@ export type ApplicationsPanelProps = {
   /** Current Print Room template used to freeze submitted PDFs. */
   defaultTemplateId?: string;
   defaultTemplateTheme?: string;
+  defaultPhotoMode?: string;
+  defaultPrintTweaks?: RenderTweaks;
   onAssistantSelectionChange?: (
     selection: {
       id: string;
@@ -179,6 +182,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
     defaultPhotoId,
     defaultTemplateId,
     defaultTemplateTheme,
+    defaultPhotoMode,
+    defaultPrintTweaks,
     onAssistantSelectionChange,
   } = props;
 
@@ -242,7 +247,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       ? "Изберете карта от дъската или създайте ново кандидатстване."
       : "Select a card on the board or create a new application.",
     editorNew: bg ? "Ново кандидатстване" : "New application",
-    editorEdit: bg ? "Редакция" : "Edit application",
+    editorEdit: bg ? "Редакция" : "Edit Application",
     editorHint: bg
       ? "Свържете CV, снимка, компания и писмо. Може да променяте по всяко време."
       : "Link a CV, photo, company, and cover letter. Editable anytime.",
@@ -1661,6 +1666,8 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   }
                   templateId={defaultTemplateId}
                   theme={defaultTemplateTheme}
+                  photoMode={defaultPhotoMode}
+                  tweaks={defaultPrintTweaks}
                 />
               ) : null}
 

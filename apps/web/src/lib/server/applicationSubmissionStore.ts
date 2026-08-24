@@ -18,6 +18,7 @@ import { readCv } from "./cvStore";
 import { getPhotoBoothItem } from "./photoGalleryStore";
 import { buildCvTemplateHtml } from "./renderCvTemplate";
 import { repoPath } from "./repoPaths";
+import type { RenderTweaks } from "./render/tweaks";
 import {
   findResearchedCompany,
   findResearchedJobPosition,
@@ -33,6 +34,8 @@ export type CreateSubmissionSnapshotInput = {
   submissionUrl?: string;
   confirmationReference?: string;
   submittedAt?: string;
+  photoMode?: string;
+  tweaks?: RenderTweaks;
 };
 
 type StoredAsset = {
@@ -103,11 +106,15 @@ async function renderPdf(input: {
   templateId: string;
   theme?: string;
   photoId?: string;
+  photoMode?: string;
+  tweaks?: RenderTweaks;
 }): Promise<Uint8Array> {
   const { html, metadata } = await buildCvTemplateHtml({
     cvId: input.cvId,
     templateId: input.templateId,
     theme: input.theme,
+    photoMode: input.photoMode,
+    tweaks: input.tweaks,
     profilePhotoId: input.photoId,
   });
   const { chromium } = await import("playwright");
@@ -194,6 +201,8 @@ export async function createApplicationSubmissionSnapshot(
       cvId: application.cv_id,
       templateId: input.templateId.trim(),
       theme: input.theme?.trim() || undefined,
+      photoMode: input.photoMode,
+      tweaks: input.tweaks,
       photoId: application.photo_id,
     });
     const cvPdf = await writeAsset(

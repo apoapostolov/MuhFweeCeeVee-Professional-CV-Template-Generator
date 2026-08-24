@@ -274,6 +274,16 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               defaultPhotoId={c.approvedPhotoId || undefined}
               defaultTemplateId={c.selectedTemplateId || undefined}
               defaultTemplateTheme={c.selectedTemplateTheme || undefined}
+              defaultPhotoMode={c.selectedPhotoMode}
+              defaultPrintTweaks={{
+                intelligentPagination: c.printTweakIntelligentPagination,
+                removePhoto: c.printTweakRemovePhoto,
+                moveSkillsLeft: c.printTweakMoveSkillsLeft,
+                sidebarTextScale: c.printTweakSidebarTextScale,
+                sidebarTextScaleActive: c.printTweakSidebarTextScaleEnabled,
+                contentTextScale: c.printTweakContentTextScale,
+                contentTextScaleActive: c.printTweakContentTextScaleEnabled,
+              }}
               language={c.uiLanguage}
               onAssistantSelectionChange={(selection) =>
                 setAssistantApplication(

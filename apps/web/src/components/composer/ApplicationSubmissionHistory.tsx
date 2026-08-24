@@ -4,6 +4,7 @@ import { useEffect, useState, type JSX } from "react";
 import { Download, LockKeyhole } from "lucide-react";
 
 import type { ApplicationSubmissionComparison } from "@/lib/server/applicationSubmissionStore";
+import type { RenderTweaks } from "@/lib/server/render/tweaks";
 
 import type { Application } from "./application-operations-types";
 
@@ -12,6 +13,8 @@ export function ApplicationSubmissionHistory({
   language,
   templateId,
   theme,
+  photoMode,
+  tweaks,
   disabled,
   onChanged,
 }: {
@@ -19,6 +22,8 @@ export function ApplicationSubmissionHistory({
   language: string;
   templateId?: string;
   theme?: string;
+  photoMode?: string;
+  tweaks?: RenderTweaks;
   disabled?: boolean;
   onChanged: (message: string) => void;
 }): JSX.Element {
@@ -62,6 +67,8 @@ export function ApplicationSubmissionHistory({
           body: JSON.stringify({
             templateId,
             theme,
+            photoMode,
+            tweaks,
             source: source || undefined,
             submissionUrl: application.url,
             confirmationReference: reference || undefined,
