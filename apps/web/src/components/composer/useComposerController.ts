@@ -127,7 +127,7 @@ import type {
 
 export type ComposerController = ReturnType<typeof useComposerController>;
 
-const TEXT_FIELD_AUTOSAVE_MS = 850;
+const TEXT_FIELD_AUTOSAVE_MS = 2500;
 
 export function useComposerController() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("workspace");

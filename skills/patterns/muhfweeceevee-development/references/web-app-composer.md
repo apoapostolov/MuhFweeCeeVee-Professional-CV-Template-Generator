@@ -22,7 +22,7 @@ Extract new concerns to dedicated files under `components/composer/` or `lib/`.
 
 - Loads lists: CVs (`GET /api/cvs`), templates (`GET /api/templates`), photos, companies
 - Selection state: `selectedCvId`, `selectedTemplateId`, theme, photo mode, language pair
-- Editor: YAML string + parsed object, autosave debounce (`TEXT_FIELD_AUTOSAVE_MS = 850`)
+- Editor: YAML string + parsed object, autosave debounce (`TEXT_FIELD_AUTOSAVE_MS = 2500`)
 - Analysis: full CV + per-section via `POST /api/analysis/cv`
 - Variants: `POST /api/cvs/variant`, sync status/sync
 - Print Room: builds `pdfUrl` from `/api/export/pdf` query params + cache-bust `v=`
