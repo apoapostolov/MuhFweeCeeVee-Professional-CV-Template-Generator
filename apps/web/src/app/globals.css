@@ -204,6 +204,9 @@ h4 {
   --kanban-header-muted: #315675;
   --kanban-footer-ink: #24415d;
   --kanban-footer-divider: rgba(36, 65, 93, 0.28);
+  --kanban-footer-hover: rgba(36, 65, 93, 0.07);
+  --kanban-header-divider: rgba(36, 65, 93, 0.16);
+  --kanban-danger: #be123c;
 }
 .app-shell .app-kanban-priority-low {
   background: linear-gradient(135deg, #f0fdfa, #ecfeff);
@@ -230,6 +233,9 @@ h4 {
   --kanban-header-muted: #b7d5e7;
   --kanban-footer-ink: #c9dff0;
   --kanban-footer-divider: rgba(201, 223, 240, 0.32);
+  --kanban-footer-hover: rgba(201, 223, 240, 0.1);
+  --kanban-header-divider: rgba(224, 242, 254, 0.22);
+  --kanban-danger: #fda4af;
 }
 :root[data-theme="dark"] .app-shell .app-kanban-priority-low {
   background: linear-gradient(135deg, #164e63, #155e75);

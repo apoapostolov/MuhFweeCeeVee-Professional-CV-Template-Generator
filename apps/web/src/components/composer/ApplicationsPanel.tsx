@@ -1131,7 +1131,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                     >
                       {/* Header: click opens details; drag starts after small move */}
                       <div
-                        className={`relative flex select-none items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(app.priority)} ${
+                        className={`relative flex select-none items-start gap-1.5 border-b border-[var(--kanban-header-divider)] px-2.5 py-2.5 ${kanbanPriorityClass(app.priority)} ${
                           busy
                             ? "cursor-default"
                             : "cursor-grab active:cursor-grabbing"
@@ -1163,7 +1163,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                           return (
                             <span
                               className={`absolute right-2.5 top-2.5 text-[13px] font-bold tabular-nums leading-none ${
-                                stale ? "text-rose-600" : "text-[var(--kanban-header-ink)]"
+                                stale ? "text-[var(--kanban-danger)]" : "text-[var(--kanban-header-ink)]"
                               }`}
                               title={
                                 bg
@@ -1228,7 +1228,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       >
                         <button
                           aria-label={t.open}
-                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-[var(--kanban-footer-hover)] disabled:opacity-40"
                           disabled={busy}
                           onClick={() => openEdit(app)}
                           title={t.open}
@@ -1242,7 +1242,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         />
                         <button
                           aria-label={t.exportPacket}
-                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-[var(--kanban-footer-hover)] disabled:opacity-40"
                           disabled={busy}
                           onClick={() => void exportPacket(app.id)}
                           title={t.exportPacketTitle}
@@ -1256,7 +1256,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         />
                         <button
                           aria-label={t.reuseForSimilar}
-                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-[var(--kanban-footer-hover)] disabled:opacity-40"
                           disabled={busy}
                           onClick={() => void reusePacket(app)}
                           title={t.reuseTitle}
@@ -1270,7 +1270,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                         />
                         <button
                           aria-label={t.delete}
-                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-black/5 disabled:opacity-40"
+                          className="flex min-w-0 flex-1 items-center justify-center text-[var(--kanban-footer-ink)] transition-colors hover:bg-[var(--kanban-footer-hover)] disabled:opacity-40"
                           disabled={busy}
                           onClick={() => {
                             const confirmed = window.confirm(
@@ -1297,7 +1297,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
 
         {view === "board" && drag && dragApp ? (
           <KanbanFloatingCard drag={drag}>
-            <div className={`relative flex items-start gap-1.5 border-b border-white/25 px-2.5 py-2.5 ${kanbanPriorityClass(dragApp.priority)}`}>
+            <div className={`relative flex items-start gap-1.5 border-b border-[var(--kanban-header-divider)] px-2.5 py-2.5 ${kanbanPriorityClass(dragApp.priority)}`}>
               <div className="min-w-0 w-full">
                 <p className="truncate pr-8 text-[11px] font-bold leading-snug text-[var(--kanban-header-ink)]">
                   {dragApp.job_title || dragApp.packet_title || "—"}
@@ -1317,7 +1317,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                 return (
                   <span
                     className={`absolute right-2.5 top-2.5 text-[13px] font-bold tabular-nums leading-none ${
-                      stale ? "text-rose-600" : "text-[var(--kanban-header-ink)]"
+                      stale ? "text-[var(--kanban-danger)]" : "text-[var(--kanban-header-ink)]"
                     }`}
                   >
                     {formatDaysLabel(days, bg)}
