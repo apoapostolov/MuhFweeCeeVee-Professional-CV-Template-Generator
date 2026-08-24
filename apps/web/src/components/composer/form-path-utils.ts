@@ -189,6 +189,15 @@ export const ARRAY_ITEM_TEMPLATES: Record<string, unknown> = {
     responsibilities: [],
     products: [],
   },
+  "experience[].publication_links": {
+    url: "",
+    title: "",
+  },
+  "experience[].quantified_results": {
+    metric: "",
+    value: "",
+    note: "",
+  },
   companies: {
     id: "",
     name: "",

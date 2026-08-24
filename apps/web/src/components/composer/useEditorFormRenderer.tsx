@@ -87,6 +87,14 @@ function isRatedSkillListPath(pathLabel: string): boolean {
   ].includes(pathLabel);
 }
 
+const EXPERIENCE_SUBSECTION_OPTIONS = [
+  { key: "responsibilities", en: "Responsibilities", bg: "Отговорности", value: [] },
+  { key: "products", en: "Products", bg: "Продукти", value: [] },
+  { key: "publication_links", en: "Links", bg: "Връзки", value: [] },
+  { key: "quantified_results", en: "Results", bg: "Резултати", value: [] },
+  { key: "tools", en: "Tools", bg: "Инструменти", value: [] },
+] as const;
+
 function skillNameValue(item: unknown): string {
   if (item && typeof item === "object" && !Array.isArray(item)) {
     const record = item as Record<string, unknown>;
@@ -595,7 +603,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           <button
             aria-label={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--line)] bg-white text-xs font-bold text-slate-700 hover:bg-[var(--surface-2)]"
-            onClick={() => addArrayEntry(path, defaultFromSample(node[0]))}
+            onClick={() => addArrayEntry(path, defaultArrayEntry(pathLabel, node[0]))}
             title={uiLanguage === "bg" ? "Добави елемент" : "Add item"}
             type="button"
           >
@@ -935,6 +943,9 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
           {objectHeaderActions}
         </div>
       );
+      const missingExperienceSubsections = experienceItem
+        ? EXPERIENCE_SUBSECTION_OPTIONS.filter(({ key }) => !Object.hasOwn(record, key))
+        : [];
       const objectHeaderDivider =
         compactFieldLayout && depth > 0 ? "border-t border-[var(--line)] pt-2" : "";
       const objectArrayIndex = path[path.length - 1];
@@ -982,6 +993,24 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
               {experienceItem ? objectHeaderRightControls : objectHeaderActions}
             </div>
           )}
+          {missingExperienceSubsections.length > 0 ? (
+            <div
+              className={`${compactFieldLayout ? `${EDITOR_COMPACT_FIELD_TRACKS_CLASS} col-span-full` : ""} mb-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--ink-muted)]`}
+              style={compactFieldLayout ? leadingGroupIndentStyle : sectionIndentStyle}
+            >
+              <span>{uiLanguage === "bg" ? "Добави подраздел:" : "Add subsection:"}</span>
+              {missingExperienceSubsections.map((subsection) => (
+                <button
+                  className="rounded border border-[var(--line)] bg-[var(--surface-1)] px-2 py-1 font-medium text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                  key={subsection.key}
+                  onClick={() => updateDraftAt([...path, subsection.key], [...subsection.value])}
+                  type="button"
+                >
+                  {uiLanguage === "bg" ? subsection.bg : subsection.en}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {expanded ? (
             <div className={compactChildrenStackClass(compactFieldLayout, editorPath, depth)}>
               {entries.map(([key, value]) => {

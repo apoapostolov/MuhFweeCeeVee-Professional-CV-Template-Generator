@@ -20,6 +20,15 @@ describe("review score array defaults", () => {
       label: "",
       score: "",
     });
+    expect(defaultArrayEntry("experience[0].publication_links", null)).toEqual({
+      url: "",
+      title: "",
+    });
+    expect(defaultArrayEntry("experience[0].quantified_results", null)).toEqual({
+      metric: "",
+      value: "",
+      note: "",
+    });
   });
 });
 
