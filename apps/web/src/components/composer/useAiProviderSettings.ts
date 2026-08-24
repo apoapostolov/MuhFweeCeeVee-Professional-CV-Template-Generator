@@ -29,6 +29,7 @@ function uniqueProviderIds(response: AiSettingsResponse): string[] {
   const disabledRoles = new Set(response.disabledRoles);
   return [...new Set([
     ...(response.enabledProviders ?? []),
+    ...response.providers.filter((provider) => provider.configured).map((provider) => provider.id),
     ...AI_ROLES.filter((role) => !disabledRoles.has(role)).map((role) => response.roles[role]?.providerId)
       .filter((providerId): providerId is string => Boolean(providerId)),
   ])];
