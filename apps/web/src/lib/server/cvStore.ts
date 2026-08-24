@@ -257,7 +257,18 @@ export async function writeCv(
   // Atomic replace: avoid truncated YAML on concurrent saves / process crash mid-write.
   const tempPath = `${destination}.${process.pid}.${Date.now()}.tmp`;
   await fs.writeFile(tempPath, stringify(normalized), "utf-8");
-  await fs.rename(tempPath, destination);
+  try {
+    await fs.rename(tempPath, destination);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== "EPERM" && code !== "EEXIST" && code !== "ENOTEMPTY") {
+      throw error;
+    }
+    // Windows cannot rename over an existing file. CopyFile replaces the
+    // destination and keeps the previous document intact if the copy fails.
+    await fs.copyFile(tempPath, destination);
+    await fs.unlink(tempPath);
+  }
 }
 
 export async function deleteCv(cvId: string): Promise<boolean> {

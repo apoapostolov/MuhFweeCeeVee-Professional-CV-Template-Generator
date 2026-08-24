@@ -2069,7 +2069,7 @@ export function useComposerController() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ cv: updated }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         setEditorNotice(payload.error ?? (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."));
         return;
@@ -2265,7 +2265,7 @@ export function useComposerController() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ cv: updated }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         setEditorNotice(payload.error ?? (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."));
         return;

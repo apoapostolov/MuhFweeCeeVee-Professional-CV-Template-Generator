@@ -98,14 +98,23 @@ export async function PUT(
     );
   }
 
-  await writeCv(cvId, body.cv as Record<string, unknown>, {
-    createSnapshot: true,
-  });
-  return NextResponse.json({
-    ok: true,
-    cvId,
-    git: await getCvGitVersionInfo(cvId),
-  });
+  try {
+    await writeCv(cvId, body.cv as Record<string, unknown>, {
+      createSnapshot: true,
+    });
+    return NextResponse.json({
+      ok: true,
+      cvId,
+      git: await getCvGitVersionInfo(cvId),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to save CV.",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(
