@@ -6,6 +6,7 @@ import { buildCvTemplateHtml } from "../renderCvTemplate";
 import { listTemplates } from "../templateStore";
 import {
   buildAdaptivePaginationCss,
+  buildIntelligentPaginationCss,
   measureAndMarkAdaptivePagination,
   parseRenderTweaks,
 } from "./tweaks";
@@ -67,15 +68,88 @@ describe("adaptive pagination layout", () => {
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 16px; }
         .page { width: 794px; min-height: calc(297mm - 24mm); padding: 0 40px; }
+        .spacer { height: 1005px; }
+        p { width: 650px; margin: 0; font-size: 16px; line-height: 24px; }
+      </style><div class="page"><div class="spacer"></div><p>Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega. Alpha beta gamma delta epsilon.</p></div>`, { waitUntil: "networkidle" });
+      await fixturePage.addStyleTag({
+        content: buildIntelligentPaginationCss(
+          "stanford-v1",
+          parseRenderTweaks(new URLSearchParams("pagination=smart&paginationMode=normal")),
+        ),
+      });
+      await fixturePage.evaluate(() => {
+        document.documentElement.dataset.mfcvPaginationMode = "normal";
+      });
+      const normalFixtureMeasurement = await fixturePage.evaluate(measureAndMarkAdaptivePagination);
+      expect(normalFixtureMeasurement.marked).toBeGreaterThan(0);
+      expect(normalFixtureMeasurement.spills).toBe(0);
+
+      await fixturePage.setContent(`<!doctype html><style>
+        @page { size: A4; margin: 12mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 16px; }
+        .page { width: 794px; min-height: calc(297mm - 24mm); padding: 0 40px; }
         .spacer { height: 939px; }
         h2 { font-size: 24px; line-height: 24px; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid #888; }
         hr { height: 1px; border: 0; background: #888; margin: 16px 0; }
         p { width: 650px; margin: 0; font-size: 16px; line-height: 24px; }
       </style><div class="page"><div class="spacer"></div><h2>Experience</h2><hr><p>Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega. Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega. Alpha beta gamma delta epsilon zeta eta theta iota kappa.</p></div>`, { waitUntil: "networkidle" });
+      await fixturePage.addStyleTag({
+        content: buildIntelligentPaginationCss(
+          "stanford-v1",
+          parseRenderTweaks(new URLSearchParams("pagination=smart&paginationMode=aggressive")),
+        ),
+      });
       await fixturePage.evaluate(() => {
         document.documentElement.dataset.mfcvPaginationMode = "aggressive";
       });
       const fixtureMeasurement = await fixturePage.evaluate(measureAndMarkAdaptivePagination);
+      expect(fixtureMeasurement.largeSections).toBe(0);
+
+      await fixturePage.setContent(`<!doctype html><style>
+        @page { size: A4; margin: 12mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 16px; }
+        .page { width: 794px; min-height: calc(297mm - 24mm); padding: 0 40px; }
+        .spacer { height: 923px; }
+        .dated-entry { break-inside: avoid; page-break-inside: avoid; }
+        p { width: 650px; margin: 0; font-size: 16px; line-height: 24px; }
+      </style><div class="page"><div class="spacer"></div><article class="dated-entry"><p>one<br>two<br>three<br>four<br>five<br>six<br>seven<br>eight<br>nine<br>ten</p></article></div>`, { waitUntil: "networkidle" });
+      await fixturePage.addStyleTag({
+        content: buildIntelligentPaginationCss(
+          "stanford-v1",
+          parseRenderTweaks(new URLSearchParams("pagination=smart&paginationMode=aggressive")),
+        ),
+      });
+      await fixturePage.evaluate(() => {
+        document.documentElement.dataset.mfcvPaginationMode = "aggressive";
+      });
+      const balancedSectionMeasurement = await fixturePage.evaluate(measureAndMarkAdaptivePagination);
+      expect(balancedSectionMeasurement.largeSections).toBe(1);
+      expect(balancedSectionMeasurement.cleanBreaks).toBe(0);
+
+      await fixturePage.setContent(`<!doctype html><style>
+        @page { size: A4; margin: 12mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 16px; }
+        .page { width: 794px; min-height: calc(297mm - 24mm); padding: 0 40px; }
+        .spacer { height: 935px; }
+        .dated-entry { break-inside: avoid; page-break-inside: avoid; }
+        p { width: 650px; margin: 0; font-size: 16px; line-height: 24px; }
+      </style><div class="page"><div class="spacer"></div><article class="dated-entry"><p>one<br>two<br>three<br>four<br>five<br>six<br>seven<br>eight<br>nine<br>ten</p></article></div>`, { waitUntil: "networkidle" });
+      await fixturePage.addStyleTag({
+        content: buildIntelligentPaginationCss(
+          "stanford-v1",
+          parseRenderTweaks(new URLSearchParams("pagination=smart&paginationMode=normal")),
+        ),
+      });
+      await fixturePage.evaluate(() => {
+        document.documentElement.dataset.mfcvPaginationMode = "normal";
+      });
+      const orphanSectionMeasurement = await fixturePage.evaluate(measureAndMarkAdaptivePagination);
+      expect(orphanSectionMeasurement.largeSections).toBe(1);
+      expect(orphanSectionMeasurement.cleanBreaks).toBe(1);
+
       await fixtureBrowser.close();
       expect(fixtureMeasurement.marked).toBeGreaterThan(0);
       expect(fixtureMeasurement.spills).toBe(0);

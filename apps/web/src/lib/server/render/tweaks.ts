@@ -142,15 +142,28 @@ ${contentSections} > h2, ${contentSections} > h3,
   break-after: avoid;
   page-break-after: avoid;
 }
+${sidebarSections} p, ${sidebarSections} li,
+${contentSections} p, ${contentSections} li {
+  orphans: 5;
+  widows: 5;
+}
 .dated-entry, .timeline-item, .reference-entry, .reference,
 .entry, .ref, .subsection, .erow, .lang-block, .ref-item {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+[data-mfcv-large-section] {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+[data-mfcv-clean-break] {
+  break-before: page !important;
+  page-break-before: always !important;
+}
 .dated-entry ul, .timeline-item ul, .entry ul, .subsection ul,
 .evalue ul, .content > section > ul, .right > section > ul {
-  orphans: 3;
-  widows: 3;
+  orphans: 5;
+  widows: 5;
 }
 ${sidebarItems}, ${contentItems} {
   orphans: 2;
@@ -194,6 +207,8 @@ export type AdaptivePaginationMeasurement = {
   marked: number;
   wraps: number;
   spills: number;
+  largeSections?: number;
+  cleanBreaks?: number;
 };
 
 export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasurement {
@@ -269,6 +284,39 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
 [data-mfcv-tighten-line] { line-height: ${lineHeight} !important; }
 ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); margin-bottom: calc(12mm - ${pageExtension}); } .page { min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension}); }` : ""}`;
   };
+  const sectionElements = Array.from(document.querySelectorAll(
+    "section, article.dated-entry, .timeline-item, .reference-entry, .reference, .entry, .ref, .subsection, .erow, .lang-block, .ref-item",
+  ));
+  let largeSections = 0;
+  for (const section of sectionElements) {
+    const lines = getLines(section);
+    if (lines.length >= 10) {
+      section.setAttribute("data-mfcv-large-section", "true");
+      largeSections += 1;
+    }
+  }
+  let cleanBreaks = 0;
+  const pageFragments = (lines: Array<{ top: number; text: string }>, pageHeight: number) => {
+    if (lines.length === 0) return { first: 0, last: 0, split: false };
+    const firstPage = Math.floor((lines[0].top + 1) / pageHeight);
+    const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
+    return {
+      first: lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === firstPage).length,
+      last: lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length,
+      split: lastPage > firstPage,
+    };
+  };
+  for (const section of sectionElements) {
+    if (!section.hasAttribute("data-mfcv-large-section")) continue;
+    const lines = getLines(section);
+    const fragments = pageFragments(lines, getPageHeight());
+    const height = section.getBoundingClientRect().height;
+    if (fragments.split && height <= getPageHeight() + 2 && (fragments.first < 5 || fragments.last < 5)) {
+      section.setAttribute("data-mfcv-clean-break", "true");
+      cleanBreaks += 1;
+    }
+  }
+
   const baseline = snapshot();
   if (mode === "normal") {
     let wraps = 0;
@@ -290,11 +338,27 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
         wraps += 1;
       }
       if (currentSpill === 1) {
-        element.setAttribute("data-mfcv-tighten-line", "true");
-        lineTightens += 1;
+        const lineStyle = element.getAttribute("style");
+        styledElement.style.lineHeight = "1.3";
+        const lineTightenedLines = getLines(element);
+        if (lineStyle === null) element.removeAttribute("style");
+        else element.setAttribute("style", lineStyle);
+        if (spillCount(lineTightenedLines, getPageHeight()) < currentSpill) {
+          element.setAttribute("data-mfcv-tighten-line", "true");
+          lineTightens += 1;
+        }
       }
     }
-    return { marked: wraps + lineTightens, wraps, spills: baseline.spillingElements };
+    const finalTrial = appendTrialStyle(trialCss());
+    const finalSpills = snapshot().spillingElements;
+    finalTrial.remove();
+    return {
+      marked: wraps + lineTightens + largeSections + cleanBreaks,
+      wraps,
+      spills: finalSpills,
+      largeSections,
+      cleanBreaks,
+    };
   }
   if (baseline.totalSpill === 0) return { marked: 0, wraps: 0, spills: 0 };
   let tightenHeadings = false;
@@ -344,11 +408,15 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     }
   }
   adaptiveTrial.remove();
+  const finalTrial = appendTrialStyle(trialCss({ tightenHeadings, extendPage }));
   const finalSnapshot = snapshot();
+  finalTrial.remove();
   return {
-    marked: wraps + lineTightens + (tightenHeadings || extendPage ? 1 : 0),
+    marked: wraps + lineTightens + largeSections + cleanBreaks + (tightenHeadings || extendPage ? 1 : 0),
     wraps,
     spills: finalSnapshot.spillingElements,
+    largeSections,
+    cleanBreaks,
   };
 }
 

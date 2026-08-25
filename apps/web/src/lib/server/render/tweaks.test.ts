@@ -85,9 +85,14 @@ describe("render tweaks", () => {
     expect(css).not.toContain("letter-spacing");
     expect(css).not.toContain("word-spacing");
     expect(css).not.toContain("line-height: 1.3");
-    expect(css).toContain("orphans: 3");
+    expect(css).toContain("orphans: 5");
+    expect(css).toContain("[data-mfcv-large-section]");
+    expect(css).toContain("[data-mfcv-clean-break]");
     expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-wrap]");
     expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-line]");
+    expect(buildAdaptivePaginationCss("normal")).toContain("letter-spacing: -0.01em");
+    expect(buildAdaptivePaginationCss("aggressive", { extendPage: true, tightenHeadings: true })).toContain("letter-spacing: -0.0125em");
+    expect(buildAdaptivePaginationCss("aggressive", { extendPage: true, tightenHeadings: true })).toContain("1.22");
     expect(buildIntelligentPaginationCss("harvard-v1", {
       intelligentPagination: false,
       removePhoto: false,
