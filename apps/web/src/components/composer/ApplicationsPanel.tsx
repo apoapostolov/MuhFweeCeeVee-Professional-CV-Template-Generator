@@ -1124,7 +1124,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                   const dragging = isDraggingId(app.id);
                   return (
                     <li
-                      className={`overflow-hidden rounded-md border-2 text-xs transition-opacity ${
+                      className={`overflow-hidden rounded-md border text-xs transition-opacity ${
                         draft.id === app.id && editorOpen
                           ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                           : "border-[var(--line)] bg-[var(--surface-1)]"
