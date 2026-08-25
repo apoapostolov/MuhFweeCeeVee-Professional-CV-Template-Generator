@@ -100,6 +100,32 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
       required: ["status", "updated_at", "language"],
       properties: {
         language: { type: "string", enum: ["bg", "en"] },
+        variant: {
+          type: "object",
+          properties: {
+            cv_id: { type: "string" },
+            family_id: { type: "string" },
+            release_id: { type: "string" },
+            iteration: { type: ["string", "null"] },
+            target: { type: ["string", "null"] },
+            language: { type: "string" },
+          },
+          additionalProperties: true,
+        },
+        translation: {
+          type: "object",
+          properties: {
+            status: { type: "string" },
+            mode: { type: "string" },
+            source_cv_id: { type: "string" },
+            source_revision: { type: "string" },
+            source_language: { type: "string" },
+            target_language: { type: "string" },
+            generated_at: { type: "string" },
+            reviewed_at: { type: "string" },
+          },
+          additionalProperties: true,
+        },
         ats_scores: {
           type: "array",
           items: { $ref: "#/$defs/reviewScore" },

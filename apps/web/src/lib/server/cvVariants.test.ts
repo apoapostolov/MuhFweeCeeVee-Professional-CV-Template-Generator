@@ -4,8 +4,10 @@ import {
   buildCvProfileVariantId,
   buildCvVariantId,
   buildCvVariantIdLoose,
+  compareCvInternalVersions,
   cvVariantGroupKey,
   cvVariantGroupKeyWithVersion,
+  normalizeCvInternalVersion,
   parseCvProfileVariantId,
   parseCvVariantId,
   parseCvVariantIdLoose,
@@ -77,20 +79,50 @@ describe("profile CV ids", () => {
     expect(bgKey).toBe(enKey);
   });
 
+  it("prefers explicit family and release identity", () => {
+    expect(cvVariantGroupKey({
+      id: "legacy-en",
+      language: "en",
+      familyId: "apoapostolov-cv",
+      releaseId: "001",
+    })).toBe("family:apoapostolov-cv:001");
+  });
+
   it("keeps different internal versions in separate pairs", () => {
     const v10 = cvVariantGroupKeyWithVersion({
       id: "cv_apoapostolov_en_001",
-      displayVersion: "1.0",
+      displayVersion: "1.0.0",
       language: "en",
     });
     const v11 = cvVariantGroupKeyWithVersion({
       id: "cv_apoapostolov_en_001",
-      displayVersion: "1.1",
+      displayVersion: "1.1.0",
       language: "en",
     });
     expect(v10).not.toBe(v11);
-    expect(v10).toBe("profile:apoapostolov:001:version:1.0");
-    expect(v11).toBe("profile:apoapostolov:001:version:1.1");
+    expect(v10).toBe("profile:apoapostolov:001:version:1.0.0");
+    expect(v11).toBe("profile:apoapostolov:001:version:1.1.0");
+  });
+});
+
+describe("CV internal versions", () => {
+  it("normalizes retained two-part labels to semantic versions", () => {
+    expect(normalizeCvInternalVersion("1.0")).toBe("1.0.0");
+    expect(normalizeCvInternalVersion("1.15")).toBe("1.1.5");
+    expect(normalizeCvInternalVersion("1.16")).toBe("1.1.6");
+    expect(normalizeCvInternalVersion("1.2")).toBe("1.2.0");
+  });
+
+  it("orders versions numerically instead of by timestamps or text", () => {
+    const versions = ["1.2.1", "1.1.6", "1.2.0", "1.0.0", "1.1.5", "1.1.0"];
+    expect(versions.sort(compareCvInternalVersions)).toEqual([
+      "1.0.0",
+      "1.1.0",
+      "1.1.5",
+      "1.1.6",
+      "1.2.0",
+      "1.2.1",
+    ]);
   });
 });
 

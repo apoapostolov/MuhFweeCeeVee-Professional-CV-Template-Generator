@@ -5,7 +5,8 @@ import { completeAiText } from "@/lib/server/aiProviderCompletion";
 import { readCv, writeCv } from "@/lib/server/cvStore";
 import {
   isSupportedLanguage,
-  parseCvVariantId,
+  parseCvVariantIdLoose,
+  resolveSiblingCvId,
   type CvLanguage,
 } from "@/lib/server/cvVariants";
 
@@ -251,10 +252,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "cvId is required." }, { status: 400 });
   }
 
-  const parsed = parseCvVariantId(cvId);
+  const parsed = parseCvVariantIdLoose(cvId);
   if (!parsed) {
     return NextResponse.json(
-      { error: "cvId must be a language variant id: cv_<language>_<iter>_<target>." },
+      { error: "cvId must be a recognized language variant id." },
       { status: 400 },
     );
   }
@@ -277,9 +278,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   const sourceLanguage = sourceLanguageRaw;
   const targetLanguage = targetLanguageRaw;
-
-  const sourceCvId = `cv_${sourceLanguage}_${parsed.iteration}_${parsed.target}`;
-  const targetCvId = `cv_${targetLanguage}_${parsed.iteration}_${parsed.target}`;
+  const sourceCvId =
+    parsed.language === sourceLanguage
+      ? cvId
+      : resolveSiblingCvId(cvId, sourceLanguage);
+  const targetCvId = sourceCvId ? resolveSiblingCvId(sourceCvId, targetLanguage) : null;
+  if (!sourceCvId || !targetCvId) {
+    return NextResponse.json({ error: "Could not resolve paired language variant ids." }, { status: 400 });
+  }
   const [sourceCv, targetCvRaw] = await Promise.all([readCv(sourceCvId), readCv(targetCvId)]);
   if (!sourceCv) {
     return NextResponse.json({ error: `Source CV '${sourceCvId}' not found.` }, { status: 404 });

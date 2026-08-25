@@ -12,6 +12,7 @@ import {
   isSupportedLanguage,
   parseCvProfileVariantId,
   parseCvVariantIdLoose,
+  resolveSiblingCvId,
   type CvLanguage,
 } from "./cvVariants";
 import { completeAiText } from "./aiProviderCompletion";
@@ -29,6 +30,8 @@ export type CvVariantInfo = {
   language: CvLanguage | null;
   iteration: string | null;
   target: string | null;
+  familyId: string | null;
+  releaseId: string | null;
   displayName: string;
   displayVersion: string;
   lastUpdatedAt: string | null;
@@ -61,7 +64,13 @@ async function ensureCvDir(): Promise<void> {
 
 function readMetadataVariantBlock(
   metadata: Record<string, unknown> | null,
-): { iteration: string | null; target: string | null; language: string | null } {
+): {
+  iteration: string | null;
+  target: string | null;
+  language: string | null;
+  familyId: string | null;
+  releaseId: string | null;
+} {
   const variant =
     metadata?.variant && typeof metadata.variant === "object" && !Array.isArray(metadata.variant)
       ? (metadata.variant as Record<string, unknown>)
@@ -78,7 +87,15 @@ function readMetadataVariantBlock(
     typeof variant?.language === "string" && variant.language.trim().length > 0
       ? variant.language.trim().toLowerCase()
       : null;
-  return { iteration, target, language };
+  const familyId =
+    typeof variant?.family_id === "string" && variant.family_id.trim().length > 0
+      ? variant.family_id.trim().toLowerCase()
+      : null;
+  const releaseId =
+    typeof variant?.release_id === "string" && variant.release_id.trim().length > 0
+      ? variant.release_id.trim().toLowerCase()
+      : null;
+  return { iteration, target, language, familyId, releaseId };
 }
 
 function metadataTimestamp(metadata: Record<string, unknown> | null): string | null {
@@ -149,6 +166,8 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
               cv_id: buildCvProfileVariantId(profile),
               iteration: profile.iteration,
               target: variantMeta.target ?? inferred?.target ?? "",
+              family_id: variantMeta.familyId ?? profile.profile,
+              release_id: variantMeta.releaseId ?? profile.iteration,
               language: profile.language,
             }
           : inferred
@@ -156,6 +175,8 @@ function withUpdatedMetadata(input: CvDocument): CvDocument {
                 cv_id: buildCvVariantIdLoose(inferred),
                 iteration: inferred.iteration,
                 target: inferred.target,
+                family_id: variantMeta.familyId ?? inferred.target ?? "default",
+                release_id: variantMeta.releaseId ?? inferred.iteration ?? "default",
                 language: inferred.language,
               }
             : (metadata.variant as Record<string, unknown> | undefined),
@@ -230,8 +251,11 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
       const metadataLanguage =
         typeof metadata?.language === "string" ? metadata.language.trim().toLowerCase() : "";
       const variantMeta = readMetadataVariantBlock(metadata);
+      const profile = parseCvProfileVariantId(id);
       const parsedTarget =
         parsed?.target && parsed.target.trim().length > 0 ? parsed.target.trim().toLowerCase() : null;
+      const familyId = variantMeta.familyId ?? profile?.profile ?? parsedTarget;
+      const releaseId = variantMeta.releaseId ?? profile?.iteration ?? parsed?.iteration ?? "default";
       const internalName =
         (typeof metadata?.internal_name === "string" && metadata.internal_name.trim()) || id;
       const internalVersion =
@@ -244,6 +268,8 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
           (variantMeta.language && isSupportedLanguage(variantMeta.language) ? variantMeta.language : null),
         iteration: parsed?.iteration ?? variantMeta.iteration,
         target: parsedTarget ?? variantMeta.target,
+        familyId,
+        releaseId,
         displayName: internalName,
         displayVersion: internalVersion,
         lastUpdatedAt: metadataTimestamp(metadata),
@@ -447,7 +473,7 @@ export async function ensureLanguageVariant(
   const parsed = parseCvVariantIdLoose(sourceCvId);
   if (!parsed) {
     throw new Error(
-      "Language variant auto-resolution requires cvId format cv_<language>_<target> or cv_<language>_<iteration>_<target>.",
+      "Language variant auto-resolution requires a recognized CV variant id.",
     );
   }
   const normalizedTargetLanguage = targetLanguage.trim().toLowerCase();
@@ -455,11 +481,10 @@ export async function ensureLanguageVariant(
     throw new Error("Target language code is invalid. Use 2-8 alphabetic characters.");
   }
 
-  const requestedCvId = buildCvVariantIdLoose({
-    language: normalizedTargetLanguage,
-    iteration: parsed.iteration,
-    target: parsed.target,
-  });
+  const requestedCvId = resolveSiblingCvId(sourceCvId, normalizedTargetLanguage);
+  if (!requestedCvId) {
+    throw new Error("Could not resolve the target language variant id.");
+  }
 
   const existing = await readCv(requestedCvId);
   if (existing) {
@@ -524,12 +549,19 @@ export async function ensureLanguageVariant(
       cv_id: requestedCvId,
       iteration: parsed.iteration,
       target: parsed.target,
+      family_id: parsed.target || parseCvProfileVariantId(sourceCvId)?.profile || "default",
+      release_id: parsed.iteration || "default",
       language: normalizedTargetLanguage,
     },
     translation: {
       status: translationStatus,
       mode: translationMode,
       source_cv_id: sourceCvId,
+      source_revision:
+        (typeof sourceMetadata.updated_at === "string" && sourceMetadata.updated_at) ||
+        (typeof sourceMetadata.last_edited_at === "string" && sourceMetadata.last_edited_at) ||
+        (typeof sourceMetadata.internal_version === "string" && sourceMetadata.internal_version) ||
+        "",
       source_language: parsed.language,
       target_language: normalizedTargetLanguage,
       generated_at: new Date().toISOString(),

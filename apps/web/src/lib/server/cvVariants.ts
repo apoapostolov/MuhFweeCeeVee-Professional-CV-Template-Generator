@@ -19,6 +19,48 @@ const CV_ID_PATTERN_PROFILE_LANG_ITER =
   /^cv_([a-z0-9][a-z0-9_-]{1,79})_([a-z]{2,8})_(\d{3,4})$/i;
 const CV_ID_PATTERN_NO_ITERATION = /^cv_([a-z]{2,8})_([a-z0-9][a-z0-9_-]{1,79})$/i;
 const SYNC_LANGUAGES = new Set<SyncLanguage>(["bg", "en"]);
+const LEGACY_INTERNAL_VERSION_ALIASES: Readonly<Record<string, string>> = {
+  "1.0": "1.0.0",
+  "1.1": "1.1.0",
+  "1.15": "1.1.5",
+  "1.16": "1.1.6",
+  "1.2": "1.2.0",
+};
+
+function parseSemverParts(version: string): [number, number, number] | null {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!match) return null;
+
+  const parts = match.slice(1).map(Number);
+  return parts.every(Number.isSafeInteger) ? (parts as [number, number, number]) : null;
+}
+
+/** Converts retained pre-semver CV labels to the three-part display format. */
+export function normalizeCvInternalVersion(value: string | null | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw) return "1.0.0";
+  return LEGACY_INTERNAL_VERSION_ALIASES[raw] ?? raw;
+}
+
+/** Orders canonical CV revisions numerically, with non-semver labels last. */
+export function compareCvInternalVersions(left: string, right: string): number {
+  const normalizedLeft = normalizeCvInternalVersion(left);
+  const normalizedRight = normalizeCvInternalVersion(right);
+  const leftParts = parseSemverParts(normalizedLeft);
+  const rightParts = parseSemverParts(normalizedRight);
+
+  if (leftParts && rightParts) {
+    for (let index = 0; index < leftParts.length; index += 1) {
+      if (leftParts[index] !== rightParts[index]) {
+        return leftParts[index] - rightParts[index];
+      }
+    }
+    return 0;
+  }
+  if (leftParts) return -1;
+  if (rightParts) return 1;
+  return normalizedLeft.localeCompare(normalizedRight, undefined, { numeric: true, sensitivity: "base" });
+}
 
 export function isSupportedLanguage(value: string): value is CvLanguage {
   return /^[a-z]{2,8}$/i.test(value.trim());
@@ -169,10 +211,18 @@ export type CvVariantListItem = {
   language?: string | null;
   iteration?: string | null;
   target?: string | null;
+  familyId?: string | null;
+  releaseId?: string | null;
 };
 
 /** Groups language variants for Print Controls pills and CV Template pairs. */
 export function cvVariantGroupKey(item: CvVariantListItem): string | null {
+  const familyId = item.familyId?.trim().toLowerCase() ?? "";
+  const releaseId = item.releaseId?.trim().toLowerCase() ?? "";
+  if (familyId && releaseId) {
+    return `family:${familyId}:${releaseId}`;
+  }
+
   const profile = parseCvProfileVariantId(item.id);
   if (profile) {
     return `profile:${profile.profile}:${profile.iteration}`;
@@ -199,6 +249,6 @@ export function cvVariantGroupKey(item: CvVariantListItem): string | null {
 export function cvVariantGroupKeyWithVersion(item: CvVariantListItem): string | null {
   const groupKey = cvVariantGroupKey(item);
   if (!groupKey) return null;
-  const version = typeof item.displayVersion === "string" ? item.displayVersion.trim() : "";
+  const version = normalizeCvInternalVersion(item.displayVersion);
   return version ? `${groupKey}:version:${version}` : groupKey;
 }

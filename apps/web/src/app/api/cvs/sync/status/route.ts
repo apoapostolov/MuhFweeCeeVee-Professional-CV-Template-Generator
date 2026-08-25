@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
 import { listCvVariants, readCv } from "@/lib/server/cvStore";
-import { parseCvVariantId } from "@/lib/server/cvVariants";
+import { cvVariantGroupKeyWithVersion } from "@/lib/server/cvVariants";
 
 export const runtime = "nodejs";
 
@@ -36,17 +36,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "cvId is required." }, { status: 400 });
   }
 
-  const parsed = parseCvVariantId(cvId);
-  if (!parsed) {
-    return NextResponse.json(
-      { error: "cvId must be a language variant id: cv_<language>_<iter>_<target>." },
-      { status: 400 },
-    );
-  }
-
   const variants = await listCvVariants();
+  const current = variants.find((item) => item.id === cvId);
+  const groupKey = current ? cvVariantGroupKeyWithVersion(current) : null;
+  if (!current || !groupKey) {
+    return NextResponse.json({ error: "CV variant identity could not be resolved." }, { status: 400 });
+  }
   const siblings = variants.filter(
-    (item) => item.iteration === parsed.iteration && item.target === parsed.target && item.language,
+    (item) => cvVariantGroupKeyWithVersion(item) === groupKey && item.language,
   );
   const languagesRaw = await Promise.all(
     siblings.map(async (item) => {
@@ -68,9 +65,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   return NextResponse.json({
     ok: true,
-    iteration: parsed.iteration,
-    target: parsed.target,
-    currentLanguage: parsed.language,
+    iteration: current.iteration,
+    target: current.target,
+    currentLanguage: current.language,
     languages,
   });
 }
