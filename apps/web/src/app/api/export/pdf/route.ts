@@ -59,11 +59,9 @@ export async function GET(request: Request): Promise<NextResponse> {
           const adaptiveCount = await page.evaluate(() => {
             const pageHeight = (297 / 25.4) * 96;
             const elements = Array.from(document.querySelectorAll("p, li"));
-            let marked = 0;
-            for (const element of elements) {
-              if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+            const getLines = (element: Element): Array<{ top: number; text: string }> => {
               const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-              const lines: Array<{ top: number; left: number; right: number; text: string }> = [];
+              const lines: Array<{ top: number; text: string }> = [];
               let node: Node | null = walker.nextNode();
               while (node) {
                 const textNode = node as Text;
@@ -75,33 +73,36 @@ export async function GET(request: Request): Promise<NextResponse> {
                   if (!rect || rect.width === 0 || rect.height === 0) continue;
                   const previous = lines[lines.length - 1];
                   if (!previous || Math.abs(previous.top - rect.top) > 1.5) {
-                    lines.push({ top: rect.top, left: rect.left, right: rect.right, text: textNode.data[index] });
+                    lines.push({ top: rect.top, text: textNode.data[index] });
                   } else {
-                    previous.right = rect.right;
                     previous.text += textNode.data[index];
                   }
                 }
                 node = walker.nextNode();
               }
+              return lines;
+            };
+            let marked = 0;
+            for (const element of elements) {
+              if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+              const lines = getLines(element);
               if (lines.length < 2) continue;
-              const normalizedLines = lines.map((line) => line.text.replace(/\\s+/g, " ").trim());
-              const lastLine = normalizedLines[normalizedLines.length - 1] ?? "";
-              const lastWords = lastLine.split(" ").filter(Boolean);
-              const lastLineBox = lines[lines.length - 1];
-              const computedStyle = window.getComputedStyle(element);
-              const availableWidth = element.clientWidth -
-                Number.parseFloat(computedStyle.paddingLeft) -
-                Number.parseFloat(computedStyle.paddingRight);
-              const lastLineWidth = lastLineBox.right - lastLineBox.left;
-              // A final line using less than one fifth of its available measure is a short wrap.
-              const lastLineOccupancy = availableWidth > 0 ? lastLineWidth / availableWidth : 1;
-              const lastPage = Math.floor((lastLineBox.top + 1) / pageHeight);
+
+              const originalStyle = element.getAttribute("style");
+              const styledElement = element as HTMLElement;
+              styledElement.style.letterSpacing = "-0.01em";
+              styledElement.style.wordSpacing = "-0.025em";
+              const tightenedLines = getLines(element);
+              if (originalStyle === null) element.removeAttribute("style");
+              else element.setAttribute("style", originalStyle);
+
+              const unwrapsLine = tightenedLines.length < lines.length;
+              const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
               const previousPage = Math.floor((lines[lines.length - 2].top + 1) / pageHeight);
               const spillsOneLine = lastPage > previousPage && lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length === 1;
-              const hasShortWrap = lastWords.length > 0 && lastWords.length <= 2 && lastLineOccupancy < 0.2;
-              if (hasShortWrap) element.setAttribute("data-mfcv-tighten-wrap", "true");
+              if (unwrapsLine) element.setAttribute("data-mfcv-tighten-wrap", "true");
               if (spillsOneLine) element.setAttribute("data-mfcv-tighten-line", "true");
-              if (hasShortWrap || spillsOneLine) marked += 1;
+              if (unwrapsLine || spillsOneLine) marked += 1;
             }
             return marked;
           });
