@@ -5,6 +5,7 @@ import { applyPdfMetadata } from "@/lib/server/pdfMetadata";
 import { buildCvTemplateHtml } from "@/lib/server/renderCvTemplate";
 import {
   buildAdaptivePaginationCss,
+  measureAndMarkAdaptivePagination,
   parseRenderTweaks,
 } from "@/lib/server/render/tweaks";
 import { withExportSlot } from "@/lib/server/renderConcurrency";
@@ -56,56 +57,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
         await page.setContent(html, { waitUntil: "networkidle" });
         if (tweaks.intelligentPagination) {
-          const adaptiveCount = await page.evaluate(() => {
-            const pageHeight = (297 / 25.4) * 96;
-            const elements = Array.from(document.querySelectorAll("p, li"));
-            const getLines = (element: Element): Array<{ top: number; text: string }> => {
-              const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-              const lines: Array<{ top: number; text: string }> = [];
-              let node: Node | null = walker.nextNode();
-              while (node) {
-                const textNode = node as Text;
-                for (let index = 0; index < textNode.data.length; index += 1) {
-                  const range = document.createRange();
-                  range.setStart(textNode, index);
-                  range.setEnd(textNode, index + 1);
-                  const rect = range.getClientRects()[0];
-                  if (!rect || rect.width === 0 || rect.height === 0) continue;
-                  const previous = lines[lines.length - 1];
-                  if (!previous || Math.abs(previous.top - rect.top) > 1.5) {
-                    lines.push({ top: rect.top, text: textNode.data[index] });
-                  } else {
-                    previous.text += textNode.data[index];
-                  }
-                }
-                node = walker.nextNode();
-              }
-              return lines;
-            };
-            let marked = 0;
-            for (const element of elements) {
-              if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
-              const lines = getLines(element);
-              if (lines.length < 2) continue;
-
-              const originalStyle = element.getAttribute("style");
-              const styledElement = element as HTMLElement;
-              styledElement.style.letterSpacing = "-0.01em";
-              styledElement.style.wordSpacing = "-0.025em";
-              const tightenedLines = getLines(element);
-              if (originalStyle === null) element.removeAttribute("style");
-              else element.setAttribute("style", originalStyle);
-
-              const unwrapsLine = tightenedLines.length < lines.length;
-              const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
-              const previousPage = Math.floor((lines[lines.length - 2].top + 1) / pageHeight);
-              const spillsOneLine = lastPage > previousPage && lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length === 1;
-              if (unwrapsLine) element.setAttribute("data-mfcv-tighten-wrap", "true");
-              if (spillsOneLine) element.setAttribute("data-mfcv-tighten-line", "true");
-              if (unwrapsLine || spillsOneLine) marked += 1;
-            }
-            return marked;
-          });
+          const adaptiveMeasurement = await page.evaluate(measureAndMarkAdaptivePagination);
+          const adaptiveCount = adaptiveMeasurement.marked;
           if (adaptiveCount > 0) {
             await page.addStyleTag({ content: buildAdaptivePaginationCss() });
           }

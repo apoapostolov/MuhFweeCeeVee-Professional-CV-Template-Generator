@@ -165,6 +165,74 @@ export function buildAdaptivePaginationCss(): string {
 `;
 }
 
+export type AdaptivePaginationMeasurement = {
+  marked: number;
+  wraps: number;
+  spills: number;
+};
+
+export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasurement {
+  const pageHeight = (297 / 25.4) * 96;
+  const elements = Array.from(document.querySelectorAll("p, li"));
+  const getLines = (element: Element): Array<{ top: number; text: string }> => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const lines: Array<{ top: number; text: string }> = [];
+    let node: Node | null = walker.nextNode();
+    while (node) {
+      const textNode = node as Text;
+      for (let index = 0; index < textNode.data.length; index += 1) {
+        const range = document.createRange();
+        range.setStart(textNode, index);
+        range.setEnd(textNode, index + 1);
+        const rect = range.getClientRects()[0];
+        if (!rect || rect.width === 0 || rect.height === 0) continue;
+        const previous = lines[lines.length - 1];
+        if (!previous || Math.abs(previous.top - rect.top) > 1.5) {
+          lines.push({ top: rect.top, text: textNode.data[index] });
+        } else {
+          previous.text += textNode.data[index];
+        }
+      }
+      node = walker.nextNode();
+    }
+    return lines;
+  };
+
+  let marked = 0;
+  let wraps = 0;
+  let spills = 0;
+  for (const element of elements) {
+    if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+    const lines = getLines(element);
+    if (lines.length < 2) continue;
+
+    const originalStyle = element.getAttribute("style");
+    const styledElement = element as HTMLElement;
+    styledElement.style.letterSpacing = "-0.01em";
+    styledElement.style.wordSpacing = "-0.025em";
+    const tightenedLines = getLines(element);
+    if (originalStyle === null) element.removeAttribute("style");
+    else element.setAttribute("style", originalStyle);
+
+    const unwrapsLine = tightenedLines.length < lines.length;
+    const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
+    const previousPage = Math.floor((lines[lines.length - 2].top + 1) / pageHeight);
+    const spillsOneLine =
+      lastPage > previousPage &&
+      lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length === 1;
+    if (unwrapsLine) {
+      element.setAttribute("data-mfcv-tighten-wrap", "true");
+      wraps += 1;
+    }
+    if (spillsOneLine) {
+      element.setAttribute("data-mfcv-tighten-line", "true");
+      spills += 1;
+    }
+    if (unwrapsLine || spillsOneLine) marked += 1;
+  }
+  return { marked, wraps, spills };
+}
+
 export function injectPrintTweakStyles(html: string, tweakCss: string): string {
   if (!tweakCss.trim()) {
     return html;
