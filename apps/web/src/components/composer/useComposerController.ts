@@ -464,7 +464,7 @@ export function useComposerController() {
   const printCvId = useMemo(() => {
     const selected = cvItems.find((item) => item.id === selectedCvId);
     const groupKey = selected ? cvVariantGroupKeyWithVersion(selected) : null;
-    if (!groupKey) return selectedCvId;
+    if (!selected || !groupKey) return selectedCvId;
     const language = selectedLanguage.toLowerCase();
     const exact = cvItems.find(
       (item) =>
@@ -479,7 +479,7 @@ export function useComposerController() {
     )?.id ?? selectedCvId;
   }, [cvItems, selectedCvId, selectedLanguage]);
 
-  // EN is the core catalog. Secondary language variants are print targets only.
+  // Keep one template choice per paired CV family; the language control selects its variant.
   const cvTemplatesForLanguage = useMemo(
     () => cvPairs.filter((pair) => Boolean(pair.variants.en)).slice().sort(compareCvPairs),
     [cvPairs],
@@ -1698,8 +1698,11 @@ export function useComposerController() {
   }
 
   function switchLanguage(language: string) {
-    if (!variantGroup?.[language]) return;
-    setSelectedLanguage(language);
+    const normalizedLanguage = language.trim().toLowerCase();
+    const next = variantGroup?.[normalizedLanguage];
+    if (!next?.id) return;
+    setSelectedLanguage(normalizedLanguage);
+    setSelectedCvId(next.id);
     setPreviewNonce(Date.now());
   }
 
@@ -2217,7 +2220,7 @@ export function useComposerController() {
   const formRenderer = useEditorFormRenderer({
     resolvedTheme,
     selectedCvId,
-    selectedLanguage: "en",
+    selectedLanguage,
     uiLanguage,
     editorPath,
     selectedTemplateId,

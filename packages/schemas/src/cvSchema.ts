@@ -112,6 +112,13 @@ export const CV_V1_JSON_SCHEMA: JsonSchema = {
           },
           additionalProperties: true,
         },
+        template_headers: {
+          type: "object",
+          additionalProperties: {
+            type: "object",
+            additionalProperties: true,
+          },
+        },
         translation: {
           type: "object",
           properties: {

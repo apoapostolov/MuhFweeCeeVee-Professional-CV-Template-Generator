@@ -238,7 +238,7 @@ export function EditorPanel(props: EditorPanelProps): JSX.Element {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-sm font-medium text-slate-800">Print language</p>
+                    <p className="mb-1 text-sm font-medium text-slate-800">Language</p>
                     <div className="flex w-full items-center justify-center gap-2">
                       <div className="inline-flex w-[90%] overflow-hidden rounded-full border border-[var(--line)]">
                         {availableLanguages.map((language, index) => (

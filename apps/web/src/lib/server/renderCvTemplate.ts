@@ -12,6 +12,7 @@ import {
   resolveMappingPath,
   resolvePhotoDataUrl,
   resolveRenderLanguage,
+  resolveTemplateLabels,
 } from "./render/shared";
 import {
   buildIntelligentPaginationCss,
@@ -69,7 +70,7 @@ export async function buildCvTemplateHtml(
   ]);
 
   const lang = resolveRenderLanguage(cv, input.cvId);
-  const labels = template.labels?.[lang] ?? template.labels?.en ?? {};
+  const labels = resolveTemplateLabels(template, cv, lang);
 
   const tweaks = input.tweaks ?? DEFAULT_RENDER_TWEAKS;
   const photoMode = resolveEffectivePhotoMode(input.photoMode, tweaks);

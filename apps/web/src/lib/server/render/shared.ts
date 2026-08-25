@@ -88,6 +88,34 @@ export function resolveRenderLanguage(cv: CvDocument, cvId: string): "bg" | "en"
   return "en";
 }
 
+function mergeLabelRecords(
+  base: Record<string, unknown>,
+  override: Record<string, unknown> | null,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...base };
+  if (!override) return result;
+  for (const [key, value] of Object.entries(override)) {
+    const existing = result[key];
+    if (existing && typeof existing === "object" && !Array.isArray(existing) && value && typeof value === "object" && !Array.isArray(value)) {
+      result[key] = mergeLabelRecords(existing as Record<string, unknown>, value as Record<string, unknown>);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+export function resolveTemplateLabels(
+  template: TemplateFile,
+  cv: CvDocument,
+  language: string,
+): Record<string, unknown> {
+  const defaults = template.labels?.[language] ?? template.labels?.en ?? {};
+  const metadata = asRecord(cv.metadata);
+  const overrides = asRecord(metadata?.template_headers);
+  return mergeLabelRecords(defaults, overrides);
+}
+
 export function label(
   labels: Record<string, unknown>,
   key: string,

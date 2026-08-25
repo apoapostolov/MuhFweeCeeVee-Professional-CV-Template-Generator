@@ -11,10 +11,7 @@ export type TemplateFile = {
       left?: number;
     };
   };
-  labels?: {
-    bg?: Record<string, unknown>;
-    en?: Record<string, unknown>;
-  };
+  labels?: Record<string, Record<string, unknown>>;
   tokens?: {
     colors?: Record<string, string>;
   };

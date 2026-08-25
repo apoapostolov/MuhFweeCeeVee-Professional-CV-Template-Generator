@@ -388,6 +388,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
   ): JSX.Element {
     const depth = options?.depth ?? 0;
     const childDepth = depth + 1;
+    const metadataEditor = editorPath === "metadata";
     const aiFieldOrder =
       options?.aiFieldOrder ??
       (path.length === 0
@@ -639,14 +640,22 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         </div>
       );
       const showArrayChildren = expanded;
-      const arrayChildrenClass = compactFieldLayout && isRatedSkillListPath(pathLabel)
-        ? "col-span-full grid grid-cols-1 gap-y-2"
-        : compactChildrenStackClass(compactFieldLayout, editorPath, depth);
+      const arrayChildrenClass = metadataEditor
+        ? "mt-2 space-y-2"
+        : compactFieldLayout && isRatedSkillListPath(pathLabel)
+          ? "col-span-full grid grid-cols-1 gap-y-2"
+          : compactChildrenStackClass(compactFieldLayout, editorPath, depth);
+      const arrayShellClass = metadataEditor
+        ? `col-span-full rounded-md border border-[var(--line)] px-3 py-2 ${depth > 0 ? "ml-4 border-l-2" : ""} ${depth % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
+        : compactContainerShellClass(compactFieldLayout, editorPath, depth);
+      const arrayHeaderClass = metadataEditor
+        ? "flex min-w-0 items-start justify-between gap-2 border-b border-[var(--line)] pb-2"
+        : compactContainerHeaderClass(compactFieldLayout, depth);
 
       return (
-        <div className={compactContainerShellClass(compactFieldLayout, editorPath, depth)}>
+        <div className={arrayShellClass}>
           {compactFieldLayout ? (
-            <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
+            <div className={arrayHeaderClass}>
               <div className={EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS} style={leadingGroupIndentStyle}>
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center self-start">
                   {visibilityToggle}
@@ -857,7 +866,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                   );
 
                   return (
-                    <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
+                    <div key={childLabel} className={metadataEditor ? "block" : compactFormPassthroughClass(compactFieldLayout)}>
                       {listShowFieldAi
                         ? wrapFieldWithAi(
                             childPath,
@@ -873,7 +882,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                 }
 
                 return (
-                  <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
+                  <div key={childLabel} className={metadataEditor ? "block" : compactFormPassthroughClass(compactFieldLayout)}>
                     {(() => {
                       const fallbackItemTitle = `${copy.label} ${index + 1}`;
                       const heading =
@@ -960,9 +969,17 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
         compactFieldLayout && depth > 0 ? "border-t border-[var(--line)] pt-2" : "";
       const objectArrayIndex = path[path.length - 1];
       const isTopLevelStructure = compactFieldLayout && depth === 1 && isTabulatedArrayEditorPath(editorPath);
-      const alternatingStructureClass = isTopLevelStructure && typeof objectArrayIndex === "number"
-        ? `col-span-full grid grid-cols-subgrid gap-y-2 rounded-md -mx-3 px-5 py-2 ${objectArrayIndex % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
-        : compactContainerShellClass(compactFieldLayout, editorPath, depth);
+      const alternatingStructureClass = metadataEditor
+        ? `col-span-full rounded-md border border-[var(--line)] px-3 py-2 ${depth > 0 ? "ml-4 border-l-2" : ""} ${depth % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
+        : isTopLevelStructure && typeof objectArrayIndex === "number"
+          ? `col-span-full grid grid-cols-subgrid gap-y-2 rounded-md -mx-3 px-5 py-2 ${objectArrayIndex % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]"}`
+          : compactContainerShellClass(compactFieldLayout, editorPath, depth);
+      const objectHeaderClass = metadataEditor
+        ? "flex min-w-0 items-start justify-between gap-2 border-b border-[var(--line)] pb-2"
+        : compactContainerHeaderClass(compactFieldLayout, depth);
+      const objectChildrenClass = metadataEditor
+        ? "mt-2 space-y-2"
+        : compactChildrenStackClass(compactFieldLayout, editorPath, depth);
 
       return (
         <div className={alternatingStructureClass}>
@@ -981,7 +998,7 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
                 </div>
               </div>
             ) : (
-              <div className={compactContainerHeaderClass(compactFieldLayout, depth)}>
+              <div className={objectHeaderClass}>
                 <div className={EDITOR_COMPACT_SECTION_LEADING_GROUP_CLASS} style={leadingGroupIndentStyle}>
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center self-start">
                     {visibilityToggle}
@@ -1024,12 +1041,12 @@ export function useEditorFormRenderer(ctx: EditorFormRendererContext) {
             </div>
           ) : null}
           {expanded ? (
-            <div className={compactChildrenStackClass(compactFieldLayout, editorPath, depth)}>
+            <div className={objectChildrenClass}>
               {entries.map(([key, value]) => {
                 const childPath = [...path, key];
                 const childLabel = pathLabel ? `${pathLabel}.${key}` : key;
                 return (
-                  <div key={childLabel} className={compactFormPassthroughClass(compactFieldLayout)}>
+                  <div key={childLabel} className={metadataEditor ? "block" : compactFormPassthroughClass(compactFieldLayout)}>
                     {renderFormNode(value, childPath, childLabel, key, {
                       ...childRenderOptions,
                       onRemove: () => removeDraftAt(childPath),

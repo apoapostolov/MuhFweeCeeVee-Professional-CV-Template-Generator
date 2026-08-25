@@ -2,6 +2,7 @@ import { validateCvV1 } from "@muhfweeceevee/schemas";
 import { NextResponse } from "next/server";
 
 import { assertApiAuthorized } from "@/lib/server/apiAuth";
+import { addTemplateHeadersToCv, listTemplateHeaders } from "@/lib/server/templateStore";
 
 import { analyzeCvCompatibility } from "@/lib/server/cvCompatibility";
 import { isSupportedLanguage } from "@/lib/server/cvVariants";
@@ -66,6 +67,11 @@ export async function GET(
     return NextResponse.json({ error: "CV not found." }, { status: 404 });
   }
 
+  const language = typeof cv.metadata === "object" && cv.metadata && !Array.isArray(cv.metadata)
+    ? String((cv.metadata as Record<string, unknown>).language ?? requestedLanguage ?? "en")
+    : (requestedLanguage ?? "en");
+  const cvWithTemplateHeaders = addTemplateHeadersToCv(cv, await listTemplateHeaders(language));
+
   const templateId = url.searchParams.get("templateId") ?? "europass-v1";
   const warnings = await analyzeCvCompatibility(resolvedCvId, cv, templateId);
   const git = await getCvGitVersionInfo(resolvedCvId);
@@ -73,7 +79,7 @@ export async function GET(
     cvId: resolvedCvId,
     requestedCvId: initialCvId,
     variantCreated,
-    cv,
+    cv: cvWithTemplateHeaders,
     warnings,
     git,
   });
