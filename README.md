@@ -23,6 +23,7 @@ MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applica
 - **Twenty AI providers.** The workspace is no longer tied to a single OpenRouter account. Use API keys, OAuth subscriptions, or a local endpoint. Each provider has a credit or quota you can watch as you work.
 - **Track applications.** Details, contacts, and next actions live on the application. The timeline is editable. Freeze the exact pack you submitted.
 - **Print a PDF.** Print Room remembers your print choices and lists CVs by real version, newest first.
+- **Smart Pagination.** Choose **Normal** for a light touch that rescues one line break, or **Aggressive** for heading, page-room, and line-compaction fixes that can recover up to three lines. Large sections flow cleanly across pages instead of leaving awkward blank space.
 
 See the full [changelog](./CHANGELOG.md).
 

@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Smart Pagination in Print Room.** Print Room now gives you two ways to handle a crowded page:
+  - **Normal.** Makes a small, measured compaction to rescue a single line break when it can.
+  - **Aggressive.** Also tightens heading and separator spacing, opens a little extra page room, and uses stronger line compaction to recover up to three lines.
+  Large sections can flow across pages instead of leaving a big blank patch, while short orphan fragments are kept together when possible.
 - **Research feeds the rest of the loop.** A company and its roles carry through targeting, keyword checks, letters, applications, and print instead of living on isolated screens.
 - **Cover letter writing loop.** Create a letter from the selected CV and target. Keep its history. Draft with AI when wanted. Run humanizing as a separate pass.
 - **Application board consistency.** Stages, cards, and loading states behave the same in light and dark themes. Editor actions stay put while the board refreshes. Saves survive a board reload.
