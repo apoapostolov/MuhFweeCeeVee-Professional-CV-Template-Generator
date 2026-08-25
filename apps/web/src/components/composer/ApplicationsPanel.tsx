@@ -1218,11 +1218,11 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                             {app.next_action.title}
                           </p>
                         ) : null}
-                        <div className="mt-1 flex items-center justify-end gap-1 text-[8px] uppercase tracking-wide text-[var(--ink-muted)]">
-                          {duplicates[app.id]?.length ? (
+                        {duplicates[app.id]?.length ? (
+                          <div className="mt-1 flex items-center justify-end gap-1 text-[8px] uppercase tracking-wide text-[var(--ink-muted)]">
                             <span>{bg ? "Дубликат" : "Duplicate"}</span>
-                          ) : null}
-                        </div>
+                          </div>
+                        ) : null}
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
