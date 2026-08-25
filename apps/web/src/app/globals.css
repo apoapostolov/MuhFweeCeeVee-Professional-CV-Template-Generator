@@ -31,6 +31,7 @@
   --yaml-boolean: #75678d;
   --yaml-number: #92734f;
   --yaml-empty: #8a949e;
+  --kanban-divider: rgba(36, 65, 93, 0.16);
 }
 
 :root[data-theme="dark"] {
@@ -64,6 +65,7 @@
   --yaml-boolean: #aa9bbd;
   --yaml-number: #b59b73;
   --yaml-empty: #7f8b99;
+  --kanban-divider: rgba(224, 242, 254, 0.22);
 }
 
 @theme inline {

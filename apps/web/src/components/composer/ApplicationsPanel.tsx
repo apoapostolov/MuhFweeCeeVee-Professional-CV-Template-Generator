@@ -1181,7 +1181,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </div>
 
                       <button
-                        className="w-full border-b border-[var(--kanban-header-divider)] px-1.5 py-1 text-left"
+                        className="w-full border-b border-[var(--kanban-divider)] px-1.5 py-1 text-left"
                         data-no-dnd
                         onClick={() => openEdit(app)}
                         type="button"
