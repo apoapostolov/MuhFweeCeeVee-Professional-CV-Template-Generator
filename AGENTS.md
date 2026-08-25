@@ -22,8 +22,12 @@ checkout. The legacy WSL `fweecv-dev.service` must remain disabled. It served
 the public checkout with `Restart=always` and could reclaim port `10004` or
 trigger reloads while editing. Before and after code changes, verify the
 server's repository root and health. Restart the tracked server after code
-changes with `npm run dev:windows:restart` from the checkout being tested. This
-app is Next.js with webpack HMR, not Vite.
+changes with the Windows host script, not WSL npm: use `winjob -File
+C:\git\CV\deploy\windows\restart-dev.ps1` or an equivalent Windows-native
+path. Do not run `dev:windows:*` through WSL when its npm bin wrappers invoke
+`powershell` or `node.exe`. After restart, poll `http://127.0.0.1:10004/` with
+bounded retries and verify the response identifies `/mnt/c/git/CV`; a fixed
+sleep does not prove readiness. This app is Next.js with webpack HMR, not Vite.
 
 ## Source Hierarchy
 
@@ -96,6 +100,9 @@ write or update a skill while context is fresh.
 - Check the working tree and avoid touching unrelated user changes.
 - Start the dev server before code changes. See
   [`DEV_SERVER_WORKFLOW.md`](dev/DEV_SERVER_WORKFLOW.md).
+
+Run these commands in a Windows PowerShell shell. From WSL, use the
+Windows-host scripts through `winjob -File` instead of WSL npm.
 
 ```powershell
 npm run dev:windows:start      # Next.js on Windows, port 10004
