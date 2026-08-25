@@ -82,7 +82,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
 
         <div className="mt-4 space-y-3">
           <div>
-            <p className="mb-1 text-sm font-medium text-slate-800">Language</p>
+            <p className="mb-1 text-sm font-medium text-slate-800">Print language</p>
             <div className="flex items-center justify-center">
               <div className="inline-flex w-[90%] overflow-hidden rounded-full border border-[var(--line)]">
                 {availableLanguages.map((language, index) => (

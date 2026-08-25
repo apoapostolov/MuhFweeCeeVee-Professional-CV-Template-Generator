@@ -380,7 +380,7 @@ export function useComposerController() {
 
   const mostRecentCv = useMemo(() => {
     if (!cvItems.length) return null;
-    return [...cvItems].sort((a, b) => {
+    return cvItems.filter((item) => (item.language ?? "").toLowerCase() === "en").sort((a, b) => {
       const aTs = a.lastUpdatedAt ? Date.parse(a.lastUpdatedAt) : NaN;
       const bTs = b.lastUpdatedAt ? Date.parse(b.lastUpdatedAt) : NaN;
       const aHasUpdated = Number.isFinite(aTs);
@@ -459,21 +459,37 @@ export function useComposerController() {
     return [...pairs.values()].sort(compareCvPairs);
   }, [cvItems]);
 
-  const cvTemplatesForLanguage = useMemo(() => {
-    const lang = selectedLanguage.toLowerCase();
-    return cvPairs
-      .filter((pair) => Boolean(pair.variants[lang]))
-      .slice()
-      .sort(compareCvPairs);
-  }, [cvPairs, selectedLanguage]);
+  const printCvId = useMemo(() => {
+    const selected = cvItems.find((item) => item.id === selectedCvId);
+    const groupKey = selected ? cvVariantGroupKeyWithVersion(selected) : null;
+    if (!groupKey) return selectedCvId;
+    const language = selectedLanguage.toLowerCase();
+    const exact = cvItems.find(
+      (item) =>
+        cvVariantGroupKeyWithVersion(item) === groupKey &&
+        (item.language ?? "").toLowerCase() === language,
+    );
+    if (exact) return exact.id;
+    return cvItems.find(
+      (item) =>
+        item.displayName.trim().toLowerCase() === selected.displayName.trim().toLowerCase() &&
+        (item.language ?? "").toLowerCase() === language,
+    )?.id ?? selectedCvId;
+  }, [cvItems, selectedCvId, selectedLanguage]);
+
+  // EN is the core catalog. Secondary language variants are print targets only.
+  const cvTemplatesForLanguage = useMemo(
+    () => cvPairs.filter((pair) => Boolean(pair.variants.en)).slice().sort(compareCvPairs),
+    [cvPairs],
+  );
 
   const pdfUrl = useMemo(() => {
-    if (!selectedCvId || !selectedTemplateId) {
+    if (!printCvId || !selectedTemplateId) {
       return "";
     }
     const approvedPhoto = photoBoothItems.find((item) => item.id === approvedPhotoId) ?? null;
     const params = new URLSearchParams({
-      cvId: selectedCvId,
+      cvId: printCvId,
       templateId: selectedTemplateId,
       v: String(previewNonce),
     });
@@ -500,7 +516,7 @@ export function useComposerController() {
     return `/api/export/pdf?${params.toString()}`;
   }, [
     previewNonce,
-    selectedCvId,
+    printCvId,
     selectedTemplateId,
     selectedTemplateTheme,
     selectedTemplateThemeOptions.length,
@@ -741,11 +757,11 @@ export function useComposerController() {
   // Print tweaks are remembered per CV + template + language (see print-tweaks-persistence).
   const printTweaksScope = useMemo(
     () => ({
-      cvId: selectedCvId,
+      cvId: printCvId,
       templateId: selectedTemplateId,
       language: selectedLanguage,
     }),
-    [selectedCvId, selectedTemplateId, selectedLanguage],
+    [printCvId, selectedTemplateId, selectedLanguage],
   );
   const printTweaksScopeKeyRef = useRef("");
   const skipPrintTweaksPersistRef = useRef(false);
@@ -921,7 +937,7 @@ export function useComposerController() {
           const prefs = readPersistedWorkspacePrefs();
           const selected = resolveCvItemFromPersistedPrefs(items, prefs) ?? items[0];
           setSelectedCvId(selected.id);
-          setSelectedLanguage((selected.language ?? (prefs.language || "en")).toLowerCase());
+          setSelectedLanguage("en");
         }
 
         if (templateItemsLocal.length > 0) {
@@ -977,15 +993,19 @@ export function useComposerController() {
     }
     const variants: Record<string, CvListResponse["items"][number]> = {};
     for (const item of cvItems) {
-      if (cvVariantGroupKeyWithVersion(item) !== groupKey) {
+      const language = (item.language ?? "").toLowerCase();
+      const sameVersion = cvVariantGroupKeyWithVersion(item) === groupKey;
+      const sameInternalName =
+        item.displayName.trim().toLowerCase() === selectedCvMeta.displayName.trim().toLowerCase();
+      if (!sameVersion && (!sameInternalName || language === "en")) {
         continue;
       }
-      const language = (item.language ?? "").toLowerCase();
       if (!language) continue;
       variants[language] = item;
     }
     return Object.keys(variants).length > 0 ? variants : null;
   }, [cvItems, selectedCvMeta]);
+
   const availableLanguages = useMemo<string[]>(() => {
     const languages = Object.keys(variantGroup ?? {});
     if (languages.length === 0) {
@@ -1158,34 +1178,8 @@ export function useComposerController() {
   useEffect(() => {
     if (availableLanguages.length === 0) return;
     if (availableLanguages.includes(selectedLanguage)) return;
-    const nextLang = availableLanguages[0];
-    setSelectedLanguage(nextLang);
-    const nextVariant = variantGroup?.[nextLang];
-    if (nextVariant?.id && nextVariant.id !== selectedCvId) {
-      setSelectedCvId(nextVariant.id);
-    }
-  }, [availableLanguages, selectedLanguage, selectedCvId, variantGroup]);
-
-  useEffect(() => {
-    const lang = selectedLanguage.toLowerCase();
-    if (cvTemplatesForLanguage.length === 0) {
-      return;
-    }
-    const activePair = cvTemplatesForLanguage.find((pair) => pair.key === selectedPairKey);
-    if (activePair) {
-      const variant = activePair.variants[lang];
-      if (variant?.id && variant.id !== selectedCvId) {
-        setSelectedCvId(variant.id);
-        setPreviewNonce(Date.now());
-      }
-      return;
-    }
-    const fallback = cvTemplatesForLanguage[0]?.variants[lang];
-    if (fallback?.id && fallback.id !== selectedCvId) {
-      setSelectedCvId(fallback.id);
-      setPreviewNonce(Date.now());
-    }
-  }, [cvTemplatesForLanguage, selectedLanguage, selectedPairKey, selectedCvId]);
+    setSelectedLanguage(availableLanguages.includes("en") ? "en" : availableLanguages[0]);
+  }, [availableLanguages, selectedLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1673,12 +1667,9 @@ export function useComposerController() {
   }
 
   function switchLanguage(language: string) {
+    if (!variantGroup?.[language]) return;
     setSelectedLanguage(language);
-    const next = variantGroup?.[language];
-    if (next?.id) {
-      setSelectedCvId(next.id);
-      setPreviewNonce(Date.now());
-    }
+    setPreviewNonce(Date.now());
   }
 
   function switchCvPair(pairKey: string) {
@@ -1686,8 +1677,7 @@ export function useComposerController() {
     if (!pair) {
       return;
     }
-    const next = pair.variants[selectedLanguage]
-      ?? pair.variants.en
+    const next = pair.variants.en
       ?? cvItems.find((item) => item.id === pair.preferredCvId)
       ?? Object.values(pair.variants)[0]
       ?? null;
@@ -2196,7 +2186,7 @@ export function useComposerController() {
   const formRenderer = useEditorFormRenderer({
     resolvedTheme,
     selectedCvId,
-    selectedLanguage,
+    selectedLanguage: "en",
     uiLanguage,
     editorPath,
     selectedTemplateId,

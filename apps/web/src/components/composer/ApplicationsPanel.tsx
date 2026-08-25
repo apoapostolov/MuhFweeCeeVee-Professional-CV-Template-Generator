@@ -69,7 +69,7 @@ function kanbanPriorityClass(priority: Application["priority"]): string {
   return "app-kanban-priority-normal";
 }
 
-type CvOption = { id: string; displayName?: string; displayVersion?: string | null };
+type CvOption = { id: string; language?: string | null; displayName?: string; displayVersion?: string | null };
 type PhotoOption = { id: string; name: string; mediaUrl?: string };
 type LetterOption = { id: string; title: string };
 type CompanyOption = { id: string; name: string };
@@ -308,7 +308,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
       fetch("/api/research/catalog"),
     ]);
     const cvsPayload = (await cvsRes.json()) as { items?: CvOption[] };
-    setCvOptions(cvsPayload.items ?? []);
+    setCvOptions((cvsPayload.items ?? []).filter((cv) => cv.language === "en"));
     const photosPayload = (await photosRes.json()) as { items?: PhotoOption[] };
     setPhotoOptions(photosPayload.items ?? []);
     const lettersPayload = (await lettersRes.json()) as { items?: LetterOption[] };
