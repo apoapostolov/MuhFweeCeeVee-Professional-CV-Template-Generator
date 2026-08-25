@@ -1226,7 +1226,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
-                        className="app-kanban-footer flex h-7 border-t border-[var(--kanban-footer-divider)]"
+                        className="app-kanban-footer flex h-7 border-t border-[var(--kanban-header-divider)]"
                         data-no-dnd
                       >
                         <button
