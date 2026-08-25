@@ -1181,7 +1181,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </div>
 
                       <button
-                        className="w-full px-1.5 py-1 text-left"
+                        className="w-full border-b border-[var(--kanban-header-divider)] px-1.5 py-1 text-left"
                         data-no-dnd
                         onClick={() => openEdit(app)}
                         type="button"
@@ -1226,7 +1226,7 @@ export function ApplicationsPanel(props: ApplicationsPanelProps): JSX.Element {
                       </button>
                       {/* Bottom border segmented into icon actions */}
                       <div
-                        className="app-kanban-footer flex h-7 border-t border-[var(--kanban-header-divider)]"
+                        className="app-kanban-footer flex h-7"
                         data-no-dnd
                       >
                         <button
