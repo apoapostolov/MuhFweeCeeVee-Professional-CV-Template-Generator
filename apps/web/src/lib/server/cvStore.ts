@@ -240,8 +240,8 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
         id,
         language:
           parsed?.language ??
-          variantMeta.language ??
-          (isSupportedLanguage(metadataLanguage) ? metadataLanguage : null),
+          (isSupportedLanguage(metadataLanguage) ? metadataLanguage : null) ??
+          (variantMeta.language && isSupportedLanguage(variantMeta.language) ? variantMeta.language : null),
         iteration: parsed?.iteration ?? variantMeta.iteration,
         target: parsedTarget ?? variantMeta.target,
         displayName: internalName,

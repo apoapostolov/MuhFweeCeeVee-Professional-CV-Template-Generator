@@ -49,6 +49,30 @@ describe("workspace-persistence", () => {
     expect(selected?.id).toBe("cv_bg_1_acme");
   });
 
+  it("falls back to the newest English CV when persisted pair has no English variant", () => {
+    const selected = resolveCvItemFromPersistedPrefs(
+      [
+        ...items,
+        {
+          id: "cv_bg_1_legacy",
+          language: "bg",
+          iteration: "1",
+          target: "legacy",
+          displayName: "Legacy",
+          displayVersion: "v1",
+        },
+      ],
+      {
+        cvId: "cv_bg_1_legacy",
+        cvPairKey: "iter:1:legacy:version:v1",
+        language: "bg",
+        templateId: "",
+        templateTheme: "default",
+      },
+    );
+    expect(selected?.id).toBe("cv_en_1_acme");
+  });
+
   it("restores template and theme when valid", () => {
     const { templateId, themeId } = resolveTemplateSelection(
       [{ id: "harvard-v1" }, { id: "edinburgh-v1" }],

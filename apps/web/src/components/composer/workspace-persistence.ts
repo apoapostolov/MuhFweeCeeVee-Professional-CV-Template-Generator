@@ -78,34 +78,31 @@ export function resolveCvItemFromPersistedPrefs(
   }
 
   const language = prefs.language || "en";
+  const newestEnglish = items.find((item) => (item.language ?? "").toLowerCase() === "en") ?? items[0];
+
+  function resolveInPair(inPair: CvListResponse["items"]): CvListResponse["items"][number] {
+    const byEnglish = inPair.find((item) => (item.language ?? "").toLowerCase() === "en");
+    if (!byEnglish) return newestEnglish;
+    const byId = prefs.cvId ? inPair.find((item) => item.id === prefs.cvId) : undefined;
+    if (byId) return byId;
+    const byLanguage = inPair.find((item) => (item.language ?? "").toLowerCase() === language);
+    return byLanguage ?? byEnglish;
+  }
 
   if (prefs.cvPairKey) {
     const inPair = items.filter((item) => cvPairKeyForItem(item) === prefs.cvPairKey);
-    if (inPair.length > 0) {
-      const byId = prefs.cvId ? inPair.find((item) => item.id === prefs.cvId) : undefined;
-      if (byId) {
-        return byId;
-      }
-      const byLanguage = inPair.find((item) => (item.language ?? "").toLowerCase() === language);
-      if (byLanguage) {
-        return byLanguage;
-      }
-      const byEnglish = inPair.find((item) => (item.language ?? "").toLowerCase() === "en");
-      if (byEnglish) {
-        return byEnglish;
-      }
-      return inPair[0];
-    }
+    if (inPair.length > 0) return resolveInPair(inPair);
   }
 
   if (prefs.cvId) {
     const byId = items.find((item) => item.id === prefs.cvId);
     if (byId) {
-      return byId;
+      const inPair = items.filter((item) => cvPairKeyForItem(item) === cvPairKeyForItem(byId));
+      if (inPair.length > 0) return resolveInPair(inPair);
     }
   }
 
-  return items[0];
+  return newestEnglish;
 }
 
 export function resolveTemplateSelection(
