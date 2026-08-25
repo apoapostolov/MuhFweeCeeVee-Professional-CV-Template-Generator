@@ -198,8 +198,11 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
                     {option.id === "intelligentPagination" && checked ? (
                       <select
                         aria-label="Smart Pagination mode"
-                        className="ml-auto w-28 rounded border border-transparent bg-[var(--surface-1)] px-1.5 py-1 text-[11px] font-normal"
-                        onChange={(event) => onPrintPaginationModeChange(event.target.value as "normal" | "aggressive")}
+                        className="composer-inline-select ml-auto w-28 rounded px-1.5 py-1 text-[11px] font-normal"
+                        onChange={(event) => {
+                          onPrintPaginationModeChange(event.target.value as "normal" | "aggressive");
+                          event.currentTarget.blur();
+                        }}
                         value={printTweaks.intelligentPaginationMode}
                       >
                         <option value="normal">Normal</option>

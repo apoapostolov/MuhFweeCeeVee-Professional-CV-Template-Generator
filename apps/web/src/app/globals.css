@@ -304,6 +304,21 @@ h4 {
   min-height: 2rem;
 }
 
+.app-shell select.composer-inline-select {
+  background: var(--surface-1);
+  color: var(--foreground);
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+.app-shell select.composer-inline-select:focus {
+  outline: none;
+  box-shadow: none;
+}
+:root[data-theme="dark"] .app-shell select.composer-inline-select {
+  color-scheme: dark;
+}
+
 :root[data-theme="dark"] .app-shell input[type="date"],
 :root[data-theme="dark"] .app-shell input[type="datetime-local"],
 :root[data-theme="dark"] .app-shell input.composer-date-input[type="date"],
