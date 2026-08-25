@@ -6,6 +6,7 @@ export type CvListResponse = {
     target: string | null;
     displayName: string;
     displayVersion: string;
+    lastUpdatedAt?: string | null;
     git?: {
       lastCommitAt: string | null;
     };
@@ -116,6 +117,7 @@ export type CvPair = {
   key: string;
   displayName: string;
   displayVersion: string;
+  lastUpdatedAt: string | null;
   variants: Record<string, CvListResponse["items"][number]>;
   preferredCvId: string;
   latestTs: number;

@@ -169,6 +169,13 @@ function compareSemanticVersions(left: string, right: string): number {
 }
 
 function compareCvPairs(a: CvPair, b: CvPair): number {
+  const aUpdated = a.lastUpdatedAt ? Date.parse(a.lastUpdatedAt) : NaN;
+  const bUpdated = b.lastUpdatedAt ? Date.parse(b.lastUpdatedAt) : NaN;
+  const aHasUpdated = Number.isFinite(aUpdated);
+  const bHasUpdated = Number.isFinite(bUpdated);
+  if (aHasUpdated !== bHasUpdated) return aHasUpdated ? -1 : 1;
+  if (aHasUpdated && aUpdated !== bUpdated) return bUpdated - aUpdated;
+
   const nameOrder = a.displayName.localeCompare(b.displayName, undefined, {
     numeric: true,
     sensitivity: "base",
@@ -178,7 +185,6 @@ function compareCvPairs(a: CvPair, b: CvPair): number {
   const versionOrder = compareSemanticVersions(b.displayVersion, a.displayVersion);
   if (versionOrder !== 0) return versionOrder;
 
-  if (a.latestTs !== b.latestTs) return b.latestTs - a.latestTs;
   return a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: "base" });
 }
 
@@ -375,10 +381,17 @@ export function useComposerController() {
   const mostRecentCv = useMemo(() => {
     if (!cvItems.length) return null;
     return [...cvItems].sort((a, b) => {
-      const aTs = a.git?.lastCommitAt ? Date.parse(a.git.lastCommitAt) : 0;
-      const bTs = b.git?.lastCommitAt ? Date.parse(b.git.lastCommitAt) : 0;
-      if (aTs !== bTs) return bTs - aTs;
-      return b.id.localeCompare(a.id);
+      const aTs = a.lastUpdatedAt ? Date.parse(a.lastUpdatedAt) : NaN;
+      const bTs = b.lastUpdatedAt ? Date.parse(b.lastUpdatedAt) : NaN;
+      const aHasUpdated = Number.isFinite(aTs);
+      const bHasUpdated = Number.isFinite(bTs);
+      if (aHasUpdated !== bHasUpdated) return aHasUpdated ? -1 : 1;
+      if (aHasUpdated && aTs !== bTs) return bTs - aTs;
+      const nameOrder = a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: "base" });
+      if (nameOrder !== 0) return nameOrder;
+      const versionOrder = compareSemanticVersions(b.displayVersion, a.displayVersion);
+      if (versionOrder !== 0) return versionOrder;
+      return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" });
     })[0] ?? null;
   }, [cvItems]);
 
@@ -415,6 +428,7 @@ export function useComposerController() {
           key,
           displayName: item.displayName,
           displayVersion: item.displayVersion,
+          lastUpdatedAt: item.lastUpdatedAt ?? null,
           variants: {
             [languageKey]: item,
           },
@@ -434,6 +448,11 @@ export function useComposerController() {
       }
       existing.displayName = item.displayName;
       existing.displayVersion = item.displayVersion;
+      const existingUpdated = existing.lastUpdatedAt ? Date.parse(existing.lastUpdatedAt) : NaN;
+      const itemUpdated = item.lastUpdatedAt ? Date.parse(item.lastUpdatedAt) : NaN;
+      if (!Number.isFinite(existingUpdated) || (Number.isFinite(itemUpdated) && itemUpdated > existingUpdated)) {
+        existing.lastUpdatedAt = item.lastUpdatedAt ?? null;
+      }
       existing.latestTs = Math.max(existing.latestTs, ts);
     }
 

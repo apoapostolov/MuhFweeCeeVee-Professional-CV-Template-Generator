@@ -31,6 +31,7 @@ export type CvVariantInfo = {
   target: string | null;
   displayName: string;
   displayVersion: string;
+  lastUpdatedAt: string | null;
   git: CvGitVersionInfo;
 };
 
@@ -78,6 +79,44 @@ function readMetadataVariantBlock(
       ? variant.language.trim().toLowerCase()
       : null;
   return { iteration, target, language };
+}
+
+function metadataTimestamp(metadata: Record<string, unknown> | null): string | null {
+  for (const key of ["updated_at", "last_edited_at", "updated_on"]) {
+    const value = metadata?.[key];
+    if (typeof value !== "string" || !value.trim()) continue;
+    const timestamp = Date.parse(value);
+    if (Number.isFinite(timestamp)) return new Date(timestamp).toISOString();
+  }
+  return null;
+}
+
+function compareSemanticVersions(left: string, right: string): number {
+  const parseVersion = (value: string): number[] => {
+    const match = value.trim().match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+    return match ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)] : [0, 0, 0];
+  };
+  const leftParts = parseVersion(left);
+  const rightParts = parseVersion(right);
+  for (let index = 0; index < leftParts.length; index += 1) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+  }
+  return 0;
+}
+
+export function compareCvVariantInfo(a: CvVariantInfo, b: CvVariantInfo): number {
+  const aUpdated = a.lastUpdatedAt ? Date.parse(a.lastUpdatedAt) : NaN;
+  const bUpdated = b.lastUpdatedAt ? Date.parse(b.lastUpdatedAt) : NaN;
+  const aHasUpdated = Number.isFinite(aUpdated);
+  const bHasUpdated = Number.isFinite(bUpdated);
+  if (aHasUpdated !== bHasUpdated) return aHasUpdated ? -1 : 1;
+  if (aHasUpdated && aUpdated !== bUpdated) return bUpdated - aUpdated;
+
+  const nameOrder = a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: "base" });
+  if (nameOrder !== 0) return nameOrder;
+  const versionOrder = compareSemanticVersions(b.displayVersion, a.displayVersion);
+  if (versionOrder !== 0) return versionOrder;
+  return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" });
 }
 
 function withUpdatedMetadata(input: CvDocument): CvDocument {
@@ -194,9 +233,9 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
       const parsedTarget =
         parsed?.target && parsed.target.trim().length > 0 ? parsed.target.trim().toLowerCase() : null;
       const internalName =
-        (typeof metadata?.internal_name === "string" && metadata.internal_name) || id;
+        (typeof metadata?.internal_name === "string" && metadata.internal_name.trim()) || id;
       const internalVersion =
-        (typeof metadata?.internal_version === "string" && metadata.internal_version) || "1.0";
+        (typeof metadata?.internal_version === "string" && metadata.internal_version.trim()) || "1.0";
       return {
         id,
         language:
@@ -207,11 +246,12 @@ export async function listCvVariants(): Promise<CvVariantInfo[]> {
         target: parsedTarget ?? variantMeta.target,
         displayName: internalName,
         displayVersion: internalVersion,
+        lastUpdatedAt: metadataTimestamp(metadata),
         git: await gitVersionInfo(id),
       };
     }),
   );
-  return variants;
+  return variants.sort(compareCvVariantInfo);
 }
 
 export async function readCv(cvId: string): Promise<CvDocument | null> {
