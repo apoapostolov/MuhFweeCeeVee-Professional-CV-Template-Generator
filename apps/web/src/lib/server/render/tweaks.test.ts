@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildAdaptivePaginationCss,
   buildIntelligentPaginationCss,
   buildPrintTextScaleCss,
   parseRenderTweaks,
@@ -79,10 +80,12 @@ describe("render tweaks", () => {
     expect(css).toContain(".sidebar > section, .left > section");
     expect(css).toContain(".content > section, .right > section");
     expect(css).toContain("break-after: avoid");
-    expect(css).toContain("letter-spacing: -0.01em");
-    expect(css).toContain("word-spacing: -0.025em");
-    expect(css).toContain("line-height: 1.3");
+    expect(css).not.toContain("letter-spacing");
+    expect(css).not.toContain("word-spacing");
+    expect(css).not.toContain("line-height: 1.3");
     expect(css).toContain("orphans: 3");
+    expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-wrap]");
+    expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-line]");
     expect(buildIntelligentPaginationCss("harvard-v1", {
       intelligentPagination: false,
       removePhoto: false,

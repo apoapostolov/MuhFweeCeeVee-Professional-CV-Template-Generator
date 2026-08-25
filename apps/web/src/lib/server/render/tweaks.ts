@@ -123,10 +123,6 @@ export function buildIntelligentPaginationCss(
   const contentItems = templateHasLeftSidebar(templateId)
     ? ".content li, .right li"
     : ".page li";
-  const wrappingText = templateHasLeftSidebar(templateId)
-    ? ".sidebar p, .left p, .content p, .right p, .sidebar li, .left li, .content li, .right li"
-    : ".page p, .page li";
-
   // Conservative order: keep headings with their content, keep short semantic
   // units together, and let large entries split rather than create blank pages.
   return `
@@ -154,11 +150,17 @@ ${sidebarItems}, ${contentItems} {
   orphans: 2;
   widows: 2;
 }
-${wrappingText} {
-  /* Small, print-only compression for near-wrap lines. */
+`;
+}
+
+export function buildAdaptivePaginationCss(): string {
+  return `
+[data-mfcv-tighten-wrap] {
   letter-spacing: -0.01em;
   word-spacing: -0.025em;
-  line-height: 1.3;
+}
+[data-mfcv-tighten-line] {
+  line-height: 1.3 !important;
 }
 `;
 }
