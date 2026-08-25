@@ -24,6 +24,8 @@ describe("render tweaks", () => {
     expect(parseRenderTweaks(new URLSearchParams("removePhoto=true")).removePhoto).toBe(true);
     expect(parseRenderTweaks(new URLSearchParams("removePageCount=1")).removePageCount).toBe(true);
     expect(parseRenderTweaks(new URLSearchParams("pagination=smart")).intelligentPagination).toBe(true);
+    expect(parseRenderTweaks(new URLSearchParams("pagination=smart")).intelligentPaginationMode).toBe("normal");
+    expect(parseRenderTweaks(new URLSearchParams("pagination=smart&paginationMode=aggressive")).intelligentPaginationMode).toBe("aggressive");
     expect(parseRenderTweaks(new URLSearchParams("pagination=off")).intelligentPagination).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).moveSkillsLeft).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).removePhoto).toBe(false);

@@ -6,8 +6,11 @@ import {
   PRINT_TEXT_SCALE_DEFAULT,
 } from "../../print-text-scale";
 
+export type IntelligentPaginationMode = "normal" | "aggressive";
+
 export type RenderTweaks = {
   intelligentPagination: boolean;
+  intelligentPaginationMode?: IntelligentPaginationMode;
   removePhoto: boolean;
   removePageCount: boolean;
   moveSkillsLeft: boolean;
@@ -19,6 +22,7 @@ export type RenderTweaks = {
 
 export const DEFAULT_RENDER_TWEAKS: RenderTweaks = {
   intelligentPagination: false,
+  intelligentPaginationMode: "normal",
   removePhoto: false,
   removePageCount: false,
   moveSkillsLeft: false,
@@ -63,6 +67,8 @@ export function parseRenderTweaks(
 ): RenderTweaks {
   return {
     intelligentPagination: searchParams.get("pagination") === "smart",
+    intelligentPaginationMode:
+      searchParams.get("paginationMode") === "aggressive" ? "aggressive" : "normal",
     removePhoto: readTruthyFlag(searchParams, "removePhoto"),
     removePageCount: readTruthyFlag(searchParams, "removePageCount"),
     moveSkillsLeft: readTruthyFlag(searchParams, "moveSkillsLeft"),
@@ -153,15 +159,34 @@ ${sidebarItems}, ${contentItems} {
 `;
 }
 
-export function buildAdaptivePaginationCss(): string {
+export function buildAdaptivePaginationCss(mode: IntelligentPaginationMode = "normal", options?: { extendPage?: boolean; tightenHeadings?: boolean }): string {
+  const aggressive = mode === "aggressive";
+  const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
+  const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
+  const lineHeight = aggressive ? "1.22" : "1.3";
+  const pageExtension = aggressive ? "2.5mm" : "0.75mm";
   return `
+${options?.tightenHeadings ? `h2, h3, .section-title, hr, .name-divider {
+  margin-block-start: 0 !important;
+  margin-block-end: ${aggressive ? "0.35em" : "0.55em"} !important;
+  padding-block-end: ${aggressive ? "0.2em" : "0.35em"} !important;
+}
+` : ""}
 [data-mfcv-tighten-wrap] {
-  letter-spacing: -0.01em;
-  word-spacing: -0.025em;
+  letter-spacing: ${letterSpacing};
+  word-spacing: ${wordSpacing};
 }
 [data-mfcv-tighten-line] {
-  line-height: 1.3 !important;
+  line-height: ${lineHeight} !important;
 }
+${options?.extendPage ? `@page {
+  margin-top: calc(12mm - ${pageExtension});
+  margin-bottom: calc(12mm - ${pageExtension});
+}
+.page {
+  min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension});
+}
+` : ""}
 `;
 }
 
@@ -172,7 +197,10 @@ export type AdaptivePaginationMeasurement = {
 };
 
 export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasurement {
-  const pageHeight = (297 / 25.4) * 96;
+  const mode: IntelligentPaginationMode =
+    document.documentElement.dataset.mfcvPaginationMode === "aggressive" ? "aggressive" : "normal";
+  const maxRecoveredLines = mode === "aggressive" ? 3 : 1;
+  const pageHeightFallback = (297 / 25.4) * 96;
   const elements = Array.from(document.querySelectorAll("p, li"));
   const getLines = (element: Element): Array<{ top: number; text: string }> => {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
@@ -197,40 +225,131 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
     }
     return lines;
   };
-
-  let marked = 0;
+  const getPageHeight = (): number => {
+    const page = document.querySelector(".page");
+    const minHeight = page ? Number.parseFloat(getComputedStyle(page).minHeight) : Number.NaN;
+    return Number.isFinite(minHeight) && minHeight > 0 ? minHeight : pageHeightFallback;
+  };
+  const spillCount = (lines: Array<{ top: number; text: string }>, pageHeight: number): number => {
+    if (lines.length < 2) return 0;
+    const firstPage = Math.floor((lines[0].top + 1) / pageHeight);
+    const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
+    if (lastPage <= firstPage) return 0;
+    return lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length;
+  };
+  const snapshot = (): { totalSpill: number; spillingElements: number } => {
+    const pageHeight = getPageHeight();
+    let totalSpill = 0;
+    let spillingElements = 0;
+    for (const element of elements) {
+      if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+      const spill = spillCount(getLines(element), pageHeight);
+      if (spill > 0) {
+        totalSpill += spill;
+        spillingElements += 1;
+      }
+    }
+    return { totalSpill, spillingElements };
+  };
+  const appendTrialStyle = (css: string): HTMLStyleElement => {
+    const style = document.createElement("style");
+    style.dataset.mfcvPaginationTrial = "true";
+    style.textContent = css;
+    document.head.appendChild(style);
+    return style;
+  };
+  const trialCss = (options?: { extendPage?: boolean; tightenHeadings?: boolean }): string => {
+    const aggressive = mode === "aggressive";
+    const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
+    const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
+    const lineHeight = aggressive ? "1.22" : "1.3";
+    const pageExtension = aggressive ? "2.5mm" : "0.75mm";
+    return `${options?.tightenHeadings ? `h2, h3, .section-title, hr, .name-divider { margin-block-start: 0 !important; margin-block-end: ${aggressive ? "0.35em" : "0.55em"} !important; padding-block-end: ${aggressive ? "0.2em" : "0.35em"} !important; }` : ""}
+[data-mfcv-tighten-wrap] { letter-spacing: ${letterSpacing}; word-spacing: ${wordSpacing}; }
+[data-mfcv-tighten-line] { line-height: ${lineHeight} !important; }
+${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); margin-bottom: calc(12mm - ${pageExtension}); } .page { min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension}); }` : ""}`;
+  };
+  const baseline = snapshot();
+  if (mode === "normal") {
+    let wraps = 0;
+    let lineTightens = 0;
+    for (const element of elements) {
+      if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+      const lines = getLines(element);
+      if (lines.length < 2) continue;
+      const currentSpill = spillCount(lines, getPageHeight());
+      const originalStyle = element.getAttribute("style");
+      const styledElement = element as HTMLElement;
+      styledElement.style.letterSpacing = "-0.01em";
+      styledElement.style.wordSpacing = "-0.025em";
+      const tightenedLines = getLines(element);
+      if (originalStyle === null) element.removeAttribute("style");
+      else element.setAttribute("style", originalStyle);
+      if (tightenedLines.length < lines.length) {
+        element.setAttribute("data-mfcv-tighten-wrap", "true");
+        wraps += 1;
+      }
+      if (currentSpill === 1) {
+        element.setAttribute("data-mfcv-tighten-line", "true");
+        lineTightens += 1;
+      }
+    }
+    return { marked: wraps + lineTightens, wraps, spills: baseline.spillingElements };
+  }
+  if (baseline.totalSpill === 0) return { marked: 0, wraps: 0, spills: 0 };
+  let tightenHeadings = false;
+  let extendPage = false;
+  const headingBefore = baseline.totalSpill;
+  const headingTrial = appendTrialStyle(trialCss({ tightenHeadings: true }));
+  if (snapshot().totalSpill < headingBefore) tightenHeadings = true;
+  else headingTrial.remove();
+  const extensionBefore = snapshot().totalSpill;
+  const extensionTrial = appendTrialStyle(trialCss({ extendPage: true }));
+  if (snapshot().totalSpill < extensionBefore) extendPage = true;
+  else extensionTrial.remove();
   let wraps = 0;
-  let spills = 0;
   for (const element of elements) {
     if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
     const lines = getLines(element);
-    if (lines.length < 2) continue;
-
+    const currentSpill = spillCount(lines, getPageHeight());
+    if (lines.length < 2 || currentSpill === 0 || currentSpill > maxRecoveredLines) continue;
     const originalStyle = element.getAttribute("style");
     const styledElement = element as HTMLElement;
-    styledElement.style.letterSpacing = "-0.01em";
-    styledElement.style.wordSpacing = "-0.025em";
+    styledElement.style.letterSpacing = mode === "aggressive" ? "-0.0125em" : "-0.01em";
+    styledElement.style.wordSpacing = mode === "aggressive" ? "-0.035em" : "-0.025em";
     const tightenedLines = getLines(element);
     if (originalStyle === null) element.removeAttribute("style");
     else element.setAttribute("style", originalStyle);
-
-    const unwrapsLine = tightenedLines.length < lines.length;
-    const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
-    const previousPage = Math.floor((lines[lines.length - 2].top + 1) / pageHeight);
-    const spillsOneLine =
-      lastPage > previousPage &&
-      lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length === 1;
-    if (unwrapsLine) {
+    if (spillCount(tightenedLines, getPageHeight()) < currentSpill) {
       element.setAttribute("data-mfcv-tighten-wrap", "true");
       wraps += 1;
     }
-    if (spillsOneLine) {
-      element.setAttribute("data-mfcv-tighten-line", "true");
-      spills += 1;
-    }
-    if (unwrapsLine || spillsOneLine) marked += 1;
   }
-  return { marked, wraps, spills };
+  const adaptiveTrial = appendTrialStyle(trialCss({ tightenHeadings, extendPage }));
+  let lineTightens = 0;
+  for (const element of elements) {
+    if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+    const lines = getLines(element);
+    const currentSpill = spillCount(lines, getPageHeight());
+    if (lines.length < 2 || currentSpill === 0 || currentSpill > maxRecoveredLines) continue;
+    const originalStyle = element.getAttribute("style");
+    const styledElement = element as HTMLElement;
+    styledElement.style.lineHeight = mode === "aggressive" ? "1.22" : "1.3";
+    const tightenedLines = getLines(element);
+    if (originalStyle === null) element.removeAttribute("style");
+    else element.setAttribute("style", originalStyle);
+    if (spillCount(tightenedLines, getPageHeight()) < currentSpill) {
+      element.setAttribute("data-mfcv-tighten-line", "true");
+      lineTightens += 1;
+    }
+  }
+  adaptiveTrial.remove();
+  const finalSnapshot = snapshot();
+  return {
+    marked: wraps + lineTightens + (tightenHeadings || extendPage ? 1 : 0),
+    wraps,
+    spills: finalSnapshot.spillingElements,
+  };
 }
 
 export function injectPrintTweakStyles(html: string, tweakCss: string): string {

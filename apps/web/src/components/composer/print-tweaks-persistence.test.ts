@@ -74,6 +74,7 @@ describe("print-tweaks-persistence", () => {
     });
     expect(parsed).toEqual({
       intelligentPagination: true,
+      intelligentPaginationMode: "normal",
       removePhoto: true,
       removePageCount: true,
       moveSkillsLeft: true,

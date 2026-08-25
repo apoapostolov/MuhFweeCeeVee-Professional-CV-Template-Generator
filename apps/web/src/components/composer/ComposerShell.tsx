@@ -106,11 +106,13 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               onOpenPdf={c.openPdf}
               onSelectPhotoMode={c.setSelectedPhotoMode}
               onPrintTweakChange={c.setPrintTweakEnabled}
+              onPrintPaginationModeChange={c.setPrintPaginationMode}
               onPrintTextScaleEnabledChange={c.setPrintTextScaleEnabled}
               onPrintTextScaleStep={c.adjustPrintTextScale}
               onPrintTextScaleValueChange={c.setPrintTextScaleValue}
               printTweaks={{
                 intelligentPagination: c.printTweakIntelligentPagination,
+                intelligentPaginationMode: c.printTweakIntelligentPaginationMode,
                 removePhoto: c.printTweakRemovePhoto,
                 removePageCount: c.printTweakRemovePageCount,
                 moveSkillsLeft: c.printTweakMoveSkillsLeft,
@@ -283,6 +285,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               defaultPhotoMode={c.selectedPhotoMode}
               defaultPrintTweaks={{
                 intelligentPagination: c.printTweakIntelligentPagination,
+                intelligentPaginationMode: c.printTweakIntelligentPaginationMode,
                 removePhoto: c.printTweakRemovePhoto,
                 removePageCount: c.printTweakRemovePageCount,
                 moveSkillsLeft: c.printTweakMoveSkillsLeft,

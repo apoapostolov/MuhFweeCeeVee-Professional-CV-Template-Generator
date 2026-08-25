@@ -62,7 +62,7 @@ export type PrintTweakId =
   | "removePageCount";
 
 export const PRINT_TWEAK_OPTIONS: Array<{ id: PrintTweakId; label: string }> = [
-  { id: "intelligentPagination", label: "Intelligent Pagination" },
+  { id: "intelligentPagination", label: "Smart Pagination" },
   { id: "removePhoto", label: "Remove Photo" },
   { id: "moveSkillsLeft", label: "Skills Moved to Sidebar" },
   { id: "removePageCount", label: "Remove Page Count" },
@@ -85,8 +85,11 @@ export {
   PRINT_TEXT_SCALE_STEP,
 } from "@/lib/print-text-scale";
 
+export type IntelligentPaginationMode = "normal" | "aggressive";
+
 export type PrintTweaksState = {
   intelligentPagination: boolean;
+  intelligentPaginationMode: IntelligentPaginationMode;
   removePhoto: boolean;
   removePageCount: boolean;
   moveSkillsLeft: boolean;
@@ -103,6 +106,9 @@ export function appendPrintTweakParams(
 ): void {
   if (tweaks.intelligentPagination) {
     params.set("pagination", "smart");
+    if (tweaks.intelligentPaginationMode === "aggressive") {
+      params.set("paginationMode", "aggressive");
+    }
   }
   if (tweaks.removePhoto) {
     params.set("removePhoto", "1");

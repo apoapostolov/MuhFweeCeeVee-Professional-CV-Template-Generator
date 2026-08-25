@@ -57,10 +57,16 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
         await page.setContent(html, { waitUntil: "networkidle" });
         if (tweaks.intelligentPagination) {
+          const paginationMode = tweaks.intelligentPaginationMode ?? "normal";
+          await page.evaluate((mode) => {
+            document.documentElement.dataset.mfcvPaginationMode = mode;
+          }, paginationMode);
           const adaptiveMeasurement = await page.evaluate(measureAndMarkAdaptivePagination);
           const adaptiveCount = adaptiveMeasurement.marked;
           if (adaptiveCount > 0) {
-            await page.addStyleTag({ content: buildAdaptivePaginationCss() });
+            await page.addStyleTag({
+              content: buildAdaptivePaginationCss(paginationMode),
+            });
           }
         }
         const rawPdf = await page.pdf({

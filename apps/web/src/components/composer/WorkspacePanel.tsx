@@ -31,6 +31,7 @@ export type WorkspacePanelProps = {
   onSelectPhotoMode: (mode: PhotoModeOption["id"]) => void;
   printTweaks: PrintTweaksState;
   onPrintTweakChange: (tweakId: PrintTweakId, enabled: boolean) => void;
+  onPrintPaginationModeChange: (mode: "normal" | "aggressive") => void;
   onPrintTextScaleEnabledChange: (target: "sidebar" | "content", enabled: boolean) => void;
   onPrintTextScaleValueChange: (target: "sidebar" | "content", value: number) => void;
   onPrintTextScaleStep: (target: "sidebar" | "content", direction: -1 | 1) => void;
@@ -59,6 +60,7 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     onSelectPhotoMode,
     printTweaks,
     onPrintTweakChange,
+    onPrintPaginationModeChange,
     onPrintTextScaleEnabledChange,
     onPrintTextScaleValueChange,
     onPrintTextScaleStep,
@@ -193,6 +195,17 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
                       type="checkbox"
                     />
                     <span className="min-w-0">{option.label}</span>
+                    {option.id === "intelligentPagination" && checked ? (
+                      <select
+                        aria-label="Smart Pagination mode"
+                        className="ml-auto w-28 rounded border border-[var(--line)] bg-[var(--surface-1)] px-1.5 py-1 text-[11px] font-normal"
+                        onChange={(event) => onPrintPaginationModeChange(event.target.value as "normal" | "aggressive")}
+                        value={printTweaks.intelligentPaginationMode}
+                      >
+                        <option value="normal">Normal</option>
+                        <option value="aggressive">Aggressive</option>
+                      </select>
+                    ) : null}
                   </label>
                 );
               })}

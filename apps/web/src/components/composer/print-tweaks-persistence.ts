@@ -16,6 +16,7 @@ export type PrintTweaksByScopeStore = Record<string, PrintTweaksState>;
 
 export const DEFAULT_PRINT_TWEAKS_STATE: PrintTweaksState = {
   intelligentPagination: false,
+  intelligentPaginationMode: "normal",
   removePhoto: false,
   removePageCount: false,
   moveSkillsLeft: false,
@@ -73,6 +74,7 @@ export function parsePrintTweaksState(value: unknown): PrintTweaksState | null {
   const record = value as Record<string, unknown>;
   return {
     intelligentPagination: asBoolean(record.intelligentPagination),
+    intelligentPaginationMode: record.intelligentPaginationMode === "aggressive" ? "aggressive" : "normal",
     removePhoto: asBoolean(record.removePhoto),
     removePageCount: asBoolean(record.removePageCount),
     moveSkillsLeft: asBoolean(record.moveSkillsLeft),
@@ -111,6 +113,7 @@ export function readLegacyGlobalPrintTweaks(
   try {
     return {
       intelligentPagination: false,
+      intelligentPaginationMode: "normal",
       removePhoto: storage.getItem(STORAGE_KEYS.printTweakRemovePhoto) === "1",
       removePageCount: false,
       moveSkillsLeft:
@@ -216,6 +219,7 @@ export function writePrintTweaksForScope(
   const store = readPrintTweaksByScopeStore(storage);
   store[key] = {
     intelligentPagination: Boolean(tweaks.intelligentPagination),
+    intelligentPaginationMode: tweaks.intelligentPaginationMode,
     removePhoto: Boolean(tweaks.removePhoto),
     removePageCount: Boolean(tweaks.removePageCount),
     moveSkillsLeft: Boolean(tweaks.moveSkillsLeft),

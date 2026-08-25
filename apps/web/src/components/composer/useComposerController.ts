@@ -219,6 +219,8 @@ export function useComposerController() {
   >("default");
   const [printTweakIntelligentPagination, setPrintTweakIntelligentPagination] =
     useState(false);
+  const [printTweakIntelligentPaginationMode, setPrintTweakIntelligentPaginationMode] =
+    useState<"normal" | "aggressive">("normal");
   const [printTweakRemovePhoto, setPrintTweakRemovePhoto] = useState(false);
   const [printTweakRemovePageCount, setPrintTweakRemovePageCount] = useState(false);
   const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
@@ -506,6 +508,7 @@ export function useComposerController() {
       params,
       {
         intelligentPagination: printTweakIntelligentPagination,
+        intelligentPaginationMode: printTweakIntelligentPaginationMode,
         removePhoto: printTweakRemovePhoto,
         removePageCount: printTweakRemovePageCount,
         moveSkillsLeft: printTweakMoveSkillsLeft,
@@ -525,6 +528,7 @@ export function useComposerController() {
     selectedTemplateThemeOptions.length,
     selectedPhotoMode,
     printTweakIntelligentPagination,
+    printTweakIntelligentPaginationMode,
     printTweakRemovePhoto,
     printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
@@ -794,6 +798,7 @@ export function useComposerController() {
       }
       if (cancelled) return;
       setPrintTweakIntelligentPagination(restored.intelligentPagination);
+      setPrintTweakIntelligentPaginationMode(restored.intelligentPaginationMode);
       setPrintTweakRemovePhoto(restored.removePhoto);
       setPrintTweakRemovePageCount(restored.removePageCount);
       setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
@@ -823,6 +828,7 @@ export function useComposerController() {
           language: printTweaksScope.language,
           tweaks: {
             intelligentPagination: printTweakIntelligentPagination,
+            intelligentPaginationMode: printTweakIntelligentPaginationMode,
             removePhoto: printTweakRemovePhoto,
             removePageCount: printTweakRemovePageCount,
             moveSkillsLeft: printTweakMoveSkillsLeft,
@@ -838,6 +844,7 @@ export function useComposerController() {
   }, [
     printTweaksScope,
     printTweakIntelligentPagination,
+    printTweakIntelligentPaginationMode,
     printTweakRemovePhoto,
     printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
@@ -2984,6 +2991,10 @@ export function useComposerController() {
     setPreviewNonce(Date.now());
   }
 
+  function setPrintPaginationMode(mode: "normal" | "aggressive"): void {
+    setPrintTweakIntelligentPaginationMode(mode);
+  }
+
   function setPrintTextScaleEnabled(
     target: "sidebar" | "content",
     enabled: boolean,
@@ -3338,6 +3349,7 @@ export function useComposerController() {
     selectedPhotoMode,
     setSelectedPhotoMode,
     printTweakIntelligentPagination,
+    printTweakIntelligentPaginationMode,
     printTweakRemovePhoto,
     printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
@@ -3346,6 +3358,7 @@ export function useComposerController() {
     printTweakContentTextScaleEnabled,
     printTweakContentTextScale,
     setPrintTweakEnabled,
+    setPrintPaginationMode,
     setPrintTextScaleEnabled,
     setPrintTextScaleValue,
     adjustPrintTextScale,
