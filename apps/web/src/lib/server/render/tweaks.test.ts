@@ -79,6 +79,9 @@ describe("render tweaks", () => {
     expect(css).toContain(".sidebar > section, .left > section");
     expect(css).toContain(".content > section, .right > section");
     expect(css).toContain("break-after: avoid");
+    expect(css).toContain("letter-spacing: -0.01em");
+    expect(css).toContain("word-spacing: -0.025em");
+    expect(css).toContain("line-height: 1.3");
     expect(css).toContain("orphans: 3");
     expect(buildIntelligentPaginationCss("harvard-v1", {
       intelligentPagination: false,
