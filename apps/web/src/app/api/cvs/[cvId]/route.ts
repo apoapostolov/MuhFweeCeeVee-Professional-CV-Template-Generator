@@ -120,7 +120,7 @@ export async function PUT(
 
 function normalizeTweakPatch(value: Record<string, unknown>): Record<string, unknown> {
   const patch = { ...value };
-  for (const key of ["intelligentPagination", "removePhoto", "moveSkillsLeft", "sidebarTextScaleEnabled", "contentTextScaleEnabled"]) {
+  for (const key of ["intelligentPagination", "removePhoto", "removePageCount", "moveSkillsLeft", "sidebarTextScaleEnabled", "contentTextScaleEnabled"]) {
     if (key in patch) patch[key] = patch[key] === true || patch[key] === 1 || patch[key] === "1" || patch[key] === "true";
   }
   for (const key of ["sidebarTextScale", "contentTextScale"]) {

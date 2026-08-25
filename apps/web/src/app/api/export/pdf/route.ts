@@ -35,13 +35,14 @@ export async function GET(request: Request): Promise<NextResponse> {
         ReturnType<(typeof import("playwright"))["chromium"]["launch"]>
       > | null = null;
       try {
+        const tweaks = parseRenderTweaks(url.searchParams);
         const { html, metadata } = await buildCvTemplateHtml({
           cvId,
           templateId,
           theme,
           photoMode,
           profilePhotoId,
-          tweaks: parseRenderTweaks(url.searchParams),
+          tweaks,
         });
         const { chromium } = await import("playwright");
         browser = await chromium.launch({ headless: true });
@@ -50,7 +51,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         const rawPdf = await page.pdf({
           format: "A4",
           printBackground: true,
-          displayHeaderFooter: true,
+          displayHeaderFooter: !tweaks.removePageCount,
           headerTemplate: "<div></div>",
           footerTemplate:
             '<div style=\"font-size:10px;color:#6b7280;width:100%;padding:0 24px;text-align:right;\"><span class=\"pageNumber\"></span> / <span class=\"totalPages\"></span></div>',

@@ -65,6 +65,7 @@ describe("print-tweaks-persistence", () => {
     const parsed = parsePrintTweaksState({
       intelligentPagination: "1",
       removePhoto: true,
+      removePageCount: true,
       moveSkillsLeft: "1",
       sidebarTextScaleEnabled: false,
       sidebarTextScale: 999,
@@ -74,6 +75,7 @@ describe("print-tweaks-persistence", () => {
     expect(parsed).toEqual({
       intelligentPagination: true,
       removePhoto: true,
+      removePageCount: true,
       moveSkillsLeft: true,
       sidebarTextScaleEnabled: false,
       sidebarTextScale: 200,

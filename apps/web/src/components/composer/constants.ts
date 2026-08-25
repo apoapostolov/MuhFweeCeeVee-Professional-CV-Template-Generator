@@ -58,12 +58,14 @@ export const TEMPLATES_WITH_LEFT_SIDEBAR = new Set([
 export type PrintTweakId =
   | "intelligentPagination"
   | "removePhoto"
-  | "moveSkillsLeft";
+  | "moveSkillsLeft"
+  | "removePageCount";
 
 export const PRINT_TWEAK_OPTIONS: Array<{ id: PrintTweakId; label: string }> = [
   { id: "intelligentPagination", label: "Intelligent Pagination" },
   { id: "removePhoto", label: "Remove Photo" },
   { id: "moveSkillsLeft", label: "Skills Moved to Sidebar" },
+  { id: "removePageCount", label: "Remove Page Count" },
 ];
 
 export function templateSupportsPrintTweaks(templateId: string): boolean {
@@ -86,6 +88,7 @@ export {
 export type PrintTweaksState = {
   intelligentPagination: boolean;
   removePhoto: boolean;
+  removePageCount: boolean;
   moveSkillsLeft: boolean;
   sidebarTextScaleEnabled: boolean;
   sidebarTextScale: number;
@@ -103,6 +106,9 @@ export function appendPrintTweakParams(
   }
   if (tweaks.removePhoto) {
     params.set("removePhoto", "1");
+  }
+  if (tweaks.removePageCount) {
+    params.set("removePageCount", "1");
   }
   if (tweaks.moveSkillsLeft && templateSupportsPrintTweaks(templateId)) {
     params.set("moveSkillsLeft", "1");

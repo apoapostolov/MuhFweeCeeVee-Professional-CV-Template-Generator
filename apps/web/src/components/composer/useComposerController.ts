@@ -15,6 +15,7 @@ import {
   PRINT_TEXT_SCALE_DEFAULT,
   STORAGE_KEYS,
   themeOptionsForTemplate,
+  type PrintTweakId,
 } from "@/components/composer/constants";
 import { stepPrintTextScale } from "@/components/composer/print-text-scale-pill";
 import {
@@ -219,6 +220,7 @@ export function useComposerController() {
   const [printTweakIntelligentPagination, setPrintTweakIntelligentPagination] =
     useState(false);
   const [printTweakRemovePhoto, setPrintTweakRemovePhoto] = useState(false);
+  const [printTweakRemovePageCount, setPrintTweakRemovePageCount] = useState(false);
   const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
   const [printTweakSidebarTextScaleEnabled, setPrintTweakSidebarTextScaleEnabled] =
     useState(false);
@@ -505,6 +507,7 @@ export function useComposerController() {
       {
         intelligentPagination: printTweakIntelligentPagination,
         removePhoto: printTweakRemovePhoto,
+        removePageCount: printTweakRemovePageCount,
         moveSkillsLeft: printTweakMoveSkillsLeft,
         sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
         sidebarTextScale: printTweakSidebarTextScale,
@@ -523,6 +526,7 @@ export function useComposerController() {
     selectedPhotoMode,
     printTweakIntelligentPagination,
     printTweakRemovePhoto,
+    printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
     printTweakSidebarTextScaleEnabled,
     printTweakSidebarTextScale,
@@ -791,6 +795,7 @@ export function useComposerController() {
       if (cancelled) return;
       setPrintTweakIntelligentPagination(restored.intelligentPagination);
       setPrintTweakRemovePhoto(restored.removePhoto);
+      setPrintTweakRemovePageCount(restored.removePageCount);
       setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
       setPrintTweakSidebarTextScaleEnabled(restored.sidebarTextScaleEnabled);
       setPrintTweakSidebarTextScale(restored.sidebarTextScale);
@@ -819,6 +824,7 @@ export function useComposerController() {
           tweaks: {
             intelligentPagination: printTweakIntelligentPagination,
             removePhoto: printTweakRemovePhoto,
+            removePageCount: printTweakRemovePageCount,
             moveSkillsLeft: printTweakMoveSkillsLeft,
             sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
             sidebarTextScale: printTweakSidebarTextScale,
@@ -833,6 +839,7 @@ export function useComposerController() {
     printTweaksScope,
     printTweakIntelligentPagination,
     printTweakRemovePhoto,
+    printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
     printTweakSidebarTextScaleEnabled,
     printTweakSidebarTextScale,
@@ -2961,14 +2968,13 @@ export function useComposerController() {
     window.open(url.toString(), "_blank", "noopener,noreferrer");
   }
 
-  function setPrintTweakEnabled(
-    tweakId: "intelligentPagination" | "removePhoto" | "moveSkillsLeft",
-    enabled: boolean,
-  ): void {
+  function setPrintTweakEnabled(tweakId: PrintTweakId, enabled: boolean): void {
     if (tweakId === "intelligentPagination") {
       setPrintTweakIntelligentPagination(enabled);
     } else if (tweakId === "removePhoto") {
       setPrintTweakRemovePhoto(enabled);
+    } else if (tweakId === "removePageCount") {
+      setPrintTweakRemovePageCount(enabled);
     } else {
       setPrintTweakMoveSkillsLeft(enabled);
     }
@@ -3330,6 +3336,7 @@ export function useComposerController() {
     setSelectedPhotoMode,
     printTweakIntelligentPagination,
     printTweakRemovePhoto,
+    printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
     printTweakSidebarTextScaleEnabled,
     printTweakSidebarTextScale,

@@ -17,6 +17,7 @@ export type PrintTweaksByScopeStore = Record<string, PrintTweaksState>;
 export const DEFAULT_PRINT_TWEAKS_STATE: PrintTweaksState = {
   intelligentPagination: false,
   removePhoto: false,
+  removePageCount: false,
   moveSkillsLeft: false,
   sidebarTextScaleEnabled: false,
   sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -73,6 +74,7 @@ export function parsePrintTweaksState(value: unknown): PrintTweaksState | null {
   return {
     intelligentPagination: asBoolean(record.intelligentPagination),
     removePhoto: asBoolean(record.removePhoto),
+    removePageCount: asBoolean(record.removePageCount),
     moveSkillsLeft: asBoolean(record.moveSkillsLeft),
     sidebarTextScaleEnabled: asBoolean(
       record.sidebarTextScaleEnabled ?? record.sidebarTextScaleActive,
@@ -110,6 +112,7 @@ export function readLegacyGlobalPrintTweaks(
     return {
       intelligentPagination: false,
       removePhoto: storage.getItem(STORAGE_KEYS.printTweakRemovePhoto) === "1",
+      removePageCount: false,
       moveSkillsLeft:
         storage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1",
       sidebarTextScaleEnabled:
@@ -214,6 +217,7 @@ export function writePrintTweaksForScope(
   store[key] = {
     intelligentPagination: Boolean(tweaks.intelligentPagination),
     removePhoto: Boolean(tweaks.removePhoto),
+    removePageCount: Boolean(tweaks.removePageCount),
     moveSkillsLeft: Boolean(tweaks.moveSkillsLeft),
     sidebarTextScaleEnabled: Boolean(tweaks.sidebarTextScaleEnabled),
     sidebarTextScale: clampPrintTextScale(tweaks.sidebarTextScale),

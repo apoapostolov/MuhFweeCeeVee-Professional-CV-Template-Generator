@@ -9,6 +9,7 @@ import {
 export type RenderTweaks = {
   intelligentPagination: boolean;
   removePhoto: boolean;
+  removePageCount: boolean;
   moveSkillsLeft: boolean;
   sidebarTextScale: number;
   sidebarTextScaleActive: boolean;
@@ -19,6 +20,7 @@ export type RenderTweaks = {
 export const DEFAULT_RENDER_TWEAKS: RenderTweaks = {
   intelligentPagination: false,
   removePhoto: false,
+  removePageCount: false,
   moveSkillsLeft: false,
   sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
   sidebarTextScaleActive: false,
@@ -62,6 +64,7 @@ export function parseRenderTweaks(
   return {
     intelligentPagination: searchParams.get("pagination") === "smart",
     removePhoto: readTruthyFlag(searchParams, "removePhoto"),
+    removePageCount: readTruthyFlag(searchParams, "removePageCount"),
     moveSkillsLeft: readTruthyFlag(searchParams, "moveSkillsLeft"),
     sidebarTextScale: parsePrintTextScaleParam(searchParams, "sidebarTextScale"),
     sidebarTextScaleActive: searchParams.get("sidebarTextScale") !== null,
@@ -75,6 +78,9 @@ export function buildPrintTextScaleCss(
   tweaks: RenderTweaks,
 ): string {
   const rules: string[] = [];
+  if (tweaks.removePageCount) {
+    rules.push(".page-footer { display: none !important; }");
+  }
   const sidebarZoom = tweaks.sidebarTextScale / 100;
   const contentZoom = tweaks.contentTextScale / 100;
 

@@ -112,6 +112,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               printTweaks={{
                 intelligentPagination: c.printTweakIntelligentPagination,
                 removePhoto: c.printTweakRemovePhoto,
+                removePageCount: c.printTweakRemovePageCount,
                 moveSkillsLeft: c.printTweakMoveSkillsLeft,
                 sidebarTextScaleEnabled: c.printTweakSidebarTextScaleEnabled,
                 sidebarTextScale: c.printTweakSidebarTextScale,
@@ -283,6 +284,7 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               defaultPrintTweaks={{
                 intelligentPagination: c.printTweakIntelligentPagination,
                 removePhoto: c.printTweakRemovePhoto,
+                removePageCount: c.printTweakRemovePageCount,
                 moveSkillsLeft: c.printTweakMoveSkillsLeft,
                 sidebarTextScale: c.printTweakSidebarTextScale,
                 sidebarTextScaleActive: c.printTweakSidebarTextScaleEnabled,

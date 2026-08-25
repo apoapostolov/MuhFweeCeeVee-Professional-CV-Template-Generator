@@ -18,7 +18,7 @@ import { readCv } from "./cvStore";
 import { getPhotoBoothItem } from "./photoGalleryStore";
 import { buildCvTemplateHtml } from "./renderCvTemplate";
 import { repoPath } from "./repoPaths";
-import type { RenderTweaks } from "./render/tweaks";
+import { DEFAULT_RENDER_TWEAKS, type RenderTweaks } from "./render/tweaks";
 import {
   findResearchedCompany,
   findResearchedJobPosition,
@@ -109,12 +109,13 @@ async function renderPdf(input: {
   photoMode?: string;
   tweaks?: RenderTweaks;
 }): Promise<Uint8Array> {
+  const tweaks = input.tweaks ?? DEFAULT_RENDER_TWEAKS;
   const { html, metadata } = await buildCvTemplateHtml({
     cvId: input.cvId,
     templateId: input.templateId,
     theme: input.theme,
     photoMode: input.photoMode,
-    tweaks: input.tweaks,
+    tweaks,
     profilePhotoId: input.photoId,
   });
   const { chromium } = await import("playwright");
@@ -125,7 +126,7 @@ async function renderPdf(input: {
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
-      displayHeaderFooter: true,
+      displayHeaderFooter: !tweaks.removePageCount,
       headerTemplate: "<div></div>",
       footerTemplate:
         '<div style="font-size:10px;color:#6b7280;width:100%;padding:0 24px;text-align:right;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',

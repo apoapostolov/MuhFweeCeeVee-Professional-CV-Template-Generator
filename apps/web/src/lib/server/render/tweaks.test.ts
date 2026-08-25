@@ -21,6 +21,7 @@ describe("render tweaks", () => {
       true,
     );
     expect(parseRenderTweaks(new URLSearchParams("removePhoto=true")).removePhoto).toBe(true);
+    expect(parseRenderTweaks(new URLSearchParams("removePageCount=1")).removePageCount).toBe(true);
     expect(parseRenderTweaks(new URLSearchParams("pagination=smart")).intelligentPagination).toBe(true);
     expect(parseRenderTweaks(new URLSearchParams("pagination=off")).intelligentPagination).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).moveSkillsLeft).toBe(false);
@@ -49,6 +50,7 @@ describe("render tweaks", () => {
     const tweaks = {
       intelligentPagination: false,
       removePhoto: false,
+      removePageCount: true,
       moveSkillsLeft: false,
       sidebarTextScale: 90,
       sidebarTextScaleActive: true,
@@ -60,12 +62,14 @@ describe("render tweaks", () => {
     expect(css).toContain("zoom: 0.9");
     expect(css).toContain("main.content");
     expect(css).toContain("zoom: 1.05");
+    expect(css).toContain(".page-footer { display: none !important; }");
   });
 
   it("builds conservative pagination css for both regions", () => {
     const css = buildIntelligentPaginationCss("harvard-v1", {
       intelligentPagination: true,
       removePhoto: false,
+      removePageCount: false,
       moveSkillsLeft: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
@@ -79,6 +83,7 @@ describe("render tweaks", () => {
     expect(buildIntelligentPaginationCss("harvard-v1", {
       intelligentPagination: false,
       removePhoto: false,
+      removePageCount: false,
       moveSkillsLeft: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
@@ -91,6 +96,7 @@ describe("render tweaks", () => {
     const enabled = {
       intelligentPagination: false,
       removePhoto: false,
+      removePageCount: false,
       moveSkillsLeft: true,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
@@ -103,6 +109,7 @@ describe("render tweaks", () => {
       shouldMoveSkillsLeft("harvard-v1", {
         intelligentPagination: false,
         removePhoto: false,
+        removePageCount: false,
         moveSkillsLeft: false,
         sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
         sidebarTextScaleActive: false,
@@ -115,6 +122,7 @@ describe("render tweaks", () => {
   it("forces photo mode off when removePhoto is enabled", () => {
     const baseTweaks = {
       intelligentPagination: false,
+      removePageCount: false,
       moveSkillsLeft: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
