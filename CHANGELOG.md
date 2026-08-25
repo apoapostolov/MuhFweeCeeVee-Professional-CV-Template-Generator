@@ -22,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Smart Pagination in Print Room.** Print Room now gives you two ways to handle a crowded page:
-  - **Normal.** Makes a small, measured compaction to rescue a single line break when it can.
+- **Smart Pagination in Print Room.** Print layout measures actual font line boxes at every main-area scale and reclaims spacing only when the measured text block unwraps a line. It now gives you two ways to handle a crowded page:
+  - **Normal.** Uses a light, measured touch to rescue a single line break when it can.
   - **Aggressive.** Also tightens heading and separator spacing, opens a little extra page room, and uses stronger line compaction to recover up to three lines.
   Large sections can flow across pages instead of leaving a big blank patch, while short orphan fragments are kept together when possible.
 - **Research feeds the rest of the loop.** A company and its roles carry through targeting, keyword checks, letters, applications, and print instead of living on isolated screens.
