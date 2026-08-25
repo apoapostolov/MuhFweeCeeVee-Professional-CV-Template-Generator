@@ -8,6 +8,7 @@ import {
   readLegacyGlobalPrintTweaks,
   readPrintTweaksByScopeStore,
   readPrintTweaksForScope,
+  readPrintTweaksFromCvDocument,
   writePrintTweaksForScope,
 } from "./print-tweaks-persistence";
 import { STORAGE_KEYS } from "./constants";
@@ -78,6 +79,32 @@ describe("print-tweaks-persistence", () => {
       sidebarTextScale: 200,
       contentTextScaleEnabled: true,
       contentTextScale: 50,
+    });
+  });
+
+  it("reads scoped tweaks from CV metadata", () => {
+    expect(
+      readPrintTweaksFromCvDocument(
+        {
+          metadata: {
+            print_tweaks: {
+              version: 1,
+              scopes: {
+                "harvard-v1": {
+                  en: {
+                    intelligentPagination: true,
+                    futureTweakExample: "keep me",
+                  },
+                },
+              },
+            },
+          },
+        },
+        { cvId: "cv_en", templateId: "harvard-v1", language: "en" },
+      ),
+    ).toEqual({
+      ...DEFAULT_PRINT_TWEAKS_STATE,
+      intelligentPagination: true,
     });
   });
 

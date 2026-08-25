@@ -21,7 +21,7 @@ import {
   isPrintTweaksScopeReady,
   printTweaksScopeKey,
   readPrintTweaksForScope,
-  writePrintTweaksForScope,
+  readPrintTweaksFromCvDocument,
 } from "@/components/composer/print-tweaks-persistence";
 import {
   isTemplatePathVisible,
@@ -764,7 +764,7 @@ export function useComposerController() {
     [printCvId, selectedTemplateId, selectedLanguage],
   );
   const printTweaksScopeKeyRef = useRef("");
-  const skipPrintTweaksPersistRef = useRef(false);
+  const printTweaksLoadedScopeRef = useRef("");
 
   useEffect(() => {
     if (!isPrintTweaksScopeReady(printTweaksScope)) {
@@ -776,35 +776,59 @@ export function useComposerController() {
       return;
     }
     printTweaksScopeKeyRef.current = nextKey;
-    skipPrintTweaksPersistRef.current = true;
-    const restored = readPrintTweaksForScope(printTweaksScope);
-    setPrintTweakIntelligentPagination(restored.intelligentPagination);
-    setPrintTweakRemovePhoto(restored.removePhoto);
-    setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
-    setPrintTweakSidebarTextScaleEnabled(restored.sidebarTextScaleEnabled);
-    setPrintTweakSidebarTextScale(restored.sidebarTextScale);
-    setPrintTweakContentTextScaleEnabled(restored.contentTextScaleEnabled);
-    setPrintTweakContentTextScale(restored.contentTextScale);
-    setPreviewNonce(Date.now());
+    printTweaksLoadedScopeRef.current = "";
+    let cancelled = false;
+    async function restorePrintTweaks(): Promise<void> {
+      let restored = readPrintTweaksForScope(printTweaksScope);
+      try {
+        const response = await fetch(`/api/cvs/${encodeURIComponent(printTweaksScope.cvId)}`);
+        const payload = (await response.json()) as { cv?: unknown };
+        const fromCv = response.ok ? readPrintTweaksFromCvDocument(payload.cv, printTweaksScope) : null;
+        if (fromCv) restored = fromCv;
+      } catch {
+        // Keep legacy local state when the YAML read is unavailable.
+      }
+      if (cancelled) return;
+      setPrintTweakIntelligentPagination(restored.intelligentPagination);
+      setPrintTweakRemovePhoto(restored.removePhoto);
+      setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
+      setPrintTweakSidebarTextScaleEnabled(restored.sidebarTextScaleEnabled);
+      setPrintTweakSidebarTextScale(restored.sidebarTextScale);
+      setPrintTweakContentTextScaleEnabled(restored.contentTextScaleEnabled);
+      setPrintTweakContentTextScale(restored.contentTextScale);
+      printTweaksLoadedScopeRef.current = nextKey;
+      setPreviewNonce(Date.now());
+    }
+    void restorePrintTweaks();
+    return () => {
+      cancelled = true;
+    };
   }, [printTweaksScope]);
 
   useEffect(() => {
-    if (!isPrintTweaksScopeReady(printTweaksScope)) {
-      return;
-    }
-    if (skipPrintTweaksPersistRef.current) {
-      skipPrintTweaksPersistRef.current = false;
-      return;
-    }
-    writePrintTweaksForScope(printTweaksScope, {
-      intelligentPagination: printTweakIntelligentPagination,
-      removePhoto: printTweakRemovePhoto,
-      moveSkillsLeft: printTweakMoveSkillsLeft,
-      sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
-      sidebarTextScale: printTweakSidebarTextScale,
-      contentTextScaleEnabled: printTweakContentTextScaleEnabled,
-      contentTextScale: printTweakContentTextScale,
-    });
+    if (!isPrintTweaksScopeReady(printTweaksScope)) return;
+    const scopeKey = printTweaksScopeKey(printTweaksScope);
+    if (printTweaksLoadedScopeRef.current !== scopeKey) return;
+    const handle = window.setTimeout(() => {
+      void fetch(`/api/cvs/${encodeURIComponent(printTweaksScope.cvId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          templateId: printTweaksScope.templateId,
+          language: printTweaksScope.language,
+          tweaks: {
+            intelligentPagination: printTweakIntelligentPagination,
+            removePhoto: printTweakRemovePhoto,
+            moveSkillsLeft: printTweakMoveSkillsLeft,
+            sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
+            sidebarTextScale: printTweakSidebarTextScale,
+            contentTextScaleEnabled: printTweakContentTextScaleEnabled,
+            contentTextScale: printTweakContentTextScale,
+          },
+        }),
+      }).catch(() => undefined);
+    }, 250);
+    return () => window.clearTimeout(handle);
   }, [
     printTweaksScope,
     printTweakIntelligentPagination,

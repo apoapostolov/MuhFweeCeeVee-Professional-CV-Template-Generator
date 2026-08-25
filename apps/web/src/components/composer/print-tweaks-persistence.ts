@@ -35,6 +35,23 @@ export function isPrintTweaksScopeReady(scope: PrintTweaksScope): boolean {
   return Boolean(scope.cvId.trim() && scope.templateId.trim());
 }
 
+export function readPrintTweaksFromCvDocument(
+  cv: unknown,
+  scope: PrintTweaksScope,
+): PrintTweaksState | null {
+  if (!cv || typeof cv !== "object" || !isPrintTweaksScopeReady(scope)) return null;
+  const metadata = (cv as Record<string, unknown>).metadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  const printTweaks = (metadata as Record<string, unknown>).print_tweaks;
+  if (!printTweaks || typeof printTweaks !== "object" || Array.isArray(printTweaks)) return null;
+  const scopes = (printTweaks as Record<string, unknown>).scopes;
+  if (!scopes || typeof scopes !== "object" || Array.isArray(scopes)) return null;
+  const templateScopes = (scopes as Record<string, unknown>)[scope.templateId.trim()];
+  if (!templateScopes || typeof templateScopes !== "object" || Array.isArray(templateScopes)) return null;
+  const values = (templateScopes as Record<string, unknown>)[scope.language.trim().toLowerCase() || "en"];
+  return parsePrintTweaksState(values);
+}
+
 function asBoolean(value: unknown, fallback = false): boolean {
   if (typeof value === "boolean") {
     return value;

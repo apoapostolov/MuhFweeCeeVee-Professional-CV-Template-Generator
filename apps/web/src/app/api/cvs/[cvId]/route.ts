@@ -5,6 +5,7 @@ import { assertApiAuthorized } from "@/lib/server/apiAuth";
 
 import { analyzeCvCompatibility } from "@/lib/server/cvCompatibility";
 import { isSupportedLanguage } from "@/lib/server/cvVariants";
+import { clampPrintTextScale } from "@/lib/print-text-scale";
 import {
   deleteCv,
   ensureLanguageVariant,
@@ -115,6 +116,78 @@ export async function PUT(
       { status: 500 },
     );
   }
+}
+
+function normalizeTweakPatch(value: Record<string, unknown>): Record<string, unknown> {
+  const patch = { ...value };
+  for (const key of ["intelligentPagination", "removePhoto", "moveSkillsLeft", "sidebarTextScaleEnabled", "contentTextScaleEnabled"]) {
+    if (key in patch) patch[key] = patch[key] === true || patch[key] === 1 || patch[key] === "1" || patch[key] === "true";
+  }
+  for (const key of ["sidebarTextScale", "contentTextScale"]) {
+    if (key in patch) patch[key] = clampPrintTextScale(Number(patch[key]));
+  }
+  return patch;
+}
+
+export async function PATCH(
+  request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const denied = assertApiAuthorized(request);
+  if (denied) return denied;
+  const { cvId } = await context.params;
+  const body = (await request.json()) as {
+    templateId?: unknown;
+    language?: unknown;
+    tweaks?: unknown;
+  };
+  const templateId = typeof body.templateId === "string" ? body.templateId.trim() : "";
+  const language = typeof body.language === "string" ? body.language.trim().toLowerCase() : "";
+  if (!templateId || !/^[a-z0-9][a-z0-9._-]{1,79}$/i.test(templateId) || !isSupportedLanguage(language)) {
+    return NextResponse.json({ error: "templateId and supported language are required." }, { status: 400 });
+  }
+  if (!body.tweaks || typeof body.tweaks !== "object" || Array.isArray(body.tweaks)) {
+    return NextResponse.json({ error: "tweaks must be an object." }, { status: 400 });
+  }
+  const cv = await readCv(cvId);
+  if (!cv) return NextResponse.json({ error: "CV not found." }, { status: 404 });
+  const metadata = cv.metadata && typeof cv.metadata === "object" && !Array.isArray(cv.metadata)
+    ? cv.metadata as Record<string, unknown>
+    : {};
+  const currentPrintTweaks = metadata.print_tweaks && typeof metadata.print_tweaks === "object" && !Array.isArray(metadata.print_tweaks)
+    ? metadata.print_tweaks as Record<string, unknown>
+    : {};
+  const currentScopes = currentPrintTweaks.scopes && typeof currentPrintTweaks.scopes === "object" && !Array.isArray(currentPrintTweaks.scopes)
+    ? currentPrintTweaks.scopes as Record<string, unknown>
+    : {};
+  const currentTemplateScopes = currentScopes[templateId] && typeof currentScopes[templateId] === "object" && !Array.isArray(currentScopes[templateId])
+    ? currentScopes[templateId] as Record<string, unknown>
+    : {};
+  const currentScope = currentTemplateScopes[language] && typeof currentTemplateScopes[language] === "object" && !Array.isArray(currentTemplateScopes[language])
+    ? currentTemplateScopes[language] as Record<string, unknown>
+    : {};
+  const next = {
+    ...currentScope,
+    ...normalizeTweakPatch(body.tweaks as Record<string, unknown>),
+  };
+  await writeCv(cvId, {
+    ...cv,
+    metadata: {
+      ...metadata,
+      print_tweaks: {
+        ...currentPrintTweaks,
+        version: typeof currentPrintTweaks.version === "number" ? currentPrintTweaks.version : 1,
+        scopes: {
+          ...currentScopes,
+          [templateId]: {
+            ...currentTemplateScopes,
+            [language]: next,
+          },
+        },
+      },
+    },
+  }, { createSnapshot: false });
+  return NextResponse.json({ ok: true, cvId, templateId, language, tweaks: next });
 }
 
 export async function DELETE(
