@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 
 import { applyTemplateVisibility, readTemplateVisibility } from "@/lib/cvTemplateVisibility";
 import { readCv } from "./cvStore";
+import { readAuxiliaryApiKey } from "./auxiliaryServices";
 
 export type AiDetectionScope = {
   id: string;
@@ -102,7 +103,7 @@ function resultBase(provider: AiDetectionResult["provider"], url: string, item: 
 
 async function detectSapling(item: AiDetectionScope): Promise<AiDetectionResult> {
   const result = resultBase("sapling", "https://api.sapling.ai/api/v1/aidetect", item);
-  const key = process.env.MFCV_SAPLING_API_KEY?.trim();
+  const key = await readAuxiliaryApiKey("sapling");
   if (!key) return { ...result, notes: "Sapling API key is not configured." };
   if (!item.text) return { ...result, status: "invalid", notes: "Scope has no text." };
   try {
@@ -115,7 +116,7 @@ async function detectSapling(item: AiDetectionScope): Promise<AiDetectionResult>
 
 async function detectGptZero(item: AiDetectionScope): Promise<AiDetectionResult> {
   const result = resultBase("gptzero", "https://api.gptzero.me/v2/predict/text", item);
-  const key = process.env.MFCV_GPTZERO_API_KEY?.trim();
+  const key = await readAuxiliaryApiKey("gptzero");
   if (!key) return { ...result, notes: "GPTZero API key is not configured." };
   try {
     const response = await fetch(result.providerUrl, { method: "POST", headers: { "x-api-key": key, "content-type": "application/json" }, body: JSON.stringify({ document: item.text }), signal: AbortSignal.timeout(30000) });

@@ -2,6 +2,7 @@
 
 import type { JSX } from "react";
 
+import { AuxiliaryServicesCard } from "./AuxiliaryServicesCard";
 import { SettingsDataBackupCard } from "./SettingsDataBackupCard";
 import { SettingsInterfaceLanguageCard } from "./SettingsInterfaceLanguageCard";
 import { AiProviderSettingsCard } from "./AiProviderSettingsCard";
@@ -113,10 +114,7 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
         </div>
       </article>
 
-      <article
-        aria-hidden
-        className={`${SETTINGS_COLUMN_CLASS} hidden bg-[var(--surface-1)] lg:flex`}
-      />
+      <AuxiliaryServicesCard uiLanguage={uiLanguage} />
     </div>
   );
 }
