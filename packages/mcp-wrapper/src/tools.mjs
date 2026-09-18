@@ -567,7 +567,14 @@ export function registerTools(server) {
       officeCity: z.string().optional(),
       officeLabel: z.string().optional(),
     },
-    async (body) => toTextContent(await requestJson("POST", "/research/companies/research", { body })),
+    async (body) => toTextContent(await requestJson("POST", "/research/companies/enrich", {
+      body: {
+        ...body,
+        stages: ["identity", "office", "hiring", "people", "linkedin_jobs"],
+        useWebSearch: false,
+        forceRefresh: false,
+      },
+    })),
   );
 
   server.tool(

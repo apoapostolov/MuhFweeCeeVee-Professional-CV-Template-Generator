@@ -36,7 +36,7 @@ import { readCodexOAuthAccessToken, readCodexOAuthCredentials } from "./openaiCo
 
 const MAX_TOOL_ROUNDS = 8;
 const MAX_TOOL_CALLS = 25;
-const TURN_TIMEOUT_MS = 60_000;
+const TURN_TIMEOUT_MS = 120_000;
 
 const PANEL_TOOL_TERMS: Record<string, string[]> = {
   workspace: ["cv", "template", "preview", "export", "photo"],
