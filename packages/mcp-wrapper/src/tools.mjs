@@ -74,6 +74,21 @@ function normalizeApplicationImportPacket(value) {
     embeds,
   };
 }
+
+function normalizeLanguageCode(value) {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : value;
+  const aliases = {
+    english: "en",
+    bulgarian: "bg",
+    german: "de",
+    french: "fr",
+    spanish: "es",
+    italian: "it",
+    portuguese: "pt",
+    dutch: "nl",
+  };
+  return typeof normalized === "string" ? aliases[normalized] || normalized : normalized;
+}
 const RETIRED_KEYWORDS_MESSAGE =
   "Keyword Studio was retired in v1.1.0. Use Research job weighted keywords and Editor Job Targeting instead.";
 
@@ -352,7 +367,14 @@ export function registerTools(server) {
       sourceLanguage: z.string().min(2),
       targetLanguage: z.string().min(2),
     },
-    async (body) => toTextContent(await requestJson("POST", "/cvs/sync", { body })),
+    async (body) =>
+      toTextContent(await requestJson("POST", "/cvs/sync", {
+        body: {
+          ...body,
+          sourceLanguage: normalizeLanguageCode(body.sourceLanguage),
+          targetLanguage: normalizeLanguageCode(body.targetLanguage),
+        },
+      })),
   );
 
   server.tool(
@@ -367,7 +389,13 @@ export function registerTools(server) {
       text: z.string(),
       fieldLabel: z.string().optional(),
     },
-    async (body) => toTextContent(await requestJson("POST", "/cvs/translate-field", { body })),
+    async (body) =>
+      toTextContent(await requestJson("POST", "/cvs/translate-field", {
+        body: {
+          ...body,
+          targetLanguage: normalizeLanguageCode(body.targetLanguage),
+        },
+      })),
   );
 
   server.tool("list_templates", "List available templates.", {}, async () =>
