@@ -130,6 +130,63 @@ describe("resolveAssistantApproval", () => {
     expect(await store.listAudit("session_test")).toHaveLength(2);
   });
 
+  it("expires an approval at the expiry boundary without executing", async () => {
+    const store = await ledger();
+    const tools = mcp();
+    await store.create(proposal());
+    const result = await resolveAssistantApproval(
+      { proposalId: "approval_test", decision: "approve", context },
+      {
+        ledger: store,
+        mcp: tools,
+        secret: SECRET,
+        now: Date.parse("2026-07-29T12:05:00.000Z"),
+      },
+    );
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: "approval_resolved", status: "expired" }),
+    );
+    expect(tools.callTool).not.toHaveBeenCalled();
+  });
+  it("marks an approval stale when the mutation target no longer exists", async () => {
+    const store = await ledger();
+    const tools = mcp();
+    tools.callTool.mockImplementation(async (name: string) => {
+      if (name === "get_cv") throw new Error("404 CV target not found");
+      return { ok: true, saved: true };
+    });
+    await store.create(proposal());
+    const result = await resolveAssistantApproval(
+      { proposalId: "approval_test", decision: "approve", context },
+      { ledger: store, mcp: tools, secret: SECRET, now: Date.parse("2026-07-29T12:01:00.000Z") },
+    );
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: "approval_resolved", status: "stale" }),
+    );
+    expect(tools.callTool).toHaveBeenCalledWith("get_cv", { cvId: "cv_en_john_doe" });
+    expect(tools.callTool).not.toHaveBeenCalledWith("save_cv", expect.anything(), expect.anything());
+  });
+  it("marks approved mutations failed when the MCP result contains an API error", async () => {
+    const store = await ledger();
+    const tools = mcp();
+    tools.callTool.mockImplementation(async (name: string) =>
+      name === "get_cv"
+        ? { cv: before }
+        : { content: "API PUT /cvs/cv_en_john_doe failed (422): validation error" },
+    );
+    await store.create(proposal());
+    const result = await resolveAssistantApproval(
+      { proposalId: "approval_test", decision: "approve", context },
+      { ledger: store, mcp: tools, secret: SECRET, now: Date.parse("2026-07-29T12:01:00.000Z") },
+    );
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: "approval_resolved", status: "failed" }),
+    );
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: "tool_failed", code: "APPROVED_TOOL_FAILED" }),
+    );
+    expect(result.events.some((event) => event.type === "tool_succeeded")).toBe(false);
+  });
   it("rejects without executing and invalidates a changed target", async () => {
     const rejectedStore = await ledger();
     const rejectedTools = mcp();

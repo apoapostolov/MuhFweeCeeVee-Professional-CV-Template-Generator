@@ -95,14 +95,28 @@ export async function PUT(
   }
 
   const { cvId } = await context.params;
-  const body = (await request.json()) as { cv?: unknown };
+  const body = (await request.json()) as {
+    cv?: unknown;
+    allowIncomplete?: unknown;
+  };
   const validation = validateCvV1(body.cv);
 
-  if (!validation.valid) {
+  if (!validation.valid && body.allowIncomplete !== true) {
     return NextResponse.json(
       { error: "cv payload failed validation.", issues: validation.issues },
       { status: 422 },
     );
+  }
+
+  if (!validation.valid && body.allowIncomplete === true) {
+    const existing = await readCv(cvId);
+    const existingValidation = validateCvV1(existing);
+    if (!existing || existingValidation.valid || !body.cv || typeof body.cv !== "object" || Array.isArray(body.cv)) {
+      return NextResponse.json(
+        { error: "cv payload failed validation.", issues: validation.issues },
+        { status: 422 },
+      );
+    }
   }
 
   try {
@@ -112,6 +126,8 @@ export async function PUT(
     return NextResponse.json({
       ok: true,
       cvId,
+      draft: !validation.valid,
+      validationIssues: validation.valid ? [] : validation.issues,
       git: await getCvGitVersionInfo(cvId),
     });
   } catch (error) {

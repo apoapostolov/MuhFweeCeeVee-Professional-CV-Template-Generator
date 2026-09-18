@@ -10,6 +10,7 @@ import {
   deleteApplication,
   duplicateApplication,
   findApplicationDuplicates,
+  findImportedPacketDuplicate,
   importApplicationPacket,
   isApplicationPacketFile,
   packetCompleteness,
@@ -175,16 +176,28 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
     try {
+      const board = await readApplicationBoard();
+      const duplicate = findImportedPacketDuplicate(body.packet, board.applications);
+      if (duplicate) {
+        return NextResponse.json({
+          ok: true,
+          applications: board.applications,
+          application: duplicate,
+          restored: [],
+          deduplicated: true,
+        });
+      }
       const resolved = await restorePacketEmbeds(body.packet, {
         restoreCv: body.restoreCv !== false,
         restoreLetter: body.restoreLetter !== false,
       });
-      const { board, application } = await importApplicationPacket(body.packet, resolved);
+      const { board: updatedBoard, application } = await importApplicationPacket(body.packet, resolved);
       return NextResponse.json({
         ok: true,
-        applications: board.applications,
+        applications: updatedBoard.applications,
         application,
         restored: resolved.restored,
+        deduplicated: false,
       });
     } catch (error) {
       return NextResponse.json(

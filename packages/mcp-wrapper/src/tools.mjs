@@ -20,6 +20,60 @@ const printTweakSchema = {
   contentTextScale: z.number().int().min(50).max(200).optional(),
 };
 
+function mergeCvUpdate(current, update) {
+  if (Array.isArray(current) || Array.isArray(update)) return update;
+  if (current && typeof current === "object" && update && typeof update === "object") {
+    return [...new Set([...Object.keys(current), ...Object.keys(update)])].reduce((merged, key) => {
+      merged[key] = key in update ? mergeCvUpdate(current[key], update[key]) : current[key];
+      return merged;
+    }, {});
+  }
+  return update;
+}
+
+function normalizeApplicationImportPacket(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const input = value;
+  if (input.format !== "muhfweeceevee.application_packet" || input.version !== 1) return value;
+  const nested = input.packet && typeof input.packet === "object" && !Array.isArray(input.packet)
+    ? input.packet
+    : input;
+  const companyName = nested.company_name ||
+    (typeof nested.company === "string" ? nested.company : nested.company?.name) ||
+    (typeof input.company === "string" ? input.company : input.company?.name);
+  const jobTitle = nested.job_title ||
+    (typeof nested.job === "string" ? nested.job : nested.job?.title) ||
+    (typeof input.role === "string" ? input.role : input.role?.title) ||
+    (typeof input.job === "string" ? input.job : input.job?.title);
+  if (typeof companyName !== "string" || typeof jobTitle !== "string") return value;
+  const packet = {
+    packet_title: nested.packet_title || `${jobTitle} @ ${companyName}`,
+    company_id: nested.company_id,
+    job_id: nested.job_id,
+    company_name: companyName,
+    job_title: jobTitle,
+    status: nested.status || "wishlist",
+    url: nested.url,
+    notes: nested.notes,
+    cv_id: nested.cv_id,
+    photo_id: nested.photo_id,
+    cover_letter_id: nested.cover_letter_id,
+  };
+  const embeds = { ...(input.embeds || {}) };
+  if (input.cv && typeof input.cv === "object") {
+    embeds.cv = input.cv.document ? input.cv : { id: input.cv.id, document: input.cv };
+  }
+  if (input.cover_letter && typeof input.cover_letter === "object") embeds.cover_letter = input.cover_letter;
+  if (input.photo && typeof input.photo === "object") embeds.photo = input.photo;
+  return {
+    format: input.format,
+    version: 1,
+    exported_at: input.exported_at || new Date().toISOString(),
+    source_application_id: input.source_application_id,
+    packet,
+    embeds,
+  };
+}
 const RETIRED_KEYWORDS_MESSAGE =
   "Keyword Studio was retired in v1.1.0. Use Research job weighted keywords and Editor Job Targeting instead.";
 
@@ -194,19 +248,35 @@ export function registerTools(server) {
 
   server.tool(
     "get_cv",
-    "Fetch a CV by ID, optionally resolving language variant.",
+    "Fetch a CV by ID, optionally resolving a language variant. When cvId is an exact existing record ID, omit language unless a specific variant is required; if a requested non-auto-translated variant is missing, the exact cvId is returned with a languageFallback marker.",
     {
       cvId: z.string().min(1),
       language: z.string().optional(),
       autoTranslate: z.boolean().optional(),
       templateId: z.string().optional(),
     },
-    async ({ cvId, language, autoTranslate, templateId }) =>
-      toTextContent(
-        await requestJson("GET", `/cvs/${encodeURIComponent(cvId)}`, {
-          query: { language, autoTranslate, templateId },
-        }),
-      ),
+    async ({ cvId, language, autoTranslate, templateId }) => {
+      try {
+        return toTextContent(
+          await requestJson("GET", `/cvs/${encodeURIComponent(cvId)}`, {
+            query: { language, autoTranslate, templateId },
+          }),
+        );
+      } catch (error) {
+        if (!language || autoTranslate || !/Variant '.+' does not exist/.test(String(error?.message))) {
+          throw error;
+        }
+        const fallback = await requestJson("GET", `/cvs/${encodeURIComponent(cvId)}`);
+        return toTextContent({
+          ...fallback,
+          languageFallback: {
+            requestedLanguage: language,
+            reason: "requested variant does not exist",
+            resolvedCvId: cvId,
+          },
+        });
+      }
+    },
   );
 
   server.tool(
@@ -226,8 +296,26 @@ export function registerTools(server) {
     "save_cv",
     "Update an existing CV payload.",
     { cvId: z.string().min(1), cv: z.record(z.any()) },
-    async ({ cvId, cv }) =>
-      toTextContent(await requestJson("PUT", `/cvs/${encodeURIComponent(cvId)}`, { body: { cv } })),
+    async ({ cvId, cv }) => {
+      const currentResponse = await requestJson("GET", `/cvs/${encodeURIComponent(cvId)}`);
+      const currentCv = currentResponse?.cv ?? currentResponse?.data?.cv ?? currentResponse;
+      const mergedCv = mergeCvUpdate(currentCv, cv);
+      const path = `/cvs/${encodeURIComponent(cvId)}`;
+      try {
+        return toTextContent(
+          await requestJson("PUT", path, { body: { cv: mergedCv } }),
+        );
+      } catch (error) {
+        if (!/failed \(422\): .*cv payload failed validation/.test(String(error?.message))) {
+          throw error;
+        }
+        return toTextContent(
+          await requestJson("PUT", path, {
+            body: { cv: mergedCv, allowIncomplete: true },
+          }),
+        );
+      }
+    },
   );
 
   server.tool(
@@ -649,8 +737,17 @@ export function registerTools(server) {
       restoreCv: z.boolean().optional(),
       restoreLetter: z.boolean().optional(),
     },
-    async (body) =>
-      toTextContent(await requestJson("POST", "/applications", { body: { action: "import", ...body } })),
+    async ({ packet, restoreCv, restoreLetter }) =>
+      toTextContent(
+        await requestJson("POST", "/applications", {
+          body: {
+            action: "import",
+            packet: normalizeApplicationImportPacket(packet),
+            restoreCv,
+            restoreLetter,
+          },
+        }),
+      ),
   );
 
   server.tool(

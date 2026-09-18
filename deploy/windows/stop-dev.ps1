@@ -20,7 +20,7 @@ if (-not $rootProcess) {
 }
 
 $expectedNextPath = Join-Path $repoRoot "node_modules\next\dist\bin\next"
-if (-not $rootProcess.CommandLine.Contains($expectedNextPath)) {
+if ($rootProcess.CommandLine -and -not $rootProcess.CommandLine.Contains($expectedNextPath)) {
   throw "Tracked PID $rootPid is no longer this repository's Next.js process. Refusing to stop it."
 }
 

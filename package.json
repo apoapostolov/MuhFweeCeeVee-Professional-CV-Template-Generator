@@ -2,11 +2,17 @@
   "name": "muhfweeceevee",
   "version": "1.4.0",
   "private": true,
+  "allowScripts": {
+    "esbuild@0.27.7": true,
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.11.1": true
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "npx playwright install chromium",
     "bootstrap": "npm install --workspaces --include-workspace-root",
     "dev": "npm run dev --workspace @muhfweeceevee/web",
     "dev:web": "npm run dev --workspace @muhfweeceevee/web",

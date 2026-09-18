@@ -95,6 +95,7 @@ function readSpec(
     case "application_activity_add":
     case "application_contact_add":
     case "application_submission_create":
+    case "application_reuse_packet":
       return applicationId
         ? {
             toolName: "application_get",
@@ -151,7 +152,8 @@ function proposedValue(
   if (
     toolName === "application_activity_add" ||
     toolName === "application_contact_add" ||
-    toolName === "application_submission_create"
+    toolName === "application_submission_create" ||
+    toolName === "application_reuse_packet"
   ) {
     return { operation: args };
   }
@@ -218,6 +220,26 @@ async function readCurrentTarget(
   args: Record<string, unknown>,
   mcp: AssistantMcpProvider,
 ): Promise<unknown> {
+  if (toolName === "application_reuse_packet") {
+    const applicationId = args.id;
+    if (typeof applicationId !== "string" || !applicationId) return null;
+    try {
+      const applicationResult = await mcp.callTool("application_get", { applicationId });
+      const application = record(applicationResult)?.application;
+      const coverLetterId = record(application)?.cover_letter_id;
+      let coverLetter: unknown = null;
+      if (typeof coverLetterId === "string" && coverLetterId) {
+        const lettersResult = await mcp.callTool("cover_letters_list", {});
+        const items = record(lettersResult)?.items;
+        coverLetter = Array.isArray(items)
+          ? items.find((item) => record(item)?.id === coverLetterId) ?? null
+          : null;
+      }
+      return { application, coverLetter };
+    } catch {
+      return null;
+    }
+  }
   const spec = readSpec(toolName, args);
   if (!spec) return null;
   try {
@@ -229,6 +251,9 @@ async function readCurrentTarget(
 
 function reversibility(toolName: string, approvalKind: string): string {
   if (approvalKind === "destructive") {
+    if (toolName === "application_import_packet") {
+      return "The import can create or reuse an application record and may restore embedded CV or cover-letter files. Duplicate packets are deduplicated before restoration.";
+    }
     return toolName === "cover_letter_delete_version"
       ? "The live letter is unchanged, but the deleted snapshot cannot be restored."
       : "This deletion is not automatically reversible. Restore from a portable backup if available.";
@@ -289,7 +314,7 @@ export async function buildAssistantApprovalProposal(input: {
   mcp: AssistantMcpProvider;
   now?: number;
 }): Promise<AssistantApprovalProposal> {
-  const decision = decideAssistantToolPolicy(input.toolName);
+  const decision = decideAssistantToolPolicy(input.toolName, input.arguments);
   if (decision.action !== "require_approval") {
     throw new Error(`Tool "${input.toolName}" does not require approval.`);
   }

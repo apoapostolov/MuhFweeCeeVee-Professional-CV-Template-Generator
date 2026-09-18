@@ -886,6 +886,31 @@ export function isApplicationPacketFile(value: unknown): value is ApplicationPac
   return typeof p.company_name === "string" && typeof p.job_title === "string";
 }
 
+export function findImportedPacketDuplicate(
+  file: ApplicationPacketFile,
+  applications: Application[] = [],
+): Application | null {
+  const packet = file.packet;
+  const sourceId = file.source_application_id?.trim();
+  if (sourceId) {
+    const sourceMatch = applications.find((application) => application.id === sourceId);
+    if (sourceMatch) return sourceMatch;
+  }
+  const normalized = (value: unknown) => (typeof value === "string" ? value.trim().toLocaleLowerCase() : "");
+  const packetTitle = normalized(packet.packet_title);
+  const companyName = normalized(packet.company_name);
+  const jobTitle = normalized(packet.job_title);
+  const cvId = normalized(packet.cv_id);
+  return (
+    applications.find((application) =>
+      normalized(application.packet_title) === packetTitle &&
+      normalized(application.company_name) === companyName &&
+      normalized(application.job_title) === jobTitle &&
+      normalized(application.cv_id) === cvId,
+    ) ?? null
+  );
+}
+
 /**
  * Import a portable packet as a new board card.
  * Does not write CV/letter files — caller may restore embeds first and pass resolved ids.

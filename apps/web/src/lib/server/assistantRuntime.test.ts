@@ -9,6 +9,7 @@ import type { AssistantMcpProvider } from "./assistantMcpClient";
 import { AssistantApprovalLedger } from "./assistantApprovalLedger";
 import {
   runAssistantTurn,
+  selectAssistantToolsForTurn,
   type AssistantModelClient,
 } from "./assistantRuntime";
 
@@ -237,6 +238,33 @@ describe("runAssistantTurn", () => {
         toolName: "save_cv",
       }),
     );
+  });
+  it("keeps explicitly named tools inside the bounded inventory", () => {
+    const tools = [
+      "applications_list",
+      "application_update",
+      "application_import_packet",
+      "list_cvs",
+      "save_cv",
+      "translate_field",
+      "cover_letter_save",
+      "research_company_put",
+      "application_quick_intake",
+      "cv_sync",
+      "application_analytics",
+      "application_get",
+      "cover_letters_list",
+      "export_pdf_url",
+      "health_check",
+      "api_info",
+      "photo_list",
+    ].map((name) => ({ name, description: name, inputSchema: { type: "object" } }));
+    const selected = selectAssistantToolsForTurn(
+      tools,
+      "Create a plan using list_cvs and application inspection, but do not create replacement data.",
+      context,
+    ).map((tool) => tool.name);
+    expect(selected).toContain("list_cvs");
   });
 });
 import fs from "node:fs/promises";

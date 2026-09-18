@@ -17,12 +17,18 @@ import {
   type AssistantApprovalLedger,
 } from "./assistantApprovalLedger";
 import { buildAssistantApprovalProposal } from "./assistantMutationPreview";
-import { redactAssistantValue, wrapUntrustedAssistantToolResult } from "./assistantSecurity";
+import {
+  assistantToolResultFailureMessage,
+  boundAssistantValueForModel,
+  redactAssistantValue,
+  wrapUntrustedAssistantToolResult,
+} from "./assistantSecurity";
 import {
   decideAssistantToolPolicy,
   gateAssistantToolCall,
 } from "./assistantToolPolicy";
 import { getAiProvider } from "./aiProviderRegistry";
+import { writeAssistantDebug } from "./assistantDebugLog";
 import { readAiProviderKey, readAiSettingsDocument } from "./aiSettings";
 import { readOpenRouterSettings } from "./openRouterSettings";
 import { readXaiOAuthAccessToken } from "./xaiOAuth";
@@ -164,6 +170,8 @@ function systemPrompt(context: AssistantContextEnvelope): string {
     "Answer concise, practical questions about the user's local CV workspace.",
     "You may call only the tools provided. Read tools run immediately; guarded tools create a server-owned approval card and do not execute during this turn.",
     "When the user requests a change, call the relevant guarded tool with the complete intended arguments so the server can build a before/after preview.",
+    "For an existing cvId, use save_cv to update the existing CV. Use create_cv only when the user clearly asks for a new CV or variant.",
+    "For a narrow existing-CV field update, send only the changed nested fields in save_cv.cv. The server merges that patch into the current CV before saving; do not fetch and resend the entire CV unless the user asks for a full replacement.",
     "Never claim that a guarded operation ran until a later tool result confirms it. Never ask the user to approve in plain chat; the interface owns approval.",
     "Do not combine unrelated mutations. Propose one coherent operation at a time.",
     "When a request needs two or more meaningful operations, call assistant_create_plan before other tools. Keep the plan to 2-8 verifiable steps and update the user as execution progresses.",
@@ -258,7 +266,7 @@ export function selectAssistantToolsForTurn(
   const normalized = message.toLowerCase();
   const requestedTerms = [
     ["application", /application|appl(y|ied)|interview|offer|recruiter|follow.?up|funnel/],
-    ["cv", /\bcv\b|resume|history|variant|ats/],
+    ["cv", /\bcv(?:[_\s-]|id\b)|resume|history|variant|ats/],
     ["analysis", /analysis|score|ats/],
     ["research", /research|catalog|keyword|gap/],
     ["company", /company|companies|employer/],
@@ -271,6 +279,7 @@ export function selectAssistantToolsForTurn(
     ["evidence", /evidence|achievement|skill|project/],
     ["openrouter", /openrouter|model|credit|settings/],
     ["session_backup", /backup|restore|session/],
+    ["translate_field", /translate|translation|language/],
   ]
     .filter(([, pattern]) => (pattern as RegExp).test(normalized))
     .map(([term]) => term as string);
@@ -282,16 +291,34 @@ export function selectAssistantToolsForTurn(
     [...terms].some((term) => tool.name.includes(term)),
   );
   const mutationRequested =
-    /\b(save|update|change|create|add|delete|remove|archive|apply|draft|write|sync|translate|research|enrich)\b/.test(
+    /\b(save|update|change|create|add|delete|remove|archive|apply|draft|write|sync|translate|enrich|reuse|duplicate)\b/.test(
       normalized,
-    );
+    ) || /\b(application_update|application_upsert|application_submission_create|application_import_packet|application_reuse_packet|cover_letter_save|translate_field)\b/.test(normalized);
+  const readIntent = /\b(list|inspect|read|compare|extract|identify|find|check|summarize)\b/.test(normalized);
   return [...(selected.length > 0 ? selected : tools)]
     .sort((left, right) => {
       const score = (tool: AssistantMcpTool) => {
         const decision = decideAssistantToolPolicy(tool.name);
-        return mutationRequested && decision.action === "require_approval"
-          ? 1
-          : 0;
+        let priority = mutationRequested && decision.action === "require_approval" ? 1 : 0;
+        if (normalized.includes(tool.name)) priority += 1000;
+        if (readIntent && decision.action === "require_approval") priority -= 4;
+        if (readIntent && decision.action === "allow") priority += 1;
+        if (/\bkeyword/.test(normalized) && (tool.name.includes("keyword") || tool.name.includes("extract"))) priority += 5;
+        if (/\bgap/.test(normalized) && tool.name.includes("gap")) priority += 5;
+        if (/\bjob\b|job_/.test(normalized) && tool.name.includes("job_get")) priority += 5;
+        if (/\blist\b|\bshow\b|\bread\b/.test(normalized) && tool.name.includes("list")) priority += 3;
+        if (/\bcv(?:[_\s-]|id\b)|resume/.test(normalized) && tool.name.includes("cv")) priority += 3;
+        if (/\b(save|update|create)\b/.test(normalized) && tool.name.includes("save")) priority += 3;
+        if (/\bapplication/.test(normalized) && tool.name.includes("application")) priority += 3;
+        if (mutationRequested && /\bapplication/.test(normalized) && tool.name === "application_update") priority += 7;
+        if (mutationRequested && /\bapplication/.test(normalized) && tool.name === "application_submission_create") priority += 7;
+        if (mutationRequested && /\bapplication/.test(normalized) && tool.name === "application_import_packet") priority += 20;
+        if (mutationRequested && /\bapplication/.test(normalized) && tool.name === "application_reuse_packet") priority += 20;
+        if (mutationRequested && /\bcover.?letter/.test(normalized) && tool.name === "cover_letter_save") priority += 7;
+        if (/template/.test(normalized) && tool.name.includes("template")) priority += 3;
+        if (/cover.?letter/.test(normalized) && tool.name.includes("letter")) priority += 3;
+        if (/translate|translation|language/.test(normalized) && tool.name === "translate_field") priority += 12;
+        return priority;
       };
       return score(right) - score(left);
     })
@@ -387,10 +414,16 @@ export const configuredAssistantModel: AssistantModelClient = {
 
     if (provider.id === "openai-codex") {
       const credentials = await readCodexOAuthCredentials();
-      const input = messages.map((message) => {
-        if (message.role === "tool") return { type: "function_call_output", call_id: message.tool_call_id, output: message.content };
+      const input: Array<Record<string, unknown>> = messages.flatMap((message): Array<Record<string, unknown>> => {
+        if (message.role === "tool") return [{ type: "function_call_output", call_id: message.tool_call_id, output: message.content }];
         const role = message.role === "assistant" ? "assistant" : "user";
-        return { type: "message", role, content: [{ type: role === "assistant" ? "output_text" : "input_text", text: message.content ?? "" }] };
+        if (message.role === "assistant" && message.tool_calls?.length) {
+          return [
+            ...(message.content ? [{ type: "message", role, content: [{ type: "output_text", text: message.content }] }] : []),
+            ...message.tool_calls.map((call) => ({ type: "function_call", call_id: call.id, name: call.function.name, arguments: call.function.arguments })),
+          ];
+        }
+        return [{ type: "message", role, content: [{ type: role === "assistant" ? "output_text" : "input_text", text: message.content ?? "" }] }];
       });
       const instructions = messages.find((message) => message.role === "system")?.content;
       const response = await fetch("https://chatgpt.com/backend-api/codex/responses", {
@@ -400,14 +433,38 @@ export const configuredAssistantModel: AssistantModelClient = {
         body: JSON.stringify({ model: binding.modelId, store: false, stream: true, ...(instructions ? { instructions } : {}), input, tools: modelTools(tools).map((tool) => ({ type: "function", name: tool.function.name, description: tool.function.description, parameters: tool.function.parameters })), parallel_tool_calls: false }),
       });
       const raw = await response.text();
+      const transportEventTypes = raw
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith("data: "))
+        .map((line) => {
+          try {
+            return String((JSON.parse(line.slice(6)) as Record<string, unknown>).type ?? "unknown");
+          } catch {
+            return "invalid_json";
+          }
+        });
+      await writeAssistantDebug(id("model"), "model_transport", {
+        provider: "openai-codex",
+        status: response.status,
+        contentType: response.headers.get("content-type"),
+        bytes: raw.length,
+        transportEventTypes,
+      });
       if (!response.ok) throw new Error(`OpenAI Codex request failed with HTTP ${response.status}: ${raw}`);
       let text = "";
       const toolCalls: ModelToolCall[] = [];
       let usage: { inputTokens?: number; outputTokens?: number } = {};
+      const addFunctionCall = (call: Record<string, unknown>): void => {
+        if (call.type !== "function_call") return;
+        const name = String(call.name ?? "");
+        if (!name || toolCalls.some((existing) => existing.id === String(call.call_id ?? call.id ?? ""))) return;
+        toolCalls.push({ id: String(call.call_id ?? call.id ?? id("tool")), type: "function", function: { name, arguments: String(call.arguments ?? "{}") } });
+      };
       for (const line of raw.split(/\r?\n/)) {
         if (!line.startsWith("data: ")) continue;
         const event = JSON.parse(line.slice(6)) as Record<string, unknown>;
         if (event.type === "response.output_text.delta" && typeof event.delta === "string") text += event.delta;
+        if (event.type === "response.output_item.done" && event.item && typeof event.item === "object") addFunctionCall(event.item as Record<string, unknown>);
         if (event.type === "response.completed" && event.response && typeof event.response === "object") {
           const completed = event.response as Record<string, unknown>;
           const completedUsage = completed.usage && typeof completed.usage === "object" ? completed.usage as Record<string, unknown> : {};
@@ -417,7 +474,7 @@ export const configuredAssistantModel: AssistantModelClient = {
             if (!item || typeof item !== "object") continue;
             const call = item as Record<string, unknown>;
             if (call.type !== "function_call") continue;
-            toolCalls.push({ id: String(call.call_id ?? call.id ?? id("tool")), type: "function", function: { name: String(call.name ?? ""), arguments: String(call.arguments ?? "{}") } });
+            addFunctionCall(call);
           }
         }
       }
@@ -454,6 +511,7 @@ export async function runAssistantTurn(
   const mcp = dependencies.mcp ?? assistantMcpClient;
   const model = dependencies.model ?? openRouterAssistantModel;
   const approvalLedger = dependencies.ledger ?? assistantApprovalLedger;
+  const traceId = id("turn");
   const events: AssistantEvent[] = [];
   const emit = (event: AssistantEvent): void => {
     events.push(event);
@@ -467,6 +525,11 @@ export async function runAssistantTurn(
     timestamp: new Date().toISOString(),
   };
   emit(userMessage);
+  await writeAssistantDebug(traceId, "turn_start", {
+    sessionId: input.session.id,
+    message: input.message,
+    context: input.context,
+  });
 
   try {
     const allowedTools = (await mcp.listTools()).filter(
@@ -476,6 +539,10 @@ export async function runAssistantTurn(
       ASSISTANT_PLAN_TOOL,
       ...selectAssistantToolsForTurn(allowedTools, input.message, input.context),
     ];
+    await writeAssistantDebug(traceId, "tool_inventory", {
+      discovered: allowedTools.map((tool) => tool.name),
+      selected: tools.map((tool) => tool.name),
+    });
     const allowedNames = new Set(tools.map((tool) => tool.name));
     const messages: ModelMessage[] = [
       { role: "system", content: systemPrompt(input.context) },
@@ -496,10 +563,21 @@ export async function runAssistantTurn(
         return { events, status: "cancelled" };
       }
 
+      await writeAssistantDebug(traceId, "model_request", {
+        round: round + 1,
+        messages,
+        tools: tools.map((tool) => ({ name: tool.name, inputSchema: tool.inputSchema })),
+      });
       const completion = await model.complete({
         messages,
         tools,
         signal: turnSignal.signal,
+      });
+      await writeAssistantDebug(traceId, "model_response", {
+        round: round + 1,
+        model: completion.model,
+        usage: completion.usage,
+        message: completion.message,
       });
       totalInputTokens += completion.usage.inputTokens;
       totalOutputTokens += completion.usage.outputTokens;
@@ -610,6 +688,15 @@ export async function runAssistantTurn(
           targetDescription,
           timestamp: new Date().toISOString(),
         };
+        await writeAssistantDebug(traceId, "tool_decision", {
+          round: round + 1,
+          callId,
+          toolName,
+          arguments: arguments_,
+          action: policyDefinition.action,
+          targetDescription,
+          ...(policyDefinition.action === "block" ? { reason: policyDefinition.reason } : {}),
+        });
         emit({ type: "tool_preparing", ...base, arguments: arguments_ });
 
         if (toolDefinition && !toolArgumentsAreValid(toolDefinition, arguments_)) {
@@ -654,6 +741,11 @@ export async function runAssistantTurn(
             approvalId: proposal.id,
             result: "proposed",
           });
+          await writeAssistantDebug(traceId, "approval_required", {
+            proposal,
+            toolName,
+            arguments: arguments_,
+          });
           emit({ type: "approval_required", ...base, proposal });
           const messageId = id("message");
           emit({
@@ -697,20 +789,32 @@ export async function runAssistantTurn(
 
         emit({ type: "tool_running", ...base, arguments: arguments_ });
         try {
-          const result = wrapUntrustedAssistantToolResult(
-            await policyDefinition.execute(),
-          );
+          const rawResult = await policyDefinition.execute();
+          const failure = assistantToolResultFailureMessage(rawResult);
+          if (failure) throw new Error(failure);
+          const result = wrapUntrustedAssistantToolResult(rawResult);
+          const modelResult = boundAssistantValueForModel(result);
+          await writeAssistantDebug(traceId, "tool_succeeded", {
+            callId,
+            toolName,
+            result,
+          });
           emit({ type: "tool_succeeded", ...base, result });
           messages.push({
             role: "tool",
             tool_call_id: callId,
             name: toolName,
-            content: JSON.stringify(result),
+            content: JSON.stringify(modelResult),
           });
         } catch (error) {
           if (turnSignal.signal.aborted) throw error;
           const message =
             error instanceof Error ? error.message : "MCP tool call failed.";
+          await writeAssistantDebug(traceId, "tool_failed", {
+            callId,
+            toolName,
+            error: message,
+          });
           emit({
             type: "tool_failed",
             ...base,
@@ -732,6 +836,8 @@ export async function runAssistantTurn(
   } catch (error) {
     const cancelled = turnSignal.signal.aborted;
     if (!cancelled) {
+      const message = error instanceof Error ? error.message : "Assistant turn failed.";
+      await writeAssistantDebug(traceId, "turn_error", { message });
       emit({
         type: "turn_error",
         code: "ASSISTANT_TURN_FAILED",

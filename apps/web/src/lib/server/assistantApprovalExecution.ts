@@ -24,6 +24,7 @@ import {
   isAssistantApprovalTargetCurrent,
 } from "./assistantMutationPreview";
 import {
+  assistantToolResultFailureMessage,
   redactAssistantValue,
   wrapUntrustedAssistantToolResult,
 } from "./assistantSecurity";
@@ -137,7 +138,7 @@ export async function resolveAssistantApproval(
   }
 
   const now = dependencies.now ?? Date.now();
-  if (now > Date.parse(proposal.expiresAt)) {
+  if (now >= Date.parse(proposal.expiresAt)) {
     return terminal(
       proposal,
       "expired",
@@ -221,9 +222,10 @@ export async function resolveAssistantApproval(
     >,
   };
   try {
-    const result = wrapUntrustedAssistantToolResult(
-      await mcp.callTool(proposal.toolName, proposal.arguments),
-    );
+    const rawResult = await mcp.callTool(proposal.toolName, proposal.arguments);
+    const failure = assistantToolResultFailureMessage(rawResult);
+    if (failure) throw new Error(failure);
+    const result = wrapUntrustedAssistantToolResult(rawResult);
     const handoff = assistantHandoffForProposal(proposal);
     const events: AssistantEvent[] = [
       running,

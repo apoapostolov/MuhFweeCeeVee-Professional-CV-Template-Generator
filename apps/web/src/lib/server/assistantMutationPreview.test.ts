@@ -8,6 +8,7 @@ import type { AssistantMcpProvider } from "./assistantMcpClient";
 import {
   buildAssistantApprovalProposal,
   isAssistantApprovalContextCurrent,
+  isAssistantApprovalTargetCurrent,
 } from "./assistantMutationPreview";
 
 const context: AssistantContextEnvelope = {
@@ -48,6 +49,36 @@ describe("assistant mutation previews", () => {
     });
     expect(proposal.precondition.value).toBeTruthy();
     expect(proposal.expiresAt).toBe("2026-07-29T12:05:00.000Z");
+  });
+
+  it("invalidates reuse approvals when the linked cover letter changes", async () => {
+    let letterBody = "original";
+    const mcp: AssistantMcpProvider = {
+      listTools: vi.fn(async () => []),
+      reconnect: vi.fn(async () => undefined),
+      callTool: vi.fn(async (name) => {
+        if (name === "application_get") {
+          return { application: { id: "app_1", cv_id: "cv_1", cover_letter_id: "letter_1" } };
+        }
+        if (name === "cover_letters_list") {
+          return { items: [{ id: "letter_1", cv_id: "cv_1", body: letterBody }] };
+        }
+        throw new Error(`Unexpected tool ${name}`);
+      }),
+    };
+    const proposal = await buildAssistantApprovalProposal({
+      sessionId: "session_1",
+      callId: "call_reuse_1",
+      toolName: "application_reuse_packet",
+      arguments: { id: "app_1", overrides: { company_name: "New Company" } },
+      context,
+      mcp,
+      now: Date.parse("2026-07-29T12:00:00.000Z"),
+    });
+
+    expect(await isAssistantApprovalTargetCurrent(proposal, mcp)).toBe(true);
+    letterBody = "changed after preview";
+    expect(await isAssistantApprovalTargetCurrent(proposal, mcp)).toBe(false);
   });
 
   it("invalidates approvals for a changed scope or unsaved draft", () => {

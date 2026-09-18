@@ -37,6 +37,7 @@ const CONFIRMED_MANAGEMENT_TOOLS = new Set([
   "application_activity_add",
   "application_contact_add",
   "application_submission_create",
+  "application_import_packet",
   "application_quick_intake",
   "application_reuse_packet",
 ]);
@@ -45,13 +46,28 @@ export function isAssistantConfirmedManagementTool(toolName: string): boolean {
   return CONFIRMED_MANAGEMENT_TOOLS.has(toolName);
 }
 
-export function decideAssistantToolPolicy(toolName: string): AssistantPolicyDecision {
+export function decideAssistantToolPolicy(
+  toolName: string,
+  args: Record<string, unknown> = {},
+): AssistantPolicyDecision {
   const definition = getAssistantToolDefinition(toolName);
   if (!definition) {
     return {
       action: "block",
       code: "UNKNOWN_TOOL",
       reason: `Unknown MCP tool "${toolName}" is blocked by default.`,
+    };
+  }
+
+  if (toolName === "research_extract_keywords" && args.replace === true) {
+    return { action: "require_approval", approvalKind: "write", definition: { ...definition, class: "write" } };
+  }
+
+  if (toolName === "application_import_packet") {
+    return {
+      action: "require_approval",
+      approvalKind: "destructive",
+      definition: { ...definition, class: "destructive" },
     };
   }
 
@@ -138,7 +154,7 @@ export function gateAssistantToolCall(
   args: Record<string, unknown>,
   executor: () => Promise<unknown>,
 ): AssistantToolGateResult {
-  const decision = decideAssistantToolPolicy(toolName);
+  const decision = decideAssistantToolPolicy(toolName, args);
   if (decision.action === "block") {
     return decision;
   }
