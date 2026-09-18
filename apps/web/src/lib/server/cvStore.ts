@@ -491,19 +491,15 @@ export async function ensureLanguageVariant(
     return { cvId: requestedCvId, created: false };
   }
 
-  if (!options?.autoTranslate) {
-    throw new Error(`Variant '${requestedCvId}' does not exist.`);
-  }
-
   const source = await readCv(sourceCvId);
   if (!source) {
     throw new Error(`Source CV '${sourceCvId}' does not exist.`);
   }
 
   let cloned = cloneCvDocument(source);
-  let translationMode = "fallback-copy";
+  let translationMode = options?.autoTranslate ? "fallback-copy" : "source-copy-pending-translation";
   let translationStatus = "auto-generated-pending-review";
-  if (parsed.language !== normalizedTargetLanguage) {
+  if (options?.autoTranslate && parsed.language !== normalizedTargetLanguage) {
     try {
       const translated = await maybeTranslateCvDocument({
         sourceCv: source,
