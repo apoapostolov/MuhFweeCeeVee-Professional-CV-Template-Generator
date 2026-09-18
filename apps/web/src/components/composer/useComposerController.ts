@@ -46,6 +46,7 @@ import {
   setByPath,
 } from "@/components/composer/form-path-utils";
 import { collectEditorAtsTerms } from "@/lib/research/editor-ats-keywords";
+import { editorDraftFingerprint } from "@/components/composer/editor-draft-fingerprint";
 import { computeKeywordGap, type KeywordGapReport } from "@/lib/research/keywordGap";
 import { readCvTargeting, writeCvTargeting } from "@/lib/research/cvTargeting";
 import {
@@ -1378,13 +1379,17 @@ export function useComposerController() {
       const yaml = stringifyYamlWithVisibility(rest, editorPath, visibility);
       setSectionDraft(rest);
       setYamlDraft(yaml);
-      setEditorSavedFingerprint(yaml);
+      setEditorSavedFingerprint(
+        editorDraftFingerprint(editorViewRef.current, yaml, rest),
+      );
     } else {
       const visibility = readTemplateVisibility(editorCv);
       const yaml = stringifyYamlWithVisibility(section, editorPath, visibility);
       setSectionDraft(section);
       setYamlDraft(yaml);
-      setEditorSavedFingerprint(yaml);
+      setEditorSavedFingerprint(
+        editorDraftFingerprint(editorViewRef.current, yaml, section),
+      );
     }
   }, [editorCv, editorPath, editorLoading]);
 
@@ -1393,12 +1398,10 @@ export function useComposerController() {
     [editorPath, sectionDraft, yamlDraft],
   );
 
-  const editorSectionFingerprint = useMemo(() => {
-    if (editorView === "yaml") {
-      return yamlDraft;
-    }
-    return stringifyYaml(sectionFormDraft ?? {});
-  }, [editorView, yamlDraft, sectionFormDraft]);
+  const editorSectionFingerprint = useMemo(
+    () => editorDraftFingerprint(editorView, yamlDraft, sectionFormDraft),
+    [editorView, yamlDraft, sectionFormDraft],
+  );
 
   const editorHasUnsavedChanges = editorSectionFingerprint !== editorSavedFingerprint;
 
@@ -1430,17 +1433,18 @@ export function useComposerController() {
   }, [editorView, editorLoading, editorCv, editorPath, sectionDraft, sectionFormDraft]);
 
   function syncEditorSavedFingerprintFromDraft(): void {
-    const fingerprint =
-      editorViewRef.current === "yaml"
-        ? yamlDraftRef.current
-        : stringifyYaml(
-            resolveSectionDraftForForm(
-              editorPathRef.current,
-              sectionDraftRef.current,
-              yamlDraftRef.current,
-            ) ?? {},
-          );
-    setEditorSavedFingerprint(fingerprint);
+    const formDraft = resolveSectionDraftForForm(
+      editorPathRef.current,
+      sectionDraftRef.current,
+      yamlDraftRef.current,
+    );
+    setEditorSavedFingerprint(
+      editorDraftFingerprint(
+        editorViewRef.current,
+        yamlDraftRef.current,
+        formDraft,
+      ),
+    );
   }
 
   function setEditorFlatSubsectionsPreference(flat: boolean): void {
@@ -1521,13 +1525,18 @@ export function useComposerController() {
   }, [editorPath]);
 
   const handleEditorViewChange = useCallback((view: EditorViewMode) => {
+    const cleanBeforeViewChange = editorSectionFingerprint === editorSavedFingerprint;
+    const formDraft = resolveSectionDraftForForm(editorPath, sectionDraft, yamlDraft);
     if (view === "form") {
-      setSectionDraft((current: unknown) =>
-        resolveSectionDraftForForm(editorPath, current, yamlDraft),
+      setSectionDraft(formDraft);
+    }
+    if (cleanBeforeViewChange) {
+      setEditorSavedFingerprint(
+        editorDraftFingerprint(view, yamlDraft, formDraft),
       );
     }
     setEditorView(view);
-  }, [editorPath, yamlDraft]);
+  }, [editorPath, editorSavedFingerprint, editorSectionFingerprint, sectionDraft, yamlDraft]);
 
   function syncCompanyMetadataSavedFingerprintFromDraft(): void {
     const fingerprint =

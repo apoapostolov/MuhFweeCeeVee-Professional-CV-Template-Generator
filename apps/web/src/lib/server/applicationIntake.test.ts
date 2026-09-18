@@ -1,6 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { extractQuickIntake } from "./applicationIntake";
+const mocks = vi.hoisted(() => ({
+  readApplicationBoard: vi.fn(),
+  upsertApplication: vi.fn(),
+  readResearchCatalog: vi.fn(),
+  upsertResearchedCompany: vi.fn(),
+  upsertResearchedJobPosition: vi.fn(),
+}));
+
+vi.mock("./applicationStore", () => ({
+  normalizeApplicationUrl: (value: string | undefined) => value ?? "",
+  readApplicationBoard: mocks.readApplicationBoard,
+  upsertApplication: mocks.upsertApplication,
+}));
+
+vi.mock("./researchStore", () => ({
+  readResearchCatalog: mocks.readResearchCatalog,
+  upsertResearchedCompany: mocks.upsertResearchedCompany,
+  upsertResearchedJobPosition: mocks.upsertResearchedJobPosition,
+}));
+
+import { extractQuickIntake, quickIntakeApplication } from "./applicationIntake";
 
 describe("Quick Intake extraction", () => {
   it("extracts structured fields while preserving user overrides", () => {
@@ -34,5 +54,30 @@ describe("Quick Intake extraction", () => {
       companyName: "Northstar",
       jobTitle: "staff product designer",
     });
+  });
+});
+
+describe("quickIntakeApplication", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.readResearchCatalog.mockResolvedValue({
+      companies: [],
+      job_positions: [],
+    });
+    mocks.readApplicationBoard.mockResolvedValue({ applications: [] });
+    mocks.upsertApplication.mockImplementation(async (application) => ({
+      applications: [{ id: "application_1", ...application }],
+    }));
+  });
+
+  it("creates new quick-intake records in wishlist status", async () => {
+    const result = await quickIntakeApplication({
+      raw: "Company: Acme\nJob title: Systems Designer",
+    });
+
+    expect(mocks.upsertApplication).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "wishlist" }),
+    );
+    expect(result.application.status).toBe("wishlist");
   });
 });
