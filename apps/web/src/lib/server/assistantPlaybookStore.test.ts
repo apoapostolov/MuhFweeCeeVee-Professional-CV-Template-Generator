@@ -22,13 +22,22 @@ describe("AssistantPlaybookStore", () => {
     temporaryDirectories.push(directory);
     const store = new AssistantPlaybookStore(path.join(directory, "playbooks.json"));
 
-    expect((await store.list()).some((item) => item.id.startsWith("builtin_"))).toBe(true);
+    const builtIns = await store.list();
+    expect(builtIns).toHaveLength(26);
+    expect(builtIns.map((item) => item.id)).toEqual(
+      Array.from({ length: 26 }, (_, index) => `builtin_${index + 1}`),
+    );
+    expect(builtIns[0]?.title).toBe("Tailor a CV for this job");
+    expect(builtIns.at(-1)?.title).toBe("Prepare a portable workspace backup");
+    expect(new Set(builtIns.map((item) => item.title)).size).toBe(26);
     const saved = await store.create({
       title: "My follow-up",
       prompt: "Review applications that need a follow-up.",
       scopePanels: ["applications"],
     });
-    expect((await store.list()).find((item) => item.id === saved.id)?.prompt).toContain(
+    const withSaved = await store.list();
+    expect(withSaved[26]?.id).toBe(saved.id);
+    expect(withSaved.find((item) => item.id === saved.id)?.prompt).toContain(
       "follow-up",
     );
     expect(await store.remove(saved.id)).toBe(true);
