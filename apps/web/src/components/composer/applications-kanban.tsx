@@ -80,8 +80,11 @@ export function useKanbanDrag({
   const rafRef = useRef(0);
   const onClickRef = useRef(onClick);
   const onDropRef = useRef(onDrop);
-  onClickRef.current = onClick;
-  onDropRef.current = onDrop;
+
+  useEffect(() => {
+    onClickRef.current = onClick;
+    onDropRef.current = onDrop;
+  }, [onClick, onDrop]);
 
   const clearPending = useCallback(() => {
     pendingRef.current = null;

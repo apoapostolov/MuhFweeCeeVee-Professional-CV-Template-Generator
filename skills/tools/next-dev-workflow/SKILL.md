@@ -12,7 +12,7 @@ See full steps in
 
 Quick sequence:
 
-1. Open **http://127.0.0.1:3005** (not production `3000`)
+1. Open **[http://127.0.0.1:3005](http://127.0.0.1:3005)** (not production `3000`)
 2. Hard refresh
 3. `fuser -k 3005/tcp` if needed; `rm -rf apps/web/.next`
 4. `npm run dev` from repo root

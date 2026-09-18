@@ -21,7 +21,7 @@ files you need** — do not load all references up front.
 1. Read [`AGENTS.md`](../../../AGENTS.md) for operating contract, privacy, and validation.
 2. Start dev server before app code changes (see
    [`references/dev-workflow.md`](references/dev-workflow.md)).
-3. Default web URL: **http://127.0.0.1:3005** (webpack + WSL file polling).
+3. Default web URL: **[http://127.0.0.1:3005](http://127.0.0.1:3005)** (webpack + WSL file polling).
 
 ```bash
 cd /mnt/c/git-public/MuhFweeCeeVee-Professional-CV-Template-Generator

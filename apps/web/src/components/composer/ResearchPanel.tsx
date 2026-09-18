@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type JSX } from "react";
+import { useState, type JSX } from "react";
 
 import type { CompanyEnrichStage } from "@/lib/research/companyEnrich";
 import type {
@@ -67,6 +67,14 @@ export type ResearchPanelProps = {
 };
 
 export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
+  const detailKey = props.sidebarTab === "companies"
+    ? `company:${props.companyDetail?.id ?? "loading"}`
+    : `job:${props.jobDetail?.id ?? "loading"}`;
+
+  return <ResearchPanelContent key={detailKey} {...props} />;
+}
+
+function ResearchPanelContent(props: ResearchPanelProps): JSX.Element {
   const {
     companies,
     jobPositions,
@@ -99,45 +107,22 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
     onNotice,
   } = props;
 
-  const [companyName, setCompanyName] = useState("");
-  const [officeCountry, setOfficeCountry] = useState("");
-  const [officeCity, setOfficeCity] = useState("");
-  const [officeLabel, setOfficeLabel] = useState("");
-  const [companyWebsite, setCompanyWebsite] = useState("");
-  const [companyLinkedinUrl, setCompanyLinkedinUrl] = useState("");
+  const [companyName, setCompanyName] = useState(companyDetail?.name ?? "");
+  const [officeCountry, setOfficeCountry] = useState(companyDetail?.office.country ?? "");
+  const [officeCity, setOfficeCity] = useState(companyDetail?.office.city ?? "");
+  const [officeLabel, setOfficeLabel] = useState(companyDetail?.office.label ?? "");
+  const [companyWebsite, setCompanyWebsite] = useState(companyDetail?.identity?.website ?? "");
+  const [companyLinkedinUrl, setCompanyLinkedinUrl] = useState(
+    companyDetail?.identity?.linkedin_company_url ?? "",
+  );
   const [companyAboutText, setCompanyAboutText] = useState("");
   const [companyUseWebSearch, setCompanyUseWebSearch] = useState(false);
   const [companyStages, setCompanyStages] = useState<CompanyEnrichStage[]>(["identity"]);
-  const [jobTitle, setJobTitle] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
-  const [linkedinUrl, setLinkedinUrl] = useState("");
-
-  useEffect(() => {
-    if (sidebarTab === "companies" && companyDetail) {
-      setCompanyName(companyDetail.name);
-      setOfficeCountry(companyDetail.office.country);
-      setOfficeCity(companyDetail.office.city ?? "");
-      setOfficeLabel(companyDetail.office.label ?? "");
-      setCompanyWebsite(companyDetail.identity?.website ?? "");
-      setCompanyLinkedinUrl(companyDetail.identity?.linkedin_company_url ?? "");
-    }
-  }, [sidebarTab, companyDetail]);
-
-  useEffect(() => {
-    if (!companyUseWebSearch) {
-      setCompanyStages((prev) =>
-        prev.filter((s) => s !== "people" && s !== "linkedin_jobs"),
-      );
-    }
-  }, [companyUseWebSearch]);
-
-  useEffect(() => {
-    if (sidebarTab === "job_positions" && jobDetail) {
-      setJobTitle(jobDetail.title);
-      setJobDescription(jobDetail.role?.description_summary ?? "");
-      setLinkedinUrl(jobDetail.identity?.linkedin_url ?? "");
-    }
-  }, [sidebarTab, jobDetail]);
+  const [jobTitle, setJobTitle] = useState(jobDetail?.title ?? "");
+  const [jobDescription, setJobDescription] = useState(
+    jobDetail?.role?.description_summary ?? "",
+  );
+  const [linkedinUrl, setLinkedinUrl] = useState(jobDetail?.identity?.linkedin_url ?? "");
 
   const mainEntityType = sidebarTab === "companies" ? "company" : "job_position";
 
@@ -164,7 +149,14 @@ export function ResearchPanel(props: ResearchPanelProps): JSX.Element {
         onCompanyLinkedinUrlChange={setCompanyLinkedinUrl}
         onCompanyNameChange={setCompanyName}
         onCompanyStagesChange={setCompanyStages}
-        onCompanyUseWebSearchChange={setCompanyUseWebSearch}
+        onCompanyUseWebSearchChange={(enabled) => {
+          setCompanyUseWebSearch(enabled);
+          if (!enabled) {
+            setCompanyStages((current) =>
+              current.filter((stage) => stage !== "people" && stage !== "linkedin_jobs"),
+            );
+          }
+        }}
         onCompanyWebsiteChange={setCompanyWebsite}
         onDeleteCompany={onDeleteCompany}
         onDeleteJob={onDeleteJob}
