@@ -261,10 +261,11 @@ describe("runAssistantTurn", () => {
     ].map((name) => ({ name, description: name, inputSchema: { type: "object" } }));
     const selected = selectAssistantToolsForTurn(
       tools,
-      "Create a plan using list_cvs and application inspection, but do not create replacement data.",
+      "Create a plan using list_cvs, api_info, and application inspection, but do not create replacement data.",
       context,
     ).map((tool) => tool.name);
     expect(selected).toContain("list_cvs");
+    expect(selected).toContain("api_info");
   });
 });
 import fs from "node:fs/promises";

@@ -290,12 +290,14 @@ export function selectAssistantToolsForTurn(
   const selected = tools.filter((tool) =>
     [...terms].some((term) => tool.name.includes(term)),
   );
+  const explicitlyNamed = tools.filter((tool) => normalized.includes(tool.name));
+  const candidates = [...new Map([...selected, ...explicitlyNamed].map((tool) => [tool.name, tool])).values()];
   const mutationRequested =
     /\b(save|update|change|create|add|delete|remove|archive|apply|draft|write|sync|translate|enrich|reuse|duplicate)\b/.test(
       normalized,
     ) || /\b(application_update|application_upsert|application_submission_create|application_import_packet|application_reuse_packet|cover_letter_save|translate_field)\b/.test(normalized);
   const readIntent = /\b(list|inspect|read|compare|extract|identify|find|check|summarize)\b/.test(normalized);
-  return [...(selected.length > 0 ? selected : tools)]
+  return [...(candidates.length > 0 ? candidates : tools)]
     .sort((left, right) => {
       const score = (tool: AssistantMcpTool) => {
         const decision = decideAssistantToolPolicy(tool.name);

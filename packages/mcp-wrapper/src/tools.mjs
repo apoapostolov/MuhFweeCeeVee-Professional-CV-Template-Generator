@@ -89,6 +89,17 @@ function normalizeLanguageCode(value) {
   };
   return typeof normalized === "string" ? aliases[normalized] || normalized : normalized;
 }
+
+async function mergeExistingResearchRecord(path, patch, key) {
+  try {
+    const current = await requestJson("GET", path);
+    const base = current?.[key] && typeof current[key] === "object" ? current[key] : current;
+    return mergeCvUpdate(base, patch);
+  } catch (error) {
+    if (String(error).includes("(404)")) return patch;
+    throw error;
+  }
+}
 const RETIRED_KEYWORDS_MESSAGE =
   "Keyword Studio was retired in v1.1.0. Use Research job weighted keywords and Editor Job Targeting instead.";
 
@@ -526,7 +537,7 @@ export function registerTools(server) {
     async ({ companyId, company }) =>
       toTextContent(
         await requestJson("PUT", `/research/companies/${encodeURIComponent(companyId)}`, {
-          body: { company },
+          body: { company: await mergeExistingResearchRecord(`/research/companies/${encodeURIComponent(companyId)}`, company, "company") },
         }),
       ),
   );
@@ -588,7 +599,7 @@ export function registerTools(server) {
     async ({ jobId, job }) =>
       toTextContent(
         await requestJson("PUT", `/research/job-positions/${encodeURIComponent(jobId)}`, {
-          body: { job_position: job },
+          body: { job_position: await mergeExistingResearchRecord(`/research/job-positions/${encodeURIComponent(jobId)}`, job, "job_position") },
         }),
       ),
   );
