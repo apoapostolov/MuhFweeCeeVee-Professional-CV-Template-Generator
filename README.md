@@ -2,7 +2,7 @@
 
 *A self-hosted CV and job-search workspace you own instead of renting by the month.*
 
-[![Repository Version](https://img.shields.io/badge/version-1.4.0-blue)](./package.json)
+[![Repository Version](https://img.shields.io/badge/version-1.4.1-blue)](./package.json)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933)](https://nodejs.org/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED)](./deploy/docker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)

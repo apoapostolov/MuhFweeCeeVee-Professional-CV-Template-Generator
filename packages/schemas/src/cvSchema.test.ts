@@ -11,7 +11,7 @@ import {
 } from "./cvSchema";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
-const personalCvPath = join(repoRoot, "data/cvs/cv_apoapostolov_en_001.yaml");
+const publicCvPath = join(repoRoot, "data/cvs/cv_en_john_doe.yaml");
 
 describe("validateCvV1Structural", () => {
   it("rejects non-objects", () => {
@@ -28,8 +28,8 @@ describe("validateCvV1Structural", () => {
 });
 
 describe("validateCvV1", () => {
-  it("accepts the personal English CV YAML", () => {
-    const raw = readFileSync(personalCvPath, "utf8");
+  it("accepts the public sample CV YAML", () => {
+    const raw = readFileSync(publicCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const structural = validateCvV1Structural(doc);
     expect(structural.valid).toBe(true);
@@ -38,7 +38,7 @@ describe("validateCvV1", () => {
   });
 
   it("accepts half-step skill ratings while preserving legacy string rows", () => {
-    const raw = readFileSync(personalCvPath, "utf8");
+    const raw = readFileSync(publicCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const skills = doc.skills as Record<string, unknown>;
     const technical = skills.technical as unknown[];
@@ -47,7 +47,7 @@ describe("validateCvV1", () => {
   });
 
   it("rejects skill ratings outside the half-step five-point scale", () => {
-    const raw = readFileSync(personalCvPath, "utf8");
+    const raw = readFileSync(publicCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const skills = doc.skills as Record<string, unknown>;
     const technical = skills.technical as unknown[];
@@ -56,7 +56,7 @@ describe("validateCvV1", () => {
   });
 
   it("accepts free-form ATS and detector scores with section results", () => {
-    const raw = readFileSync(personalCvPath, "utf8");
+    const raw = readFileSync(publicCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const metadata = doc.metadata as Record<string, unknown>;
     metadata.ats_scores = [{ label: "ApplyCove", score: "81/100" }];
@@ -75,7 +75,7 @@ describe("validateCvV1", () => {
   });
 
   it("rejects numeric review scores because provider results are stored verbatim", () => {
-    const raw = readFileSync(personalCvPath, "utf8");
+    const raw = readFileSync(publicCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const metadata = doc.metadata as Record<string, unknown>;
     metadata.ats_scores = [{ label: "ApplyCove", score: 81 }];
@@ -83,7 +83,7 @@ describe("validateCvV1", () => {
   });
 
   it("rejects unknown detector section scopes", () => {
-    const raw = readFileSync(personalCvPath, "utf8");
+    const raw = readFileSync(publicCvPath, "utf8");
     const doc = parse(raw) as Record<string, unknown>;
     const metadata = doc.metadata as Record<string, unknown>;
     metadata.detector_scores = [{

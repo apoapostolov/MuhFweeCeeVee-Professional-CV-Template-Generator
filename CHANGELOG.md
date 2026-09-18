@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-09-18
+
+This patch makes MuhFwee AI more dependable during real application work and expands its ready-to-use playbook library.
+
+### Changed
+
+- The playbook library now includes 26 curated workflows, ordered from core CV tailoring and application preparation through research, follow-ups, recovery, and workspace backup.
+- Explicit tool requests stay available inside the assistant's bounded tool inventory, while company research uses cached enrichment for faster, more predictable runs.
+
+### Fixed
+
+- Assistant approvals no longer report unsaved changes after clean Form and YAML view switches. Quick Intake also records new opportunities as Wishlist entries instead of claiming they were already submitted.
+- Draft CV creation, untranslated CV variants, partial research updates, packet reuse, language aliases, and tool-result handling now complete without the failures found in multi-step assistant workflows.
+
 ## [1.4.0] - 2026-08-24
 
 1.4.0 replaces the single OpenRouter account with twenty AI providers. API keys, OAuth subscriptions, and local endpoints each carry a credit or quota you can watch as you work. The rest of the job-search loop stays local.
