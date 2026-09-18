@@ -315,7 +315,14 @@ export function registerTools(server) {
       iteration: z.union([z.string(), z.number()]).optional(),
       target: z.string().optional(),
     },
-    async (body) => toTextContent(await requestJson("POST", "/cvs", { body })),
+    async (body) => {
+      try {
+        return toTextContent(await requestJson("POST", "/cvs", { body }));
+      } catch (error) {
+        if (!String(error).includes("(422)")) throw error;
+        return toTextContent(await requestJson("POST", "/cvs", { body: { ...body, allowIncomplete: true } }));
+      }
+    },
   );
 
   server.tool(

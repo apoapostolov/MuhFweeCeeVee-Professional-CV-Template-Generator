@@ -32,6 +32,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     language?: unknown;
     iteration?: unknown;
     target?: unknown;
+    allowIncomplete?: unknown;
   };
 
   const cv = payload.cv;
@@ -66,11 +67,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const validation = validateCvV1(cv);
-  if (!validation.valid) {
+  if (!validation.valid && payload.allowIncomplete !== true) {
     return NextResponse.json(
       { error: "cv payload failed validation.", issues: validation.issues },
       { status: 422 },
     );
+  }
+  if (!cv || typeof cv !== "object" || Array.isArray(cv)) {
+    return NextResponse.json({ error: "cv payload must be an object." }, { status: 422 });
   }
 
   const existing = await readCv(cvId);
@@ -82,5 +86,5 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   await writeCv(cvId, cv as Record<string, unknown>, { createSnapshot: false });
-  return NextResponse.json({ ok: true, cvId }, { status: 201 });
+  return NextResponse.json({ ok: true, cvId, draft: !validation.valid }, { status: 201 });
 }
