@@ -1,5 +1,6 @@
 import { applyTemplateVisibility, readTemplateVisibility } from "@/lib/cvTemplateVisibility";
 import { readCv } from "./cvStore";
+import { buildPdfFontFaceCss } from "./render/pdfFonts";
 import { renderCambridge } from "./render/cambridge-v1";
 import { renderEdinburgh } from "./render/edinburgh-v1";
 import { renderEuropass } from "./render/europass-v1";
@@ -131,6 +132,7 @@ export async function buildCvTemplateHtml(
   const tweakCss = [
     buildIntelligentPaginationCss(input.templateId, tweaks),
     buildPrintTextScaleCss(input.templateId, tweaks),
+    await buildPdfFontFaceCss(),
   ]
     .filter(Boolean)
     .join("\n");

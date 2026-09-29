@@ -1,0 +1,255 @@
+{
+  "source": "@fontsource 5.3.0 per-subset woff2 files, fetched via jsDelivr",
+  "note": "Vendored PDF render fonts. Each file is one script subset of one weight, and the @font-face unicode-range makes the browser select per character, so Bulgarian text resolves without a hand-written fallback. Regenerate with the font tooling; do not hand-edit.",
+  "unicodeRanges": {
+    "latin": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "latin-ext": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "cyrillic": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116"
+  },
+  "families": [
+    {
+      "css": "\"Liberation Sans\"",
+      "slug": "arimo",
+      "hasCyrillic": true,
+      "replaces": "Liberation Sans",
+      "note": "Liberation Sans is not distributed through Google Fonts or fontsource. Arimo is its metric-compatible substitute, so europass keeps the intended Arial-like metrics.",
+      "faces": [
+        {
+          "weight": "400",
+          "subset": "latin",
+          "file": "arimo-latin-400-normal.woff2",
+          "bytes": 11456
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "file": "arimo-latin-ext-400-normal.woff2",
+          "bytes": 52128
+        },
+        {
+          "weight": "400",
+          "subset": "cyrillic",
+          "file": "arimo-cyrillic-400-normal.woff2",
+          "bytes": 7328
+        },
+        {
+          "weight": "600",
+          "subset": "latin",
+          "file": "arimo-latin-600-normal.woff2",
+          "bytes": 11788
+        },
+        {
+          "weight": "600",
+          "subset": "latin-ext",
+          "file": "arimo-latin-ext-600-normal.woff2",
+          "bytes": 55188
+        },
+        {
+          "weight": "600",
+          "subset": "cyrillic",
+          "file": "arimo-cyrillic-600-normal.woff2",
+          "bytes": 7628
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "file": "arimo-latin-700-normal.woff2",
+          "bytes": 11484
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "file": "arimo-latin-ext-700-normal.woff2",
+          "bytes": 51840
+        },
+        {
+          "weight": "700",
+          "subset": "cyrillic",
+          "file": "arimo-cyrillic-700-normal.woff2",
+          "bytes": 7340
+        }
+      ]
+    },
+    {
+      "css": "\"Liberation Sans Narrow\"",
+      "slug": "ibm-plex-sans-condensed",
+      "hasCyrillic": false,
+      "replaces": "Liberation Sans Narrow",
+      "note": "europass asks for Liberation Sans Narrow, which is not distributed anywhere reachable here, so it fell through to Arial. IBM Plex Sans Condensed keeps the narrow intent and matches the rest of the templates. It ships no Cyrillic subset, so Cyrillic falls through to IBM Plex Sans.",
+      "faces": [
+        {
+          "weight": "400",
+          "subset": "latin",
+          "file": "ibm-plex-sans-condensed-latin-400-normal.woff2",
+          "bytes": 19796
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "file": "ibm-plex-sans-condensed-latin-ext-400-normal.woff2",
+          "bytes": 15572
+        },
+        {
+          "weight": "600",
+          "subset": "latin",
+          "file": "ibm-plex-sans-condensed-latin-600-normal.woff2",
+          "bytes": 19816
+        },
+        {
+          "weight": "600",
+          "subset": "latin-ext",
+          "file": "ibm-plex-sans-condensed-latin-ext-600-normal.woff2",
+          "bytes": 16044
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "file": "ibm-plex-sans-condensed-latin-700-normal.woff2",
+          "bytes": 19352
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "file": "ibm-plex-sans-condensed-latin-ext-700-normal.woff2",
+          "bytes": 16092
+        }
+      ]
+    },
+    {
+      "css": "\"IBM Plex Sans\"",
+      "slug": "ibm-plex-sans",
+      "hasCyrillic": true,
+      "faces": [
+        {
+          "weight": "400",
+          "subset": "latin",
+          "file": "ibm-plex-sans-latin-400-normal.woff2",
+          "bytes": 22588
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "file": "ibm-plex-sans-latin-ext-400-normal.woff2",
+          "bytes": 15980
+        },
+        {
+          "weight": "400",
+          "subset": "cyrillic",
+          "file": "ibm-plex-sans-cyrillic-400-normal.woff2",
+          "bytes": 14800
+        },
+        {
+          "weight": "600",
+          "subset": "latin",
+          "file": "ibm-plex-sans-latin-600-normal.woff2",
+          "bytes": 24252
+        },
+        {
+          "weight": "600",
+          "subset": "latin-ext",
+          "file": "ibm-plex-sans-latin-ext-600-normal.woff2",
+          "bytes": 16448
+        },
+        {
+          "weight": "600",
+          "subset": "cyrillic",
+          "file": "ibm-plex-sans-cyrillic-600-normal.woff2",
+          "bytes": 15040
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "file": "ibm-plex-sans-latin-700-normal.woff2",
+          "bytes": 22832
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "file": "ibm-plex-sans-latin-ext-700-normal.woff2",
+          "bytes": 16188
+        },
+        {
+          "weight": "700",
+          "subset": "cyrillic",
+          "file": "ibm-plex-sans-cyrillic-700-normal.woff2",
+          "bytes": 14572
+        }
+      ]
+    },
+    {
+      "css": "\"JetBrains Mono\"",
+      "slug": "jetbrains-mono",
+      "hasCyrillic": true,
+      "faces": [
+        {
+          "weight": "400",
+          "subset": "latin",
+          "file": "jetbrains-mono-latin-400-normal.woff2",
+          "bytes": 21168
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "file": "jetbrains-mono-latin-ext-400-normal.woff2",
+          "bytes": 7336
+        },
+        {
+          "weight": "400",
+          "subset": "cyrillic",
+          "file": "jetbrains-mono-cyrillic-400-normal.woff2",
+          "bytes": 5328
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "file": "jetbrains-mono-latin-700-normal.woff2",
+          "bytes": 21908
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "file": "jetbrains-mono-latin-ext-700-normal.woff2",
+          "bytes": 7472
+        },
+        {
+          "weight": "700",
+          "subset": "cyrillic",
+          "file": "jetbrains-mono-cyrillic-700-normal.woff2",
+          "bytes": 5336
+        }
+      ]
+    },
+    {
+      "css": "\"Lato\"",
+      "slug": "lato",
+      "hasCyrillic": false,
+      "note": "Lato ships no Cyrillic subset anywhere in its distribution. Cyrillic characters fall through the CSS family chain to IBM Plex Sans, which covers them.",
+      "faces": [
+        {
+          "weight": "400",
+          "subset": "latin",
+          "file": "lato-latin-400-normal.woff2",
+          "bytes": 23580
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "file": "lato-latin-ext-400-normal.woff2",
+          "bytes": 5612
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "file": "lato-latin-700-normal.woff2",
+          "bytes": 23040
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "file": "lato-latin-ext-700-normal.woff2",
+          "bytes": 5552
+        }
+      ]
+    }
+  ]
+}
