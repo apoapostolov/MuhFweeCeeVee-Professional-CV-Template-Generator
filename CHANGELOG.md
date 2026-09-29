@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-09-29
+
+Your CVs now print in the typeface you designed them in.
+
+### Fixed
+
+- **Generated PDFs use the fonts the templates declare.** The templates named
+  IBM Plex Sans, Lato, JetBrains Mono, Liberation Sans and Liberation Sans Narrow
+  but shipped no font files, so every CV fell back to a system font while the
+  stylesheet claimed otherwise. Each template now embeds its intended family:
+  Cambridge, Harvard and Edinburgh in IBM Plex Sans, Stanford in Lato, Europass in
+  Arimo and IBM Plex Sans Condensed.
+- **Bulgarian text renders correctly.** Font subsets are selected per character,
+  so Cyrillic letters in a CV resolve through real glyphs instead of whichever
+  system font the host happened to have.
+- **Europass keeps its intended widths.** Liberation Sans and Liberation Sans
+  Narrow are replaced by their metric-compatible equivalents, so the layout no
+  longer widens or drops back to Arial.
+
 ## [1.4.1] - 2026-09-18
 
 This patch makes MuhFwee AI more dependable during real application work and expands its ready-to-use playbook library.
