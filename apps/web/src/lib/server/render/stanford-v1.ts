@@ -198,7 +198,8 @@ export function renderStanford(
     .avatar-wrap.photo-force-original .avatar-fallback { width: 100%; aspect-ratio: 3 / 4; height: auto; border-radius: 0; }
 
     .sidebar h2 { margin: 0 0 2.2mm; padding-bottom: 1.4mm; font-size: 4.05mm; font-weight: 700; text-transform: none; border-bottom: none; letter-spacing: 0; position: relative; }
-    .sidebar h2::after { content: ""; display: block; width: calc(100% + 7mm); margin-top: 1.4mm; border-top: 0.25mm solid #ffffff; }
+    /* Real element, not ::after: takumi-pdf does not render generated content. */
+    .sidebar h2 .h2-rule { display: block; width: calc(100% + 7mm); margin-top: 1.4mm; border-top: 0.25mm solid #ffffff; }
     .sidebar section { margin-bottom: 5.4mm; padding-right: 0; }
     .sidebar ul { list-style: none; margin: 0; padding: 0; }
     .sidebar li { margin: 1.5mm 0; }
@@ -290,10 +291,10 @@ export function renderStanford(
       </div>`
           : ""
       }
-      ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}</h2><ul>${personalHtml}</ul></section>` : ""}
-      ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}</h2><ul>${interestsHtml}</ul></section>` : ""}
-      ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}</h2><ul class="languages">${languageHtml}</ul></section>` : ""}
-      ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
+      ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}<<span class="h2-rule"></span>/h2><ul>${personalHtml}</ul></section>` : ""}
+      ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}<<span class="h2-rule"></span>/h2><ul>${interestsHtml}</ul></section>` : ""}
+      ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}<<span class="h2-rule"></span>/h2><ul class="languages">${languageHtml}</ul></section>` : ""}
+      ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}<<span class="h2-rule"></span>/h2>${skillsHtml}</section>` : ""}
     </aside>
     <main class="content">
       ${titleName ? `<h1 class="name">${escapeHtml(titleName)}</h1>` : ""}
@@ -301,7 +302,7 @@ export function renderStanford(
       ${summaryText ? `<section class="summary"><p>${escapeHtml(summaryText)}</p></section>` : ""}
       ${workHtml ? `<section class="work-section"><h2>${escapeHtml(label(labels, "sections.work_experience", "Work experience"))}</h2><div class="section-divider"></div>${workHtml}</section>` : ""}
       ${educationHtml ? `<section><h2>${escapeHtml(label(labels, "sections.education", "Education and Qualifications"))}</h2>${educationHtml}</section>` : ""}
-      ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
+      ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}<<span class="h2-rule"></span>/h2>${skillsHtml}</section>` : ""}
       ${refsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.references", "References"))}</h2>${refsHtml}</section>` : ""}
       ${optionalCourses}
       ${optionalProjects}

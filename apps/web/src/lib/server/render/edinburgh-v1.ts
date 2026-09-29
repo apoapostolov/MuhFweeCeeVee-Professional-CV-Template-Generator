@@ -250,8 +250,9 @@ export function renderEdinburgh(
     .left-header::before {
       content: none;
     }
-    .left-header::after {
-      content: \"\";
+    /* Real element, not ::after: takumi-pdf does not render generated content,
+       which would drop the decorative sidebar arc entirely. */
+    .left-header-arc {
       position: absolute;
       left: 0;
       right: 0;
@@ -385,7 +386,7 @@ export function renderEdinburgh(
     .product-title { margin: 0 0 3px; font-weight: 700; font-size: 11.4px; color: #2f3640; }
     .product-list { list-style: none; margin: 0; padding: 0; }
     .product-list li { position: relative; padding-left: 14px; margin: 2px 0; }
-    .product-list li::before { content: \"\"; position: absolute; left: 0; top: 6px; width: 6px; height: 6px; background: ${accent}; }
+    .product-bullet { position: absolute; left: 0; top: 6px; width: 6px; height: 6px; background: ${accent}; }
     .product-list .product-name { display: block; font-weight: 600; }
     .product-list .product-note-line { display: flex; align-items: flex-start; gap: 6px; margin-top: 1px; }
     .product-list .product-note-tab { color: #666; font-family: \"JetBrains Mono\", monospace; }
@@ -410,6 +411,7 @@ export function renderEdinburgh(
   <div class=\"page\">
     <aside class=\"left\">
       <div class=\"left-header\">
+        <span class=\"left-header-arc\"></span>
         <p class=\"name-main\">${escapeHtml(parts.top)}</p>
         ${parts.bottom ? `<p class=\"name-last\">${escapeHtml(parts.bottom)}</p>` : ""}
         ${

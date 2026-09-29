@@ -197,7 +197,7 @@ export function renderHarvard(
     if (!items.length) return "";
     return `<section class="${extraClass}">
       <h2><span class="section-icon"><i class="fa-solid ${iconClass}"></i></span>${escapeHtml(titleText)}</h2>
-      <div class="timeline">${items.join("")}</div>
+      <div class="timeline"><span class="timeline-rail"></span>${items.join("")}</div>
     </section>`;
   }
 
@@ -400,7 +400,9 @@ export function renderHarvard(
       flex: 0 0 auto;
     }
     .timeline { position: relative; padding-left: 11mm; }
-    .timeline::before { content: ""; position: absolute; left: 4.1mm; top: 0; bottom: 0; width: 0.35mm; background: ${theme.timeline}; }
+    /* A real element, not a ::before pseudo-element: takumi-pdf does not render
+       generated content, so the rail would disappear entirely. */
+    .timeline-rail { position: absolute; left: 4.1mm; top: 0; bottom: 0; width: 0.35mm; background: ${theme.timeline}; }
     .timeline-item {
       position: relative;
       display: grid;

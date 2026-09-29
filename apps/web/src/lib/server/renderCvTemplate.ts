@@ -11,6 +11,7 @@ import {
   bindSlots,
   readYamlFile,
   resolveMappingPath,
+  resolveMargins,
   resolvePhotoDataUrl,
   resolveRenderLanguage,
   resolveTemplateLabels,
@@ -142,5 +143,8 @@ export async function buildCvTemplateHtml(
     cvId: input.cvId,
     templateId: input.templateId,
     metadata: buildPdfMetadata(cv),
+    // takumi-pdf does not parse `@page`, so the renderer sets its own margins
+    // from the template's resolved page geometry.
+    margins: resolveMargins(template),
   };
 }

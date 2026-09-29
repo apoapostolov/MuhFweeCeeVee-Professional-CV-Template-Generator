@@ -55,6 +55,16 @@ export type RenderResult = {
   cvId: string;
   templateId: string;
   metadata: PdfMetadata;
+  /**
+   * Page geometry in millimetres. takumi-pdf does not parse `@page`, so the
+   * renderer needs these separately to set its own margins.
+   */
+  margins: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
 };
 
 export type PhotoMode =

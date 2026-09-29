@@ -222,7 +222,7 @@ export function renderCambridge(
       const publicationLinksHtml = publicationLinks.length
         ? `<div class="publication-links-subsection"><p class="publication-links-title">${escapeHtml(label(labels, "sections.publication_links", "Publication links"))}</p><ul class="publication-links-list">${publicationLinks.map((item) => `<li><a href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a></li>`).join("")}</ul></div>`
         : "";
-      return `<article class="dated-entry">
+      return `<article class="dated-entry"><span class="dated-tick"></span>
         <div class="date-col">${escapeHtml(range)}</div>
         <div class="entry-body">
           <h3>${escapeHtml(record.role ?? "")}</h3>
@@ -248,7 +248,7 @@ export function renderCambridge(
         presentLabel,
       );
       const detail = textList(record.subjects).join(", ");
-      return `<article class="dated-entry">
+      return `<article class="dated-entry"><span class="dated-tick"></span>
         <div class="date-col">${escapeHtml(range)}</div>
         <div class="entry-body">
           <h3>${escapeHtml(record.degree ?? "")}</h3>
@@ -316,8 +316,7 @@ export function renderCambridge(
       align-items: center;
       gap: 2.2mm;
     }
-    .content h2::after {
-      content: "";
+    .content h2 .h2-rule {
       flex: 1;
       border-top: 0.24mm solid #c8cdd3;
       margin-top: 0.3mm;
@@ -361,7 +360,8 @@ export function renderCambridge(
     .summary { margin: 0 0 3.6mm; color: #343d49; font-size: 4.15mm; line-height: 1.45; }
     .content section { margin-bottom: 5.6mm; }
     .dated-list { position: relative; padding-left: 0; }
-    .dated-list::before { content: ""; position: absolute; left: -1.1mm; top: 0.6mm; bottom: 0.6mm; width: 0.22mm; background: ${theme.rail}; }
+    /* Real elements, not ::before: takumi-pdf does not render generated content. */
+    .dated-rail { position: absolute; left: -1.1mm; top: 0.6mm; bottom: 0.6mm; width: 0.22mm; background: ${theme.rail}; }
     .dated-entry {
       position: relative;
       display: grid;
@@ -372,8 +372,7 @@ export function renderCambridge(
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .dated-entry::before {
-      content: "";
+    .dated-tick {
       position: absolute;
       left: -1.1mm;
       top: 50%;
@@ -425,17 +424,17 @@ export function renderCambridge(
     <header class="header"><h1>${escapeHtml(label(labels, "common.curriculum_vitae", "Curriculum Vitae"))}</h1></header>
     <div class="main">
       <aside class="sidebar">
-        ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}</h2><ul>${personalHtml}</ul></section>` : ""}
-        ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}</h2><p class="interests-text">${escapeHtml(interestsHtml)}</p></section>` : ""}
-        ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}</h2><ul class="rated-list">${languageHtml}</ul></section>` : ""}
-        ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="rated-list">${skillsHtml}</ul></section>` : ""}
+        ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}<span class="h2-rule"></span></h2><ul>${personalHtml}</ul></section>` : ""}
+        ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}<span class="h2-rule"></span></h2><p class="interests-text">${escapeHtml(interestsHtml)}</p></section>` : ""}
+        ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}<span class="h2-rule"></span></h2><ul class="rated-list">${languageHtml}</ul></section>` : ""}
+        ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}<span class="h2-rule"></span></h2><ul class="rated-list">${skillsHtml}</ul></section>` : ""}
       </aside>
       <main class="content">
         ${summaryText ? `<section><p class="summary">${escapeHtml(summaryText)}</p></section>` : ""}
-        ${workHtml ? `<section><h2>${escapeHtml(label(labels, "sections.work_experience", "Work experience"))}</h2><div class="dated-list">${workHtml}</div></section>` : ""}
-        ${educationHtml ? `<section><h2>${escapeHtml(label(labels, "sections.education", "Education and Qualifications"))}</h2><div class="dated-list">${educationHtml}</div></section>` : ""}
-        ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="skill-list">${skillsHtml}</ul></section>` : ""}
-        ${refsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.references", "References"))}</h2>${refsHtml}</section>` : ""}
+        ${workHtml ? `<section><h2>${escapeHtml(label(labels, "sections.work_experience", "Work experience"))}<span class="h2-rule"></span></h2><div class="dated-list"><span class="dated-rail"></span>${workHtml}</div></section>` : ""}
+        ${educationHtml ? `<section><h2>${escapeHtml(label(labels, "sections.education", "Education and Qualifications"))}<span class="h2-rule"></span></h2><div class="dated-list"><span class="dated-rail"></span>${educationHtml}</div></section>` : ""}
+        ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}<span class="h2-rule"></span></h2><ul class="skill-list">${skillsHtml}</ul></section>` : ""}
+        ${refsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.references", "References"))}<span class="h2-rule"></span></h2>${refsHtml}</section>` : ""}
         ${optionalCourses}
         ${optionalProjects}
         ${optionalAwards}
