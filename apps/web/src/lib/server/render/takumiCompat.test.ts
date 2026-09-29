@@ -47,6 +47,39 @@ describe("template css compatibility with takumi-pdf", () => {
   );
 
   it(
+    "emits well-formed heading markup",
+    async () => {
+      // A scripted edit once produced `<<span ...></span>/h2>`, which silently
+      // emptied every heading it touched. The PDF still rendered, so only the
+      // HTML is checked here.
+      const files = (await readdir(renderDir)).filter(
+        (name) => name.endsWith(".ts") && !name.endsWith(".test.ts"),
+      );
+      const broken: string[] = [];
+      for (const name of files) {
+        const source = await readFile(`${renderDir}/${name}`, "utf8");
+        source.split("\n").forEach((line, index) => {
+          if (line.trim().startsWith("*") || line.trim().startsWith("//")) return;
+          if (line.includes("<<")) broken.push(`${name}:${index + 1} doubled "<"`);
+          if (line.includes('</span>/h2>')) {
+            broken.push(`${name}:${index + 1} unclosed "/h2>"`);
+          }
+          // A heading must carry label text. Headings that open with an icon span
+          // or are built from a variable are legitimate, so only flag an h2 with
+          // nothing at all after the opening tag.
+          for (const m of line.matchAll(/<h2>([^<]{0,80})/g)) {
+            if (m[1] === "" && !/<h2><span/.test(line) && !line.includes("<h2>${")) {
+              broken.push(`${name}:${index + 1} empty <h2>`);
+            }
+          }
+        });
+      }
+      expect(broken, `Malformed heading markup:\n${broken.join("\n")}`).toEqual([]);
+    },
+    30_000,
+  );
+
+  it(
     "keeps the real elements those rules replaced",
     async () => {
       // Each of these is a decorative rule that used to be generated content.
