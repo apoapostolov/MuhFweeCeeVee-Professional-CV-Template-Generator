@@ -65,3 +65,6 @@ skills/SKILL.md
 
 # Raw screenshot drops (keep curated SCREENSHOT_XX.png files)
 /images/Screenshot_*.png
+
+# PDFs written by the render test suite into the repository root
+/takumi-*.pdf
