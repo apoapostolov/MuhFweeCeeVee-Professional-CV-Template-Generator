@@ -87,25 +87,10 @@ export function buildPrintTextScaleCss(
   if (tweaks.removePageCount) {
     rules.push(".page-footer { display: none !important; }");
   }
-  const sidebarZoom = tweaks.sidebarTextScale / 100;
-  const contentZoom = tweaks.contentTextScale / 100;
-
-  if (tweaks.sidebarTextScaleActive && templateHasLeftSidebar(templateId)) {
-    rules.push(
-      `aside.sidebar, .sidebar, aside.left, .left { zoom: ${sidebarZoom}; }`,
-    );
-  }
-
-  if (tweaks.contentTextScaleActive) {
-    if (templateId === "europass-v1") {
-      rules.push(`body > .page { zoom: ${contentZoom}; }`);
-    } else if (templateHasLeftSidebar(templateId)) {
-      rules.push(`main.content, .content, main.right, .right { zoom: ${contentZoom}; }`);
-    } else {
-      rules.push(`main.right, .right, .page { zoom: ${contentZoom}; }`);
-    }
-  }
-
+  // The type-size part of this tweak is applied to the template stylesheet by
+  // `applyTextScale`, which rewrites the declared font sizes in place. Scaling
+  // the containers themselves would shrink the columns, which is not what the
+  // tweak means. See textScale.ts for why neither `zoom` nor `transform` works.
   return rules.join("\n");
 }
 

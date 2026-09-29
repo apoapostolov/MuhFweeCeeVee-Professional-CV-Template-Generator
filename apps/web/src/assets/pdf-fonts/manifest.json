@@ -17,54 +17,126 @@
         {
           "weight": "400",
           "subset": "latin",
+          "style": "italic",
+          "file": "ibm-plex-sans-latin-400-italic.woff2",
+          "bytes": 24356
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "ibm-plex-sans-latin-ext-400-italic.woff2",
+          "bytes": 17008
+        },
+        {
+          "weight": "400",
+          "subset": "cyrillic",
+          "style": "italic",
+          "file": "ibm-plex-sans-cyrillic-400-italic.woff2",
+          "bytes": 16128
+        },
+        {
+          "weight": "400",
+          "subset": "latin",
+          "style": "normal",
           "file": "ibm-plex-sans-latin-400-normal.woff2",
           "bytes": 22588
         },
         {
           "weight": "400",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "ibm-plex-sans-latin-ext-400-normal.woff2",
           "bytes": 15980
         },
         {
           "weight": "400",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "ibm-plex-sans-cyrillic-400-normal.woff2",
           "bytes": 14800
         },
         {
           "weight": "600",
           "subset": "latin",
+          "style": "italic",
+          "file": "ibm-plex-sans-latin-600-italic.woff2",
+          "bytes": 26464
+        },
+        {
+          "weight": "600",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "ibm-plex-sans-latin-ext-600-italic.woff2",
+          "bytes": 17708
+        },
+        {
+          "weight": "600",
+          "subset": "cyrillic",
+          "style": "italic",
+          "file": "ibm-plex-sans-cyrillic-600-italic.woff2",
+          "bytes": 16464
+        },
+        {
+          "weight": "600",
+          "subset": "latin",
+          "style": "normal",
           "file": "ibm-plex-sans-latin-600-normal.woff2",
           "bytes": 24252
         },
         {
           "weight": "600",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "ibm-plex-sans-latin-ext-600-normal.woff2",
           "bytes": 16448
         },
         {
           "weight": "600",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "ibm-plex-sans-cyrillic-600-normal.woff2",
           "bytes": 15040
         },
         {
           "weight": "700",
           "subset": "latin",
+          "style": "italic",
+          "file": "ibm-plex-sans-latin-700-italic.woff2",
+          "bytes": 24704
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "ibm-plex-sans-latin-ext-700-italic.woff2",
+          "bytes": 17220
+        },
+        {
+          "weight": "700",
+          "subset": "cyrillic",
+          "style": "italic",
+          "file": "ibm-plex-sans-cyrillic-700-italic.woff2",
+          "bytes": 15688
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "style": "normal",
           "file": "ibm-plex-sans-latin-700-normal.woff2",
           "bytes": 22832
         },
         {
           "weight": "700",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "ibm-plex-sans-latin-ext-700-normal.woff2",
           "bytes": 16188
         },
         {
           "weight": "700",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "ibm-plex-sans-cyrillic-700-normal.woff2",
           "bytes": 14572
         }
@@ -79,24 +151,56 @@
         {
           "weight": "400",
           "subset": "latin",
+          "style": "italic",
+          "file": "lato-latin-400-italic.woff2",
+          "bytes": 24408
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "lato-latin-ext-400-italic.woff2",
+          "bytes": 5776
+        },
+        {
+          "weight": "400",
+          "subset": "latin",
+          "style": "normal",
           "file": "lato-latin-400-normal.woff2",
           "bytes": 23580
         },
         {
           "weight": "400",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "lato-latin-ext-400-normal.woff2",
           "bytes": 5612
         },
         {
           "weight": "700",
           "subset": "latin",
+          "style": "italic",
+          "file": "lato-latin-700-italic.woff2",
+          "bytes": 24448
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "lato-latin-ext-700-italic.woff2",
+          "bytes": 5792
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "style": "normal",
           "file": "lato-latin-700-normal.woff2",
           "bytes": 23040
         },
         {
           "weight": "700",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "lato-latin-ext-700-normal.woff2",
           "bytes": 5552
         }
@@ -112,54 +216,126 @@
         {
           "weight": "400",
           "subset": "latin",
+          "style": "italic",
+          "file": "arimo-latin-400-italic.woff2",
+          "bytes": 12380
+        },
+        {
+          "weight": "400",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "arimo-latin-ext-400-italic.woff2",
+          "bytes": 60108
+        },
+        {
+          "weight": "400",
+          "subset": "cyrillic",
+          "style": "italic",
+          "file": "arimo-cyrillic-400-italic.woff2",
+          "bytes": 8588
+        },
+        {
+          "weight": "400",
+          "subset": "latin",
+          "style": "normal",
           "file": "arimo-latin-400-normal.woff2",
           "bytes": 11456
         },
         {
           "weight": "400",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "arimo-latin-ext-400-normal.woff2",
           "bytes": 52128
         },
         {
           "weight": "400",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "arimo-cyrillic-400-normal.woff2",
           "bytes": 7328
         },
         {
           "weight": "600",
           "subset": "latin",
+          "style": "italic",
+          "file": "arimo-latin-600-italic.woff2",
+          "bytes": 12948
+        },
+        {
+          "weight": "600",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "arimo-latin-ext-600-italic.woff2",
+          "bytes": 64560
+        },
+        {
+          "weight": "600",
+          "subset": "cyrillic",
+          "style": "italic",
+          "file": "arimo-cyrillic-600-italic.woff2",
+          "bytes": 9000
+        },
+        {
+          "weight": "600",
+          "subset": "latin",
+          "style": "normal",
           "file": "arimo-latin-600-normal.woff2",
           "bytes": 11788
         },
         {
           "weight": "600",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "arimo-latin-ext-600-normal.woff2",
           "bytes": 55188
         },
         {
           "weight": "600",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "arimo-cyrillic-600-normal.woff2",
           "bytes": 7628
         },
         {
           "weight": "700",
           "subset": "latin",
+          "style": "italic",
+          "file": "arimo-latin-700-italic.woff2",
+          "bytes": 12392
+        },
+        {
+          "weight": "700",
+          "subset": "latin-ext",
+          "style": "italic",
+          "file": "arimo-latin-ext-700-italic.woff2",
+          "bytes": 60432
+        },
+        {
+          "weight": "700",
+          "subset": "cyrillic",
+          "style": "italic",
+          "file": "arimo-cyrillic-700-italic.woff2",
+          "bytes": 8524
+        },
+        {
+          "weight": "700",
+          "subset": "latin",
+          "style": "normal",
           "file": "arimo-latin-700-normal.woff2",
           "bytes": 11484
         },
         {
           "weight": "700",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "arimo-latin-ext-700-normal.woff2",
           "bytes": 51840
         },
         {
           "weight": "700",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "arimo-cyrillic-700-normal.woff2",
           "bytes": 7340
         }
@@ -175,36 +351,42 @@
         {
           "weight": "400",
           "subset": "latin",
+          "style": "normal",
           "file": "ibm-plex-sans-condensed-latin-400-normal.woff2",
           "bytes": 19796
         },
         {
           "weight": "400",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "ibm-plex-sans-condensed-latin-ext-400-normal.woff2",
           "bytes": 15572
         },
         {
           "weight": "600",
           "subset": "latin",
+          "style": "normal",
           "file": "ibm-plex-sans-condensed-latin-600-normal.woff2",
           "bytes": 19816
         },
         {
           "weight": "600",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "ibm-plex-sans-condensed-latin-ext-600-normal.woff2",
           "bytes": 16044
         },
         {
           "weight": "700",
           "subset": "latin",
+          "style": "normal",
           "file": "ibm-plex-sans-condensed-latin-700-normal.woff2",
           "bytes": 19352
         },
         {
           "weight": "700",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "ibm-plex-sans-condensed-latin-ext-700-normal.woff2",
           "bytes": 16092
         }
@@ -218,38 +400,60 @@
         {
           "weight": "400",
           "subset": "latin",
+          "style": "normal",
           "file": "jetbrains-mono-latin-400-normal.woff2",
           "bytes": 21168
         },
         {
           "weight": "400",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "jetbrains-mono-latin-ext-400-normal.woff2",
           "bytes": 7336
         },
         {
           "weight": "400",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "jetbrains-mono-cyrillic-400-normal.woff2",
           "bytes": 5328
         },
         {
           "weight": "700",
           "subset": "latin",
+          "style": "normal",
           "file": "jetbrains-mono-latin-700-normal.woff2",
           "bytes": 21908
         },
         {
           "weight": "700",
           "subset": "latin-ext",
+          "style": "normal",
           "file": "jetbrains-mono-latin-ext-700-normal.woff2",
           "bytes": 7472
         },
         {
           "weight": "700",
           "subset": "cyrillic",
+          "style": "normal",
           "file": "jetbrains-mono-cyrillic-700-normal.woff2",
           "bytes": 5336
+        }
+      ]
+    },
+    {
+      "css": "\"Font Awesome 6 Free\"",
+      "slug": "fontawesome-free",
+      "hasCyrillic": false,
+      "symbolFallback": true,
+      "note": "Font Awesome 7.3.1 solid webfont, vendored because the CDN stylesheet the templates referenced is not fetched by the renderer. Licence: CC-BY-4.0 AND OFL-1.1 AND MIT.",
+      "faces": [
+        {
+          "weight": "900",
+          "subset": "latin",
+          "style": "normal",
+          "file": "fontawesome-free-latin-900-normal.woff2",
+          "bytes": 119488
         }
       ]
     },
@@ -263,6 +467,7 @@
         {
           "weight": "400",
           "subset": "emoji",
+          "style": "normal",
           "file": "noto-emoji-emoji-400-normal.woff2",
           "bytes": 476392
         }
@@ -278,6 +483,7 @@
         {
           "weight": "400",
           "subset": "symbols",
+          "style": "normal",
           "file": "noto-sans-symbols-2-symbols-400-normal.woff2",
           "bytes": 382424
         }

@@ -1,4 +1,5 @@
 import type { CvDocument } from "../cvStore";
+import { renderIcon } from "./icons";
 import type { EdinburghThemePalette, TemplateFile } from "./types";
 import {
   asRecord,
@@ -80,7 +81,7 @@ export function renderEdinburghContact(
   const rows = rowsData
     .map(
       (item) => `<li>
-        <span class=\"icon\" style=\"color:${accent}\"><i class=\"fa-solid ${item.icon}\"></i></span>
+        <span class=\"icon\" style=\"color:${accent}\">${renderIcon(item.icon)}</span>
         <span class=\"kv\"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.value)}</span></span>
       </li>`,
     )
@@ -421,7 +422,7 @@ export function renderEdinburgh(
             ${
               photoUrl
                 ? `<img src=\"${escapeHtml(photoUrl)}\" alt=\"Profile photo\" />`
-                : `<div class=\"photo-fallback\"><i class=\"fa-solid fa-user\"></i></div>`
+                : `<div class=\"photo-fallback\">${renderIcon("fa-user")}</div>`
             }
           </div>
         </div>`

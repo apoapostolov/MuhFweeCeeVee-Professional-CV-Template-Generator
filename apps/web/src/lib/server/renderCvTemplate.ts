@@ -1,6 +1,7 @@
 import { applyTemplateVisibility, readTemplateVisibility } from "@/lib/cvTemplateVisibility";
 import { readCv } from "./cvStore";
 import { buildPdfFontFaceCss } from "./render/pdfFonts";
+import { applyTextScale } from "./render/textScale";
 import { renderCambridge } from "./render/cambridge-v1";
 import { renderEdinburgh } from "./render/edinburgh-v1";
 import { renderEuropass } from "./render/europass-v1";
@@ -17,12 +18,14 @@ import {
   resolveTemplateLabels,
 } from "./render/shared";
 import {
+  buildAdaptivePaginationCss,
   buildIntelligentPaginationCss,
   buildPrintTextScaleCss,
   DEFAULT_RENDER_TWEAKS,
   injectPrintTweakStyles,
   resolveEffectivePhotoMode,
   shouldMoveSkillsLeft,
+  templateHasLeftSidebar,
 } from "./render/tweaks";
 import type { MappingFile, PdfMetadata, RenderInput, RenderResult, TemplateFile } from "./render/types";
 import {
@@ -138,8 +141,19 @@ export async function buildCvTemplateHtml(
     .filter(Boolean)
     .join("\n");
 
+  const styledHtml = injectPrintTweakStyles(html, tweakCss);
+
   return {
-    html: injectPrintTweakStyles(html, tweakCss),
+    // The type-size tweak rewrites the template's own font sizes, so it is
+    // applied to the finished markup rather than appended as extra CSS.
+    html: applyTextScale(
+      styledHtml,
+      input.templateId,
+      tweaks.sidebarTextScaleActive && templateHasLeftSidebar(input.templateId)
+        ? tweaks.sidebarTextScale / 100
+        : 1,
+      tweaks.contentTextScaleActive ? tweaks.contentTextScale / 100 : 1,
+    ),
     cvId: input.cvId,
     templateId: input.templateId,
     metadata: buildPdfMetadata(cv),

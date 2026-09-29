@@ -6,6 +6,7 @@ import manifest from "@/assets/pdf-fonts/manifest.json";
 
 type PdfFontFace = {
   weight: string;
+  style: string;
   subset: keyof typeof manifest.unicodeRanges;
   file: string;
 };
@@ -63,7 +64,7 @@ export async function buildPdfFontFaceCss(): Promise<string> {
         [
           "@font-face {",
           `  font-family: ${family.css};`,
-          "  font-style: normal;",
+          `  font-style: ${face.style};`,
           `  font-weight: ${face.weight};`,
           "  font-display: block;",
           `  src: url("data:font/woff2;base64,${bytes.toString("base64")}") format("woff2");`,
@@ -79,6 +80,7 @@ export async function buildPdfFontFaceCss(): Promise<string> {
 export type PdfFontEntry = {
   name: string;
   weight: number;
+  style: string;
   data: Uint8Array;
 };
 
@@ -102,6 +104,10 @@ export async function loadPdfFontEntries(): Promise<PdfFontEntry[]> {
       entries.push({
         name,
         weight: Number(face.weight),
+        // Without this the engine synthesises an oblique for `font-style:
+        // italic`, and the synthetic slant reads as the wrong angle next to
+        // the roman faces.
+        style: face.style,
         data: new Uint8Array(await readFile(`${fontDir}/${face.file}`)),
       });
     }

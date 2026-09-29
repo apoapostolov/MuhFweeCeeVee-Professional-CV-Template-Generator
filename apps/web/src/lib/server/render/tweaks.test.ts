@@ -49,7 +49,7 @@ describe("render tweaks", () => {
     expect(scaled.contentTextScale).toBe(100);
   });
 
-  it("builds zoom css for sidebar and content regions", () => {
+  it("hides the page footer and leaves type scaling to applyTextScale", () => {
     const tweaks = {
       intelligentPagination: false,
       removePhoto: false,
@@ -61,11 +61,12 @@ describe("render tweaks", () => {
       contentTextScaleActive: true,
     };
     const css = buildPrintTextScaleCss("harvard-v1", tweaks);
-    expect(css).toContain("aside.sidebar");
-    expect(css).toContain("zoom: 0.9");
-    expect(css).toContain("main.content");
-    expect(css).toContain("zoom: 1.05");
+    // The type-size part of the tweak rewrites the template's own font sizes, see
+    // textScale.test.ts. `zoom` is not implemented by the renderer and
+    // `transform: scale` would shrink the whole column, so neither is emitted.
     expect(css).toContain(".page-footer { display: none !important; }");
+    expect(css).not.toMatch(/zoom\s*:/);
+    expect(css).not.toMatch(/transform\s*:\s*scale/);
   });
 
   it("builds conservative pagination css for both regions", () => {
