@@ -9,27 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-09-30
 
-CVs are generated without a browser. The PDF pipeline runs on a native engine
-that needs no Chromium process, and the print tweaks that Chromium ignored now
-work.
+PDFs are now produced without launching a browser. The engine changed, and so did
+a number of things that were quietly broken behind it.
 
-### Fixed
-
-- The content-area and sidebar text-size tweaks change the type across a whole
-  column again. Previously only rules whose selector text happened to name the
-  column were resized, so headings inside the timeline and subsection blocks kept
-  their original size while other text in the same column scaled.
-- Icons print as icons. Every icon was falling back to a system font and
-  rendering as Times or Arial, because the icon font covers code points that were
-  outside the range it was registered with.
-- The Stanford photo placeholder shades its whole circle instead of a small box
-  behind the symbol.
+**Read this before upgrading.** The new engine draws the same HTML with its own
+layout implementation, so a small number of elements can land a fraction of a
+millimetre or a few pixels from where Chromium put them. Nothing about your CV
+data changes and no content is lost, but if a template looks slightly off, or a
+print tweak does not behave the way you expect, [downgrade to
+1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3)
+to go back to the Playwright engine.
 
 ### Changed
 
-- PDF generation no longer starts a Chromium process. It is about four times
-  faster and produces a smaller file, and the result carries a tagged structure
-  that plain Chromium output lacked.
+- **PDF generation no longer starts Chromium.** It runs on a native engine with no
+  browser process, which is roughly four times faster and produces a smaller
+  file. The output carries a tagged structure that the old output lacked, so
+  screen readers and stricter parsers get more from it.
+- **Print tweaks are honoured for real.** They were built on page-break and
+  typography rules the old engine silently ignored, so most of them did nothing.
+  They now change the document.
+- **Page and column geometry are matched to the previous engine.** Millimetre
+  margins are no longer truncated when converted for the new engine, and the page
+  is sized explicitly rather than by preset, so the text column keeps the width
+  it had.
+- **Page numbers sit inside the text column**, aligned with the body copy instead
+  of hanging past the right margin.
+- The text-size tweaks now resize a whole column rather than only the rules whose
+  selector happened to name it, so headings in every block scale with the rest.
+
+### Fixed
+
+- Icons print as icons instead of falling back to Times or Arial, which is what
+  every icon did under the new engine before the icon font was registered over
+  the code points it actually draws.
+- The Stanford photo placeholder shades its whole circle rather than a small box
+  behind the symbol.
+- Sidebar and content text-size tweaks resize the entire column, so headings
+  inside the timeline and subsection blocks scale with the rest of the text.
+- A new **No Margins** tweak renders edge to edge. A4 margins remain the default
+  and behave as before.
+- Smart Pagination's aggressive mode now changes the page breaks instead of
+  rendering identically to leaving it off.
+
+### Known limitations
+
+- Minor differences in CSS styling and element positioning are possible, because
+  the two engines lay out the same HTML differently. These are small, but if one
+  matters to you, [1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3)
+  restores the previous engine.
+- Page-break rules (`break-inside`, `orphans`, `widows`) are not supported by the
+  new engine. Smart Pagination achieves its effect by spacing instead, so it
+  works, but a template that relies on those rules directly will not.
 
 ## [1.4.3] - 2026-09-30
 

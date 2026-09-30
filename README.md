@@ -2,7 +2,7 @@
 
 *A self-hosted CV and job-search workspace you own instead of renting by the month.*
 
-[![Repository Version](https://img.shields.io/badge/version-1.4.1-blue)](./package.json)
+[![Repository Version](https://img.shields.io/badge/version-1.5.0-blue)](./package.json)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933)](https://nodejs.org/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED)](./deploy/docker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -18,12 +18,17 @@ MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applica
   <img src="images/SCREENSHOT_01.png" alt="Print Room with a live PDF preview and template controls" width="100%">
 </p>
 
-## What’s New in 1.4.0
+## What’s New in 1.5.0
 
-- **Twenty AI providers.** The workspace is no longer tied to a single OpenRouter account. Use API keys, OAuth subscriptions, or a local endpoint. Each provider has a credit or quota you can watch as you work.
-- **Track applications.** Details, contacts, and next actions live on the application. The timeline is editable. Freeze the exact pack you submitted.
-- **Print a PDF.** Print Room remembers your print choices and lists CVs by real version, newest first.
-- **Smart Pagination.** Choose **Normal** for a light touch that rescues one line break, or **Aggressive** for heading, page-room, and line-compaction fixes that can recover up to three lines. Large sections flow cleanly across pages instead of leaving awkward blank space.
+**PDFs are now generated without a browser.** The renderer moved from Playwright to a native engine, which is about four times faster, produces a smaller file, and tags the output so screen readers and stricter parsers get more from it.
+
+Because that engine lays out the same HTML in its own way, a few elements can land a fraction of a millimetre or a few pixels from where they did before. Your CV data is untouched and nothing is lost, but if a template looks slightly off, [downgrade to 1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3) to return to the Playwright engine.
+
+- **Print tweaks that actually work.** The text-size and pagination tweaks were built on rules the new engine initially ignored, so most of them did nothing. They now change the document, and aggressive pagination genuinely moves page breaks.
+- **No Margins tweak.** Render edge to edge when you want it. A4 margins remain the default.
+- **Icons print as icons.** Every icon was rendering as Times or Arial until the icon font was registered over the code points it actually draws.
+- **Geometry matched to the old engine.** Page margins and the text column keep the width they had, and the page number sits inside the column instead of hanging past the right margin.
+- **A smaller Stanford photo placeholder fix.** The circle shades fully instead of only behind the symbol.
 
 See the full [changelog](./CHANGELOG.md).
 

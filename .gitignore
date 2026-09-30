@@ -68,3 +68,4 @@ skills/SKILL.md
 
 # PDFs written by the render test suite into the repository root
 /takumi-*.pdf
+/fonts-*.pdf
