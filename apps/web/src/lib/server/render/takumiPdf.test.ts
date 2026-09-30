@@ -90,10 +90,36 @@ describe("takumi pdf renderer", () => {
 
   it("converts template millimetres to pixel margins", async () => {
     const { mmToPx } = await import("./takumiPdf");
-    expect(mmToPx(12)).toBe(45);
+    // Rounds to nearest, not down: 12mm is 45.354px, and 45 would land the page
+    // inset at 11.906mm instead of 12mm.
+    expect(mmToPx(12)).toBe(46);
     expect(mmToPx(0)).toBe(0);
     expect(mmToPx(25.4)).toBe(96);
   });
+
+  it("keeps the page geometry within a fraction of a millimetre of the A4 basis", async () => {
+    // Two rounding mistakes made every page slightly smaller than the Chromium
+    // build it replaced, which showed up as a visibly narrower content column:
+    //
+    //   - 12mm was converted to 45px by truncating 45.354, landing the page
+    //     inset at 11.906mm.
+    //   - the engine's "a4" preset is exactly 210mm wide, while the Chromium
+    //     page measured 210.227mm. The two-column layouts size their columns as
+    //     a percentage of the page, so a narrower page narrows the content.
+    //
+    // Both are asserted here against the values they have to reproduce.
+    const { mmToPx, A4_WIDTH_PX, A4_HEIGHT_PX } = await import("./takumiPdf");
+
+    expect(mmToPx(12)).toBe(46);
+    // 46px is 12.171mm; the Chromium page inset measured 12.187mm.
+    expect((mmToPx(12) * 25.4) / 96).toBeCloseTo(12.17, 1);
+
+    // 794x1123px is 210.079mm, within 0.15mm of the 210.227mm Chromium page.
+    const widthMm = (A4_WIDTH_PX * 25.4) / 96;
+    expect(widthMm).toBeGreaterThan(210);
+    expect(widthMm).toBeLessThan(210.15);
+    expect(A4_HEIGHT_PX).toBe(1123);
+  }, 30_000);
 
   it("renders the two margin modes differently", async () => {
     const { mmToPx } = await import("./takumiPdf");
