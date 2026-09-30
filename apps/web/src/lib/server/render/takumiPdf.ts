@@ -107,8 +107,17 @@ export async function renderCvPdf({
  * unchanged.
  */
 function pageNumberFooter(): string {
+  // Chromium drew this through its print-footer layer, which sits inside the page
+  // margin, so the number aligned with the body text. This footer is drawn in the
+  // page area instead, so the inset has to be stated. With 24px of padding the
+  // number landed 13.7mm past the right edge of the text column, which reads as a
+  // wrong right margin rather than a misplaced page number.
+  //
+  // The inset is the page margin plus the widest template's own content padding,
+  // so the number falls on the same right edge as the body copy.
+  const insetPx = mmToPx(12) + mmToPx(6.5);
   return [
-    '<div style="width:100%;text-align:right;font-size:10px;color:#6b7280;padding:0 24px;">',
+    `<div style="width:100%;text-align:right;font-size:10px;color:#6b7280;padding:0 ${insetPx}px 0 0;">`,
     '<span class="pageNumber"></span> / <span class="totalPages"></span>',
     "</div>",
   ].join("");
