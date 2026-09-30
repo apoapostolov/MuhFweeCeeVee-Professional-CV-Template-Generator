@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-30
+
+CVs are generated without a browser. The PDF pipeline runs on a native engine
+that needs no Chromium process, and the print tweaks that Chromium ignored now
+work.
+
+### Fixed
+
+- The content-area and sidebar text-size tweaks change the type across a whole
+  column again. Previously only rules whose selector text happened to name the
+  column were resized, so headings inside the timeline and subsection blocks kept
+  their original size while other text in the same column scaled.
+- Icons print as icons. Every icon was falling back to a system font and
+  rendering as Times or Arial, because the icon font covers code points that were
+  outside the range it was registered with.
+- The Stanford photo placeholder shades its whole circle instead of a small box
+  behind the symbol.
+
+### Changed
+
+- PDF generation no longer starts a Chromium process. It is about four times
+  faster and produces a smaller file, and the result carries a tagged structure
+  that plain Chromium output lacked.
+
+## [1.4.3] - 2026-09-30
+
+v1.4.2 could not build. The vendored fonts are resolved through a path webpack analyses at compile time, and it refuses to resolve a bare directory, so `next build` and `next dev` both failed and the app could not be deployed from that tag.
+
+### Fixed
+
+- PDF export works again. The font directory is now resolved at runtime, so the templates load their fonts wherever the app runs.
+
 ## [1.4.2] - 2026-09-29
 
 Your CVs now print in the typeface you designed them in.
