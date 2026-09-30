@@ -2,7 +2,7 @@
 
 *A self-hosted CV and job-search workspace you own instead of renting by the month.*
 
-[![Repository Version](https://img.shields.io/badge/version-1.4.1-blue)](./package.json)
+[![Repository Version](https://img.shields.io/badge/version-1.4.3-blue)](./package.json)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933)](https://nodejs.org/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED)](./deploy/docker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -18,14 +18,14 @@ MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applica
   <img src="images/SCREENSHOT_01.png" alt="Print Room with a live PDF preview and template controls" width="100%">
 </p>
 
-## What’s New in 1.4.0
+## What’s New in 1.4.3
 
-- **Twenty AI providers.** The workspace is no longer tied to a single OpenRouter account. Use API keys, OAuth subscriptions, or a local endpoint. Each provider has a credit or quota you can watch as you work.
-- **Track applications.** Details, contacts, and next actions live on the application. The timeline is editable. Freeze the exact pack you submitted.
-- **Print a PDF.** Print Room remembers your print choices and lists CVs by real version, newest first.
-- **Smart Pagination.** Choose **Normal** for a light touch that rescues one line break, or **Aggressive** for heading, page-room, and line-compaction fixes that can recover up to three lines. Large sections flow cleanly across pages instead of leaving awkward blank space.
+PDF export and the app build work again after a font-path error in 1.4.2.
+The templates can now use their bundled typefaces, including glyphs needed for
+Bulgarian CVs, instead of depending on fonts installed on the host.
 
-See the full [changelog](./CHANGELOG.md).
+The larger 1.4.0 release added provider choice, application tracking, and
+smarter pagination. See the full [changelog](./CHANGELOG.md).
 
 ## What You Can Do
 
