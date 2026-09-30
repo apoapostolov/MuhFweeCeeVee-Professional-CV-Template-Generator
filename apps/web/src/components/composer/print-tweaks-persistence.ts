@@ -20,6 +20,7 @@ export const DEFAULT_PRINT_TWEAKS_STATE: PrintTweaksState = {
   removePhoto: false,
   removePageCount: false,
   moveSkillsLeft: false,
+  noPageMargins: false,
   sidebarTextScaleEnabled: false,
   sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
   contentTextScaleEnabled: false,
@@ -41,16 +42,33 @@ export function readPrintTweaksFromCvDocument(
   cv: unknown,
   scope: PrintTweaksScope,
 ): PrintTweaksState | null {
-  if (!cv || typeof cv !== "object" || !isPrintTweaksScopeReady(scope)) return null;
+  if (!cv || typeof cv !== "object" || !isPrintTweaksScopeReady(scope))
+    return null;
   const metadata = (cv as Record<string, unknown>).metadata;
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata))
+    return null;
   const printTweaks = (metadata as Record<string, unknown>).print_tweaks;
-  if (!printTweaks || typeof printTweaks !== "object" || Array.isArray(printTweaks)) return null;
+  if (
+    !printTweaks ||
+    typeof printTweaks !== "object" ||
+    Array.isArray(printTweaks)
+  )
+    return null;
   const scopes = (printTweaks as Record<string, unknown>).scopes;
-  if (!scopes || typeof scopes !== "object" || Array.isArray(scopes)) return null;
-  const templateScopes = (scopes as Record<string, unknown>)[scope.templateId.trim()];
-  if (!templateScopes || typeof templateScopes !== "object" || Array.isArray(templateScopes)) return null;
-  const values = (templateScopes as Record<string, unknown>)[scope.language.trim().toLowerCase() || "en"];
+  if (!scopes || typeof scopes !== "object" || Array.isArray(scopes))
+    return null;
+  const templateScopes = (scopes as Record<string, unknown>)[
+    scope.templateId.trim()
+  ];
+  if (
+    !templateScopes ||
+    typeof templateScopes !== "object" ||
+    Array.isArray(templateScopes)
+  )
+    return null;
+  const values = (templateScopes as Record<string, unknown>)[
+    scope.language.trim().toLowerCase() || "en"
+  ];
   return parsePrintTweaksState(values);
 }
 
@@ -74,10 +92,16 @@ export function parsePrintTweaksState(value: unknown): PrintTweaksState | null {
   const record = value as Record<string, unknown>;
   return {
     intelligentPagination: asBoolean(record.intelligentPagination),
-    intelligentPaginationMode: record.intelligentPaginationMode === "aggressive" ? "aggressive" : "normal",
+    intelligentPaginationMode:
+      record.intelligentPaginationMode === "aggressive"
+        ? "aggressive"
+        : "normal",
     removePhoto: asBoolean(record.removePhoto),
     removePageCount: asBoolean(record.removePageCount),
     moveSkillsLeft: asBoolean(record.moveSkillsLeft),
+    noPageMargins: asBoolean(
+      record.noPageMargins ?? record.pageMargins === "none",
+    ),
     sidebarTextScaleEnabled: asBoolean(
       record.sidebarTextScaleEnabled ?? record.sidebarTextScaleActive,
     ),
@@ -118,6 +142,8 @@ export function readLegacyGlobalPrintTweaks(
       removePageCount: false,
       moveSkillsLeft:
         storage.getItem(STORAGE_KEYS.printTweakMoveSkillsLeft) === "1",
+      noPageMargins:
+        storage.getItem(STORAGE_KEYS.printTweakPageMargins) === "none",
       sidebarTextScaleEnabled:
         storage.getItem(STORAGE_KEYS.printTweakSidebarTextScaleEnabled) === "1",
       sidebarTextScale: readStoredPrintTextScale(
@@ -152,7 +178,9 @@ export function readPrintTweaksByScopeStore(
       return {};
     }
     const store: PrintTweaksByScopeStore = {};
-    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(
+      parsed as Record<string, unknown>,
+    )) {
       if (!key.trim()) {
         continue;
       }
@@ -223,6 +251,7 @@ export function writePrintTweaksForScope(
     removePhoto: Boolean(tweaks.removePhoto),
     removePageCount: Boolean(tweaks.removePageCount),
     moveSkillsLeft: Boolean(tweaks.moveSkillsLeft),
+    noPageMargins: Boolean(tweaks.noPageMargins),
     sidebarTextScaleEnabled: Boolean(tweaks.sidebarTextScaleEnabled),
     sidebarTextScale: clampPrintTextScale(tweaks.sidebarTextScale),
     contentTextScaleEnabled: Boolean(tweaks.contentTextScaleEnabled),

@@ -6,6 +6,11 @@ const webRoot = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(webRoot, "../..");
 
 const nextConfig: NextConfig = {
+  // takumi-pdf ships a WebAssembly renderer that loads its own binary at
+  // runtime. Bundling it breaks the loader ("The 'path' argument must be of
+  // type string... Received an instance of URL"), so keep it external and let
+  // Node resolve the package and its .wasm file at runtime.
+  serverExternalPackages: ["takumi-pdf", "@takumi-rs/helpers", "@takumi-rs/core"],
   // WSL + Windows browser: allow dev asset/HMR requests from common local origins.
   allowedDevOrigins: [
     "localhost:3005",

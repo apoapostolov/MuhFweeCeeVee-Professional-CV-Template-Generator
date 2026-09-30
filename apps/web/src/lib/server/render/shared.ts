@@ -342,23 +342,23 @@ export function renderExperience(
             if (!trimmed) return "";
             const splitByDash = trimmed.split(/\s+-\s+/, 2);
             if (splitByDash.length === 2) {
-              return `<li><span class=\"product-name\">${escapeHtml(splitByDash[0])}</span><span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(splitByDash[1])}</span></span></li>`;
+              return `<li><span class=\"product-bullet\"></span><span class=\"product-name\">${escapeHtml(splitByDash[0])}</span><span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(splitByDash[1])}</span></span></li>`;
             }
             const marker = ", вкл.";
             const markerIndex = trimmed.indexOf(marker);
             if (markerIndex > 0) {
               const name = trimmed.slice(0, markerIndex).trim();
               const note = `вкл. ${trimmed.slice(markerIndex + marker.length).trim()}`;
-              return `<li><span class=\"product-name\">${escapeHtml(name)}</span><span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(note)}</span></span></li>`;
+              return `<li><span class=\"product-bullet\"></span><span class=\"product-name\">${escapeHtml(name)}</span><span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(note)}</span></span></li>`;
             }
-            return `<li><span class=\"product-name\">${escapeHtml(trimmed)}</span></li>`;
+            return `<li><span class=\"product-bullet\"></span><span class=\"product-name\">${escapeHtml(trimmed)}</span></li>`;
           }
           const productRecord = asRecord(product);
           if (!productRecord) return "";
           const name = String(productRecord.name ?? "").trim();
           const note = String(productRecord.note ?? "").trim();
           if (!name) return "";
-          return `<li><span class=\"product-name\">${escapeHtml(name)}</span>${note ? `<span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(note)}</span></span>` : ""}</li>`;
+          return `<li><span class=\"product-bullet\"></span><span class=\"product-name\">${escapeHtml(name)}</span>${note ? `<span class=\"product-note-line\"><span class=\"product-note-tab\">&nbsp;&nbsp;</span><span class=\"product-note-text\">${escapeHtml(note)}</span></span>` : ""}</li>`;
         })
         .join("");
       const publicationRows = toPublicationLinks(record.publication_links)

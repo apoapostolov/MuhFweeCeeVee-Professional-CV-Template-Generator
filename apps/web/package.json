@@ -1,6 +1,6 @@
 {
   "name": "@muhfweeceevee/web",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -p 10004 -H 127.0.0.1",
@@ -16,6 +16,7 @@
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@takumi-rs/helpers": "^2.14.0",
     "@tanstack/react-query": "^5.90.21",
     "ajv": "^6.14.0",
     "class-variance-authority": "^0.7.1",
@@ -30,6 +31,7 @@
     "react-dom": "19.2.3",
     "stemmer": "^2.0.1",
     "tailwind-merge": "^3.5.0",
+    "takumi-pdf": "^0.15.0",
     "yaml": "^2.8.2",
     "zustand": "^5.0.11"
   },

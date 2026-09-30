@@ -1,6 +1,10 @@
-import { applyTemplateVisibility, readTemplateVisibility } from "@/lib/cvTemplateVisibility";
+import {
+  applyTemplateVisibility,
+  readTemplateVisibility,
+} from "@/lib/cvTemplateVisibility";
 import { readCv } from "./cvStore";
 import { buildPdfFontFaceCss } from "./render/pdfFonts";
+import { applyTextScale } from "./render/textScale";
 import { renderCambridge } from "./render/cambridge-v1";
 import { renderEdinburgh } from "./render/edinburgh-v1";
 import { renderEuropass } from "./render/europass-v1";
@@ -11,19 +15,28 @@ import {
   bindSlots,
   readYamlFile,
   resolveMappingPath,
+  resolveMargins,
   resolvePhotoDataUrl,
   resolveRenderLanguage,
   resolveTemplateLabels,
 } from "./render/shared";
 import {
+  buildAdaptivePaginationCss,
   buildIntelligentPaginationCss,
   buildPrintTextScaleCss,
   DEFAULT_RENDER_TWEAKS,
   injectPrintTweakStyles,
   resolveEffectivePhotoMode,
   shouldMoveSkillsLeft,
+  templateHasLeftSidebar,
 } from "./render/tweaks";
-import type { MappingFile, PdfMetadata, RenderInput, RenderResult, TemplateFile } from "./render/types";
+import type {
+  MappingFile,
+  PdfMetadata,
+  RenderInput,
+  RenderResult,
+  TemplateFile,
+} from "./render/types";
 import {
   resolveCambridgeTheme,
   resolveEdinburghTheme,
@@ -35,16 +48,19 @@ import { repoPath } from "./repoPaths";
 export type { PdfMetadata, RenderInput, RenderResult } from "./render/types";
 
 function buildPdfMetadata(cv: unknown): PdfMetadata {
-  const person = cv && typeof cv === "object" && !Array.isArray(cv)
-    ? (cv as Record<string, unknown>).person
-    : undefined;
-  const fullName = person && typeof person === "object" && !Array.isArray(person)
-    ? String((person as Record<string, unknown>).full_name ?? "").trim()
-    : "";
+  const person =
+    cv && typeof cv === "object" && !Array.isArray(cv)
+      ? (cv as Record<string, unknown>).person
+      : undefined;
+  const fullName =
+    person && typeof person === "object" && !Array.isArray(person)
+      ? String((person as Record<string, unknown>).full_name ?? "").trim()
+      : "";
   const nameParts = fullName.split(/\s+/).filter(Boolean);
-  const shortName = nameParts.length >= 2
-    ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
-    : fullName;
+  const shortName =
+    nameParts.length >= 2
+      ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
+      : fullName;
   const displayName = shortName || "MuhFweeCeeVee";
   return {
     author: displayName,
@@ -124,23 +140,47 @@ export async function buildCvTemplateHtml(
               moveSkillsLeft,
             )
           : input.templateId === "cambridge-v1"
-            ? renderCambridge(cv, template, slots, labels, cambridgeTheme, moveSkillsLeft)
+            ? renderCambridge(
+                cv,
+                template,
+                slots,
+                labels,
+                cambridgeTheme,
+                moveSkillsLeft,
+              )
             : input.templateId === "europass-v1"
               ? renderEuropass(cv, template, slots, labels)
               : renderGeneric(cv, template, slots, labels);
 
   const tweakCss = [
     buildIntelligentPaginationCss(input.templateId, tweaks),
+    buildAdaptivePaginationCss(tweaks.intelligentPaginationMode, {
+      tightenHeadings: true,
+    }),
     buildPrintTextScaleCss(input.templateId, tweaks),
     await buildPdfFontFaceCss(),
   ]
     .filter(Boolean)
     .join("\n");
 
+  const styledHtml = injectPrintTweakStyles(html, tweakCss);
+
   return {
-    html: injectPrintTweakStyles(html, tweakCss),
+    // The type-size tweak rewrites the template's own font sizes, so it is
+    // applied to the finished markup rather than appended as extra CSS.
+    html: applyTextScale(
+      styledHtml,
+      input.templateId,
+      tweaks.sidebarTextScaleActive && templateHasLeftSidebar(input.templateId)
+        ? tweaks.sidebarTextScale / 100
+        : 1,
+      tweaks.contentTextScaleActive ? tweaks.contentTextScale / 100 : 1,
+    ),
     cvId: input.cvId,
     templateId: input.templateId,
     metadata: buildPdfMetadata(cv),
+    // takumi-pdf does not parse `@page`, so the renderer sets its own margins
+    // from the template's resolved page geometry.
+    margins: resolveMargins(template),
   };
 }

@@ -64,7 +64,10 @@ export function renderGeneric(
       color: #5f6368;
       padding: 0 1mm 0 0;
     }
-    .page-footer::after { content: \"${escapeHtml(pageLabel)} \" counter(page); }
+    /* The label and counter are real children, not a ::after with counter(page):
+       takumi-pdf does not render generated content, and it fills the
+       pageNumber/totalPages class hooks that the export route already uses. */
+    .page-footer .page-label { margin-right: 0.4em; }
   </style>
 </head>
 <body>
@@ -95,7 +98,7 @@ export function renderGeneric(
       ${renderReferences(label(labels, "sections.references", "References"), slots["references.items"] ?? getByPath(cv, "references"))}
     </main>
   </div>
-  <footer class=\"page-footer\"></footer>
+  <footer class=\"page-footer\"><span class=\"page-label\">${escapeHtml(pageLabel)}</span><span class=\"pageNumber\"></span></footer>
 </body>
 </html>`;
 }

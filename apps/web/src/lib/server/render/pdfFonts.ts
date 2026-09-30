@@ -6,6 +6,7 @@ import manifest from "@/assets/pdf-fonts/manifest.json";
 
 type PdfFontFace = {
   weight: string;
+  style: string;
   subset: keyof typeof manifest.unicodeRanges;
   file: string;
 };
@@ -14,6 +15,7 @@ type PdfFontFamily = {
   css: string;
   slug: string;
   hasCyrillic: boolean;
+  symbolFallback?: boolean;
   replaces?: string;
   note?: string;
   faces: PdfFontFace[];
@@ -21,11 +23,26 @@ type PdfFontFamily = {
 
 const FAMILIES = manifest.families as PdfFontFamily[];
 
+/**
+ * The code points a face is allowed to supply.
+ *
+ * Font Awesome draws its glyphs from the Private Use Area (U+E000-F8FF), which no
+ * fontsource subset covers, so the face was registered with the latin range only.
+ * The renderer then found no face for an icon code point and fell back to a
+ * system font, printing the icon as Times or Arial. Give the icon family its
+ * real range alongside the subset it ships with.
+ */
+const ICON_PRIVATE_USE_RANGE = "U+E000-F8FF";
+
+function unicodeRangeFor(family: PdfFontFamily, face: PdfFontFace): string {
+  const range = manifest.unicodeRanges[face.subset];
+  return /Awesome/i.test(family.css) ? `${range}, ${ICON_PRIVATE_USE_RANGE}` : range;
+}
+
 // Resolve the font directory at runtime. The path is built from
 // `process.cwd()` on purpose: webpack statically analyses `new URL("...",
-// import.meta.url)` and cannot resolve a bare directory reference, so both
-// `next dev` and `next build` fail with "Module not found: Can't resolve
-// '../../../assets/pdf-fonts/'".
+// import.meta.url)` and fails to resolve a bare directory reference, which broke
+// the dev server with "Module not found: Can't resolve '../../../assets/pdf-fonts/'".
 const fontDirCandidates = [
   // Next.js runs with apps/web as the working directory.
   path.join(process.cwd(), "src", "assets", "pdf-fonts"),
@@ -58,12 +75,12 @@ export async function buildPdfFontFaceCss(): Promise<string> {
   for (const family of FAMILIES) {
     for (const face of family.faces) {
       const bytes = await readFile(`${fontDir}/${face.file}`);
-      const range = manifest.unicodeRanges[face.subset];
+      const range = unicodeRangeFor(family, face);
       rules.push(
         [
           "@font-face {",
           `  font-family: ${family.css};`,
-          "  font-style: normal;",
+          `  font-style: ${face.style};`,
           `  font-weight: ${face.weight};`,
           "  font-display: block;",
           `  src: url("data:font/woff2;base64,${bytes.toString("base64")}") format("woff2");`,
@@ -79,6 +96,7 @@ export async function buildPdfFontFaceCss(): Promise<string> {
 export type PdfFontEntry = {
   name: string;
   weight: number;
+  style: string;
   data: Uint8Array;
 };
 
@@ -86,19 +104,26 @@ export type PdfFontEntry = {
  * Font entries for Takumi, which reads no system fonts and fetches no
  * stylesheet.
  *
- * Each vendored file is one script subset, so every subset is registered under
- * its own name and the chain is repeated per family. A missing glyph walks the
- * chain until a subset covers it, which is how Cyrillic resolves for families
- * that ship no Cyrillic file.
+ * Each entry is registered under the exact CSS family name the templates
+ * declare, because the engine resolves a `font-family` declaration against the
+ * registered names and only then falls back through `fontFamilies`. Registering
+ * subset files under a synthetic name such as `ibm-plex-sans-latin` would leave
+ * the declared family unresolved and the walk would start at the first
+ * registered font instead.
  */
 export async function loadPdfFontEntries(): Promise<PdfFontEntry[]> {
   const fontDir = resolveFontDir();
   const entries: PdfFontEntry[] = [];
   for (const family of FAMILIES) {
+    const name = family.css.replace(/"/g, "");
     for (const face of family.faces) {
       entries.push({
-        name: `${family.slug}-${face.subset}`,
+        name,
         weight: Number(face.weight),
+        // Without this the engine synthesises an oblique for `font-style:
+        // italic`, and the synthetic slant reads as the wrong angle next to
+        // the roman faces.
+        style: face.style,
         data: new Uint8Array(await readFile(`${fontDir}/${face.file}`)),
       });
     }
@@ -107,24 +132,30 @@ export async function loadPdfFontEntries(): Promise<PdfFontEntry[]> {
 }
 
 /**
- * Ordered fallback chain: each family's own subsets first, then every
- * Cyrillic-capable family, so a glyph the primary family lacks still renders
- * with a real font.
+ * Ordered fallback chain, in the order the templates declare their families.
+ *
+ * Takumi walks this list until a registered font covers the character and fails
+ * the render when none does, so the symbol fonts must sit at the end. Putting a
+ * text family later in the list is fine: it is only reached for glyphs the
+ * earlier families lack.
  */
 export function pdfFontFallbackChain(): string[] {
-  const cyrillicCapable = FAMILIES.filter((family) => family.hasCyrillic);
+  const symbolFamilies = FAMILIES.filter((family) => family.symbolFallback);
+  const textFamilies = FAMILIES.filter((family) => !family.symbolFallback);
+  const cyrillicCapable = textFamilies.filter((family) => family.hasCyrillic);
+
   const chain: string[] = [];
-  const add = (slug: string, subset: string) => {
-    const name = `${slug}-${subset}`;
+  const add = (css: string) => {
+    const name = css.replace(/"/g, "");
     if (!chain.includes(name)) chain.push(name);
   };
-  for (const family of FAMILIES) {
-    for (const face of family.faces) add(family.slug, face.subset);
+  for (const family of textFamilies) {
+    add(family.css);
+    // A family with no Cyrillic subset needs a Cyrillic-capable family behind it.
     if (!family.hasCyrillic) {
-      for (const fallback of cyrillicCapable) {
-        for (const face of fallback.faces) add(fallback.slug, face.subset);
-      }
+      for (const fallback of cyrillicCapable) add(fallback.css);
     }
   }
+  for (const family of symbolFamilies) add(family.css);
   return chain;
 }

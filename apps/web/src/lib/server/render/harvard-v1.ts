@@ -1,4 +1,5 @@
 import type { CvDocument } from "../cvStore";
+import { renderIcon } from "./icons";
 import type { HarvardThemePalette, TemplateFile } from "./types";
 import {
   asRecord,
@@ -160,7 +161,7 @@ export function renderHarvard(
   const personalDetailsHtml = personalRows
     .map(
       (item) => `<li>
-      <span class="icon"><i class="fa-solid ${item.icon}"></i></span>
+      <span class="icon">${renderIcon(item.icon)}</span>
       <span class="kv"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.value)}</span></span>
     </li>`,
     )
@@ -196,8 +197,8 @@ export function renderHarvard(
   ): string {
     if (!items.length) return "";
     return `<section class="${extraClass}">
-      <h2><span class="section-icon"><i class="fa-solid ${iconClass}"></i></span>${escapeHtml(titleText)}</h2>
-      <div class="timeline">${items.join("")}</div>
+      <h2><span class="section-icon">${renderIcon(iconClass)}</span>${escapeHtml(titleText)}</h2>
+      <div class="timeline"><span class="timeline-rail"></span>${items.join("")}</div>
     </section>`;
   }
 
@@ -400,7 +401,9 @@ export function renderHarvard(
       flex: 0 0 auto;
     }
     .timeline { position: relative; padding-left: 11mm; }
-    .timeline::before { content: ""; position: absolute; left: 4.1mm; top: 0; bottom: 0; width: 0.35mm; background: ${theme.timeline}; }
+    /* A real element, not a ::before pseudo-element: takumi-pdf does not render
+       generated content, so the rail would disappear entirely. */
+    .timeline-rail { position: absolute; left: 4.1mm; top: 0; bottom: 0; width: 0.35mm; background: ${theme.timeline}; }
     .timeline-item {
       position: relative;
       display: grid;
@@ -454,7 +457,7 @@ export function renderHarvard(
           ${
             photoUrl
               ? `<img src="${escapeHtml(photoUrl)}" alt="Profile photo" />`
-              : `<div class="avatar-fallback"><i class="fa-solid fa-user"></i></div>`
+              : `<div class="avatar-fallback">${renderIcon("fa-user")}</div>`
           }
         </div>
       </div>`
@@ -489,7 +492,7 @@ export function renderHarvard(
       ${timelineSectionHtml(label(labels, "sections.education", "Education and Qualifications"), "fa-graduation-cap", educationItems)}
       ${
         !moveSkillsLeft && skillRows
-          ? `<section><h2><span class="section-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="star-list">${skillRows}</ul></section>`
+          ? `<section><h2><span class="section-icon">${renderIcon("fa-screwdriver-wrench")}</span>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2><ul class="star-list">${skillRows}</ul></section>`
           : ""
       }
       ${timelineSectionHtml(label(labels, "sections.references", "References"), "fa-id-badge", referencesItems)}

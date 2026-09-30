@@ -2,6 +2,7 @@ import type { CvDocument } from "../cvStore";
 import { languageLevelLabel } from "./cambridge-v1";
 import { toPublicationLinks } from "./profile-links";
 import { toProductLines } from "./europass-v1";
+import { renderIcon } from "./icons";
 import type { StanfordThemePalette, TemplateFile } from "./types";
 import {
   asRecord,
@@ -188,9 +189,12 @@ export function renderStanford(
 
     .profile { text-align: left; margin-bottom: 7.2mm; min-height: 44mm; display: flex; align-items: center; justify-content: center; }
     .profile.profile-original { align-items: flex-end; }
-    .avatar-wrap { width: 41mm; height: 41mm; margin: 0 auto; border-radius: 50%; overflow: hidden; border: 0.7mm solid rgba(255,255,255,0.85); box-shadow: 0 2px 10px rgba(0,0,0,0.22); }
-    .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .avatar-fallback { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; font-size: 13mm; color: ${theme.sidebarMuted}; background: rgba(0,0,0,0.2); }
+    .avatar-wrap { width: 41mm; height: 41mm; margin: 0 auto; border-radius: 50%; overflow: hidden; border: 0.7mm solid rgba(255,255,255,0.85); box-shadow: 0 2px 10px rgba(0,0,0,0.22); background: rgba(0,0,0,0.2); }
+        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* The tint belongs on the clipping circle, not on this child: the renderer
+           sizes a flex child to its glyph box rather than to the circle, which left
+           the shade as a small rectangle behind the icon instead of filling it. */
+        .avatar-fallback { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; font-size: 13mm; color: ${theme.sidebarMuted}; background: transparent; }
     .avatar-wrap.photo-force-circle { border-radius: 999px; }
     .avatar-wrap.photo-force-square { border-radius: 0; }
     .avatar-wrap.photo-force-original { height: auto; border-radius: 0; }
@@ -198,7 +202,8 @@ export function renderStanford(
     .avatar-wrap.photo-force-original .avatar-fallback { width: 100%; aspect-ratio: 3 / 4; height: auto; border-radius: 0; }
 
     .sidebar h2 { margin: 0 0 2.2mm; padding-bottom: 1.4mm; font-size: 4.05mm; font-weight: 700; text-transform: none; border-bottom: none; letter-spacing: 0; position: relative; }
-    .sidebar h2::after { content: ""; display: block; width: calc(100% + 7mm); margin-top: 1.4mm; border-top: 0.25mm solid #ffffff; }
+    /* Real element, not ::after: takumi-pdf does not render generated content. */
+    .sidebar h2 .h2-rule { display: block; width: calc(100% + 7mm); margin-top: 1.4mm; border-top: 0.25mm solid #ffffff; }
     .sidebar section { margin-bottom: 5.4mm; padding-right: 0; }
     .sidebar ul { list-style: none; margin: 0; padding: 0; }
     .sidebar li { margin: 1.5mm 0; }
@@ -284,16 +289,16 @@ export function renderStanford(
           ${
             photoUrl
               ? `<img src="${escapeHtml(photoUrl)}" alt="Profile photo" />`
-              : `<div class="avatar-fallback">👤</div>`
-          }
+              : `<div class="avatar-fallback">${renderIcon("fa-user")}</div>`
+                        }
         </div>
       </div>`
           : ""
       }
-      ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}</h2><ul>${personalHtml}</ul></section>` : ""}
-      ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}</h2><ul>${interestsHtml}</ul></section>` : ""}
-      ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}</h2><ul class="languages">${languageHtml}</ul></section>` : ""}
-      ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
+      ${personalHtml ? `<section><h2>${escapeHtml(label(labels, "sections.personal_details", "Personal details"))}<span class="h2-rule"></span></h2><ul>${personalHtml}</ul></section>` : ""}
+      ${interestsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.interests", "Interests"))}<span class="h2-rule"></span></h2><ul>${interestsHtml}</ul></section>` : ""}
+      ${languageHtml ? `<section><h2>${escapeHtml(label(labels, "sections.languages", "Languages"))}<span class="h2-rule"></span></h2><ul class="languages">${languageHtml}</ul></section>` : ""}
+      ${moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}<span class="h2-rule"></span></h2>${skillsHtml}</section>` : ""}
     </aside>
     <main class="content">
       ${titleName ? `<h1 class="name">${escapeHtml(titleName)}</h1>` : ""}
@@ -301,7 +306,7 @@ export function renderStanford(
       ${summaryText ? `<section class="summary"><p>${escapeHtml(summaryText)}</p></section>` : ""}
       ${workHtml ? `<section class="work-section"><h2>${escapeHtml(label(labels, "sections.work_experience", "Work experience"))}</h2><div class="section-divider"></div>${workHtml}</section>` : ""}
       ${educationHtml ? `<section><h2>${escapeHtml(label(labels, "sections.education", "Education and Qualifications"))}</h2>${educationHtml}</section>` : ""}
-      ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}</h2>${skillsHtml}</section>` : ""}
+      ${!moveSkillsLeft && skillsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.skills", "Skills"))}<span class="h2-rule"></span></h2>${skillsHtml}</section>` : ""}
       ${refsHtml ? `<section><h2>${escapeHtml(label(labels, "sections.references", "References"))}</h2>${refsHtml}</section>` : ""}
       ${optionalCourses}
       ${optionalProjects}

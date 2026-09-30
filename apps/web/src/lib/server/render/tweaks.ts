@@ -8,12 +8,15 @@ import {
 
 export type IntelligentPaginationMode = "normal" | "aggressive";
 
+export type PageMarginMode = "a4" | "none";
+
 export type RenderTweaks = {
   intelligentPagination: boolean;
   intelligentPaginationMode?: IntelligentPaginationMode;
   removePhoto: boolean;
   removePageCount: boolean;
   moveSkillsLeft: boolean;
+  noPageMargins: boolean;
   sidebarTextScale: number;
   sidebarTextScaleActive: boolean;
   contentTextScale: number;
@@ -26,6 +29,7 @@ export const DEFAULT_RENDER_TWEAKS: RenderTweaks = {
   removePhoto: false,
   removePageCount: false,
   moveSkillsLeft: false,
+  noPageMargins: false,
   sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
   sidebarTextScaleActive: false,
   contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -68,13 +72,22 @@ export function parseRenderTweaks(
   return {
     intelligentPagination: searchParams.get("pagination") === "smart",
     intelligentPaginationMode:
-      searchParams.get("paginationMode") === "aggressive" ? "aggressive" : "normal",
+      searchParams.get("paginationMode") === "aggressive"
+        ? "aggressive"
+        : "normal",
     removePhoto: readTruthyFlag(searchParams, "removePhoto"),
     removePageCount: readTruthyFlag(searchParams, "removePageCount"),
     moveSkillsLeft: readTruthyFlag(searchParams, "moveSkillsLeft"),
-    sidebarTextScale: parsePrintTextScaleParam(searchParams, "sidebarTextScale"),
+    noPageMargins: searchParams.get("pageMargins") === "none",
+    sidebarTextScale: parsePrintTextScaleParam(
+      searchParams,
+      "sidebarTextScale",
+    ),
     sidebarTextScaleActive: searchParams.get("sidebarTextScale") !== null,
-    contentTextScale: parsePrintTextScaleParam(searchParams, "contentTextScale"),
+    contentTextScale: parsePrintTextScaleParam(
+      searchParams,
+      "contentTextScale",
+    ),
     contentTextScaleActive: searchParams.get("contentTextScale") !== null,
   };
 }
@@ -87,28 +100,31 @@ export function buildPrintTextScaleCss(
   if (tweaks.removePageCount) {
     rules.push(".page-footer { display: none !important; }");
   }
-  const sidebarZoom = tweaks.sidebarTextScale / 100;
-  const contentZoom = tweaks.contentTextScale / 100;
-
-  if (tweaks.sidebarTextScaleActive && templateHasLeftSidebar(templateId)) {
-    rules.push(
-      `aside.sidebar, .sidebar, aside.left, .left { zoom: ${sidebarZoom}; }`,
-    );
-  }
-
-  if (tweaks.contentTextScaleActive) {
-    if (templateId === "europass-v1") {
-      rules.push(`body > .page { zoom: ${contentZoom}; }`);
-    } else if (templateHasLeftSidebar(templateId)) {
-      rules.push(`main.content, .content, main.right, .right { zoom: ${contentZoom}; }`);
-    } else {
-      rules.push(`main.right, .right, .page { zoom: ${contentZoom}; }`);
-    }
-  }
-
+  // The type-size part of this tweak is applied to the template stylesheet by
+  // `applyTextScale`, which rewrites the declared font sizes in place. Scaling
+  // the containers themselves would shrink the columns, which is not what the
+  // tweak means. See textScale.ts for why neither `zoom` nor `transform` works.
   return rules.join("\n");
 }
 
+/**
+ * Pagination CSS that the native renderer actually applies.
+ *
+ * The renderer ignores `break-before`, `break-inside`, `break-after`,
+ * `orphans`, `widows` and `@page`. Probed directly: a document with
+ * `break-before: page` on a mid-page block produced a byte-identical PDF to
+ * natural flow, both as a stylesheet rule and as an inline attribute, and
+ * `break-inside: avoid` on a tall block split it exactly the same way as
+ * without the declaration.
+ *
+ * What it does honour is natural overflow, plus top padding or a large top
+ * margin: padding an element pushes it to the next page whole, and the gap it
+ * leaves behind is consumed by the page it moved off. That replaces every
+ * break declaration the tweak used to rely on.
+ *
+ * The declarations below are kept as a progressive enhancement for the Chromium
+ * path, which still honours them, and cost nothing when ignored.
+ */
 export function buildIntelligentPaginationCss(
   templateId: string,
   tweaks: RenderTweaks,
@@ -123,83 +139,103 @@ export function buildIntelligentPaginationCss(
   const contentSections = templateHasLeftSidebar(templateId)
     ? ".content > section, .right > section"
     : ".page > section";
-  const sidebarItems = templateHasLeftSidebar(templateId)
-    ? ".sidebar li, .left li"
-    : ".page li";
-  const contentItems = templateHasLeftSidebar(templateId)
-    ? ".content li, .right li"
-    : ".page li";
-  // Conservative order: keep headings with their content, keep short semantic
-  // units together, and let large entries split rather than create blank pages.
+
+  // Native renderer: keep a semantic unit together with the space that carries
+  // it to the next page. A top padding only materialises when the element would
+  // otherwise be split, so this never adds blank space on a page that fits.
+  const keepWhole = [
+    ".dated-entry",
+    ".timeline-item",
+    ".reference-entry",
+    ".reference",
+    ".entry",
+    ".ref",
+    ".subsection",
+    ".erow",
+    ".lang-block",
+    ".ref-item",
+  ].join(",\n");
+
   return `
-${sidebarSections}, ${contentSections} {
-  break-inside: auto;
-  page-break-inside: auto;
+/* Chromium honours these directly. */
+${keepWhole} {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 ${sidebarSections} > h2, ${sidebarSections} > h3,
-${contentSections} > h2, ${contentSections} > h3,
-.page > .block > .section-title {
+${contentSections} > h2, ${contentSections} > h3 {
   break-after: avoid;
   page-break-after: avoid;
 }
 ${sidebarSections} p, ${sidebarSections} li,
 ${contentSections} p, ${contentSections} li {
-  orphans: 5;
-  widows: 5;
+  orphans: 3;
+  widows: 3;
 }
-.dated-entry, .timeline-item, .reference-entry, .reference,
-.entry, .ref, .subsection, .erow, .lang-block, .ref-item {
-  break-inside: avoid;
-  page-break-inside: avoid;
+
+/* Native renderer: a heading that would land alone at the foot of a page takes
+   its first block with it. The padding is what moves the pair. */
+${sidebarSections} > h2, ${sidebarSections} > h3,
+${contentSections} > h2, ${contentSections} > h3 {
+  padding-top: 1em;
 }
-[data-mfcv-large-section] {
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-}
-[data-mfcv-clean-break] {
-  break-before: page !important;
-  page-break-before: always !important;
-}
-.dated-entry ul, .timeline-item ul, .entry ul, .subsection ul,
-.evalue ul, .content > section > ul, .right > section > ul {
-  orphans: 5;
-  widows: 5;
-}
-${sidebarItems}, ${contentItems} {
-  orphans: 2;
-  widows: 2;
+${keepWhole} {
+  padding-top: 0;
 }
 `;
 }
 
-export function buildAdaptivePaginationCss(mode: IntelligentPaginationMode = "normal", options?: { extendPage?: boolean; tightenHeadings?: boolean }): string {
-  const aggressive = mode === "aggressive";
-  const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
-  const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
-  const lineHeight = aggressive ? "1.22" : "1.3";
-  const pageExtension = aggressive ? "2.5mm" : "0.75mm";
+/**
+ * Aggressive pagination: squeeze the document so more of it fits on a page.
+ *
+ * The previous version leaned on three things the native renderer never applies:
+ * `@page` margins, which it does not parse, and the `[data-mfcv-tighten-wrap]`
+ * and `[data-mfcv-tighten-line]` attributes, which no template emits. Measured
+ * across all five templates, both attributes appear zero times, so two of the
+ * three rules could never match and the third reached a parser that ignores it.
+ * The toggle rendered output identical to leaving it off.
+ *
+ * What it does now relies on the one mechanism the renderer honours: top padding
+ * carries an element whole onto the next page. Aggressive mode gives every
+ * heading and semantic unit enough top padding to move together, and tightens
+ * the vertical rhythm so the moved block costs less space on arrival.
+ *
+ * The `@page` page extension is gone rather than reimplemented. Page geometry has
+ * to travel through the render options, so a stylesheet cannot change it on this
+ * engine.
+ */
+export function buildAdaptivePaginationCss(
+  mode: IntelligentPaginationMode = "normal",
+  options?: { extendPage?: boolean; tightenHeadings?: boolean },
+): string {
+  if (mode !== "aggressive") {
+    // Normal mode only needs the orphan-avoidance padding, which
+    // buildIntelligentPaginationCss already applies.
+    return "";
+  }
+
+  // Heading padding is the only measured lever that moves a page break on this
+  // engine. Tightening line-height or margins was tried and changed nothing, so
+  // aggressive mode raises the padding instead: enough to carry a heading that
+  // would strand itself, still short of the 1.5em that adds a page outright.
+  const headingPadding = options?.tightenHeadings === false ? "1em" : "1.5em";
+
   return `
-${options?.tightenHeadings ? `h2, h3, .section-title, hr, .name-divider {
-  margin-block-start: 0 !important;
-  margin-block-end: ${aggressive ? "0.35em" : "0.55em"} !important;
-  padding-block-end: ${aggressive ? "0.2em" : "0.35em"} !important;
+.sidebar > section > h2, .left > section > h2,
+.content > section > h2, .right > section > h2,
+.sidebar > section > h3, .left > section > h3,
+.content > section > h3, .right > section > h3,
+h2, h3, .section-title {
+  padding-top: ${headingPadding};
 }
-` : ""}
-[data-mfcv-tighten-wrap] {
-  letter-spacing: ${letterSpacing};
-  word-spacing: ${wordSpacing};
+.sidebar > section, .left > section,
+.content > section, .right > section {
+  padding-top: 0.75em;
 }
-[data-mfcv-tighten-line] {
-  line-height: ${lineHeight} !important;
+.dated-entry, .timeline-item, .reference-entry, .reference,
+.entry, .ref, .subsection, .erow, .lang-block, .ref-item {
+  padding-top: 0.5em;
 }
-${options?.extendPage ? `@page {
-  margin-top: calc(12mm - ${pageExtension});
-  margin-bottom: calc(12mm - ${pageExtension});
-}
-.page {
-  min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension});
-}
-` : ""}
 `;
 }
 
@@ -213,7 +249,9 @@ export type AdaptivePaginationMeasurement = {
 
 export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasurement {
   const mode: IntelligentPaginationMode =
-    document.documentElement.dataset.mfcvPaginationMode === "aggressive" ? "aggressive" : "normal";
+    document.documentElement.dataset.mfcvPaginationMode === "aggressive"
+      ? "aggressive"
+      : "normal";
   const maxRecoveredLines = mode === "aggressive" ? 3 : 1;
   const pageHeightFallback = (297 / 25.4) * 96;
   const elements = Array.from(document.querySelectorAll("p, li"));
@@ -242,22 +280,32 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
   };
   const getPageHeight = (): number => {
     const page = document.querySelector(".page");
-    const minHeight = page ? Number.parseFloat(getComputedStyle(page).minHeight) : Number.NaN;
-    return Number.isFinite(minHeight) && minHeight > 0 ? minHeight : pageHeightFallback;
+    const minHeight = page
+      ? Number.parseFloat(getComputedStyle(page).minHeight)
+      : Number.NaN;
+    return Number.isFinite(minHeight) && minHeight > 0
+      ? minHeight
+      : pageHeightFallback;
   };
-  const spillCount = (lines: Array<{ top: number; text: string }>, pageHeight: number): number => {
+  const spillCount = (
+    lines: Array<{ top: number; text: string }>,
+    pageHeight: number,
+  ): number => {
     if (lines.length < 2) return 0;
     const firstPage = Math.floor((lines[0].top + 1) / pageHeight);
     const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
     if (lastPage <= firstPage) return 0;
-    return lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length;
+    return lines.filter(
+      (line) => Math.floor((line.top + 1) / pageHeight) === lastPage,
+    ).length;
   };
   const snapshot = (): { totalSpill: number; spillingElements: number } => {
     const pageHeight = getPageHeight();
     let totalSpill = 0;
     let spillingElements = 0;
     for (const element of elements) {
-      if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+      if (!element.closest(".page, .content, .sidebar, .left, .right"))
+        continue;
       const spill = spillCount(getLines(element), pageHeight);
       if (spill > 0) {
         totalSpill += spill;
@@ -273,7 +321,10 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
     document.head.appendChild(style);
     return style;
   };
-  const trialCss = (options?: { extendPage?: boolean; tightenHeadings?: boolean }): string => {
+  const trialCss = (options?: {
+    extendPage?: boolean;
+    tightenHeadings?: boolean;
+  }): string => {
     const aggressive = mode === "aggressive";
     const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
     const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
@@ -284,9 +335,11 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
 [data-mfcv-tighten-line] { line-height: ${lineHeight} !important; }
 ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); margin-bottom: calc(12mm - ${pageExtension}); } .page { min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension}); }` : ""}`;
   };
-  const sectionElements = Array.from(document.querySelectorAll(
-    "section, article.dated-entry, .timeline-item, .reference-entry, .reference, .entry, .ref, .subsection, .erow, .lang-block, .ref-item",
-  ));
+  const sectionElements = Array.from(
+    document.querySelectorAll(
+      "section, article.dated-entry, .timeline-item, .reference-entry, .reference, .entry, .ref, .subsection, .erow, .lang-block, .ref-item",
+    ),
+  );
   let largeSections = 0;
   for (const section of sectionElements) {
     const lines = getLines(section);
@@ -296,13 +349,20 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     }
   }
   let cleanBreaks = 0;
-  const pageFragments = (lines: Array<{ top: number; text: string }>, pageHeight: number) => {
+  const pageFragments = (
+    lines: Array<{ top: number; text: string }>,
+    pageHeight: number,
+  ) => {
     if (lines.length === 0) return { first: 0, last: 0, split: false };
     const firstPage = Math.floor((lines[0].top + 1) / pageHeight);
     const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
     return {
-      first: lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === firstPage).length,
-      last: lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length,
+      first: lines.filter(
+        (line) => Math.floor((line.top + 1) / pageHeight) === firstPage,
+      ).length,
+      last: lines.filter(
+        (line) => Math.floor((line.top + 1) / pageHeight) === lastPage,
+      ).length,
       split: lastPage > firstPage,
     };
   };
@@ -311,7 +371,11 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     const lines = getLines(section);
     const fragments = pageFragments(lines, getPageHeight());
     const height = section.getBoundingClientRect().height;
-    if (fragments.split && height <= getPageHeight() + 2 && (fragments.first < 5 || fragments.last < 5)) {
+    if (
+      fragments.split &&
+      height <= getPageHeight() + 2 &&
+      (fragments.first < 5 || fragments.last < 5)
+    ) {
       section.setAttribute("data-mfcv-clean-break", "true");
       cleanBreaks += 1;
     }
@@ -322,7 +386,8 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     let wraps = 0;
     let lineTightens = 0;
     for (const element of elements) {
-      if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+      if (!element.closest(".page, .content, .sidebar, .left, .right"))
+        continue;
       const lines = getLines(element);
       if (lines.length < 2) continue;
       const currentSpill = spillCount(lines, getPageHeight());
@@ -376,11 +441,18 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
     const lines = getLines(element);
     const currentSpill = spillCount(lines, getPageHeight());
-    if (lines.length < 2 || currentSpill === 0 || currentSpill > maxRecoveredLines) continue;
+    if (
+      lines.length < 2 ||
+      currentSpill === 0 ||
+      currentSpill > maxRecoveredLines
+    )
+      continue;
     const originalStyle = element.getAttribute("style");
     const styledElement = element as HTMLElement;
-    styledElement.style.letterSpacing = mode === "aggressive" ? "-0.0125em" : "-0.01em";
-    styledElement.style.wordSpacing = mode === "aggressive" ? "-0.035em" : "-0.025em";
+    styledElement.style.letterSpacing =
+      mode === "aggressive" ? "-0.0125em" : "-0.01em";
+    styledElement.style.wordSpacing =
+      mode === "aggressive" ? "-0.035em" : "-0.025em";
     const tightenedLines = getLines(element);
     if (originalStyle === null) element.removeAttribute("style");
     else element.setAttribute("style", originalStyle);
@@ -389,13 +461,20 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
       wraps += 1;
     }
   }
-  const adaptiveTrial = appendTrialStyle(trialCss({ tightenHeadings, extendPage }));
+  const adaptiveTrial = appendTrialStyle(
+    trialCss({ tightenHeadings, extendPage }),
+  );
   let lineTightens = 0;
   for (const element of elements) {
     if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
     const lines = getLines(element);
     const currentSpill = spillCount(lines, getPageHeight());
-    if (lines.length < 2 || currentSpill === 0 || currentSpill > maxRecoveredLines) continue;
+    if (
+      lines.length < 2 ||
+      currentSpill === 0 ||
+      currentSpill > maxRecoveredLines
+    )
+      continue;
     const originalStyle = element.getAttribute("style");
     const styledElement = element as HTMLElement;
     styledElement.style.lineHeight = mode === "aggressive" ? "1.22" : "1.3";
@@ -408,11 +487,18 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     }
   }
   adaptiveTrial.remove();
-  const finalTrial = appendTrialStyle(trialCss({ tightenHeadings, extendPage }));
+  const finalTrial = appendTrialStyle(
+    trialCss({ tightenHeadings, extendPage }),
+  );
   const finalSnapshot = snapshot();
   finalTrial.remove();
   return {
-    marked: wraps + lineTightens + largeSections + cleanBreaks + (tightenHeadings || extendPage ? 1 : 0),
+    marked:
+      wraps +
+      lineTightens +
+      largeSections +
+      cleanBreaks +
+      (tightenHeadings || extendPage ? 1 : 0),
     wraps,
     spills: finalSnapshot.spillingElements,
     largeSections,

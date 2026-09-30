@@ -1,4 +1,9 @@
-import type { EditorTabKey, FieldMeta, PhotoModeOption, TemplateThemeOption } from "./types";
+import type {
+  EditorTabKey,
+  FieldMeta,
+  PhotoModeOption,
+  TemplateThemeOption,
+} from "./types";
 
 export const EDINBURGH_THEME_OPTIONS: TemplateThemeOption[] = [
   { id: "default", label: "Default Purple", color: "#4E557B" },
@@ -32,7 +37,9 @@ export const CAMBRIDGE_THEME_OPTIONS: TemplateThemeOption[] = [
   { id: "rose_red", label: "Rose Red", color: "#bb3254" },
 ];
 
-export function themeOptionsForTemplate(templateId: string): TemplateThemeOption[] {
+export function themeOptionsForTemplate(
+  templateId: string,
+): TemplateThemeOption[] {
   if (templateId === "edinburgh-v1") return EDINBURGH_THEME_OPTIONS;
   if (templateId === "harvard-v1") return HARVARD_THEME_OPTIONS;
   if (templateId === "stanford-v1") return STANFORD_THEME_OPTIONS;
@@ -59,13 +66,15 @@ export type PrintTweakId =
   | "intelligentPagination"
   | "removePhoto"
   | "moveSkillsLeft"
-  | "removePageCount";
+  | "removePageCount"
+  | "noPageMargins";
 
 export const PRINT_TWEAK_OPTIONS: Array<{ id: PrintTweakId; label: string }> = [
   { id: "intelligentPagination", label: "Smart Pagination" },
   { id: "removePhoto", label: "Remove Photo" },
   { id: "moveSkillsLeft", label: "Skills Moved to Sidebar" },
   { id: "removePageCount", label: "Remove Page Count" },
+  { id: "noPageMargins", label: "No Margins" },
 ];
 
 export function templateSupportsPrintTweaks(templateId: string): boolean {
@@ -93,6 +102,7 @@ export type PrintTweaksState = {
   removePhoto: boolean;
   removePageCount: boolean;
   moveSkillsLeft: boolean;
+  noPageMargins: boolean;
   sidebarTextScaleEnabled: boolean;
   sidebarTextScale: number;
   contentTextScaleEnabled: boolean;
@@ -118,6 +128,9 @@ export function appendPrintTweakParams(
   }
   if (tweaks.moveSkillsLeft && templateSupportsPrintTweaks(templateId)) {
     params.set("moveSkillsLeft", "1");
+  }
+  if (tweaks.noPageMargins) {
+    params.set("pageMargins", "none");
   }
   if (
     tweaks.sidebarTextScaleEnabled &&
@@ -168,10 +181,14 @@ export const STORAGE_KEYS = {
   /** @deprecated Global single-value keys; migrated via print-tweaks-persistence fallback. */
   printTweakRemovePhoto: "mfcv_print_tweak_remove_photo",
   printTweakMoveSkillsLeft: "mfcv_print_tweak_move_skills_left",
+  /** "none" renders edge to edge; anything else keeps the A4 margins. */
+  printTweakPageMargins: "mfcv_print_tweak_page_margins",
   printTweakSidebarTextScale: "mfcv_print_tweak_sidebar_text_scale",
-  printTweakSidebarTextScaleEnabled: "mfcv_print_tweak_sidebar_text_scale_enabled",
+  printTweakSidebarTextScaleEnabled:
+    "mfcv_print_tweak_sidebar_text_scale_enabled",
   printTweakContentTextScale: "mfcv_print_tweak_content_text_scale",
-  printTweakContentTextScaleEnabled: "mfcv_print_tweak_content_text_scale_enabled",
+  printTweakContentTextScaleEnabled:
+    "mfcv_print_tweak_content_text_scale_enabled",
   /** Map of PrintTweaksState keyed by cvId::templateId::language */
   printTweaksByScope: "mfcv_print_tweaks_by_scope_v1",
   approvedPhotoId: "mfcv_photo_booth_approved_id",
@@ -194,7 +211,11 @@ export const LEGACY_PHOTO_STORAGE_KEYS = [
   "mfcv_photo_booth_items",
 ] as const;
 
-export const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string }> = [
+export const EDITOR_TABS: Array<{
+  key: EditorTabKey;
+  label: string;
+  path: string;
+}> = [
   { key: "person", label: "Person", path: "person" },
   { key: "positioning", label: "Positioning", path: "positioning" },
   { key: "experience", label: "Experiences/Jobs", path: "experience" },
@@ -207,9 +228,12 @@ export const EDITOR_TABS: Array<{ key: EditorTabKey; label: string; path: string
 
 /** CV sections stored as a YAML array at the document root (not an object wrapper). */
 export const ROOT_ARRAY_EDITOR_PATHS = new Set(
-  EDITOR_TABS.filter((tab) => tab.key === "experience" || tab.key === "education" || tab.key === "references").map(
-    (tab) => tab.path,
-  ),
+  EDITOR_TABS.filter(
+    (tab) =>
+      tab.key === "experience" ||
+      tab.key === "education" ||
+      tab.key === "references",
+  ).map((tab) => tab.path),
 );
 
 export function defaultSectionDraftForEditorPath(editorPath: string): unknown {
@@ -218,123 +242,265 @@ export function defaultSectionDraftForEditorPath(editorPath: string): unknown {
 
 export const FIELD_META: Record<string, FieldMeta> = {
   "person.full_name": {
-    en: { label: "Full Name", description: "Official full name for CV header.", requirement: "Required" },
-    bg: { label: "Пълно име", description: "Официално пълно име за заглавие на CV.", requirement: "Задължително" },
+    en: {
+      label: "Full Name",
+      description: "Official full name for CV header.",
+      requirement: "Required",
+    },
+    bg: {
+      label: "Пълно име",
+      description: "Официално пълно име за заглавие на CV.",
+      requirement: "Задължително",
+    },
   },
   "person.birth_date": {
-    en: { label: "Birth Date", description: "Use calendar selector in YYYY-MM-DD format." },
-    bg: { label: "Дата на раждане", description: "Използвайте календар в формат YYYY-MM-DD." },
+    en: {
+      label: "Birth Date",
+      description: "Use calendar selector in YYYY-MM-DD format.",
+    },
+    bg: {
+      label: "Дата на раждане",
+      description: "Използвайте календар в формат YYYY-MM-DD.",
+    },
   },
   "person.nationality": {
-    en: { label: "Nationality", description: "Citizenship or nationality wording." },
+    en: {
+      label: "Nationality",
+      description: "Citizenship or nationality wording.",
+    },
     bg: { label: "Националност", description: "Гражданство или националност." },
   },
   "person.residence": {
-    en: { label: "Residence", description: "Current residence and postal details." },
-    bg: { label: "Местоживеене", description: "Текущ адрес и пощенски детайли." },
+    en: {
+      label: "Residence",
+      description: "Current residence and postal details.",
+    },
+    bg: {
+      label: "Местоживеене",
+      description: "Текущ адрес и пощенски детайли.",
+    },
   },
   "person.contact": {
-    en: { label: "Contact", description: "Public contact channels used in CV." },
+    en: {
+      label: "Contact",
+      description: "Public contact channels used in CV.",
+    },
     bg: { label: "Контакти", description: "Публични канали за контакт в CV." },
   },
   positioning: {
-    en: { label: "Positioning", description: "Headline and strategic profile text." },
-    bg: { label: "Позициониране", description: "Заглавие и стратегически профил." },
+    en: {
+      label: "Positioning",
+      description: "Headline and strategic profile text.",
+    },
+    bg: {
+      label: "Позициониране",
+      description: "Заглавие и стратегически профил.",
+    },
   },
   "positioning.profile_summary": {
-    en: { label: "Profile Summary", description: "Core 1-2 sentence professional summary." },
-    bg: { label: "Профил", description: "Кратко професионално резюме в 1-2 изречения." },
+    en: {
+      label: "Profile Summary",
+      description: "Core 1-2 sentence professional summary.",
+    },
+    bg: {
+      label: "Профил",
+      description: "Кратко професионално резюме в 1-2 изречения.",
+    },
   },
   experience: {
-    en: { label: "Experiences/Jobs", description: "Professional roles with responsibilities and outputs." },
-    bg: { label: "Опит/Позиции", description: "Професионални позиции с отговорности и резултати." },
+    en: {
+      label: "Experiences/Jobs",
+      description: "Professional roles with responsibilities and outputs.",
+    },
+    bg: {
+      label: "Опит/Позиции",
+      description: "Професионални позиции с отговорности и резултати.",
+    },
   },
   "experience[].employment_type": {
-    en: { label: "Employment Type", description: "Full-time or part-time employment." },
+    en: {
+      label: "Employment Type",
+      description: "Full-time or part-time employment.",
+    },
     bg: { label: "Тип заетост", description: "Пълен или непълен работен ден." },
   },
   "experience[].is_current": {
     en: { label: "Current Role", description: "Role is ongoing." },
-    bg: { label: "Текуща позиция", description: "Позицията е активна в момента." },
+    bg: {
+      label: "Текуща позиция",
+      description: "Позицията е активна в момента.",
+    },
   },
   "experience[].start_date": {
     en: { label: "Start Date", description: "Role start date." },
     bg: { label: "Начална дата", description: "Начална дата на позицията." },
   },
   "experience[].end_date": {
-    en: { label: "End Date", description: "Role end date, leave empty if current." },
-    bg: { label: "Крайна дата", description: "Крайна дата; оставете празно ако е текуща." },
+    en: {
+      label: "End Date",
+      description: "Role end date, leave empty if current.",
+    },
+    bg: {
+      label: "Крайна дата",
+      description: "Крайна дата; оставете празно ако е текуща.",
+    },
   },
   "experience[].responsibilities": {
-    en: { label: "Responsibilities", description: "Action-oriented bullet list." },
+    en: {
+      label: "Responsibilities",
+      description: "Action-oriented bullet list.",
+    },
     bg: { label: "Отговорности", description: "Списък с действия и принос." },
   },
   education: {
-    en: { label: "Education", description: "Degrees, institutions, and subjects." },
-    bg: { label: "Образование", description: "Степени, институции и предмети." },
+    en: {
+      label: "Education",
+      description: "Degrees, institutions, and subjects.",
+    },
+    bg: {
+      label: "Образование",
+      description: "Степени, институции и предмети.",
+    },
   },
   skills: {
-    en: { label: "Skills", description: "Language, technical, social and core strengths." },
-    bg: { label: "Умения", description: "Езици, технически, социални и ключови силни страни." },
+    en: {
+      label: "Skills",
+      description: "Language, technical, social and core strengths.",
+    },
+    bg: {
+      label: "Умения",
+      description: "Езици, технически, социални и ключови силни страни.",
+    },
   },
   references: {
     en: { label: "References", description: "Referees and contact details." },
     bg: { label: "Препоръки", description: "Лица за препоръка и контакти." },
   },
   optional_sections: {
-    en: { label: "Optional Sections", description: "Projects, publications, interests, and extras." },
-    bg: { label: "Допълнителни секции", description: "Проекти, публикации, интереси и допълнения." },
+    en: {
+      label: "Optional Sections",
+      description: "Projects, publications, interests, and extras.",
+    },
+    bg: {
+      label: "Допълнителни секции",
+      description: "Проекти, публикации, интереси и допълнения.",
+    },
   },
   metadata: {
-    en: { label: "Metadata", description: "Internal CV naming, versioning, review scores, and variant tags." },
-    bg: { label: "Метаданни", description: "Вътрешно име, версия, оценки и варианти на CV." },
+    en: {
+      label: "Metadata",
+      description:
+        "Internal CV naming, versioning, review scores, and variant tags.",
+    },
+    bg: {
+      label: "Метаданни",
+      description: "Вътрешно име, версия, оценки и варианти на CV.",
+    },
   },
   "metadata.ats_scores": {
-    en: { label: "ATS Scores", description: "Provider results kept as free-form text." },
-    bg: { label: "ATS оценки", description: "Резултати от доставчици като свободен текст." },
+    en: {
+      label: "ATS Scores",
+      description: "Provider results kept as free-form text.",
+    },
+    bg: {
+      label: "ATS оценки",
+      description: "Резултати от доставчици като свободен текст.",
+    },
   },
   "metadata.ats_scores[].label": {
     en: { label: "Provider", description: "ATS grader or parser name." },
-    bg: { label: "Доставчик", description: "Име на ATS оценителя или парсера." },
+    bg: {
+      label: "Доставчик",
+      description: "Име на ATS оценителя или парсера.",
+    },
   },
   "metadata.ats_scores[].score": {
-    en: { label: "Score", description: "Exact provider result or concise notes." },
+    en: {
+      label: "Score",
+      description: "Exact provider result or concise notes.",
+    },
     bg: { label: "Оценка", description: "Точен резултат или кратка бележка." },
   },
   "metadata.detector_scores": {
-    en: { label: "Detector Scores", description: "AI-writing detector results and section-level checks." },
-    bg: { label: "Детекторни оценки", description: "Резултати от AI детектори и проверки по секции." },
+    en: {
+      label: "Detector Scores",
+      description: "AI-writing detector results and section-level checks.",
+    },
+    bg: {
+      label: "Детекторни оценки",
+      description: "Резултати от AI детектори и проверки по секции.",
+    },
   },
   "metadata.detector_scores[].label": {
     en: { label: "Provider", description: "Detector provider name." },
     bg: { label: "Доставчик", description: "Име на детектора." },
   },
   "metadata.detector_scores[].score": {
-    en: { label: "Overall Score", description: "Whole-CV result, or why no global result exists." },
-    bg: { label: "Обща оценка", description: "Резултат за цялото CV или защо няма общ резултат." },
+    en: {
+      label: "Overall Score",
+      description: "Whole-CV result, or why no global result exists.",
+    },
+    bg: {
+      label: "Обща оценка",
+      description: "Резултат за цялото CV или защо няма общ резултат.",
+    },
   },
   "metadata.detector_scores[].section_score_source": {
-    en: { label: "Section Source", description: "Provider breakdown or separately submitted section tests." },
-    bg: { label: "Източник на секциите", description: "Разбивка от доставчика или отделни тестове на секции." },
+    en: {
+      label: "Section Source",
+      description: "Provider breakdown or separately submitted section tests.",
+    },
+    bg: {
+      label: "Източник на секциите",
+      description: "Разбивка от доставчика или отделни тестове на секции.",
+    },
   },
   "metadata.detector_scores[].section_scores": {
-    en: { label: "Section Scores", description: "Only sections actually reported or tested: sidebar, frontmatter, each position, and backmatter." },
-    bg: { label: "Оценки по секции", description: "Само отчетени или тествани секции: странична колона, начало, всяка позиция и край." },
+    en: {
+      label: "Section Scores",
+      description:
+        "Only sections actually reported or tested: sidebar, frontmatter, each position, and backmatter.",
+    },
+    bg: {
+      label: "Оценки по секции",
+      description:
+        "Само отчетени или тествани секции: странична колона, начало, всяка позиция и край.",
+    },
   },
   "metadata.detector_scores[].section_scores[].label": {
     en: { label: "Section", description: "Job or major CV section checked." },
-    bg: { label: "Секция", description: "Проверена позиция или основна CV секция." },
+    bg: {
+      label: "Секция",
+      description: "Проверена позиция или основна CV секция.",
+    },
   },
   "metadata.detector_scores[].section_scores[].score": {
-    en: { label: "Score", description: "Exact detector result for this section." },
+    en: {
+      label: "Score",
+      description: "Exact detector result for this section.",
+    },
     bg: { label: "Оценка", description: "Точен резултат за тази секция." },
   },
   "metadata.detector_scores[].section_scores[].scope": {
-    en: { label: "Scope", description: "sidebar, frontmatter, experience, backmatter, or mixed." },
-    bg: { label: "Обхват", description: "sidebar, frontmatter, experience, backmatter или mixed." },
+    en: {
+      label: "Scope",
+      description: "sidebar, frontmatter, experience, backmatter, or mixed.",
+    },
+    bg: {
+      label: "Обхват",
+      description: "sidebar, frontmatter, experience, backmatter или mixed.",
+    },
   },
   "metadata.detector_scores[].section_scores[].experience_id": {
-    en: { label: "Position ID", description: "Experience ID when this result covers one specific position." },
-    bg: { label: "ID на позиция", description: "ID на опита, когато резултатът е за една конкретна позиция." },
+    en: {
+      label: "Position ID",
+      description:
+        "Experience ID when this result covers one specific position.",
+    },
+    bg: {
+      label: "ID на позиция",
+      description:
+        "ID на опита, когато резултатът е за една конкретна позиция.",
+    },
   },
 };

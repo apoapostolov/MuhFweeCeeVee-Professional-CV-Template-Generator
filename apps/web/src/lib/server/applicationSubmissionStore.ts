@@ -17,6 +17,7 @@ import { readCoverLetter } from "./coverLetterStore";
 import { readCv } from "./cvStore";
 import { getPhotoBoothItem } from "./photoGalleryStore";
 import { buildCvTemplateHtml } from "./renderCvTemplate";
+import { renderCvPdf } from "./render/takumiPdf";
 import { repoPath } from "./repoPaths";
 import { DEFAULT_RENDER_TWEAKS, type RenderTweaks } from "./render/tweaks";
 import {
@@ -110,7 +111,7 @@ async function renderPdf(input: {
   tweaks?: RenderTweaks;
 }): Promise<Uint8Array> {
   const tweaks = input.tweaks ?? DEFAULT_RENDER_TWEAKS;
-  const { html, metadata } = await buildCvTemplateHtml({
+  const { html, metadata, margins } = await buildCvTemplateHtml({
     cvId: input.cvId,
     templateId: input.templateId,
     theme: input.theme,
@@ -118,25 +119,12 @@ async function renderPdf(input: {
     tweaks,
     profilePhotoId: input.photoId,
   });
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      displayHeaderFooter: !tweaks.removePageCount,
-      headerTemplate: "<div></div>",
-      footerTemplate:
-        '<div style="font-size:10px;color:#6b7280;width:100%;padding:0 24px;text-align:right;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-      margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
-    });
-    await page.close();
-    return applyPdfMetadata(new Uint8Array(pdf), metadata);
-  } finally {
-    await browser.close();
-  }
+  const rawPdf = await renderCvPdf({
+    html,
+    margins,
+    removePageCount: tweaks.removePageCount,
+  });
+  return applyPdfMetadata(rawPdf, metadata);
 }
 
 export async function createApplicationSubmissionSnapshot(

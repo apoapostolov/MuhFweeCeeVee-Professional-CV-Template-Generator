@@ -302,16 +302,11 @@ export function renderEuropass(
     }
     .block { margin-bottom: 6mm; }
     .block p { margin: 0; font-family: "Liberation Sans Narrow", "Nimbus Sans Narrow", "Arial Narrow", "Liberation Sans", "Nimbus Sans", Arial, Helvetica, sans-serif; }
-    .evalue ul { margin: 0; padding-left: 12px; list-style: none; }
+    /* The bullet comes from list-style, not a ::before pseudo-element:
+       takumi-pdf does not render generated content, so a content:"•" rule
+       would drop the bullet entirely. */
+    .evalue ul { margin: 0; padding-left: 12px; list-style: disc outside; }
     .evalue li { position: relative; margin: 0.7mm 0; padding-left: 2.4px; }
-    .evalue li::before {
-      content: "•";
-      position: absolute;
-      left: -6px;
-      top: 1px;
-      font-weight: 600;
-      line-height: 1;
-    }
     .lang-block { margin-bottom: 2mm; }
     .ref-item { margin-bottom: 2mm; }
   </style>

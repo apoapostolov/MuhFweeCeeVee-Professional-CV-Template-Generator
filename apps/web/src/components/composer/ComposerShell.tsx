@@ -59,7 +59,9 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
       await c.duplicateCurrentCv(name);
       setDuplicateCvOpen(false);
     } catch (error) {
-      setDuplicateCvError(error instanceof Error ? error.message : "Failed to create CV version.");
+      setDuplicateCvError(
+        error instanceof Error ? error.message : "Failed to create CV version.",
+      );
     } finally {
       setDuplicateCvBusy(false);
     }
@@ -80,272 +82,312 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
               themeMode={c.themeMode}
               onThemeModeChange={c.setThemeMode}
             />
-          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-col gap-1 md:flex-row md:items-end md:gap-4">
-              <h1 className="text-3xl font-black leading-none text-slate-900 md:text-4xl">MuhFweeCeeVee</h1>
-              <p className="max-w-3xl text-sm leading-tight text-[var(--ink-muted)] md:mb-0.5">
-                Build, edit, and score multilingual CV with wide variety of PDF templates.
-              </p>
+            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div className="flex flex-col gap-1 md:flex-row md:items-end md:gap-4">
+                <h1 className="text-3xl font-black leading-none text-slate-900 md:text-4xl">
+                  MuhFweeCeeVee
+                </h1>
+                <p className="max-w-3xl text-sm leading-tight text-[var(--ink-muted)] md:mb-0.5">
+                  Build, edit, and score multilingual CV with wide variety of
+                  PDF templates.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <ComposerNav
-            activePanel={c.activePanel}
-            onPanelChange={c.setActivePanel}
-            settingsTabState={c.openRouter.settingsTabState}
-            providerQuotas={c.aiProviders.aiSettings?.quotas ?? []}
-            providerNames={Object.fromEntries(c.aiProviders.providers.map((provider) => [provider.id, provider.name]))}
-          />
-
-          {c.activePanel === "workspace" && (
-            <WorkspacePanel
-              availableLanguages={c.availableLanguages}
-              cvTemplatesForLanguage={c.cvTemplatesForLanguage}
-              loadingWorkspace={c.loadingWorkspace}
-              onDownloadPdf={c.downloadPdf}
-              onOpenPdf={c.openPdf}
-              onSelectPhotoMode={c.setSelectedPhotoMode}
-              onPrintTweakChange={c.setPrintTweakEnabled}
-              onPrintPaginationModeChange={c.setPrintPaginationMode}
-              onPrintTextScaleEnabledChange={c.setPrintTextScaleEnabled}
-              onPrintTextScaleStep={c.adjustPrintTextScale}
-              onPrintTextScaleValueChange={c.setPrintTextScaleValue}
-              printTweaks={{
-                intelligentPagination: c.printTweakIntelligentPagination,
-                intelligentPaginationMode: c.printTweakIntelligentPaginationMode,
-                removePhoto: c.printTweakRemovePhoto,
-                removePageCount: c.printTweakRemovePageCount,
-                moveSkillsLeft: c.printTweakMoveSkillsLeft,
-                sidebarTextScaleEnabled: c.printTweakSidebarTextScaleEnabled,
-                sidebarTextScale: c.printTweakSidebarTextScale,
-                contentTextScaleEnabled: c.printTweakContentTextScaleEnabled,
-                contentTextScale: c.printTweakContentTextScale,
-              }}
-              onSelectTemplateId={c.setSelectedTemplateId}
-              onSelectTemplateTheme={c.setSelectedTemplateTheme}
-              onSwitchCvPair={c.switchCvPair}
-              onRequestDuplicateCv={openDuplicateCv}
-              onSwitchLanguage={c.switchLanguage}
-              orderedTemplateItems={c.orderedTemplateItems}
-              pdfUrl={c.pdfUrl}
-              selectedCvId={c.selectedCvId}
-              selectedLanguage={c.selectedLanguage}
-              selectedPairKey={c.selectedPairKey}
-              selectedPhotoMode={c.selectedPhotoMode}
-              selectedTemplateId={c.selectedTemplateId}
-              selectedTemplateTheme={c.selectedTemplateTheme}
+            <ComposerNav
+              activePanel={c.activePanel}
+              onPanelChange={c.setActivePanel}
+              settingsTabState={c.openRouter.settingsTabState}
+              providerQuotas={c.aiProviders.aiSettings?.quotas ?? []}
+              providerNames={Object.fromEntries(
+                c.aiProviders.providers.map((provider) => [
+                  provider.id,
+                  provider.name,
+                ]),
+              )}
             />
-          )}
 
-          {c.activePanel === "research" && (
-            <ResearchPanel
-              companies={c.researchCompanies}
-              companyDetail={c.selectedResearchCompany}
-              jobDetail={c.selectedResearchJob}
-              jobPositions={c.researchJobPositions}
-              language={c.uiLanguage}
-              loadingCatalog={c.researchCatalogLoading}
-              notice={c.researchNotice}
-              onDeleteCompany={(id) => void c.deleteResearchCompany(id)}
-              onDeleteJob={(id) => void c.deleteResearchJob(id)}
-              onImportMetadata={() => void c.importCompanyMetadataToResearchCatalog()}
-              onNotice={c.setResearchNotice}
-              onResearchCompany={(payload) => void c.researchCompanyOffice(payload)}
-              onResearchJob={(payload) => void c.researchJobPosition(payload)}
-              onSaveCompany={(company) => void c.saveResearchCompany(company)}
-              onSaveJob={(job) => void c.saveResearchJob(job)}
-              onSelectCompany={c.selectResearchCompany}
-              onSelectJob={c.selectResearchJob}
-              onSidebarTabChange={c.setResearchSidebarTab}
-              researchingCompany={c.researchingCompany}
-              researchingJob={c.researchingJob}
-              resolvedTheme={c.resolvedTheme}
-              savingResearch={c.savingResearch}
-              researchAutoSaveEnabled={c.researchAutoSaveEnabled}
-              researchAutosaveActivity={c.researchAutosaveActivity}
-              onResearchAutoSaveChange={c.setResearchAutoSavePreference}
-              onResearchDraftChange={c.handleResearchDraftChange}
-              selectedCompanyId={c.selectedResearchCompanyId}
-              selectedJobId={c.selectedResearchJobPositionId}
-              sidebarTab={c.researchSidebarTab}
-            />
-          )}
+            {c.activePanel === "workspace" && (
+              <WorkspacePanel
+                availableLanguages={c.availableLanguages}
+                cvTemplatesForLanguage={c.cvTemplatesForLanguage}
+                loadingWorkspace={c.loadingWorkspace}
+                onDownloadPdf={c.downloadPdf}
+                onOpenPdf={c.openPdf}
+                onSelectPhotoMode={c.setSelectedPhotoMode}
+                onPrintTweakChange={c.setPrintTweakEnabled}
+                onPrintPaginationModeChange={c.setPrintPaginationMode}
+                onPrintTextScaleEnabledChange={c.setPrintTextScaleEnabled}
+                onPrintTextScaleStep={c.adjustPrintTextScale}
+                onPrintTextScaleValueChange={c.setPrintTextScaleValue}
+                printTweaks={{
+                  intelligentPagination: c.printTweakIntelligentPagination,
+                  intelligentPaginationMode:
+                    c.printTweakIntelligentPaginationMode,
+                  removePhoto: c.printTweakRemovePhoto,
+                  removePageCount: c.printTweakRemovePageCount,
+                  noPageMargins: c.printTweakNoPageMargins,
+                  moveSkillsLeft: c.printTweakMoveSkillsLeft,
+                  sidebarTextScaleEnabled: c.printTweakSidebarTextScaleEnabled,
+                  sidebarTextScale: c.printTweakSidebarTextScale,
+                  contentTextScaleEnabled: c.printTweakContentTextScaleEnabled,
+                  contentTextScale: c.printTweakContentTextScale,
+                }}
+                onSelectTemplateId={c.setSelectedTemplateId}
+                onSelectTemplateTheme={c.setSelectedTemplateTheme}
+                onSwitchCvPair={c.switchCvPair}
+                onRequestDuplicateCv={openDuplicateCv}
+                onSwitchLanguage={c.switchLanguage}
+                orderedTemplateItems={c.orderedTemplateItems}
+                pdfUrl={c.pdfUrl}
+                selectedCvId={c.selectedCvId}
+                selectedLanguage={c.selectedLanguage}
+                selectedPairKey={c.selectedPairKey}
+                selectedPhotoMode={c.selectedPhotoMode}
+                selectedTemplateId={c.selectedTemplateId}
+                selectedTemplateTheme={c.selectedTemplateTheme}
+              />
+            )}
 
-          {c.activePanel === "editor" && (
-            <EditorPanel
-              companyMetadataNotice={c.companyMetadataNotice}
-              editorLoading={c.editorLoading}
-              selectedTemplateId={c.selectedTemplateId}
-              researchCompanies={c.researchCompanies}
-              researchJobsForCompany={c.researchJobsForCompany}
-              selectedResearchCompanyId={c.selectedResearchCompanyId}
-              selectedResearchJobPositionId={c.selectedResearchJobPositionId}
-              selectedResearchJobKeywordCount={c.selectedResearchJob?.weighted_keywords.length ?? 0}
-              selectedResearchJobAtsKeywordCount={c.editorAtsKeywords.length}
-              keywordGapReport={c.keywordGapReport}
-              onSelectResearchCompany={c.selectResearchCompany}
-              onSelectResearchJob={c.selectResearchJob}
-              analysisData={c.analysisData}
-              analysisDrawerCollapsed={c.analysisDrawerCollapsed}
-              analysisLoading={c.analysisLoading}
-              analysisText={c.analysisText}
-              atsCheckLoading={c.atsCheckLoading}
-              atsCheckText={c.atsCheckText}
-              onRunAtsCheck={() => void c.runAtsCheck()}
-              onOpenAiDetection={() => c.setAiDetectionDialogOpen(true)}
-              aiDetectionLoading={c.aiDetectionLoading}
-              availableLanguages={c.availableLanguages}
-              companyMetadataDraft={asRecord(c.companyMetadataDraft)}
-              analysisCompanySource={c.analysisCompanySource}
-              companyMetadataEditorOpen={c.companyMetadataEditorOpen}
-              companyMetadataEditorView={c.companyMetadataEditorView}
-              companyMetadataSaving={c.companyMetadataSaving}
-              companyMetadataAutoSaveEnabled={c.companyMetadataAutoSaveEnabled}
-              companyMetadataAutosaveActivity={c.companyMetadataAutosaveActivity}
-              companyMetadataHasUnsavedChanges={c.companyMetadataHasUnsavedChanges}
-              companyMetadataYamlDraft={c.companyMetadataYamlDraft}
-              companyMetadataYamlLintIssues={c.companyMetadataYamlLintIssues}
-              cvTemplatesForLanguage={c.cvTemplatesForLanguage}
-              editorNotice={c.editorNotice}
-              editorPath={c.editorPath}
-              editorSaving={c.editorSaving}
-              editorAutoSaveEnabled={c.editorAutoSaveEnabled}
-              editorAutosaveActivity={c.editorAutosaveActivity}
-              editorHasUnsavedChanges={c.editorHasUnsavedChanges}
-              onEditorAutoSaveChange={c.setEditorAutoSavePreference}
-              editorFlatSubsections={c.editorFlatSubsections}
-              onEditorFlatSubsectionsChange={c.setEditorFlatSubsectionsPreference}
-              editorTab={c.editorTab}
-              editorView={c.editorView}
-              formRenderer={c.formRenderer}
-              onCompanyMetadataAutoSaveChange={c.setCompanyMetadataAutoSavePreference}
-              onCompanyMetadataEditorViewChange={c.handleCompanyMetadataEditorViewChange}
-              onCompanyMetadataYamlDraftChange={c.setCompanyMetadataYamlDraft}
-              onEditorTabChange={c.setEditorTab}
-              onEditorViewChange={c.setEditorView}
-              onOpenLanguageModal={c.openLanguageModal}
-              onOpenSyncModal={c.openSyncModal}
-              onRunAnalysisFull={() => void c.runAnalysis("full")}
-              onRunAnalysisSection={() => void c.runAnalysis("section")}
-              onGoToResearch={() => c.setActivePanel("research")}
-              onSaveCompanyMetadata={() => void c.saveCompanyMetadataSource()}
-              onSaveEditor={() => void c.saveEditorSection()}
-              onSwitchCvPair={c.switchCvPair}
-              onRequestDuplicateCv={openDuplicateCv}
-              onSwitchLanguage={c.switchLanguage}
+            {c.activePanel === "research" && (
+              <ResearchPanel
+                companies={c.researchCompanies}
+                companyDetail={c.selectedResearchCompany}
+                jobDetail={c.selectedResearchJob}
+                jobPositions={c.researchJobPositions}
+                language={c.uiLanguage}
+                loadingCatalog={c.researchCatalogLoading}
+                notice={c.researchNotice}
+                onDeleteCompany={(id) => void c.deleteResearchCompany(id)}
+                onDeleteJob={(id) => void c.deleteResearchJob(id)}
+                onImportMetadata={() =>
+                  void c.importCompanyMetadataToResearchCatalog()
+                }
+                onNotice={c.setResearchNotice}
+                onResearchCompany={(payload) =>
+                  void c.researchCompanyOffice(payload)
+                }
+                onResearchJob={(payload) => void c.researchJobPosition(payload)}
+                onSaveCompany={(company) => void c.saveResearchCompany(company)}
+                onSaveJob={(job) => void c.saveResearchJob(job)}
+                onSelectCompany={c.selectResearchCompany}
+                onSelectJob={c.selectResearchJob}
+                onSidebarTabChange={c.setResearchSidebarTab}
+                researchingCompany={c.researchingCompany}
+                researchingJob={c.researchingJob}
+                resolvedTheme={c.resolvedTheme}
+                savingResearch={c.savingResearch}
+                researchAutoSaveEnabled={c.researchAutoSaveEnabled}
+                researchAutosaveActivity={c.researchAutosaveActivity}
+                onResearchAutoSaveChange={c.setResearchAutoSavePreference}
+                onResearchDraftChange={c.handleResearchDraftChange}
+                selectedCompanyId={c.selectedResearchCompanyId}
+                selectedJobId={c.selectedResearchJobPositionId}
+                sidebarTab={c.researchSidebarTab}
+              />
+            )}
 
-              onToggleAnalysisDrawer={() => c.setAnalysisDrawerCollapsed((v) => !v)}
-              onToggleCompanyMetadataEditor={() => c.setCompanyMetadataEditorOpen((v) => !v)}
-              onYamlDraftChange={c.setYamlDraft}
-              resolvedTheme={c.resolvedTheme}
-              sectionDraft={c.sectionDraft}
-              selectedCvId={c.selectedCvId}
-              selectedLanguage={c.selectedLanguage}
-              uiLanguage={c.uiLanguage}
-              selectedPairKey={c.selectedPairKey}
-              syncModalLoading={c.syncModalLoading}
-              syncing={c.syncing}
-              yamlDraft={c.yamlDraft}
-              yamlHighlightRef={c.yamlHighlightRef}
-              yamlLintIssues={c.yamlLintIssues}
-              yamlTextareaRef={c.yamlTextareaRef}
-            />
-          )}
+            {c.activePanel === "editor" && (
+              <EditorPanel
+                companyMetadataNotice={c.companyMetadataNotice}
+                editorLoading={c.editorLoading}
+                selectedTemplateId={c.selectedTemplateId}
+                researchCompanies={c.researchCompanies}
+                researchJobsForCompany={c.researchJobsForCompany}
+                selectedResearchCompanyId={c.selectedResearchCompanyId}
+                selectedResearchJobPositionId={c.selectedResearchJobPositionId}
+                selectedResearchJobKeywordCount={
+                  c.selectedResearchJob?.weighted_keywords.length ?? 0
+                }
+                selectedResearchJobAtsKeywordCount={c.editorAtsKeywords.length}
+                keywordGapReport={c.keywordGapReport}
+                onSelectResearchCompany={c.selectResearchCompany}
+                onSelectResearchJob={c.selectResearchJob}
+                analysisData={c.analysisData}
+                analysisDrawerCollapsed={c.analysisDrawerCollapsed}
+                analysisLoading={c.analysisLoading}
+                analysisText={c.analysisText}
+                atsCheckLoading={c.atsCheckLoading}
+                atsCheckText={c.atsCheckText}
+                onRunAtsCheck={() => void c.runAtsCheck()}
+                onOpenAiDetection={() => c.setAiDetectionDialogOpen(true)}
+                aiDetectionLoading={c.aiDetectionLoading}
+                availableLanguages={c.availableLanguages}
+                companyMetadataDraft={asRecord(c.companyMetadataDraft)}
+                analysisCompanySource={c.analysisCompanySource}
+                companyMetadataEditorOpen={c.companyMetadataEditorOpen}
+                companyMetadataEditorView={c.companyMetadataEditorView}
+                companyMetadataSaving={c.companyMetadataSaving}
+                companyMetadataAutoSaveEnabled={
+                  c.companyMetadataAutoSaveEnabled
+                }
+                companyMetadataAutosaveActivity={
+                  c.companyMetadataAutosaveActivity
+                }
+                companyMetadataHasUnsavedChanges={
+                  c.companyMetadataHasUnsavedChanges
+                }
+                companyMetadataYamlDraft={c.companyMetadataYamlDraft}
+                companyMetadataYamlLintIssues={c.companyMetadataYamlLintIssues}
+                cvTemplatesForLanguage={c.cvTemplatesForLanguage}
+                editorNotice={c.editorNotice}
+                editorPath={c.editorPath}
+                editorSaving={c.editorSaving}
+                editorAutoSaveEnabled={c.editorAutoSaveEnabled}
+                editorAutosaveActivity={c.editorAutosaveActivity}
+                editorHasUnsavedChanges={c.editorHasUnsavedChanges}
+                onEditorAutoSaveChange={c.setEditorAutoSavePreference}
+                editorFlatSubsections={c.editorFlatSubsections}
+                onEditorFlatSubsectionsChange={
+                  c.setEditorFlatSubsectionsPreference
+                }
+                editorTab={c.editorTab}
+                editorView={c.editorView}
+                formRenderer={c.formRenderer}
+                onCompanyMetadataAutoSaveChange={
+                  c.setCompanyMetadataAutoSavePreference
+                }
+                onCompanyMetadataEditorViewChange={
+                  c.handleCompanyMetadataEditorViewChange
+                }
+                onCompanyMetadataYamlDraftChange={c.setCompanyMetadataYamlDraft}
+                onEditorTabChange={c.setEditorTab}
+                onEditorViewChange={c.setEditorView}
+                onOpenLanguageModal={c.openLanguageModal}
+                onOpenSyncModal={c.openSyncModal}
+                onRunAnalysisFull={() => void c.runAnalysis("full")}
+                onRunAnalysisSection={() => void c.runAnalysis("section")}
+                onGoToResearch={() => c.setActivePanel("research")}
+                onSaveCompanyMetadata={() => void c.saveCompanyMetadataSource()}
+                onSaveEditor={() => void c.saveEditorSection()}
+                onSwitchCvPair={c.switchCvPair}
+                onRequestDuplicateCv={openDuplicateCv}
+                onSwitchLanguage={c.switchLanguage}
 
-          {c.activePanel === "templates" && (
-            <TemplatesPanel
-              approvedPhotoId={c.approvedPhotoId}
-              galleryCvId={c.selectedCvId || c.mostRecentCv?.id || ""}
-              previewNonce={c.previewNonce}
-              templates={c.orderedTemplateItems}
-            />
-          )}
+                onToggleAnalysisDrawer={() =>
+                  c.setAnalysisDrawerCollapsed((v) => !v)
+                }
+                onToggleCompanyMetadataEditor={() =>
+                  c.setCompanyMetadataEditorOpen((v) => !v)
+                }
+                onYamlDraftChange={c.setYamlDraft}
+                resolvedTheme={c.resolvedTheme}
+                sectionDraft={c.sectionDraft}
+                selectedCvId={c.selectedCvId}
+                selectedLanguage={c.selectedLanguage}
+                uiLanguage={c.uiLanguage}
+                selectedPairKey={c.selectedPairKey}
+                syncModalLoading={c.syncModalLoading}
+                syncing={c.syncing}
+                yamlDraft={c.yamlDraft}
+                yamlHighlightRef={c.yamlHighlightRef}
+                yamlLintIssues={c.yamlLintIssues}
+                yamlTextareaRef={c.yamlTextareaRef}
+              />
+            )}
 
-          {c.activePanel === "cover_letters" && (
-            <CoverLettersPanel
-              language={c.uiLanguage}
-              researchCompanyName={c.selectedResearchCompany?.name}
-              researchJobTitle={c.selectedResearchJob?.title}
-              selectedCompanyId={c.selectedResearchCompanyId}
-              selectedCvId={c.selectedCvId}
-              selectedJobId={c.selectedResearchJobPositionId}
-            />
-          )}
+            {c.activePanel === "templates" && (
+              <TemplatesPanel
+                approvedPhotoId={c.approvedPhotoId}
+                galleryCvId={c.selectedCvId || c.mostRecentCv?.id || ""}
+                previewNonce={c.previewNonce}
+                templates={c.orderedTemplateItems}
+              />
+            )}
 
-          {c.activePanel === "applications" && (
-            <ApplicationsPanel
-              defaultCompanyId={c.selectedResearchCompanyId}
-              defaultCompanyName={c.selectedResearchCompany?.name}
-              defaultCvId={c.selectedCvId}
-              defaultJobId={c.selectedResearchJobPositionId}
-              defaultJobTitle={c.selectedResearchJob?.title}
-              defaultPhotoId={c.approvedPhotoId || undefined}
-              defaultTemplateId={c.selectedTemplateId || undefined}
-              defaultTemplateTheme={c.selectedTemplateTheme || undefined}
-              defaultPhotoMode={c.selectedPhotoMode}
-              defaultPrintTweaks={{
-                intelligentPagination: c.printTweakIntelligentPagination,
-                intelligentPaginationMode: c.printTweakIntelligentPaginationMode,
-                removePhoto: c.printTweakRemovePhoto,
-                removePageCount: c.printTweakRemovePageCount,
-                moveSkillsLeft: c.printTweakMoveSkillsLeft,
-                sidebarTextScale: c.printTweakSidebarTextScale,
-                sidebarTextScaleActive: c.printTweakSidebarTextScaleEnabled,
-                contentTextScale: c.printTweakContentTextScale,
-                contentTextScaleActive: c.printTweakContentTextScaleEnabled,
-              }}
-              language={c.uiLanguage}
-              onAssistantSelectionChange={(selection) =>
-                setAssistantApplication(
-                  selection
-                    ? {
-                        type: "application",
-                        id: selection.id,
-                        label: selection.label,
-                        revision: selection.revision,
-                      }
-                    : null,
-                )
-              }
-            />
-          )}
+            {c.activePanel === "cover_letters" && (
+              <CoverLettersPanel
+                language={c.uiLanguage}
+                researchCompanyName={c.selectedResearchCompany?.name}
+                researchJobTitle={c.selectedResearchJob?.title}
+                selectedCompanyId={c.selectedResearchCompanyId}
+                selectedCvId={c.selectedCvId}
+                selectedJobId={c.selectedResearchJobPositionId}
+              />
+            )}
 
-          {c.activePanel === "photo_booth" && (
-            <PhotoBoothPanel
-              approvedPhotoId={c.approvedPhotoId}
-              onAnalyze={(id) => void c.analyzePhotoBoothItem(id)}
-              onApproveItem={c.approvePhotoBoothItem}
-              onComparePair={() => void c.comparePhotoBoothPair()}
-              onPasteFromClipboard={(data) => void c.addPhotoBoothFromClipboard(data)}
-              onPhotoBoothDrop={c.handlePhotoBoothDrop}
-              onPhotoBoothInput={(event) => void c.handlePhotoBoothInput(event)}
-              onRequestDelete={c.setPhotoBoothDeleteConfirmId}
-              onSetAnalysisFocusId={c.setPhotoBoothAnalysisFocusId}
-              onToggleCompareSelection={c.togglePhotoCompareSelection}
-              photoBoothAnalysisFocusId={c.photoBoothAnalysisFocusId}
-              photoBoothCompareIds={c.photoBoothCompareIds}
-              photoBoothCompareLoading={c.photoBoothCompareLoading}
-              photoBoothComparison={c.photoBoothComparison}
-              photoBoothComparisonHistory={c.photoBoothComparisonHistory}
-              photoBoothAnalyzingId={c.photoBoothAnalyzingId}
-              photoBoothDragging={c.photoBoothDragging}
-              photoBoothInputRef={c.photoBoothInputRef}
-              photoBoothItems={c.photoBoothItems}
-              photoBoothNotice={c.photoBoothNotice}
-              resolvedTheme={c.resolvedTheme}
-              selectedModelId={c.openRouter.modelInput || c.openRouter.settings?.model || ""}
-              setPhotoBoothDragging={c.setPhotoBoothDragging}
-            />
-          )}
-          {c.activePanel === "settings" && (
-            <SettingsPanel
-              analysisCostEstimate={c.analysisCostEstimate}
-              aiProviders={c.aiProviders}
-              onUiLanguageChange={c.setUiLanguage}
-              uiLanguage={c.uiLanguage}
-            />
-          )}
-          <ComposerOverlays controller={c} />
+            {c.activePanel === "applications" && (
+              <ApplicationsPanel
+                defaultCompanyId={c.selectedResearchCompanyId}
+                defaultCompanyName={c.selectedResearchCompany?.name}
+                defaultCvId={c.selectedCvId}
+                defaultJobId={c.selectedResearchJobPositionId}
+                defaultJobTitle={c.selectedResearchJob?.title}
+                defaultPhotoId={c.approvedPhotoId || undefined}
+                defaultTemplateId={c.selectedTemplateId || undefined}
+                defaultTemplateTheme={c.selectedTemplateTheme || undefined}
+                defaultPhotoMode={c.selectedPhotoMode}
+                defaultPrintTweaks={{
+                  intelligentPagination: c.printTweakIntelligentPagination,
+                  intelligentPaginationMode:
+                    c.printTweakIntelligentPaginationMode,
+                  removePhoto: c.printTweakRemovePhoto,
+                  removePageCount: c.printTweakRemovePageCount,
+                  moveSkillsLeft: c.printTweakMoveSkillsLeft,
+                  noPageMargins: c.printTweakNoPageMargins,
+                  sidebarTextScale: c.printTweakSidebarTextScale,
+                  sidebarTextScaleActive: c.printTweakSidebarTextScaleEnabled,
+                  contentTextScale: c.printTweakContentTextScale,
+                  contentTextScaleActive: c.printTweakContentTextScaleEnabled,
+                }}
+                language={c.uiLanguage}
+                onAssistantSelectionChange={(selection) =>
+                  setAssistantApplication(
+                    selection
+                      ? {
+                          type: "application",
+                          id: selection.id,
+                          label: selection.label,
+                          revision: selection.revision,
+                        }
+                      : null,
+                  )
+                }
+              />
+            )}
+
+            {c.activePanel === "photo_booth" && (
+              <PhotoBoothPanel
+                approvedPhotoId={c.approvedPhotoId}
+                onAnalyze={(id) => void c.analyzePhotoBoothItem(id)}
+                onApproveItem={c.approvePhotoBoothItem}
+                onComparePair={() => void c.comparePhotoBoothPair()}
+                onPasteFromClipboard={(data) =>
+                  void c.addPhotoBoothFromClipboard(data)
+                }
+                onPhotoBoothDrop={c.handlePhotoBoothDrop}
+                onPhotoBoothInput={(event) =>
+                  void c.handlePhotoBoothInput(event)
+                }
+                onRequestDelete={c.setPhotoBoothDeleteConfirmId}
+                onSetAnalysisFocusId={c.setPhotoBoothAnalysisFocusId}
+                onToggleCompareSelection={c.togglePhotoCompareSelection}
+                photoBoothAnalysisFocusId={c.photoBoothAnalysisFocusId}
+                photoBoothCompareIds={c.photoBoothCompareIds}
+                photoBoothCompareLoading={c.photoBoothCompareLoading}
+                photoBoothComparison={c.photoBoothComparison}
+                photoBoothComparisonHistory={c.photoBoothComparisonHistory}
+                photoBoothAnalyzingId={c.photoBoothAnalyzingId}
+                photoBoothDragging={c.photoBoothDragging}
+                photoBoothInputRef={c.photoBoothInputRef}
+                photoBoothItems={c.photoBoothItems}
+                photoBoothNotice={c.photoBoothNotice}
+                resolvedTheme={c.resolvedTheme}
+                selectedModelId={
+                  c.openRouter.modelInput || c.openRouter.settings?.model || ""
+                }
+                setPhotoBoothDragging={c.setPhotoBoothDragging}
+              />
+            )}
+            {c.activePanel === "settings" && (
+              <SettingsPanel
+                analysisCostEstimate={c.analysisCostEstimate}
+                aiProviders={c.aiProviders}
+                onUiLanguageChange={c.setUiLanguage}
+                uiLanguage={c.uiLanguage}
+              />
+            )}
+            <ComposerOverlays controller={c} />
           </section>
           <AssistantPanel
             context={assistantContext}
@@ -368,7 +410,10 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
           ref={assistantLauncherRef}
         />
       ) : null}
-      <ComposerToastHost onDismiss={c.dismissComposerToast} toasts={c.composerToasts} />
+      <ComposerToastHost
+        onDismiss={c.dismissComposerToast}
+        toasts={c.composerToasts}
+      />
       <AiDetectionDialog
         busy={c.aiDetectionLoading}
         error={c.aiDetectionError}
@@ -381,7 +426,12 @@ export function ComposerShell({ controller: c }: ComposerShellProps) {
         key={`${duplicateCvOpen}:${c.selectedCvId}`}
         busy={duplicateCvBusy}
         error={duplicateCvError}
-        initialName={(() => { const current = c.cvItems.find((item) => item.id === c.selectedCvId); return `${current?.displayName ?? "CV"} ${current?.displayVersion ?? ""} Copy`.replace(/\s+/g, " ").trim(); })()}
+        initialName={(() => {
+          const current = c.cvItems.find((item) => item.id === c.selectedCvId);
+          return `${current?.displayName ?? "CV"} ${current?.displayVersion ?? ""} Copy`
+            .replace(/\s+/g, " ")
+            .trim();
+        })()}
         onClose={() => setDuplicateCvOpen(false)}
         onSubmit={(name) => void submitDuplicateCv(name)}
         open={duplicateCvOpen}
