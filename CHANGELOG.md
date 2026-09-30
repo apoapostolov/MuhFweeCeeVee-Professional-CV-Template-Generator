@@ -9,18 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.3] - 2026-09-30
 
-The font fix from 1.4.2 now builds and runs.
+PDF export and the app build work again. Use this release for the bundled
+template fonts introduced in 1.4.2.
 
 ### Fixed
 
-- **PDF export works again.** v1.4.2 could not build at all: webpack statically
-  analyses the font-directory path and refused to resolve it, so `next build` and
-  `next dev` both failed with a module error. The path is now resolved at runtime,
-  so the fonts load wherever the app runs.
+- **The app starts and prints again.** Version 1.4.2 could not build because
+  its font-directory path was resolved too early. The path now resolves at
+  runtime, so PDF templates can load their bundled fonts.
 
 ## [1.4.2] - 2026-09-29
 
-Your CVs now print in the typeface you designed them in.
+This version bundled the intended template fonts, but the app could not build
+with its font-directory path. Upgrade to 1.4.3 to use the change.
 
 ### Fixed
 
