@@ -30,7 +30,7 @@ export type RenderPdfOptions = {
 /**
  * Render template HTML to PDF bytes with takumi-pdf instead of Chromium.
  *
- * Two constraints from the engine shape this wrapper:
+ * Three constraints from the engine shape this wrapper:
  *
  * - `@page` rules are not parsed, so all page geometry has to travel through the
  *   `margin` option, in pixels, and only as numbers. A string margin such as
@@ -39,17 +39,23 @@ export type RenderPdfOptions = {
  * - The engine reads no system fonts and fetches no stylesheet, so the vendored
  *   font files are registered on every call and the CSS chain is passed
  *   explicitly.
+ * - The page margin is added on top of whatever inset the template applies to
+ *   itself. Chromium was called with 0mm margins and let the stylesheet `@page`
+ *   rule supply the 12mm, so passing the same 12mm here as well inset the text
+ *   twice and cost roughly 7mm of line width. The margin therefore stays at 0
+ *   and the template keeps full control of its own padding, exactly as it did
+ *   under Chromium.
  */
-export async function renderCvPdf({ html, margins, removePageCount }: RenderPdfOptions) {
+export async function renderCvPdf({
+  html,
+  margins,
+  removePageCount,
+}: RenderPdfOptions) {
   const fonts = await loadPdfFontEntries();
+  void margins;
   return renderPdfDocument(html, {
     size: "a4",
-    margin: {
-      top: mmToPx(margins.top),
-      right: mmToPx(margins.right),
-      bottom: mmToPx(margins.bottom),
-      left: mmToPx(margins.left),
-    },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
     fonts,
     fontFamilies: pdfFontFallbackChain(),
     ...(removePageCount ? {} : { footer: pageNumberFooter() }),
