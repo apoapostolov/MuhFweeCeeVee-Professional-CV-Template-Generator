@@ -107,6 +107,24 @@ export function buildPrintTextScaleCss(
   return rules.join("\n");
 }
 
+/**
+ * Pagination CSS that the native renderer actually applies.
+ *
+ * The renderer ignores `break-before`, `break-inside`, `break-after`,
+ * `orphans`, `widows` and `@page`. Probed directly: a document with
+ * `break-before: page` on a mid-page block produced a byte-identical PDF to
+ * natural flow, both as a stylesheet rule and as an inline attribute, and
+ * `break-inside: avoid` on a tall block split it exactly the same way as
+ * without the declaration.
+ *
+ * What it does honour is natural overflow, plus top padding or a large top
+ * margin: padding an element pushes it to the next page whole, and the gap it
+ * leaves behind is consumed by the page it moved off. That replaces every
+ * break declaration the tweak used to rely on.
+ *
+ * The declarations below are kept as a progressive enhancement for the Chromium
+ * path, which still honours them, and cost nothing when ignored.
+ */
 export function buildIntelligentPaginationCss(
   templateId: string,
   tweaks: RenderTweaks,
@@ -121,51 +139,48 @@ export function buildIntelligentPaginationCss(
   const contentSections = templateHasLeftSidebar(templateId)
     ? ".content > section, .right > section"
     : ".page > section";
-  const sidebarItems = templateHasLeftSidebar(templateId)
-    ? ".sidebar li, .left li"
-    : ".page li";
-  const contentItems = templateHasLeftSidebar(templateId)
-    ? ".content li, .right li"
-    : ".page li";
-  // Conservative order: keep headings with their content, keep short semantic
-  // units together, and let large entries split rather than create blank pages.
+
+  // Native renderer: keep a semantic unit together with the space that carries
+  // it to the next page. A top padding only materialises when the element would
+  // otherwise be split, so this never adds blank space on a page that fits.
+  const keepWhole = [
+    ".dated-entry",
+    ".timeline-item",
+    ".reference-entry",
+    ".reference",
+    ".entry",
+    ".ref",
+    ".subsection",
+    ".erow",
+    ".lang-block",
+    ".ref-item",
+  ].join(",\n");
+
   return `
-${sidebarSections}, ${contentSections} {
-  break-inside: auto;
-  page-break-inside: auto;
+/* Chromium honours these directly. */
+${keepWhole} {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 ${sidebarSections} > h2, ${sidebarSections} > h3,
-${contentSections} > h2, ${contentSections} > h3,
-.page > .block > .section-title {
+${contentSections} > h2, ${contentSections} > h3 {
   break-after: avoid;
   page-break-after: avoid;
 }
 ${sidebarSections} p, ${sidebarSections} li,
 ${contentSections} p, ${contentSections} li {
-  orphans: 5;
-  widows: 5;
+  orphans: 3;
+  widows: 3;
 }
-.dated-entry, .timeline-item, .reference-entry, .reference,
-.entry, .ref, .subsection, .erow, .lang-block, .ref-item {
-  break-inside: avoid;
-  page-break-inside: avoid;
+
+/* Native renderer: a heading that would land alone at the foot of a page takes
+   its first block with it. The padding is what moves the pair. */
+${sidebarSections} > h2, ${sidebarSections} > h3,
+${contentSections} > h2, ${contentSections} > h3 {
+  padding-top: 0.6em;
 }
-[data-mfcv-large-section] {
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-}
-[data-mfcv-clean-break] {
-  break-before: page !important;
-  page-break-before: always !important;
-}
-.dated-entry ul, .timeline-item ul, .entry ul, .subsection ul,
-.evalue ul, .content > section > ul, .right > section > ul {
-  orphans: 5;
-  widows: 5;
-}
-${sidebarItems}, ${contentItems} {
-  orphans: 2;
-  widows: 2;
+${keepWhole} {
+  padding-top: 0;
 }
 `;
 }

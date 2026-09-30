@@ -103,14 +103,17 @@ describe("render tweaks", () => {
       contentTextScaleActive: false,
     });
     expect(css).toContain(".sidebar > section, .left > section");
-    expect(css).toContain(".content > section, .right > section");
-    expect(css).toContain("break-after: avoid");
-    expect(css).not.toContain("letter-spacing");
-    expect(css).not.toContain("word-spacing");
-    expect(css).not.toContain("line-height: 1.3");
-    expect(css).toContain("orphans: 5");
-    expect(css).toContain("[data-mfcv-large-section]");
-    expect(css).toContain("[data-mfcv-clean-break]");
+      expect(css).toContain(".content > section, .right > section");
+      expect(css).toContain("break-after: avoid");
+      expect(css).not.toContain("letter-spacing");
+      expect(css).not.toContain("word-spacing");
+      expect(css).not.toContain("line-height: 1.3");
+      // The native renderer ignores the break declarations, so the tweak also
+      // carries the padding that actually moves a heading to the next page.
+      expect(css).toContain("padding-top: 0.6em");
+      // No rule may target a marker no template emits.
+        expect(css).not.toContain("[data-mfcv-large-section]");
+        expect(css).not.toContain("[data-mfcv-clean-break]");
     expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-wrap]");
     expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-line]");
     expect(buildAdaptivePaginationCss("normal")).toContain(
