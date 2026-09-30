@@ -350,7 +350,7 @@ export function renderHarvard(
 
     .star-list li {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 15.5mm;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       column-gap: 2mm;
       margin: 1.8mm 0;
@@ -362,11 +362,12 @@ export function renderHarvard(
       font-size: 3.5mm;
       font-weight: 600;
     }
+    /* No fixed width: the star glyphs come from different fonts in each engine
+       and a fixed track lets five of them overrun it. justify-self places the
+       row against the end of its cell, which is the alignment wanted here. */
     .star-list .stars {
       justify-self: end;
-      width: 15.5mm;
       text-align: right;
-      letter-spacing: 0.7mm;
       white-space: nowrap;
     }
     .star { color: ${theme.starOff}; font-size: 3.8mm; }

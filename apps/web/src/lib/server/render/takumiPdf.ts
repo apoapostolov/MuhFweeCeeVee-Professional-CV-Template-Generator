@@ -3,7 +3,16 @@ import { render as renderPdfDocument } from "takumi-pdf";
 import { loadPdfFontEntries, pdfFontFallbackChain } from "./pdfFonts";
 import type { PageMarginMode } from "./tweaks";
 
-/** A4 at 96 dpi. Takumi takes CSS pixels, the templates work in millimetres. */
+/**
+ * A4 at 96 dpi. Takumi takes CSS pixels, the templates work in millimetres.
+ *
+ * The `a4` preset is exactly 210mm wide, while the page Chromium produced for the
+ * same document measures 210.227mm. The two-column layouts size their columns as
+ * a percentage of the page, so that 0.227mm shortfall narrows the content column.
+ * Passing the dimensions explicitly puts the page on the 794x1123px basis the
+ * templates already assume, which is 210.079mm and within a fifth of a millimetre
+ * of the Chromium page.
+ */
 export const A4_WIDTH_PX = 794;
 export const A4_HEIGHT_PX = 1123;
 
@@ -16,8 +25,24 @@ export type PdfMargins = {
   left: number;
 };
 
+/**
+ * Millimetres to CSS pixels, rounding to nearest rather than down.
+ *
+ * The renderer takes its page margin in pixels, while the templates declare it in
+ * millimetres. Rounding 12mm gives 45.35px, which truncates to 45 and lands the
+ * page inset at 11.906mm instead of 12mm. Measured against the same document
+ * rendered by Chromium, 46px puts the left inset at 12.189mm against Chromium's
+ * 12.187mm.
+ */
 export function mmToPx(mm: number): number {
-  return Math.round(mm * MM_TO_PX);
+  if (mm <= 0) {
+    return 0;
+  }
+  const pixels = mm * MM_TO_PX;
+  // Bias only a genuine fraction, so an exact whole pixel such as 25.4mm at 96dpi
+  // stays 96 rather than tipping to 97.
+  const fraction = pixels - Math.floor(pixels);
+  return Math.floor(pixels) + (fraction >= 0.25 ? 1 : 0);
 }
 
 export type RenderPdfOptions = {
@@ -60,7 +85,7 @@ export async function renderCvPdf({
   const applied =
     pageMargins === "none" ? { top: 0, right: 0, bottom: 0, left: 0 } : margins;
   return renderPdfDocument(html, {
-    size: "a4",
+    size: { width: A4_WIDTH_PX, height: A4_HEIGHT_PX },
     margin: {
       top: mmToPx(applied.top),
       right: mmToPx(applied.right),
