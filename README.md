@@ -20,15 +20,13 @@ MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applica
 
 ## What’s New in 1.5.0
 
-**PDFs are now generated without a browser.** The renderer moved from Playwright to a native engine, which is about four times faster, produces a smaller file, and tags the output so screen readers and stricter parsers get more from it.
+**PDF export no longer launches a browser.** Print Room renders through a native engine instead of Playwright. Export is about four times faster, files are smaller, and the output is tagged so screen readers and stricter parsers get more from it.
 
-Because that engine lays out the same HTML in its own way, a few elements can land a fraction of a millimetre or a few pixels from where they did before. Your CV data is untouched and nothing is lost, but if a template looks slightly off, [downgrade to 1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3) to return to the Playwright engine.
+Because the new engine lays out the same HTML in its own way, a few elements can land a fraction of a millimetre or a few pixels from where they did before. Your CV data is untouched and nothing is lost, but if a template looks slightly off, [downgrade to 1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3) to return to the Playwright engine.
 
-- **Print tweaks that actually work.** The text-size and pagination tweaks were built on rules the new engine initially ignored, so most of them did nothing. They now change the document, and aggressive pagination genuinely moves page breaks.
-- **No Margins tweak.** Render edge to edge when you want it. A4 margins remain the default.
-- **Icons print as icons.** Every icon was rendering as Times or Arial until the icon font was registered over the code points it actually draws.
-- **Geometry matched to the old engine.** Page margins and the text column keep the width they had, and the page number sits inside the column instead of hanging past the right margin.
-- **Stanford photo placeholder fixed.** The circle shades fully instead of only behind the symbol.
+- **No Margins print tweak.** Print edge to edge when you want it. A4 margins remain the default.
+
+The text-size tweaks, icons, page geometry and the Stanford photo placeholder all behave as they did in 1.4.3. Those were reworked for the new engine rather than corrected, so there is nothing to announce about them here.
 
 See the full [changelog](./CHANGELOG.md).
 

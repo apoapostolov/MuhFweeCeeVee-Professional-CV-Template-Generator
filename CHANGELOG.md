@@ -9,27 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-09-30
 
-CVs are generated without a browser. The PDF pipeline runs on a native engine
-that needs no Chromium process, and the print tweaks that Chromium ignored now
-work.
+PDF export no longer launches a browser. Print Room renders through a native engine instead of Playwright, which makes exporting noticeably faster, produces a smaller file, and tags the output so screen readers and stricter parsers get more from it.
 
-### Fixed
+**Please read this before upgrading.** The new engine lays out the same HTML with its own implementation, so a few elements can land a fraction of a millimetre or a few pixels from where Chromium put them. Your CV data is untouched and nothing is lost, but if a template looks slightly off, [downgrade to 1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3) to go back to the Playwright engine.
 
-- The content-area and sidebar text-size tweaks change the type across a whole
-  column again. Previously only rules whose selector text happened to name the
-  column were resized, so headings inside the timeline and subsection blocks kept
-  their original size while other text in the same column scaled.
-- Icons print as icons. Every icon was falling back to a system font and
-  rendering as Times or Arial, because the icon font covers code points that were
-  outside the range it was registered with.
-- The Stanford photo placeholder shades its whole circle instead of a small box
-  behind the symbol.
+### Added
+
+- **A No Margins print tweak**, for CVs that should print edge to edge. A4 margins remain the default and behave as they did in 1.4.3.
 
 ### Changed
 
-- PDF generation no longer starts a Chromium process. It is about four times
-  faster and produces a smaller file, and the result carries a tagged structure
-  that plain Chromium output lacked.
+- **PDF export runs on a native engine rather than Playwright.** No browser process is started, export is roughly four times faster, files are smaller, and the output carries a tagged structure the previous output lacked.
+
+### Known limitations
+
+- Minor differences in CSS styling and element positioning are possible, because the two engines lay out the same HTML differently. If one matters to you, [1.4.3](https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/tag/v1.4.3) restores the previous engine.
+- The page-break CSS properties `break-inside`, `orphans` and `widows` are not supported by the new engine. Smart Pagination works around this by spacing instead, but a custom template that relies on those properties directly will not.
 
 ## [1.4.3] - 2026-09-30
 
