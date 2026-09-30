@@ -1,11 +1,20 @@
-# MuhFweeCeeVee
+<!-- markdownlint-disable MD033 -->
 
-*A self-hosted CV and job-search workspace you own instead of renting by the month.*
+<div align="center">
 
-[![Repository Version](https://img.shields.io/badge/version-1.5.0-blue)](./package.json)
-[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933)](https://nodejs.org/)
-[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED)](./deploy/docker)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+  <h1>MuhFweeCeeVee</h1>
+
+  <p>Keep your CVs, job research, and applications in a workspace you control.</p>
+
+  <p>
+    <a href="#readme"><img src="https://img.shields.io/badge/Type-Self-hosted%20app-555" alt="Type: Self-hosted app"></a>
+    <a href="./package.json"><img src="https://img.shields.io/badge/Language-TypeScript-555" alt="Language: TypeScript"></a>
+    <a href="https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/latest"><img src="https://img.shields.io/github/v/release/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator" alt="Latest stable release version"></a>
+    <a href="https://github.com/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator/releases/latest"><img src="https://img.shields.io/github/release-date/apoapostolov/MuhFweeCeeVee-Professional-CV-Template-Generator?display_date=published_at&amp;label=last%20release" alt="Published date of latest stable release"></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License: MIT"></a>
+  </p>
+
+</div>
 
 MuhFweeCeeVee is a local workspace for CVs, job research, cover letters, applications, evidence, scoring, and print-ready export. Source files stay on the host you control. Local ATS checks run without a model. Optional AI help is per job, and submitted packets can be frozen as sent.
 
