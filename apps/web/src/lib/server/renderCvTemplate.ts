@@ -1,4 +1,7 @@
-import { applyTemplateVisibility, readTemplateVisibility } from "@/lib/cvTemplateVisibility";
+import {
+  applyTemplateVisibility,
+  readTemplateVisibility,
+} from "@/lib/cvTemplateVisibility";
 import { readCv } from "./cvStore";
 import { buildPdfFontFaceCss } from "./render/pdfFonts";
 import { applyTextScale } from "./render/textScale";
@@ -27,7 +30,13 @@ import {
   shouldMoveSkillsLeft,
   templateHasLeftSidebar,
 } from "./render/tweaks";
-import type { MappingFile, PdfMetadata, RenderInput, RenderResult, TemplateFile } from "./render/types";
+import type {
+  MappingFile,
+  PdfMetadata,
+  RenderInput,
+  RenderResult,
+  TemplateFile,
+} from "./render/types";
 import {
   resolveCambridgeTheme,
   resolveEdinburghTheme,
@@ -39,16 +48,19 @@ import { repoPath } from "./repoPaths";
 export type { PdfMetadata, RenderInput, RenderResult } from "./render/types";
 
 function buildPdfMetadata(cv: unknown): PdfMetadata {
-  const person = cv && typeof cv === "object" && !Array.isArray(cv)
-    ? (cv as Record<string, unknown>).person
-    : undefined;
-  const fullName = person && typeof person === "object" && !Array.isArray(person)
-    ? String((person as Record<string, unknown>).full_name ?? "").trim()
-    : "";
+  const person =
+    cv && typeof cv === "object" && !Array.isArray(cv)
+      ? (cv as Record<string, unknown>).person
+      : undefined;
+  const fullName =
+    person && typeof person === "object" && !Array.isArray(person)
+      ? String((person as Record<string, unknown>).full_name ?? "").trim()
+      : "";
   const nameParts = fullName.split(/\s+/).filter(Boolean);
-  const shortName = nameParts.length >= 2
-    ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
-    : fullName;
+  const shortName =
+    nameParts.length >= 2
+      ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
+      : fullName;
   const displayName = shortName || "MuhFweeCeeVee";
   return {
     author: displayName,
@@ -128,13 +140,23 @@ export async function buildCvTemplateHtml(
               moveSkillsLeft,
             )
           : input.templateId === "cambridge-v1"
-            ? renderCambridge(cv, template, slots, labels, cambridgeTheme, moveSkillsLeft)
+            ? renderCambridge(
+                cv,
+                template,
+                slots,
+                labels,
+                cambridgeTheme,
+                moveSkillsLeft,
+              )
             : input.templateId === "europass-v1"
               ? renderEuropass(cv, template, slots, labels)
               : renderGeneric(cv, template, slots, labels);
 
   const tweakCss = [
     buildIntelligentPaginationCss(input.templateId, tweaks),
+    buildAdaptivePaginationCss(tweaks.intelligentPaginationMode, {
+      tightenHeadings: true,
+    }),
     buildPrintTextScaleCss(input.templateId, tweaks),
     await buildPdfFontFaceCss(),
   ]

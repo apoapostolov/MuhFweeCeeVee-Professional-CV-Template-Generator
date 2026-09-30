@@ -5,7 +5,6 @@ import { applyPdfMetadata } from "@/lib/server/pdfMetadata";
 import { buildCvTemplateHtml } from "@/lib/server/renderCvTemplate";
 import { renderCvPdf } from "@/lib/server/render/takumiPdf";
 import {
-  buildAdaptivePaginationCss,
   buildIntelligentPaginationCss,
   parseRenderTweaks,
   type RenderTweaks,
@@ -30,13 +29,9 @@ function buildNativePaginationCss(
   if (!tweaks.intelligentPagination) {
     return "";
   }
-  const parts = [buildIntelligentPaginationCss(templateId, tweaks)];
-  if (tweaks.intelligentPaginationMode === "aggressive") {
-    parts.push(
-      buildAdaptivePaginationCss("aggressive", { tightenHeadings: true }),
-    );
-  }
-  return parts.filter(Boolean).join("\n");
+  // The adaptive half of the tweak is already applied by buildCvTemplateHtml, so
+  // only the native pagination rules are added here.
+  return buildIntelligentPaginationCss(templateId, tweaks);
 }
 
 /** Append CSS to the document head so it can override the template's own rules. */

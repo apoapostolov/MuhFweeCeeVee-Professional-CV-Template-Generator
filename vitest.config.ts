@@ -19,9 +19,6 @@ export default defineConfig({
     include: [
       "packages/schemas/src/**/*.test.ts",
       "apps/web/src/**/*.test.ts",
-      // Audit suites are expected to fail while they document a gap. They use
-      // describe.skip, so they are inert here and only run when named directly.
-      "apps/web/src/**/*.audit.ts",
     ],
     environment: "node",
     setupFiles: ["apps/web/src/test/load-env-test.ts"],

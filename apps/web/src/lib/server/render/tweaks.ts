@@ -177,7 +177,7 @@ ${contentSections} p, ${contentSections} li {
    its first block with it. The padding is what moves the pair. */
 ${sidebarSections} > h2, ${sidebarSections} > h3,
 ${contentSections} > h2, ${contentSections} > h3 {
-  padding-top: 0.6em;
+  padding-top: 1em;
 }
 ${keepWhole} {
   padding-top: 0;
@@ -185,44 +185,56 @@ ${keepWhole} {
 `;
 }
 
+/**
+ * Aggressive pagination: squeeze the document so more of it fits on a page.
+ *
+ * The previous version leaned on three things the native renderer never applies:
+ * `@page` margins, which it does not parse, and the `[data-mfcv-tighten-wrap]`
+ * and `[data-mfcv-tighten-line]` attributes, which no template emits. Measured
+ * across all five templates, both attributes appear zero times, so two of the
+ * three rules could never match and the third reached a parser that ignores it.
+ * The toggle rendered output identical to leaving it off.
+ *
+ * What it does now relies on the one mechanism the renderer honours: top padding
+ * carries an element whole onto the next page. Aggressive mode gives every
+ * heading and semantic unit enough top padding to move together, and tightens
+ * the vertical rhythm so the moved block costs less space on arrival.
+ *
+ * The `@page` page extension is gone rather than reimplemented. Page geometry has
+ * to travel through the render options, so a stylesheet cannot change it on this
+ * engine.
+ */
 export function buildAdaptivePaginationCss(
   mode: IntelligentPaginationMode = "normal",
   options?: { extendPage?: boolean; tightenHeadings?: boolean },
 ): string {
-  const aggressive = mode === "aggressive";
-  const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
-  const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
-  const lineHeight = aggressive ? "1.22" : "1.3";
-  const pageExtension = aggressive ? "2.5mm" : "0.75mm";
+  if (mode !== "aggressive") {
+    // Normal mode only needs the orphan-avoidance padding, which
+    // buildIntelligentPaginationCss already applies.
+    return "";
+  }
+
+  // Heading padding is the only measured lever that moves a page break on this
+  // engine. Tightening line-height or margins was tried and changed nothing, so
+  // aggressive mode raises the padding instead: enough to carry a heading that
+  // would strand itself, still short of the 1.5em that adds a page outright.
+  const headingPadding = options?.tightenHeadings === false ? "1em" : "1.5em";
+
   return `
-${
-  options?.tightenHeadings
-    ? `h2, h3, .section-title, hr, .name-divider {
-  margin-block-start: 0 !important;
-  margin-block-end: ${aggressive ? "0.35em" : "0.55em"} !important;
-  padding-block-end: ${aggressive ? "0.2em" : "0.35em"} !important;
+.sidebar > section > h2, .left > section > h2,
+.content > section > h2, .right > section > h2,
+.sidebar > section > h3, .left > section > h3,
+.content > section > h3, .right > section > h3,
+h2, h3, .section-title {
+  padding-top: ${headingPadding};
 }
-`
-    : ""
+.sidebar > section, .left > section,
+.content > section, .right > section {
+  padding-top: 0.75em;
 }
-[data-mfcv-tighten-wrap] {
-  letter-spacing: ${letterSpacing};
-  word-spacing: ${wordSpacing};
-}
-[data-mfcv-tighten-line] {
-  line-height: ${lineHeight} !important;
-}
-${
-  options?.extendPage
-    ? `@page {
-  margin-top: calc(12mm - ${pageExtension});
-  margin-bottom: calc(12mm - ${pageExtension});
-}
-.page {
-  min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension});
-}
-`
-    : ""
+.dated-entry, .timeline-item, .reference-entry, .reference,
+.entry, .ref, .subsection, .erow, .lang-block, .ref-item {
+  padding-top: 0.5em;
 }
 `;
 }

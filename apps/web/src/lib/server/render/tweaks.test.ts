@@ -103,34 +103,30 @@ describe("render tweaks", () => {
       contentTextScaleActive: false,
     });
     expect(css).toContain(".sidebar > section, .left > section");
-      expect(css).toContain(".content > section, .right > section");
-      expect(css).toContain("break-after: avoid");
-      expect(css).not.toContain("letter-spacing");
-      expect(css).not.toContain("word-spacing");
-      expect(css).not.toContain("line-height: 1.3");
-      // The native renderer ignores the break declarations, so the tweak also
-      // carries the padding that actually moves a heading to the next page.
-      expect(css).toContain("padding-top: 0.6em");
-      // No rule may target a marker no template emits.
-        expect(css).not.toContain("[data-mfcv-large-section]");
-        expect(css).not.toContain("[data-mfcv-clean-break]");
-    expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-wrap]");
-    expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-line]");
-    expect(buildAdaptivePaginationCss("normal")).toContain(
-      "letter-spacing: -0.01em",
-    );
-    expect(
-      buildAdaptivePaginationCss("aggressive", {
-        extendPage: true,
-        tightenHeadings: true,
-      }),
-    ).toContain("letter-spacing: -0.0125em");
-    expect(
-      buildAdaptivePaginationCss("aggressive", {
-        extendPage: true,
-        tightenHeadings: true,
-      }),
-    ).toContain("1.22");
+    expect(css).toContain(".content > section, .right > section");
+    expect(css).toContain("break-after: avoid");
+    expect(css).not.toContain("letter-spacing");
+    expect(css).not.toContain("word-spacing");
+    expect(css).not.toContain("line-height: 1.3");
+    // The native renderer ignores the break declarations, so the tweak also
+    // carries the padding that actually moves a heading to the next page.
+    expect(css).toContain("padding-top: 1em");
+    // No rule may target a marker no template emits.
+    expect(css).not.toContain("[data-mfcv-large-section]");
+    expect(css).not.toContain("[data-mfcv-clean-break]");
+    // The adaptive CSS no longer targets the [data-mfcv-tighten-*] attributes.
+    // No template emits them, so those rules could never match. It now leans on
+    // top padding, which is the mechanism the renderer honours.
+    expect(buildAdaptivePaginationCss()).toBe("");
+    const aggressive = buildAdaptivePaginationCss("aggressive", {
+      tightenHeadings: true,
+    });
+    expect(aggressive).toContain("padding-top: 1.5em");
+    expect(aggressive).not.toContain("line-height: 1.22");
+    // Neither the dead markers nor @page may come back.
+    expect(aggressive).not.toContain("[data-mfcv-tighten-wrap]");
+    expect(aggressive).not.toContain("[data-mfcv-tighten-line]");
+    expect(aggressive).not.toContain("@page");
     expect(
       buildIntelligentPaginationCss("harvard-v1", {
         intelligentPagination: false,
