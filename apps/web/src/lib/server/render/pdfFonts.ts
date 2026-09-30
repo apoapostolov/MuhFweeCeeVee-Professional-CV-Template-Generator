@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 import manifest from "@/assets/pdf-fonts/manifest.json";
 
@@ -20,9 +21,28 @@ type PdfFontFamily = {
 
 const FAMILIES = manifest.families as PdfFontFamily[];
 
-// Resolve against this module's own location so the path is correct whether the
-// caller is the Next server, a vitest worker, or a one-off script.
-const fontDir = fileURLToPath(new URL("../../../assets/pdf-fonts/", import.meta.url));
+// Resolve the font directory at runtime. The path is built from
+// `process.cwd()` on purpose: webpack statically analyses `new URL("...",
+// import.meta.url)` and cannot resolve a bare directory reference, so both
+// `next dev` and `next build` fail with "Module not found: Can't resolve
+// '../../../assets/pdf-fonts/'".
+const fontDirCandidates = [
+  // Next.js runs with apps/web as the working directory.
+  path.join(process.cwd(), "src", "assets", "pdf-fonts"),
+  // Repo-root tooling and vitest workers run from the workspace root.
+  path.join(process.cwd(), "apps", "web", "src", "assets", "pdf-fonts"),
+];
+
+function resolveFontDir(): string {
+  for (const candidate of fontDirCandidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  throw new Error(
+    `Could not locate the vendored PDF fonts. Looked in:\n${fontDirCandidates.join("\n")}`,
+  );
+}
 
 /**
  * Build `@font-face` rules with inline data URLs.
@@ -33,6 +53,7 @@ const fontDir = fileURLToPath(new URL("../../../assets/pdf-fonts/", import.meta.
  * falling back to a system font.
  */
 export async function buildPdfFontFaceCss(): Promise<string> {
+  const fontDir = resolveFontDir();
   const rules: string[] = [];
   for (const family of FAMILIES) {
     for (const face of family.faces) {
@@ -71,6 +92,7 @@ export type PdfFontEntry = {
  * that ship no Cyrillic file.
  */
 export async function loadPdfFontEntries(): Promise<PdfFontEntry[]> {
+  const fontDir = resolveFontDir();
   const entries: PdfFontEntry[] = [];
   for (const family of FAMILIES) {
     for (const face of family.faces) {
