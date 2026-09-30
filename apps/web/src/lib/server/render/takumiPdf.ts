@@ -1,6 +1,7 @@
 import { render as renderPdfDocument } from "takumi-pdf";
 
 import { loadPdfFontEntries, pdfFontFallbackChain } from "./pdfFonts";
+import type { PageMarginMode } from "./tweaks";
 
 /** A4 at 96 dpi. Takumi takes CSS pixels, the templates work in millimetres. */
 export const A4_WIDTH_PX = 794;
@@ -25,6 +26,8 @@ export type RenderPdfOptions = {
   margins: PdfMargins;
   /** Omit the page-number footer, matching the removePageCount tweak. */
   removePageCount: boolean;
+  /** "a4" keeps the template's own margins; "none" renders edge to edge. */
+  pageMargins?: PageMarginMode;
 };
 
 /**
@@ -39,23 +42,31 @@ export type RenderPdfOptions = {
  * - The engine reads no system fonts and fetches no stylesheet, so the vendored
  *   font files are registered on every call and the CSS chain is passed
  *   explicitly.
- * - The page margin is added on top of whatever inset the template applies to
- *   itself. Chromium was called with 0mm margins and let the stylesheet `@page`
- *   rule supply the 12mm, so passing the same 12mm here as well inset the text
- *   twice and cost roughly 7mm of line width. The margin therefore stays at 0
- *   and the template keeps full control of its own padding, exactly as it did
- *   under Chromium.
+ * - The `margin` option *replaces* the stylesheet `@page` rule rather than
+ *   adding to it. Measured on the Harvard template: Chromium with 0mm page
+ *   margins and a 12mm `@page` rule produced a 177.4mm text span, and this
+ *   engine with a 12mm margin produced 179.5mm. The template's own padding sits
+ *   inside that span, so passing the template margins here is what keeps the
+ *   layout close to the Chromium output. Passing 0 instead spreads the text to
+ *   203.3mm, which is the wider "no margins" look.
  */
 export async function renderCvPdf({
   html,
   margins,
   removePageCount,
+  pageMargins = "a4",
 }: RenderPdfOptions) {
   const fonts = await loadPdfFontEntries();
-  void margins;
+  const applied =
+    pageMargins === "none" ? { top: 0, right: 0, bottom: 0, left: 0 } : margins;
   return renderPdfDocument(html, {
     size: "a4",
-    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    margin: {
+      top: mmToPx(applied.top),
+      right: mmToPx(applied.right),
+      bottom: mmToPx(applied.bottom),
+      left: mmToPx(applied.left),
+    },
     fonts,
     fontFamilies: pdfFontFallbackChain(),
     ...(removePageCount ? {} : { footer: pageNumberFooter() }),

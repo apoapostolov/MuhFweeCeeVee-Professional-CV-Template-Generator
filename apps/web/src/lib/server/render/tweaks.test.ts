@@ -18,27 +18,47 @@ describe("render tweaks", () => {
   });
 
   it("parses tweak flags from query params", () => {
-    expect(parseRenderTweaks(new URLSearchParams("moveSkillsLeft=1")).moveSkillsLeft).toBe(
-      true,
-    );
-    expect(parseRenderTweaks(new URLSearchParams("removePhoto=true")).removePhoto).toBe(true);
-    expect(parseRenderTweaks(new URLSearchParams("removePageCount=1")).removePageCount).toBe(true);
-    expect(parseRenderTweaks(new URLSearchParams("pagination=smart")).intelligentPagination).toBe(true);
-    expect(parseRenderTweaks(new URLSearchParams("pagination=smart")).intelligentPaginationMode).toBe("normal");
-    expect(parseRenderTweaks(new URLSearchParams("pagination=smart&paginationMode=aggressive")).intelligentPaginationMode).toBe("aggressive");
-    expect(parseRenderTweaks(new URLSearchParams("pagination=off")).intelligentPagination).toBe(false);
+    expect(
+      parseRenderTweaks(new URLSearchParams("moveSkillsLeft=1")).moveSkillsLeft,
+    ).toBe(true);
+    expect(
+      parseRenderTweaks(new URLSearchParams("removePhoto=true")).removePhoto,
+    ).toBe(true);
+    expect(
+      parseRenderTweaks(new URLSearchParams("removePageCount=1"))
+        .removePageCount,
+    ).toBe(true);
+    expect(
+      parseRenderTweaks(new URLSearchParams("pagination=smart"))
+        .intelligentPagination,
+    ).toBe(true);
+    expect(
+      parseRenderTweaks(new URLSearchParams("pagination=smart"))
+        .intelligentPaginationMode,
+    ).toBe("normal");
+    expect(
+      parseRenderTweaks(
+        new URLSearchParams("pagination=smart&paginationMode=aggressive"),
+      ).intelligentPaginationMode,
+    ).toBe("aggressive");
+    expect(
+      parseRenderTweaks(new URLSearchParams("pagination=off"))
+        .intelligentPagination,
+    ).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).moveSkillsLeft).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).removePhoto).toBe(false);
     expect(parseRenderTweaks(new URLSearchParams()).sidebarTextScale).toBe(
       PRINT_TEXT_SCALE_DEFAULT,
     );
     expect(
-      parseRenderTweaks(new URLSearchParams("sidebarTextScale=95&contentTextScale=110"))
-        .sidebarTextScale,
+      parseRenderTweaks(
+        new URLSearchParams("sidebarTextScale=95&contentTextScale=110"),
+      ).sidebarTextScale,
     ).toBe(95);
     expect(
-      parseRenderTweaks(new URLSearchParams("sidebarTextScale=95&contentTextScale=110"))
-        .contentTextScale,
+      parseRenderTweaks(
+        new URLSearchParams("sidebarTextScale=95&contentTextScale=110"),
+      ).contentTextScale,
     ).toBe(110);
     const scaled = parseRenderTweaks(
       new URLSearchParams("sidebarTextScale=87&contentTextScale=100"),
@@ -55,11 +75,12 @@ describe("render tweaks", () => {
       removePhoto: false,
       removePageCount: true,
       moveSkillsLeft: false,
+      noPageMargins: false,
       sidebarTextScale: 90,
       sidebarTextScaleActive: true,
       contentTextScale: 105,
       contentTextScaleActive: true,
-    };
+    } as const;
     const css = buildPrintTextScaleCss("harvard-v1", tweaks);
     // The type-size part of the tweak rewrites the template's own font sizes, see
     // textScale.test.ts. `zoom` is not implemented by the renderer and
@@ -75,6 +96,7 @@ describe("render tweaks", () => {
       removePhoto: false,
       removePageCount: false,
       moveSkillsLeft: false,
+      noPageMargins: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
       contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -91,19 +113,34 @@ describe("render tweaks", () => {
     expect(css).toContain("[data-mfcv-clean-break]");
     expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-wrap]");
     expect(buildAdaptivePaginationCss()).toContain("[data-mfcv-tighten-line]");
-    expect(buildAdaptivePaginationCss("normal")).toContain("letter-spacing: -0.01em");
-    expect(buildAdaptivePaginationCss("aggressive", { extendPage: true, tightenHeadings: true })).toContain("letter-spacing: -0.0125em");
-    expect(buildAdaptivePaginationCss("aggressive", { extendPage: true, tightenHeadings: true })).toContain("1.22");
-    expect(buildIntelligentPaginationCss("harvard-v1", {
-      intelligentPagination: false,
-      removePhoto: false,
-      removePageCount: false,
-      moveSkillsLeft: false,
-      sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
-      sidebarTextScaleActive: false,
-      contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
-      contentTextScaleActive: false,
-    })).toBe("");
+    expect(buildAdaptivePaginationCss("normal")).toContain(
+      "letter-spacing: -0.01em",
+    );
+    expect(
+      buildAdaptivePaginationCss("aggressive", {
+        extendPage: true,
+        tightenHeadings: true,
+      }),
+    ).toContain("letter-spacing: -0.0125em");
+    expect(
+      buildAdaptivePaginationCss("aggressive", {
+        extendPage: true,
+        tightenHeadings: true,
+      }),
+    ).toContain("1.22");
+    expect(
+      buildIntelligentPaginationCss("harvard-v1", {
+        intelligentPagination: false,
+        removePhoto: false,
+        removePageCount: false,
+        moveSkillsLeft: false,
+        noPageMargins: false,
+        sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
+        sidebarTextScaleActive: false,
+        contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
+        contentTextScaleActive: false,
+      }),
+    ).toBe("");
   });
 
   it("only moves skills for sidebar templates when enabled", () => {
@@ -112,11 +149,12 @@ describe("render tweaks", () => {
       removePhoto: false,
       removePageCount: false,
       moveSkillsLeft: true,
+      noPageMargins: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
       contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
       contentTextScaleActive: false,
-    };
+    } as const;
     expect(shouldMoveSkillsLeft("harvard-v1", enabled)).toBe(true);
     expect(shouldMoveSkillsLeft("europass-v1", enabled)).toBe(false);
     expect(
@@ -125,6 +163,7 @@ describe("render tweaks", () => {
         removePhoto: false,
         removePageCount: false,
         moveSkillsLeft: false,
+        noPageMargins: false,
         sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
         sidebarTextScaleActive: false,
         contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -138,16 +177,23 @@ describe("render tweaks", () => {
       intelligentPagination: false,
       removePageCount: false,
       moveSkillsLeft: false,
+      noPageMargins: false,
       sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
       sidebarTextScaleActive: false,
       contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
       contentTextScaleActive: false,
-    };
+    } as const;
     expect(
-      resolveEffectivePhotoMode("on-circle", { ...baseTweaks, removePhoto: true }),
+      resolveEffectivePhotoMode("on-circle", {
+        ...baseTweaks,
+        removePhoto: true,
+      }),
     ).toBe("off");
     expect(
-      resolveEffectivePhotoMode("on-circle", { ...baseTweaks, removePhoto: false }),
+      resolveEffectivePhotoMode("on-circle", {
+        ...baseTweaks,
+        removePhoto: false,
+      }),
     ).toBe("on-circle");
   });
 });

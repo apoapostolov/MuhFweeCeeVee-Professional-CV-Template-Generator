@@ -32,9 +32,18 @@ export type WorkspacePanelProps = {
   printTweaks: PrintTweaksState;
   onPrintTweakChange: (tweakId: PrintTweakId, enabled: boolean) => void;
   onPrintPaginationModeChange: (mode: "normal" | "aggressive") => void;
-  onPrintTextScaleEnabledChange: (target: "sidebar" | "content", enabled: boolean) => void;
-  onPrintTextScaleValueChange: (target: "sidebar" | "content", value: number) => void;
-  onPrintTextScaleStep: (target: "sidebar" | "content", direction: -1 | 1) => void;
+  onPrintTextScaleEnabledChange: (
+    target: "sidebar" | "content",
+    enabled: boolean,
+  ) => void;
+  onPrintTextScaleValueChange: (
+    target: "sidebar" | "content",
+    value: number,
+  ) => void;
+  onPrintTextScaleStep: (
+    target: "sidebar" | "content",
+    direction: -1 | 1,
+  ) => void;
   selectedCvId: string;
   loadingWorkspace: boolean;
   pdfUrl: string;
@@ -71,7 +80,8 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
     onDownloadPdf,
   } = props;
 
-  const selectedTemplateThemeOptions: TemplateThemeOption[] = themeOptionsForTemplate(selectedTemplateId);
+  const selectedTemplateThemeOptions: TemplateThemeOption[] =
+    themeOptionsForTemplate(selectedTemplateId);
   const tweaksAvailable = templateSupportsPrintTweaks(selectedTemplateId);
 
   return (
@@ -84,7 +94,9 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
 
         <div className="mt-4 space-y-3">
           <div>
-            <p className="mb-1 text-sm font-medium text-slate-800">Print language</p>
+            <p className="mb-1 text-sm font-medium text-slate-800">
+              Print language
+            </p>
             <div className="flex items-center justify-center">
               <div className="inline-flex w-[90%] overflow-hidden rounded-full border border-[var(--line)]">
                 {availableLanguages.map((language, index) => (
@@ -104,20 +116,31 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-800">Résumé (CV)</label>
+            <label className="block text-sm font-medium text-slate-800">
+              Résumé (CV)
+            </label>
             <div className="mt-1 flex gap-1.5">
-            <select
-              className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
-              onChange={(event) => onSwitchCvPair(event.target.value)}
-              value={selectedPairKey}
-            >
-              {cvTemplatesForLanguage.map((pair) => (
-                <option key={pair.key} value={pair.key}>
-                  {pair.displayName} {pair.displayVersion}
-                </option>
-              ))}
-            </select>
-            <button aria-label="Create a copy of this CV version" className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold" disabled={!selectedCvId} onClick={onRequestDuplicateCv} title="Create CV version" type="button">+</button>
+              <select
+                className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
+                onChange={(event) => onSwitchCvPair(event.target.value)}
+                value={selectedPairKey}
+              >
+                {cvTemplatesForLanguage.map((pair) => (
+                  <option key={pair.key} value={pair.key}>
+                    {pair.displayName} {pair.displayVersion}
+                  </option>
+                ))}
+              </select>
+              <button
+                aria-label="Create a copy of this CV version"
+                className="inline-flex w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-2)] text-lg font-semibold"
+                disabled={!selectedCvId}
+                onClick={onRequestDuplicateCv}
+                title="Create CV version"
+                type="button"
+              >
+                +
+              </button>
             </div>
           </div>
 
@@ -140,7 +163,9 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
             Theme
             <select
               className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 disabled:opacity-60"
-              disabled={selectedTemplateThemeOptions.length === 0 ? true : undefined}
+              disabled={
+                selectedTemplateThemeOptions.length === 0 ? true : undefined
+              }
               onChange={(event) => onSelectTemplateTheme(event.target.value)}
               value={selectedTemplateTheme}
             >
@@ -159,7 +184,9 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
             Photo
             <select
               className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2"
-              onChange={(event) => onSelectPhotoMode(event.target.value as PhotoModeOption["id"])}
+              onChange={(event) =>
+                onSelectPhotoMode(event.target.value as PhotoModeOption["id"])
+              }
               value={selectedPhotoMode}
             >
               {PHOTO_MODE_OPTIONS.map((option) => (
@@ -191,7 +218,9 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
                       checked={checked}
                       className="h-4 w-4 shrink-0 rounded border-[var(--line)] accent-[var(--accent)]"
                       disabled={disabled ? true : undefined}
-                      onChange={(event) => onPrintTweakChange(option.id, event.target.checked)}
+                      onChange={(event) =>
+                        onPrintTweakChange(option.id, event.target.checked)
+                      }
                       type="checkbox"
                     />
                     <span className="min-w-0">{option.label}</span>
@@ -200,7 +229,9 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
                         aria-label="Smart Pagination mode"
                         className="composer-inline-select ml-auto w-28 rounded px-1.5 py-1 text-[11px] font-normal"
                         onChange={(event) => {
-                          onPrintPaginationModeChange(event.target.value as "normal" | "aggressive");
+                          onPrintPaginationModeChange(
+                            event.target.value as "normal" | "aggressive",
+                          );
                           event.currentTarget.blur();
                         }}
                         value={printTweaks.intelligentPaginationMode}
@@ -220,18 +251,30 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
                 }
                 enabled={printTweaks.sidebarTextScaleEnabled}
                 label="Sidebar Text Size"
-                onEnabledChange={(enabled) => onPrintTextScaleEnabledChange("sidebar", enabled)}
-                onStep={(direction) => onPrintTextScaleStep("sidebar", direction)}
-                onValueChange={(value) => onPrintTextScaleValueChange("sidebar", value)}
+                onEnabledChange={(enabled) =>
+                  onPrintTextScaleEnabledChange("sidebar", enabled)
+                }
+                onStep={(direction) =>
+                  onPrintTextScaleStep("sidebar", direction)
+                }
+                onValueChange={(value) =>
+                  onPrintTextScaleValueChange("sidebar", value)
+                }
                 rowDisabled={!tweaksAvailable}
                 value={printTweaks.sidebarTextScale}
               />
               <PrintTextScaleRow
                 enabled={printTweaks.contentTextScaleEnabled}
                 label="Content Text Size"
-                onEnabledChange={(enabled) => onPrintTextScaleEnabledChange("content", enabled)}
-                onStep={(direction) => onPrintTextScaleStep("content", direction)}
-                onValueChange={(value) => onPrintTextScaleValueChange("content", value)}
+                onEnabledChange={(enabled) =>
+                  onPrintTextScaleEnabledChange("content", enabled)
+                }
+                onStep={(direction) =>
+                  onPrintTextScaleStep("content", direction)
+                }
+                onValueChange={(value) =>
+                  onPrintTextScaleValueChange("content", value)
+                }
                 value={printTweaks.contentTextScale}
               />
             </div>
@@ -247,8 +290,20 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
           >
             <span aria-hidden="true">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="1.8" />
+                <path
+                  d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="2"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
               </svg>
             </span>
             Open
@@ -261,8 +316,19 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
           >
             <span aria-hidden="true">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <path d="M6 9V4h12v5M6 18H4a1 1 0 0 1-1-1v-5a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v5a1 1 0 0 1-1 1h-2M6 14h12v6H6v-6Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                <path d="M18 12h.01" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" />
+                <path
+                  d="M6 9V4h12v5M6 18H4a1 1 0 0 1-1-1v-5a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v5a1 1 0 0 1-1 1h-2M6 14h12v6H6v-6Z"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                />
+                <path
+                  d="M18 12h.01"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="2.4"
+                />
               </svg>
             </span>
             Print
@@ -272,7 +338,11 @@ export function WorkspacePanel(props: WorkspacePanelProps): JSX.Element {
 
       <article className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-white">
         {pdfUrl ? (
-          <iframe className="h-full w-full" src={pdfUrl} title="CV PDF Preview" />
+          <iframe
+            className="h-full w-full"
+            src={pdfUrl}
+            title="CV PDF Preview"
+          />
         ) : (
           <div className="p-4 text-sm text-[var(--ink-muted)]">
             Select a CV and template to generate preview.

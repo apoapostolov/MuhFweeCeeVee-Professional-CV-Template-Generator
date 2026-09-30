@@ -8,12 +8,15 @@ import {
 
 export type IntelligentPaginationMode = "normal" | "aggressive";
 
+export type PageMarginMode = "a4" | "none";
+
 export type RenderTweaks = {
   intelligentPagination: boolean;
   intelligentPaginationMode?: IntelligentPaginationMode;
   removePhoto: boolean;
   removePageCount: boolean;
   moveSkillsLeft: boolean;
+  noPageMargins: boolean;
   sidebarTextScale: number;
   sidebarTextScaleActive: boolean;
   contentTextScale: number;
@@ -26,6 +29,7 @@ export const DEFAULT_RENDER_TWEAKS: RenderTweaks = {
   removePhoto: false,
   removePageCount: false,
   moveSkillsLeft: false,
+  noPageMargins: false,
   sidebarTextScale: PRINT_TEXT_SCALE_DEFAULT,
   sidebarTextScaleActive: false,
   contentTextScale: PRINT_TEXT_SCALE_DEFAULT,
@@ -68,13 +72,22 @@ export function parseRenderTweaks(
   return {
     intelligentPagination: searchParams.get("pagination") === "smart",
     intelligentPaginationMode:
-      searchParams.get("paginationMode") === "aggressive" ? "aggressive" : "normal",
+      searchParams.get("paginationMode") === "aggressive"
+        ? "aggressive"
+        : "normal",
     removePhoto: readTruthyFlag(searchParams, "removePhoto"),
     removePageCount: readTruthyFlag(searchParams, "removePageCount"),
     moveSkillsLeft: readTruthyFlag(searchParams, "moveSkillsLeft"),
-    sidebarTextScale: parsePrintTextScaleParam(searchParams, "sidebarTextScale"),
+    noPageMargins: searchParams.get("pageMargins") === "none",
+    sidebarTextScale: parsePrintTextScaleParam(
+      searchParams,
+      "sidebarTextScale",
+    ),
     sidebarTextScaleActive: searchParams.get("sidebarTextScale") !== null,
-    contentTextScale: parsePrintTextScaleParam(searchParams, "contentTextScale"),
+    contentTextScale: parsePrintTextScaleParam(
+      searchParams,
+      "contentTextScale",
+    ),
     contentTextScaleActive: searchParams.get("contentTextScale") !== null,
   };
 }
@@ -157,19 +170,26 @@ ${sidebarItems}, ${contentItems} {
 `;
 }
 
-export function buildAdaptivePaginationCss(mode: IntelligentPaginationMode = "normal", options?: { extendPage?: boolean; tightenHeadings?: boolean }): string {
+export function buildAdaptivePaginationCss(
+  mode: IntelligentPaginationMode = "normal",
+  options?: { extendPage?: boolean; tightenHeadings?: boolean },
+): string {
   const aggressive = mode === "aggressive";
   const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
   const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
   const lineHeight = aggressive ? "1.22" : "1.3";
   const pageExtension = aggressive ? "2.5mm" : "0.75mm";
   return `
-${options?.tightenHeadings ? `h2, h3, .section-title, hr, .name-divider {
+${
+  options?.tightenHeadings
+    ? `h2, h3, .section-title, hr, .name-divider {
   margin-block-start: 0 !important;
   margin-block-end: ${aggressive ? "0.35em" : "0.55em"} !important;
   padding-block-end: ${aggressive ? "0.2em" : "0.35em"} !important;
 }
-` : ""}
+`
+    : ""
+}
 [data-mfcv-tighten-wrap] {
   letter-spacing: ${letterSpacing};
   word-spacing: ${wordSpacing};
@@ -177,14 +197,18 @@ ${options?.tightenHeadings ? `h2, h3, .section-title, hr, .name-divider {
 [data-mfcv-tighten-line] {
   line-height: ${lineHeight} !important;
 }
-${options?.extendPage ? `@page {
+${
+  options?.extendPage
+    ? `@page {
   margin-top: calc(12mm - ${pageExtension});
   margin-bottom: calc(12mm - ${pageExtension});
 }
 .page {
   min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension});
 }
-` : ""}
+`
+    : ""
+}
 `;
 }
 
@@ -198,7 +222,9 @@ export type AdaptivePaginationMeasurement = {
 
 export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasurement {
   const mode: IntelligentPaginationMode =
-    document.documentElement.dataset.mfcvPaginationMode === "aggressive" ? "aggressive" : "normal";
+    document.documentElement.dataset.mfcvPaginationMode === "aggressive"
+      ? "aggressive"
+      : "normal";
   const maxRecoveredLines = mode === "aggressive" ? 3 : 1;
   const pageHeightFallback = (297 / 25.4) * 96;
   const elements = Array.from(document.querySelectorAll("p, li"));
@@ -227,22 +253,32 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
   };
   const getPageHeight = (): number => {
     const page = document.querySelector(".page");
-    const minHeight = page ? Number.parseFloat(getComputedStyle(page).minHeight) : Number.NaN;
-    return Number.isFinite(minHeight) && minHeight > 0 ? minHeight : pageHeightFallback;
+    const minHeight = page
+      ? Number.parseFloat(getComputedStyle(page).minHeight)
+      : Number.NaN;
+    return Number.isFinite(minHeight) && minHeight > 0
+      ? minHeight
+      : pageHeightFallback;
   };
-  const spillCount = (lines: Array<{ top: number; text: string }>, pageHeight: number): number => {
+  const spillCount = (
+    lines: Array<{ top: number; text: string }>,
+    pageHeight: number,
+  ): number => {
     if (lines.length < 2) return 0;
     const firstPage = Math.floor((lines[0].top + 1) / pageHeight);
     const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
     if (lastPage <= firstPage) return 0;
-    return lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length;
+    return lines.filter(
+      (line) => Math.floor((line.top + 1) / pageHeight) === lastPage,
+    ).length;
   };
   const snapshot = (): { totalSpill: number; spillingElements: number } => {
     const pageHeight = getPageHeight();
     let totalSpill = 0;
     let spillingElements = 0;
     for (const element of elements) {
-      if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+      if (!element.closest(".page, .content, .sidebar, .left, .right"))
+        continue;
       const spill = spillCount(getLines(element), pageHeight);
       if (spill > 0) {
         totalSpill += spill;
@@ -258,7 +294,10 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
     document.head.appendChild(style);
     return style;
   };
-  const trialCss = (options?: { extendPage?: boolean; tightenHeadings?: boolean }): string => {
+  const trialCss = (options?: {
+    extendPage?: boolean;
+    tightenHeadings?: boolean;
+  }): string => {
     const aggressive = mode === "aggressive";
     const letterSpacing = aggressive ? "-0.0125em" : "-0.01em";
     const wordSpacing = aggressive ? "-0.035em" : "-0.025em";
@@ -269,9 +308,11 @@ export function measureAndMarkAdaptivePagination(): AdaptivePaginationMeasuremen
 [data-mfcv-tighten-line] { line-height: ${lineHeight} !important; }
 ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); margin-bottom: calc(12mm - ${pageExtension}); } .page { min-height: calc(297mm - 24mm + ${pageExtension} + ${pageExtension}); }` : ""}`;
   };
-  const sectionElements = Array.from(document.querySelectorAll(
-    "section, article.dated-entry, .timeline-item, .reference-entry, .reference, .entry, .ref, .subsection, .erow, .lang-block, .ref-item",
-  ));
+  const sectionElements = Array.from(
+    document.querySelectorAll(
+      "section, article.dated-entry, .timeline-item, .reference-entry, .reference, .entry, .ref, .subsection, .erow, .lang-block, .ref-item",
+    ),
+  );
   let largeSections = 0;
   for (const section of sectionElements) {
     const lines = getLines(section);
@@ -281,13 +322,20 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     }
   }
   let cleanBreaks = 0;
-  const pageFragments = (lines: Array<{ top: number; text: string }>, pageHeight: number) => {
+  const pageFragments = (
+    lines: Array<{ top: number; text: string }>,
+    pageHeight: number,
+  ) => {
     if (lines.length === 0) return { first: 0, last: 0, split: false };
     const firstPage = Math.floor((lines[0].top + 1) / pageHeight);
     const lastPage = Math.floor((lines[lines.length - 1].top + 1) / pageHeight);
     return {
-      first: lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === firstPage).length,
-      last: lines.filter((line) => Math.floor((line.top + 1) / pageHeight) === lastPage).length,
+      first: lines.filter(
+        (line) => Math.floor((line.top + 1) / pageHeight) === firstPage,
+      ).length,
+      last: lines.filter(
+        (line) => Math.floor((line.top + 1) / pageHeight) === lastPage,
+      ).length,
       split: lastPage > firstPage,
     };
   };
@@ -296,7 +344,11 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     const lines = getLines(section);
     const fragments = pageFragments(lines, getPageHeight());
     const height = section.getBoundingClientRect().height;
-    if (fragments.split && height <= getPageHeight() + 2 && (fragments.first < 5 || fragments.last < 5)) {
+    if (
+      fragments.split &&
+      height <= getPageHeight() + 2 &&
+      (fragments.first < 5 || fragments.last < 5)
+    ) {
       section.setAttribute("data-mfcv-clean-break", "true");
       cleanBreaks += 1;
     }
@@ -307,7 +359,8 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     let wraps = 0;
     let lineTightens = 0;
     for (const element of elements) {
-      if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
+      if (!element.closest(".page, .content, .sidebar, .left, .right"))
+        continue;
       const lines = getLines(element);
       if (lines.length < 2) continue;
       const currentSpill = spillCount(lines, getPageHeight());
@@ -361,11 +414,18 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
     const lines = getLines(element);
     const currentSpill = spillCount(lines, getPageHeight());
-    if (lines.length < 2 || currentSpill === 0 || currentSpill > maxRecoveredLines) continue;
+    if (
+      lines.length < 2 ||
+      currentSpill === 0 ||
+      currentSpill > maxRecoveredLines
+    )
+      continue;
     const originalStyle = element.getAttribute("style");
     const styledElement = element as HTMLElement;
-    styledElement.style.letterSpacing = mode === "aggressive" ? "-0.0125em" : "-0.01em";
-    styledElement.style.wordSpacing = mode === "aggressive" ? "-0.035em" : "-0.025em";
+    styledElement.style.letterSpacing =
+      mode === "aggressive" ? "-0.0125em" : "-0.01em";
+    styledElement.style.wordSpacing =
+      mode === "aggressive" ? "-0.035em" : "-0.025em";
     const tightenedLines = getLines(element);
     if (originalStyle === null) element.removeAttribute("style");
     else element.setAttribute("style", originalStyle);
@@ -374,13 +434,20 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
       wraps += 1;
     }
   }
-  const adaptiveTrial = appendTrialStyle(trialCss({ tightenHeadings, extendPage }));
+  const adaptiveTrial = appendTrialStyle(
+    trialCss({ tightenHeadings, extendPage }),
+  );
   let lineTightens = 0;
   for (const element of elements) {
     if (!element.closest(".page, .content, .sidebar, .left, .right")) continue;
     const lines = getLines(element);
     const currentSpill = spillCount(lines, getPageHeight());
-    if (lines.length < 2 || currentSpill === 0 || currentSpill > maxRecoveredLines) continue;
+    if (
+      lines.length < 2 ||
+      currentSpill === 0 ||
+      currentSpill > maxRecoveredLines
+    )
+      continue;
     const originalStyle = element.getAttribute("style");
     const styledElement = element as HTMLElement;
     styledElement.style.lineHeight = mode === "aggressive" ? "1.22" : "1.3";
@@ -393,11 +460,18 @@ ${options?.extendPage ? `@page { margin-top: calc(12mm - ${pageExtension}); marg
     }
   }
   adaptiveTrial.remove();
-  const finalTrial = appendTrialStyle(trialCss({ tightenHeadings, extendPage }));
+  const finalTrial = appendTrialStyle(
+    trialCss({ tightenHeadings, extendPage }),
+  );
   const finalSnapshot = snapshot();
   finalTrial.remove();
   return {
-    marked: wraps + lineTightens + largeSections + cleanBreaks + (tightenHeadings || extendPage ? 1 : 0),
+    marked:
+      wraps +
+      lineTightens +
+      largeSections +
+      cleanBreaks +
+      (tightenHeadings || extendPage ? 1 : 0),
     wraps,
     spills: finalSnapshot.spillingElements,
     largeSections,

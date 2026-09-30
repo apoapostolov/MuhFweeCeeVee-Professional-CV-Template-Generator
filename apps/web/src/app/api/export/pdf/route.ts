@@ -23,13 +23,18 @@ export const runtime = "nodejs";
  * pass; applying it document-wide is the closest equivalent now that there is no
  * per-element measurement.
  */
-function buildNativePaginationCss(templateId: string, tweaks: RenderTweaks): string {
+function buildNativePaginationCss(
+  templateId: string,
+  tweaks: RenderTweaks,
+): string {
   if (!tweaks.intelligentPagination) {
     return "";
   }
   const parts = [buildIntelligentPaginationCss(templateId, tweaks)];
   if (tweaks.intelligentPaginationMode === "aggressive") {
-    parts.push(buildAdaptivePaginationCss("aggressive", { tightenHeadings: true }));
+    parts.push(
+      buildAdaptivePaginationCss("aggressive", { tightenHeadings: true }),
+    );
   }
   return parts.filter(Boolean).join("\n");
 }
@@ -87,6 +92,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         html: paginationCss ? withExtraCss(html, paginationCss) : html,
         margins,
         removePageCount: tweaks.removePageCount,
+        pageMargins: tweaks.noPageMargins ? "none" : "a4",
       });
       const pdf = await applyPdfMetadata(rawPdf, metadata);
 
@@ -101,7 +107,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate PDF." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to generate PDF.",
+      },
       { status: 500 },
     );
   }

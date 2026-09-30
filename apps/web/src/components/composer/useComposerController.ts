@@ -47,7 +47,10 @@ import {
 } from "@/components/composer/form-path-utils";
 import { collectEditorAtsTerms } from "@/lib/research/editor-ats-keywords";
 import { editorDraftFingerprint } from "@/components/composer/editor-draft-fingerprint";
-import { computeKeywordGap, type KeywordGapReport } from "@/lib/research/keywordGap";
+import {
+  computeKeywordGap,
+  type KeywordGapReport,
+} from "@/lib/research/keywordGap";
 import { readCvTargeting, writeCvTargeting } from "@/lib/research/cvTargeting";
 import {
   readEditorFlatSubsectionsPreference,
@@ -132,16 +135,21 @@ import type {
   ResearchSidebarTab,
 } from "@/lib/research/types";
 
-
 export type ComposerController = ReturnType<typeof useComposerController>;
 
 const TEXT_FIELD_AUTOSAVE_MS = 2500;
 
 function compareSemanticVersions(left: string, right: string): number {
-  const parse = (value: string): { core: number[]; prerelease: string[] | null } => {
-    const match = value.trim().match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?/i);
+  const parse = (
+    value: string,
+  ): { core: number[]; prerelease: string[] | null } => {
+    const match = value
+      .trim()
+      .match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?/i);
     return {
-      core: match ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)] : [0, 0, 0],
+      core: match
+        ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)]
+        : [0, 0, 0],
       prerelease: match?.[4] ? match[4].split(".") : null,
     };
   };
@@ -152,10 +160,18 @@ function compareSemanticVersions(left: string, right: string): number {
       return leftVersion.core[index] - rightVersion.core[index];
     }
   }
-  if (leftVersion.prerelease === null && rightVersion.prerelease !== null) return 1;
-  if (leftVersion.prerelease !== null && rightVersion.prerelease === null) return -1;
-  if (leftVersion.prerelease === null || rightVersion.prerelease === null) return 0;
-  for (let index = 0; index < Math.max(leftVersion.prerelease.length, rightVersion.prerelease.length); index += 1) {
+  if (leftVersion.prerelease === null && rightVersion.prerelease !== null)
+    return 1;
+  if (leftVersion.prerelease !== null && rightVersion.prerelease === null)
+    return -1;
+  if (leftVersion.prerelease === null || rightVersion.prerelease === null)
+    return 0;
+  for (
+    let index = 0;
+    index <
+    Math.max(leftVersion.prerelease.length, rightVersion.prerelease.length);
+    index += 1
+  ) {
     const leftPart = leftVersion.prerelease[index];
     const rightPart = rightVersion.prerelease[index];
     if (leftPart === undefined) return -1;
@@ -163,7 +179,8 @@ function compareSemanticVersions(left: string, right: string): number {
     if (leftPart === rightPart) continue;
     const leftNumeric = /^\d+$/.test(leftPart);
     const rightNumeric = /^\d+$/.test(rightPart);
-    if (leftNumeric && rightNumeric) return Number(leftPart) - Number(rightPart);
+    if (leftNumeric && rightNumeric)
+      return Number(leftPart) - Number(rightPart);
     if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
     return leftPart.localeCompare(rightPart);
   }
@@ -184,10 +201,16 @@ function compareCvPairs(a: CvPair, b: CvPair): number {
   });
   if (nameOrder !== 0) return nameOrder;
 
-  const versionOrder = compareSemanticVersions(b.displayVersion, a.displayVersion);
+  const versionOrder = compareSemanticVersions(
+    b.displayVersion,
+    a.displayVersion,
+  );
   if (versionOrder !== 0) return versionOrder;
 
-  return a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: "base" });
+  return a.key.localeCompare(b.key, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
 }
 
 export function useComposerController() {
@@ -199,7 +222,10 @@ export function useComposerController() {
   const getAiModelPricingForRole = aiProviders.getModelPricingForRole;
   const previousActivePanel = useRef<ActivePanel | null>(null);
   useEffect(() => {
-    if (activePanel === "settings" && previousActivePanel.current !== "settings") {
+    if (
+      activePanel === "settings" &&
+      previousActivePanel.current !== "settings"
+    ) {
       void refreshAiSettings().catch(() => undefined);
     }
     previousActivePanel.current = activePanel;
@@ -211,27 +237,37 @@ export function useComposerController() {
   } = useComposerToast();
 
   const [cvItems, setCvItems] = useState<CvListResponse["items"]>([]);
-  const [templateItems, setTemplateItems] = useState<TemplateListResponse["items"]>([]);
+  const [templateItems, setTemplateItems] = useState<
+    TemplateListResponse["items"]
+  >([]);
   const [selectedCvId, setSelectedCvId] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [selectedTemplateTheme, setSelectedTemplateTheme] = useState("default");
-  const [selectedPhotoMode, setSelectedPhotoMode] = useState<
-    PhotoModeOption["id"]
-  >("default");
+  const [selectedPhotoMode, setSelectedPhotoMode] =
+    useState<PhotoModeOption["id"]>("default");
   const [printTweakIntelligentPagination, setPrintTweakIntelligentPagination] =
     useState(false);
-  const [printTweakIntelligentPaginationMode, setPrintTweakIntelligentPaginationMode] =
-    useState<"normal" | "aggressive">("normal");
+  const [
+    printTweakIntelligentPaginationMode,
+    setPrintTweakIntelligentPaginationMode,
+  ] = useState<"normal" | "aggressive">("normal");
   const [printTweakRemovePhoto, setPrintTweakRemovePhoto] = useState(false);
-  const [printTweakRemovePageCount, setPrintTweakRemovePageCount] = useState(false);
-  const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] = useState(false);
-  const [printTweakSidebarTextScaleEnabled, setPrintTweakSidebarTextScaleEnabled] =
+  const [printTweakRemovePageCount, setPrintTweakRemovePageCount] =
     useState(false);
+  const [printTweakMoveSkillsLeft, setPrintTweakMoveSkillsLeft] =
+    useState(false);
+  const [printTweakNoPageMargins, setPrintTweakNoPageMargins] = useState(false);
+  const [
+    printTweakSidebarTextScaleEnabled,
+    setPrintTweakSidebarTextScaleEnabled,
+  ] = useState(false);
   const [printTweakSidebarTextScale, setPrintTweakSidebarTextScale] = useState(
     PRINT_TEXT_SCALE_DEFAULT,
   );
-  const [printTweakContentTextScaleEnabled, setPrintTweakContentTextScaleEnabled] =
-    useState(false);
+  const [
+    printTweakContentTextScaleEnabled,
+    setPrintTweakContentTextScaleEnabled,
+  ] = useState(false);
   const [printTweakContentTextScale, setPrintTweakContentTextScale] = useState(
     PRINT_TEXT_SCALE_DEFAULT,
   );
@@ -241,29 +277,43 @@ export function useComposerController() {
   const [photoBoothNotice, setPhotoBoothNotice] = useState("");
   const [photoBoothDragging, setPhotoBoothDragging] = useState(false);
   const [photoBoothAnalyzingId, setPhotoBoothAnalyzingId] = useState("");
-  const [photoBoothAnalysisFocusId, setPhotoBoothAnalysisFocusId] = useState("");
-  const [photoBoothCompareIds, setPhotoBoothCompareIds] = useState<string[]>([]);
-  const [photoBoothCompareLoading, setPhotoBoothCompareLoading] = useState(false);
-  const [photoBoothComparison, setPhotoBoothComparison] = useState<PhotoComparisonAnalysis | null>(null);
-  const [photoBoothComparisonHistory, setPhotoBoothComparisonHistory] = useState<PhotoComparisonAnalysis[]>([]);
-  const [photoBoothDeleteConfirmId, setPhotoBoothDeleteConfirmId] = useState("");
+  const [photoBoothAnalysisFocusId, setPhotoBoothAnalysisFocusId] =
+    useState("");
+  const [photoBoothCompareIds, setPhotoBoothCompareIds] = useState<string[]>(
+    [],
+  );
+  const [photoBoothCompareLoading, setPhotoBoothCompareLoading] =
+    useState(false);
+  const [photoBoothComparison, setPhotoBoothComparison] =
+    useState<PhotoComparisonAnalysis | null>(null);
+  const [photoBoothComparisonHistory, setPhotoBoothComparisonHistory] =
+    useState<PhotoComparisonAnalysis[]>([]);
+  const [photoBoothDeleteConfirmId, setPhotoBoothDeleteConfirmId] =
+    useState("");
   const photoBoothInputRef = useRef<HTMLInputElement | null>(null);
   const [previewNonce, setPreviewNonce] = useState(0);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [uiLanguage, setUiLanguageState] = useState<UiLanguageCode>(() => readUiLanguage());
-  const [addCustomFieldTarget, setAddCustomFieldTarget] = useState<
-    { scope: "section" | "company-metadata"; path: PathSegment[] } | null
-  >(null);
+  const [uiLanguage, setUiLanguageState] = useState<UiLanguageCode>(() =>
+    readUiLanguage(),
+  );
+  const [addCustomFieldTarget, setAddCustomFieldTarget] = useState<{
+    scope: "section" | "company-metadata";
+    path: PathSegment[];
+  } | null>(null);
   const [languageModalOpen, setLanguageModalOpen] = useState(false);
   const [languageModalSelection, setLanguageModalSelection] = useState("en");
   const [creatingLanguage, setCreatingLanguage] = useState(false);
 
   const [editorTab, setEditorTab] = useState<EditorTabKey>("person");
   const [editorView, setEditorView] = useState<EditorViewMode>("form");
-  const [editorCv, setEditorCv] = useState<Record<string, unknown> | null>(null);
+  const [editorCv, setEditorCv] = useState<Record<string, unknown> | null>(
+    null,
+  );
   const [sectionDraft, setSectionDraft] = useState<unknown>(null);
-  const [expandedFormNodes, setExpandedFormNodes] = useState<Record<string, boolean>>({});
+  const [expandedFormNodes, setExpandedFormNodes] = useState<
+    Record<string, boolean>
+  >({});
   const [yamlDraft, setYamlDraft] = useState("");
   const [yamlLintIssues, setYamlLintIssues] = useState<string[]>([]);
   const [editorLoading, setEditorLoading] = useState(false);
@@ -279,8 +329,13 @@ export function useComposerController() {
   const uiLanguageRef = useRef<UiLanguageCode>(DEFAULT_UI_LANGUAGE);
   const editorPathRef = useRef("person");
   const editorViewRef = useRef<EditorViewMode>("form");
-  const variantGroupRef = useRef<Record<string, CvListResponse["items"][number]> | null>(null);
-  const textFieldAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const variantGroupRef = useRef<Record<
+    string,
+    CvListResponse["items"][number]
+  > | null>(null);
+  const textFieldAutosaveTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const textFieldAutosaveGenerationRef = useRef(0);
   const pendingTextFieldAutosaveRef = useRef<{
     path: PathSegment[];
@@ -288,59 +343,88 @@ export function useComposerController() {
     value: string;
   } | null>(null);
   const editorAutoSaveEnabledRef = useRef(true);
-  const editorAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorAutosaveActivityTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const [editorAutoSaveEnabled, setEditorAutoSaveEnabled] = useState(true);
   const [editorFlatSubsections, setEditorFlatSubsections] = useState(true);
   const [editorSavedFingerprint, setEditorSavedFingerprint] = useState("");
-  const [editorAutosaveActivity, setEditorAutosaveActivity] = useState<EditorAutosaveActivity>("idle");
+  const [editorAutosaveActivity, setEditorAutosaveActivity] =
+    useState<EditorAutosaveActivity>("idle");
 
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
-  const [analysisData, setAnalysisData] = useState<SectionAnalysis | FullAnalysis | null>(null);
-  const [analysisCompanies, setAnalysisCompanies] = useState<NonNullable<CompanyListResponse["items"]>>([]);
-  const [analysisCompanySource, setAnalysisCompanySource] = useState<CompanySource>("example");
+  const [analysisData, setAnalysisData] = useState<
+    SectionAnalysis | FullAnalysis | null
+  >(null);
+  const [analysisCompanies, setAnalysisCompanies] = useState<
+    NonNullable<CompanyListResponse["items"]>
+  >([]);
+  const [analysisCompanySource, setAnalysisCompanySource] =
+    useState<CompanySource>("example");
   const [analysisCompanyIds, setAnalysisCompanyIds] = useState<string[]>([]);
-  const [companyMetadataEditorOpen, setCompanyMetadataEditorOpen] = useState(false);
-  const [companyMetadataEditorView, setCompanyMetadataEditorView] = useState<EditorViewMode>("form");
-  const [companyMetadataDraft, setCompanyMetadataDraft] = useState<unknown>({ companies: [] });
+  const [companyMetadataEditorOpen, setCompanyMetadataEditorOpen] =
+    useState(false);
+  const [companyMetadataEditorView, setCompanyMetadataEditorView] =
+    useState<EditorViewMode>("form");
+  const [companyMetadataDraft, setCompanyMetadataDraft] = useState<unknown>({
+    companies: [],
+  });
   const [companyMetadataYamlDraft, setCompanyMetadataYamlDraft] = useState("");
   const [companyMetadataSaving, setCompanyMetadataSaving] = useState(false);
   const [companyMetadataNotice, setCompanyMetadataNotice] = useState("");
-  const [companyMetadataYamlLintIssues, setCompanyMetadataYamlLintIssues] = useState<string[]>([]);
+  const [companyMetadataYamlLintIssues, setCompanyMetadataYamlLintIssues] =
+    useState<string[]>([]);
   const companyMetadataAutoSaveEnabledRef = useRef(true);
-  const companyMetadataAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const companyMetadataAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const companyMetadataAutosaveTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const companyMetadataAutosaveActivityTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const companyMetadataDraftRef = useRef<unknown>({ companies: [] });
   const companyMetadataYamlDraftRef = useRef("");
   const companyMetadataEditorViewRef = useRef<EditorViewMode>("form");
   const analysisCompanySourceRef = useRef<CompanySource>("example");
-  const [companyMetadataAutoSaveEnabled, setCompanyMetadataAutoSaveEnabled] = useState(true);
-  const [companyMetadataSavedFingerprint, setCompanyMetadataSavedFingerprint] = useState("");
-  const [researchCompanies, setResearchCompanies] = useState<ResearchedCompany[]>([]);
-  const [researchJobPositions, setResearchJobPositions] = useState<ResearchedJobPosition[]>([]);
-  const [keywordGapReport, setKeywordGapReport] = useState<KeywordGapReport | null>(null);
+  const [companyMetadataAutoSaveEnabled, setCompanyMetadataAutoSaveEnabled] =
+    useState(true);
+  const [companyMetadataSavedFingerprint, setCompanyMetadataSavedFingerprint] =
+    useState("");
+  const [researchCompanies, setResearchCompanies] = useState<
+    ResearchedCompany[]
+  >([]);
+  const [researchJobPositions, setResearchJobPositions] = useState<
+    ResearchedJobPosition[]
+  >([]);
+  const [keywordGapReport, setKeywordGapReport] =
+    useState<KeywordGapReport | null>(null);
   const [atsCheckLoading, setAtsCheckLoading] = useState(false);
   const [atsCheckText, setAtsCheckText] = useState("");
   const [aiDetectionDialogOpen, setAiDetectionDialogOpen] = useState(false);
   const [aiDetectionLoading, setAiDetectionLoading] = useState(false);
-  const [aiDetectionReport, setAiDetectionReport] = useState<AiDetectionReport | null>(null);
+  const [aiDetectionReport, setAiDetectionReport] =
+    useState<AiDetectionReport | null>(null);
   const [aiDetectionError, setAiDetectionError] = useState("");
   const [selectedResearchCompanyId, setSelectedResearchCompanyId] = useState(
     () => readStoredResearchSelection().companyId,
   );
-  const [selectedResearchJobPositionId, setSelectedResearchJobPositionId] = useState(
-    () => readStoredResearchSelection().jobId,
-  );
+  const [selectedResearchJobPositionId, setSelectedResearchJobPositionId] =
+    useState(() => readStoredResearchSelection().jobId);
   const researchSelectionPersistReadyRef = useRef(false);
   const [researchCatalogLoading, setResearchCatalogLoading] = useState(false);
   const [researchingCompany, setResearchingCompany] = useState(false);
   const [researchingJob, setResearchingJob] = useState(false);
   const [researchNotice, setResearchNotice] = useState("");
-  const [researchSidebarTab, setResearchSidebarTab] = useState<ResearchSidebarTab>("companies");
+  const [researchSidebarTab, setResearchSidebarTab] =
+    useState<ResearchSidebarTab>("companies");
   const [savingResearch, setSavingResearch] = useState(false);
   const researchAutoSaveEnabledRef = useRef(true);
-  const researchAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const researchAutosaveActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const researchAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const researchAutosaveActivityTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const pendingResearchDraftRef = useRef<{
     entityType: "company" | "job_position";
     draft: ResearchedCompany | ResearchedJobPosition;
@@ -375,7 +459,9 @@ export function useComposerController() {
     if (typeof window === "undefined") {
       return "light";
     }
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
   }, [themeMode]);
 
   const editorPath = useMemo(
@@ -385,19 +471,33 @@ export function useComposerController() {
 
   const mostRecentCv = useMemo(() => {
     if (!cvItems.length) return null;
-    return cvItems.filter((item) => (item.language ?? "").toLowerCase() === "en").sort((a, b) => {
-      const aTs = a.lastUpdatedAt ? Date.parse(a.lastUpdatedAt) : NaN;
-      const bTs = b.lastUpdatedAt ? Date.parse(b.lastUpdatedAt) : NaN;
-      const aHasUpdated = Number.isFinite(aTs);
-      const bHasUpdated = Number.isFinite(bTs);
-      if (aHasUpdated !== bHasUpdated) return aHasUpdated ? -1 : 1;
-      if (aHasUpdated && aTs !== bTs) return bTs - aTs;
-      const nameOrder = a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: "base" });
-      if (nameOrder !== 0) return nameOrder;
-      const versionOrder = compareSemanticVersions(b.displayVersion, a.displayVersion);
-      if (versionOrder !== 0) return versionOrder;
-      return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" });
-    })[0] ?? null;
+    return (
+      cvItems
+        .filter((item) => (item.language ?? "").toLowerCase() === "en")
+        .sort((a, b) => {
+          const aTs = a.lastUpdatedAt ? Date.parse(a.lastUpdatedAt) : NaN;
+          const bTs = b.lastUpdatedAt ? Date.parse(b.lastUpdatedAt) : NaN;
+          const aHasUpdated = Number.isFinite(aTs);
+          const bHasUpdated = Number.isFinite(bTs);
+          if (aHasUpdated !== bHasUpdated) return aHasUpdated ? -1 : 1;
+          if (aHasUpdated && aTs !== bTs) return bTs - aTs;
+          const nameOrder = a.displayName.localeCompare(
+            b.displayName,
+            undefined,
+            { numeric: true, sensitivity: "base" },
+          );
+          if (nameOrder !== 0) return nameOrder;
+          const versionOrder = compareSemanticVersions(
+            b.displayVersion,
+            a.displayVersion,
+          );
+          if (versionOrder !== 0) return versionOrder;
+          return a.id.localeCompare(b.id, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        })[0] ?? null
+    );
   }, [cvItems]);
 
   const cvSizeTokenEstimate = useMemo(() => {
@@ -453,9 +553,16 @@ export function useComposerController() {
       }
       existing.displayName = item.displayName;
       existing.displayVersion = item.displayVersion;
-      const existingUpdated = existing.lastUpdatedAt ? Date.parse(existing.lastUpdatedAt) : NaN;
-      const itemUpdated = item.lastUpdatedAt ? Date.parse(item.lastUpdatedAt) : NaN;
-      if (!Number.isFinite(existingUpdated) || (Number.isFinite(itemUpdated) && itemUpdated > existingUpdated)) {
+      const existingUpdated = existing.lastUpdatedAt
+        ? Date.parse(existing.lastUpdatedAt)
+        : NaN;
+      const itemUpdated = item.lastUpdatedAt
+        ? Date.parse(item.lastUpdatedAt)
+        : NaN;
+      if (
+        !Number.isFinite(existingUpdated) ||
+        (Number.isFinite(itemUpdated) && itemUpdated > existingUpdated)
+      ) {
         existing.lastUpdatedAt = item.lastUpdatedAt ?? null;
       }
       existing.latestTs = Math.max(existing.latestTs, ts);
@@ -475,16 +582,23 @@ export function useComposerController() {
         (item.language ?? "").toLowerCase() === language,
     );
     if (exact) return exact.id;
-    return cvItems.find(
-      (item) =>
-        item.displayName.trim().toLowerCase() === selected.displayName.trim().toLowerCase() &&
-        (item.language ?? "").toLowerCase() === language,
-    )?.id ?? selectedCvId;
+    return (
+      cvItems.find(
+        (item) =>
+          item.displayName.trim().toLowerCase() ===
+            selected.displayName.trim().toLowerCase() &&
+          (item.language ?? "").toLowerCase() === language,
+      )?.id ?? selectedCvId
+    );
   }, [cvItems, selectedCvId, selectedLanguage]);
 
   // Keep one template choice per paired CV family; the language control selects its variant.
   const cvTemplatesForLanguage = useMemo(
-    () => cvPairs.filter((pair) => Boolean(pair.variants.en)).slice().sort(compareCvPairs),
+    () =>
+      cvPairs
+        .filter((pair) => Boolean(pair.variants.en))
+        .slice()
+        .sort(compareCvPairs),
     [cvPairs],
   );
 
@@ -492,7 +606,8 @@ export function useComposerController() {
     if (!printCvId || !selectedTemplateId) {
       return "";
     }
-    const approvedPhoto = photoBoothItems.find((item) => item.id === approvedPhotoId) ?? null;
+    const approvedPhoto =
+      photoBoothItems.find((item) => item.id === approvedPhotoId) ?? null;
     const params = new URLSearchParams({
       cvId: printCvId,
       templateId: selectedTemplateId,
@@ -513,6 +628,7 @@ export function useComposerController() {
         removePhoto: printTweakRemovePhoto,
         removePageCount: printTweakRemovePageCount,
         moveSkillsLeft: printTweakMoveSkillsLeft,
+        noPageMargins: printTweakNoPageMargins,
         sidebarTextScaleEnabled: printTweakSidebarTextScaleEnabled,
         sidebarTextScale: printTweakSidebarTextScale,
         contentTextScaleEnabled: printTweakContentTextScaleEnabled,
@@ -533,6 +649,7 @@ export function useComposerController() {
     printTweakRemovePhoto,
     printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
+    printTweakNoPageMargins,
     printTweakSidebarTextScaleEnabled,
     printTweakSidebarTextScale,
     printTweakContentTextScaleEnabled,
@@ -542,12 +659,19 @@ export function useComposerController() {
   ]);
 
   const filteredAnalysisCompanies = useMemo(
-    () => analysisCompanies.filter((company) => (company.source ?? "example") === analysisCompanySource),
+    () =>
+      analysisCompanies.filter(
+        (company) => (company.source ?? "example") === analysisCompanySource,
+      ),
     [analysisCompanies, analysisCompanySource],
   );
 
   const selectedResearchModelOption = useMemo(
-    () => resolveResearchModelOption(openRouter.researchModelInput, openRouter.modelOptions),
+    () =>
+      resolveResearchModelOption(
+        openRouter.researchModelInput,
+        openRouter.modelOptions,
+      ),
     [openRouter.researchModelInput, openRouter.modelOptions],
   );
 
@@ -582,7 +706,9 @@ export function useComposerController() {
       setPhotoBoothItems(items);
       setPhotoBoothGalleryReady(true);
     } catch (error) {
-      setPhotoBoothNotice(error instanceof Error ? error.message : "Could not load photos.");
+      setPhotoBoothNotice(
+        error instanceof Error ? error.message : "Could not load photos.",
+      );
       setPhotoBoothItems([]);
     }
   }, []);
@@ -601,8 +727,12 @@ export function useComposerController() {
         setResearchJobPositions([]);
         return;
       }
-      const companies = Array.isArray(payload.companies) ? payload.companies : [];
-      const jobs = Array.isArray(payload.job_positions) ? payload.job_positions : [];
+      const companies = Array.isArray(payload.companies)
+        ? payload.companies
+        : [];
+      const jobs = Array.isArray(payload.job_positions)
+        ? payload.job_positions
+        : [];
       setResearchCompanies(companies);
       setResearchJobPositions(jobs);
       setSelectedResearchCompanyId((current) => {
@@ -621,17 +751,24 @@ export function useComposerController() {
   }, []);
 
   const selectedResearchCompany = useMemo(
-    () => researchCompanies.find((c) => c.id === selectedResearchCompanyId) ?? null,
+    () =>
+      researchCompanies.find((c) => c.id === selectedResearchCompanyId) ?? null,
     [researchCompanies, selectedResearchCompanyId],
   );
 
   const researchJobsForCompany = useMemo(
-    () => researchJobPositions.filter((j) => j.company_id === selectedResearchCompanyId),
+    () =>
+      researchJobPositions.filter(
+        (j) => j.company_id === selectedResearchCompanyId,
+      ),
     [researchJobPositions, selectedResearchCompanyId],
   );
 
   const selectedResearchJob = useMemo(
-    () => researchJobPositions.find((j) => j.id === selectedResearchJobPositionId) ?? null,
+    () =>
+      researchJobPositions.find(
+        (j) => j.id === selectedResearchJobPositionId,
+      ) ?? null,
     [researchJobPositions, selectedResearchJobPositionId],
   );
 
@@ -649,7 +786,10 @@ export function useComposerController() {
     if (!editorCv || !selectedResearchJob) {
       return null;
     }
-    return computeKeywordGap(editorCv, selectedResearchJob.weighted_keywords ?? []);
+    return computeKeywordGap(
+      editorCv,
+      selectedResearchJob.weighted_keywords ?? [],
+    );
   }, [editorCv, selectedResearchJob]);
 
   useEffect(() => {
@@ -671,9 +811,13 @@ export function useComposerController() {
         if (items.some((item) => (item.source ?? "example") === current)) {
           return current;
         }
-        return items.some((item) => (item.source ?? "example") === "personal") ? "personal" : "example";
+        return items.some((item) => (item.source ?? "example") === "personal")
+          ? "personal"
+          : "example";
       });
-      setAnalysisCompanyIds((current) => current.filter((id) => items.some((item) => item.id === id)));
+      setAnalysisCompanyIds((current) =>
+        current.filter((id) => items.some((item) => item.id === id)),
+      );
     } catch {
       setAnalysisCompanies([]);
       setAnalysisCompanyIds([]);
@@ -687,8 +831,13 @@ export function useComposerController() {
   useEffect(() => {
     researchSelectionPersistReadyRef.current = true;
     try {
-      const savedSidebarTab = window.localStorage.getItem(STORAGE_KEYS.researchSidebarTab);
-      if (savedSidebarTab === "companies" || savedSidebarTab === "job_positions") {
+      const savedSidebarTab = window.localStorage.getItem(
+        STORAGE_KEYS.researchSidebarTab,
+      );
+      if (
+        savedSidebarTab === "companies" ||
+        savedSidebarTab === "job_positions"
+      ) {
         setResearchSidebarTab(savedSidebarTab);
       }
     } catch {
@@ -700,12 +849,18 @@ export function useComposerController() {
     if (!researchSelectionPersistReadyRef.current) {
       return;
     }
-    writeStoredResearchSelection(selectedResearchCompanyId, selectedResearchJobPositionId);
+    writeStoredResearchSelection(
+      selectedResearchCompanyId,
+      selectedResearchJobPositionId,
+    );
   }, [selectedResearchCompanyId, selectedResearchJobPositionId]);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEYS.researchSidebarTab, researchSidebarTab);
+      window.localStorage.setItem(
+        STORAGE_KEYS.researchSidebarTab,
+        researchSidebarTab,
+      );
     } catch {
       // no-op
     }
@@ -714,7 +869,9 @@ export function useComposerController() {
   useEffect(() => {
     if (
       selectedResearchJobPositionId &&
-      !researchJobsForCompany.some((job) => job.id === selectedResearchJobPositionId)
+      !researchJobsForCompany.some(
+        (job) => job.id === selectedResearchJobPositionId,
+      )
     ) {
       setSelectedResearchJobPositionId("");
     }
@@ -734,9 +891,12 @@ export function useComposerController() {
   useEffect(() => {
     const root = document.documentElement;
     const applyTheme = () => {
-      const mode = themeMode === "system"
-        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-        : themeMode;
+      const mode =
+        themeMode === "system"
+          ? window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light"
+          : themeMode;
       root.setAttribute("data-theme", mode);
     };
     applyTheme();
@@ -757,7 +917,10 @@ export function useComposerController() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEYS.selectedPhotoMode, selectedPhotoMode);
+      window.localStorage.setItem(
+        STORAGE_KEYS.selectedPhotoMode,
+        selectedPhotoMode,
+      );
     } catch {
       // no-op
     }
@@ -790,19 +953,26 @@ export function useComposerController() {
     async function restorePrintTweaks(): Promise<void> {
       let restored = readPrintTweaksForScope(printTweaksScope);
       try {
-        const response = await fetch(`/api/cvs/${encodeURIComponent(printTweaksScope.cvId)}`);
+        const response = await fetch(
+          `/api/cvs/${encodeURIComponent(printTweaksScope.cvId)}`,
+        );
         const payload = (await response.json()) as { cv?: unknown };
-        const fromCv = response.ok ? readPrintTweaksFromCvDocument(payload.cv, printTweaksScope) : null;
+        const fromCv = response.ok
+          ? readPrintTweaksFromCvDocument(payload.cv, printTweaksScope)
+          : null;
         if (fromCv) restored = fromCv;
       } catch {
         // Keep legacy local state when the YAML read is unavailable.
       }
       if (cancelled) return;
       setPrintTweakIntelligentPagination(restored.intelligentPagination);
-      setPrintTweakIntelligentPaginationMode(restored.intelligentPaginationMode);
+      setPrintTweakIntelligentPaginationMode(
+        restored.intelligentPaginationMode,
+      );
       setPrintTweakRemovePhoto(restored.removePhoto);
       setPrintTweakRemovePageCount(restored.removePageCount);
       setPrintTweakMoveSkillsLeft(restored.moveSkillsLeft);
+      setPrintTweakNoPageMargins(restored.noPageMargins);
       setPrintTweakSidebarTextScaleEnabled(restored.sidebarTextScaleEnabled);
       setPrintTweakSidebarTextScale(restored.sidebarTextScale);
       setPrintTweakContentTextScaleEnabled(restored.contentTextScaleEnabled);
@@ -857,7 +1027,8 @@ export function useComposerController() {
 
   useEffect(() => {
     try {
-      const storedApprovedId = window.localStorage.getItem(STORAGE_KEYS.approvedPhotoId) ?? "";
+      const storedApprovedId =
+        window.localStorage.getItem(STORAGE_KEYS.approvedPhotoId) ?? "";
       if (storedApprovedId) {
         setApprovedPhotoId(storedApprovedId);
       }
@@ -871,7 +1042,10 @@ export function useComposerController() {
     if (!photoBoothGalleryReady) return;
     try {
       if (approvedPhotoId) {
-        window.localStorage.setItem(STORAGE_KEYS.approvedPhotoId, approvedPhotoId);
+        window.localStorage.setItem(
+          STORAGE_KEYS.approvedPhotoId,
+          approvedPhotoId,
+        );
       } else {
         window.localStorage.removeItem(STORAGE_KEYS.approvedPhotoId);
       }
@@ -888,12 +1062,15 @@ export function useComposerController() {
 
   useEffect(() => {
     if (!photoBoothAnalysisFocusId) return;
-    if (photoBoothItems.some((item) => item.id === photoBoothAnalysisFocusId)) return;
+    if (photoBoothItems.some((item) => item.id === photoBoothAnalysisFocusId))
+      return;
     setPhotoBoothAnalysisFocusId("");
   }, [photoBoothAnalysisFocusId, photoBoothItems]);
 
   useEffect(() => {
-    setPhotoBoothCompareIds((current) => current.filter((id) => photoBoothItems.some((item) => item.id === id)));
+    setPhotoBoothCompareIds((current) =>
+      current.filter((id) => photoBoothItems.some((item) => item.id === id)),
+    );
   }, [photoBoothItems]);
 
   useEffect(() => {
@@ -906,11 +1083,14 @@ export function useComposerController() {
     async function loadCachedComparison(): Promise<void> {
       try {
         const freshGalleryResponse = await fetch("/api/photos");
-        const freshGalleryPayload = (await freshGalleryResponse.json()) as PhotoBoothListResponse;
+        const freshGalleryPayload =
+          (await freshGalleryResponse.json()) as PhotoBoothListResponse;
         if (!freshGalleryResponse.ok || !freshGalleryPayload.ok) {
           return;
         }
-        const freshItems = Array.isArray(freshGalleryPayload.items) ? freshGalleryPayload.items : [];
+        const freshItems = Array.isArray(freshGalleryPayload.items)
+          ? freshGalleryPayload.items
+          : [];
         const selectedItems = photoBoothCompareIds
           .map((id) => freshItems.find((item) => item.id === id) ?? null)
           .filter((entry): entry is PhotoBoothItem => entry !== null);
@@ -930,7 +1110,9 @@ export function useComposerController() {
         const payload = (await response.json()) as PhotoBoothCompareResponse;
         if (!response.ok || !payload.ok || cancelled) return;
         setPhotoBoothComparison(payload.comparison ?? null);
-        setPhotoBoothComparisonHistory(Array.isArray(payload.history) ? payload.history : []);
+        setPhotoBoothComparisonHistory(
+          Array.isArray(payload.history) ? payload.history : [],
+        );
       } catch {
         // no-op
       }
@@ -951,7 +1133,11 @@ export function useComposerController() {
       }
       return;
     }
-    if (!selectedTemplateThemeOptions.some((option) => option.id === selectedTemplateTheme)) {
+    if (
+      !selectedTemplateThemeOptions.some(
+        (option) => option.id === selectedTemplateTheme,
+      )
+    ) {
       setSelectedTemplateTheme("default");
     }
   }, [selectedTemplateId, selectedTemplateTheme, selectedTemplateThemeOptions]);
@@ -961,7 +1147,10 @@ export function useComposerController() {
     async function loadWorkspaceData() {
       setLoadingWorkspace(true);
       try {
-        const [cvsRes, templatesRes] = await Promise.all([fetch("/api/cvs"), fetch("/api/templates")]);
+        const [cvsRes, templatesRes] = await Promise.all([
+          fetch("/api/cvs"),
+          fetch("/api/templates"),
+        ]);
         const cvs = (await cvsRes.json()) as CvListResponse;
         const templates = (await templatesRes.json()) as TemplateListResponse;
         if (cancelled) {
@@ -974,21 +1163,26 @@ export function useComposerController() {
 
         if (items.length > 0) {
           const prefs = readPersistedWorkspacePrefs();
-          const selected = resolveCvItemFromPersistedPrefs(items, prefs) ?? items[0];
+          const selected =
+            resolveCvItemFromPersistedPrefs(items, prefs) ?? items[0];
           setSelectedCvId(selected.id);
           setSelectedLanguage("en");
         }
 
         if (templateItemsLocal.length > 0) {
           const prefs = readPersistedWorkspacePrefs();
-          const { templateId, themeId } = resolveTemplateSelection(templateItemsLocal, prefs);
+          const { templateId, themeId } = resolveTemplateSelection(
+            templateItemsLocal,
+            prefs,
+          );
           setSelectedTemplateId(templateId);
           setSelectedTemplateTheme(themeId);
 
           let persistedPhotoMode: PhotoModeOption["id"] = "default";
           try {
             const savedPhotoMode =
-              window.localStorage.getItem(STORAGE_KEYS.selectedPhotoMode) ?? "default";
+              window.localStorage.getItem(STORAGE_KEYS.selectedPhotoMode) ??
+              "default";
             if (
               savedPhotoMode === "default" ||
               savedPhotoMode === "on-circle" ||
@@ -1035,7 +1229,8 @@ export function useComposerController() {
       const language = (item.language ?? "").toLowerCase();
       const sameVersion = cvVariantGroupKeyWithVersion(item) === groupKey;
       const sameInternalName =
-        item.displayName.trim().toLowerCase() === selectedCvMeta.displayName.trim().toLowerCase();
+        item.displayName.trim().toLowerCase() ===
+        selectedCvMeta.displayName.trim().toLowerCase();
       if (!sameVersion && (!sameInternalName || language === "en")) {
         continue;
       }
@@ -1107,12 +1302,16 @@ export function useComposerController() {
         editorAutoSaveEnabledRef.current = false;
         setEditorAutoSaveEnabled(false);
       }
-      const metadataStored = window.localStorage.getItem(STORAGE_KEYS.companyMetadataAutoSave);
+      const metadataStored = window.localStorage.getItem(
+        STORAGE_KEYS.companyMetadataAutoSave,
+      );
       if (metadataStored === "0") {
         companyMetadataAutoSaveEnabledRef.current = false;
         setCompanyMetadataAutoSaveEnabled(false);
       }
-      const researchStored = window.localStorage.getItem(STORAGE_KEYS.researchAutoSave);
+      const researchStored = window.localStorage.getItem(
+        STORAGE_KEYS.researchAutoSave,
+      );
       if (researchStored === "0") {
         researchAutoSaveEnabledRef.current = false;
         setResearchAutoSaveEnabled(false);
@@ -1217,7 +1416,9 @@ export function useComposerController() {
   useEffect(() => {
     if (availableLanguages.length === 0) return;
     if (availableLanguages.includes(selectedLanguage)) return;
-    setSelectedLanguage(availableLanguages.includes("en") ? "en" : availableLanguages[0]);
+    setSelectedLanguage(
+      availableLanguages.includes("en") ? "en" : availableLanguages[0],
+    );
   }, [availableLanguages, selectedLanguage]);
 
   useEffect(() => {
@@ -1231,8 +1432,12 @@ export function useComposerController() {
       }
       setEditorLoading(true);
       try {
-        const response = await fetch(`/api/cvs/${encodeURIComponent(selectedCvId)}`);
-        const payload = (await response.json()) as { cv?: Record<string, unknown> };
+        const response = await fetch(
+          `/api/cvs/${encodeURIComponent(selectedCvId)}`,
+        );
+        const payload = (await response.json()) as {
+          cv?: Record<string, unknown>;
+        };
         if (cancelled) return;
         const doc = payload.cv ?? null;
         setEditorCv(doc);
@@ -1304,8 +1509,11 @@ export function useComposerController() {
 
     async function loadCompanyMetadataDocument() {
       try {
-        const response = await fetch(`/api/companies?source=${encodeURIComponent(analysisCompanySource)}`);
-        const payload = (await response.json()) as CompanyMetadataDocumentResponse;
+        const response = await fetch(
+          `/api/companies?source=${encodeURIComponent(analysisCompanySource)}`,
+        );
+        const payload =
+          (await response.json()) as CompanyMetadataDocumentResponse;
         if (cancelled) return;
         if (companyMetadataAutosaveTimerRef.current) {
           clearTimeout(companyMetadataAutosaveTimerRef.current);
@@ -1343,7 +1551,9 @@ export function useComposerController() {
 
   useEffect(() => {
     setAnalysisCompanyIds((current) =>
-      current.filter((id) => filteredAnalysisCompanies.some((item) => item.id === id)),
+      current.filter((id) =>
+        filteredAnalysisCompanies.some((item) => item.id === id),
+      ),
     );
   }, [filteredAnalysisCompanies]);
 
@@ -1373,8 +1583,16 @@ export function useComposerController() {
     pendingTextFieldAutosaveRef.current = null;
     setEditorAutosaveActivity("idle");
 
-    if (editorPath === "metadata" && section && typeof section === "object" && !Array.isArray(section)) {
-      const { template_visibility: _ignored, ...rest } = section as Record<string, unknown>;
+    if (
+      editorPath === "metadata" &&
+      section &&
+      typeof section === "object" &&
+      !Array.isArray(section)
+    ) {
+      const { template_visibility: _ignored, ...rest } = section as Record<
+        string,
+        unknown
+      >;
       const visibility = readTemplateVisibility(editorCv);
       const yaml = stringifyYamlWithVisibility(rest, editorPath, visibility);
       setSectionDraft(rest);
@@ -1403,14 +1621,19 @@ export function useComposerController() {
     [editorView, yamlDraft, sectionFormDraft],
   );
 
-  const editorHasUnsavedChanges = editorSectionFingerprint !== editorSavedFingerprint;
+  const editorHasUnsavedChanges =
+    editorSectionFingerprint !== editorSavedFingerprint;
 
   const companyMetadataFingerprint = useMemo(() => {
     if (companyMetadataEditorView === "yaml") {
       return companyMetadataYamlDraft;
     }
     return stringifyYaml(companyMetadataDraft ?? {});
-  }, [companyMetadataEditorView, companyMetadataYamlDraft, companyMetadataDraft]);
+  }, [
+    companyMetadataEditorView,
+    companyMetadataYamlDraft,
+    companyMetadataDraft,
+  ]);
 
   const companyMetadataHasUnsavedChanges =
     companyMetadataFingerprint !== companyMetadataSavedFingerprint;
@@ -1430,7 +1653,14 @@ export function useComposerController() {
       return;
     }
     setSectionDraft(sectionFormDraft);
-  }, [editorView, editorLoading, editorCv, editorPath, sectionDraft, sectionFormDraft]);
+  }, [
+    editorView,
+    editorLoading,
+    editorCv,
+    editorPath,
+    sectionDraft,
+    sectionFormDraft,
+  ]);
 
   function syncEditorSavedFingerprintFromDraft(): void {
     const formDraft = resolveSectionDraftForForm(
@@ -1456,7 +1686,10 @@ export function useComposerController() {
     setEditorAutoSaveEnabled(enabled);
     editorAutoSaveEnabledRef.current = enabled;
     try {
-      window.localStorage.setItem(STORAGE_KEYS.editorAutoSave, enabled ? "1" : "0");
+      window.localStorage.setItem(
+        STORAGE_KEYS.editorAutoSave,
+        enabled ? "1" : "0",
+      );
     } catch {
       // ignore
     }
@@ -1467,7 +1700,9 @@ export function useComposerController() {
     }
   }
 
-  function editorAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
+  function editorAutosaveStatusToast(
+    status: EditorAutosaveActivity,
+  ): string | null {
     if (status !== "saved") {
       return null;
     }
@@ -1475,7 +1710,9 @@ export function useComposerController() {
     return lang === "bg" ? "Шаблонът на CV е запазен." : "CV template saved.";
   }
 
-  function setEditorAutosaveActivityVisible(status: EditorAutosaveActivity): void {
+  function setEditorAutosaveActivityVisible(
+    status: EditorAutosaveActivity,
+  ): void {
     if (editorAutosaveActivityTimerRef.current) {
       clearTimeout(editorAutosaveActivityTimerRef.current);
       editorAutosaveActivityTimerRef.current = null;
@@ -1507,36 +1744,55 @@ export function useComposerController() {
     }, TEXT_FIELD_AUTOSAVE_MS);
   }
 
-  const handleYamlDraftChange = useCallback((value: string) => {
-    setYamlDraft(value);
-    const trimmed = value.trim();
-    if (!trimmed) {
-      setSectionDraft(defaultSectionDraftForEditorPath(editorPath));
-      scheduleEditorAutosave();
-      return;
-    }
-    try {
-      const parsed = parseYamlWithVisibilityMarkers(editorPath, value);
-      setSectionDraft(coerceSectionDraftForEditorPath(editorPath, parsed.value));
-      scheduleEditorAutosave();
-    } catch {
-      // Keep sectionDraft until YAML parses; form still reads via resolveSectionDraftForForm.
-    }
-  }, [editorPath]);
+  const handleYamlDraftChange = useCallback(
+    (value: string) => {
+      setYamlDraft(value);
+      const trimmed = value.trim();
+      if (!trimmed) {
+        setSectionDraft(defaultSectionDraftForEditorPath(editorPath));
+        scheduleEditorAutosave();
+        return;
+      }
+      try {
+        const parsed = parseYamlWithVisibilityMarkers(editorPath, value);
+        setSectionDraft(
+          coerceSectionDraftForEditorPath(editorPath, parsed.value),
+        );
+        scheduleEditorAutosave();
+      } catch {
+        // Keep sectionDraft until YAML parses; form still reads via resolveSectionDraftForForm.
+      }
+    },
+    [editorPath],
+  );
 
-  const handleEditorViewChange = useCallback((view: EditorViewMode) => {
-    const cleanBeforeViewChange = editorSectionFingerprint === editorSavedFingerprint;
-    const formDraft = resolveSectionDraftForForm(editorPath, sectionDraft, yamlDraft);
-    if (view === "form") {
-      setSectionDraft(formDraft);
-    }
-    if (cleanBeforeViewChange) {
-      setEditorSavedFingerprint(
-        editorDraftFingerprint(view, yamlDraft, formDraft),
+  const handleEditorViewChange = useCallback(
+    (view: EditorViewMode) => {
+      const cleanBeforeViewChange =
+        editorSectionFingerprint === editorSavedFingerprint;
+      const formDraft = resolveSectionDraftForForm(
+        editorPath,
+        sectionDraft,
+        yamlDraft,
       );
-    }
-    setEditorView(view);
-  }, [editorPath, editorSavedFingerprint, editorSectionFingerprint, sectionDraft, yamlDraft]);
+      if (view === "form") {
+        setSectionDraft(formDraft);
+      }
+      if (cleanBeforeViewChange) {
+        setEditorSavedFingerprint(
+          editorDraftFingerprint(view, yamlDraft, formDraft),
+        );
+      }
+      setEditorView(view);
+    },
+    [
+      editorPath,
+      editorSavedFingerprint,
+      editorSectionFingerprint,
+      sectionDraft,
+      yamlDraft,
+    ],
+  );
 
   function syncCompanyMetadataSavedFingerprintFromDraft(): void {
     const fingerprint =
@@ -1550,7 +1806,10 @@ export function useComposerController() {
     setCompanyMetadataAutoSaveEnabled(enabled);
     companyMetadataAutoSaveEnabledRef.current = enabled;
     try {
-      window.localStorage.setItem(STORAGE_KEYS.companyMetadataAutoSave, enabled ? "1" : "0");
+      window.localStorage.setItem(
+        STORAGE_KEYS.companyMetadataAutoSave,
+        enabled ? "1" : "0",
+      );
     } catch {
       // ignore
     }
@@ -1561,15 +1820,21 @@ export function useComposerController() {
     }
   }
 
-  function companyMetadataAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
+  function companyMetadataAutosaveStatusToast(
+    status: EditorAutosaveActivity,
+  ): string | null {
     if (status !== "saved") {
       return null;
     }
     const lang = selectedLanguageRef.current;
-    return lang === "bg" ? "Метаданните за компании са запазени." : "Company metadata saved.";
+    return lang === "bg"
+      ? "Метаданните за компании са запазени."
+      : "Company metadata saved.";
   }
 
-  function researchAutosaveStatusToast(status: EditorAutosaveActivity): string | null {
+  function researchAutosaveStatusToast(
+    status: EditorAutosaveActivity,
+  ): string | null {
     if (status !== "saved") {
       return null;
     }
@@ -1581,7 +1846,9 @@ export function useComposerController() {
     return lang === "bg" ? "Позицията е запазена." : "Job position saved.";
   }
 
-  function setResearchAutosaveActivityVisible(status: EditorAutosaveActivity): void {
+  function setResearchAutosaveActivityVisible(
+    status: EditorAutosaveActivity,
+  ): void {
     if (researchAutosaveActivityTimerRef.current) {
       clearTimeout(researchAutosaveActivityTimerRef.current);
       researchAutosaveActivityTimerRef.current = null;
@@ -1603,7 +1870,10 @@ export function useComposerController() {
     setResearchAutoSaveEnabled(enabled);
     researchAutoSaveEnabledRef.current = enabled;
     try {
-      window.localStorage.setItem(STORAGE_KEYS.researchAutoSave, enabled ? "1" : "0");
+      window.localStorage.setItem(
+        STORAGE_KEYS.researchAutoSave,
+        enabled ? "1" : "0",
+      );
     } catch {
       // ignore
     }
@@ -1613,7 +1883,10 @@ export function useComposerController() {
   }
 
   function scheduleResearchAutosave(): void {
-    if (!researchAutoSaveEnabledRef.current || !pendingResearchDraftRef.current) {
+    if (
+      !researchAutoSaveEnabledRef.current ||
+      !pendingResearchDraftRef.current
+    ) {
       return;
     }
     if (researchAutosaveTimerRef.current) {
@@ -1627,14 +1900,19 @@ export function useComposerController() {
   }
 
   const handleResearchDraftChange = useCallback(
-    (draft: ResearchedCompany | ResearchedJobPosition, entityType: "company" | "job_position") => {
+    (
+      draft: ResearchedCompany | ResearchedJobPosition,
+      entityType: "company" | "job_position",
+    ) => {
       pendingResearchDraftRef.current = { draft, entityType };
       scheduleResearchAutosave();
     },
     [],
   );
 
-  function setCompanyMetadataAutosaveActivityVisible(status: EditorAutosaveActivity): void {
+  function setCompanyMetadataAutosaveActivityVisible(
+    status: EditorAutosaveActivity,
+  ): void {
     if (companyMetadataAutosaveActivityTimerRef.current) {
       clearTimeout(companyMetadataAutosaveActivityTimerRef.current);
       companyMetadataAutosaveActivityTimerRef.current = null;
@@ -1682,19 +1960,22 @@ export function useComposerController() {
     }
   }, []);
 
-  const handleCompanyMetadataEditorViewChange = useCallback((view: EditorViewMode) => {
-    if (view === "form") {
-      const trimmed = companyMetadataYamlDraft.trim();
-      if (trimmed) {
-        try {
-          setCompanyMetadataDraft(parseYaml(companyMetadataYamlDraft));
-        } catch {
-          // Keep existing draft.
+  const handleCompanyMetadataEditorViewChange = useCallback(
+    (view: EditorViewMode) => {
+      if (view === "form") {
+        const trimmed = companyMetadataYamlDraft.trim();
+        if (trimmed) {
+          try {
+            setCompanyMetadataDraft(parseYaml(companyMetadataYamlDraft));
+          } catch {
+            // Keep existing draft.
+          }
         }
       }
-    }
-    setCompanyMetadataEditorView(view);
-  }, [companyMetadataYamlDraft]);
+      setCompanyMetadataEditorView(view);
+    },
+    [companyMetadataYamlDraft],
+  );
 
   async function duplicateCurrentCv(name: string): Promise<void> {
     if (!selectedCvId) throw new Error("Select a CV first.");
@@ -1703,8 +1984,12 @@ export function useComposerController() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sourceCvId: selectedCvId, name }),
     });
-    const payload = (await response.json()) as { cvId?: string; error?: string };
-    if (!response.ok || !payload.cvId) throw new Error(payload.error ?? "Failed to copy CV version.");
+    const payload = (await response.json()) as {
+      cvId?: string;
+      error?: string;
+    };
+    if (!response.ok || !payload.cvId)
+      throw new Error(payload.error ?? "Failed to copy CV version.");
     const cvsRes = await fetch("/api/cvs");
     const cvsPayload = (await cvsRes.json()) as CvListResponse;
     const nextItems = cvsPayload.items ?? [];
@@ -1727,10 +2012,11 @@ export function useComposerController() {
     if (!pair) {
       return;
     }
-    const next = pair.variants.en
-      ?? cvItems.find((item) => item.id === pair.preferredCvId)
-      ?? Object.values(pair.variants)[0]
-      ?? null;
+    const next =
+      pair.variants.en ??
+      cvItems.find((item) => item.id === pair.preferredCvId) ??
+      Object.values(pair.variants)[0] ??
+      null;
     if (next?.id) {
       setSelectedCvId(next.id);
       writePersistedWorkspacePrefs({
@@ -1743,8 +2029,10 @@ export function useComposerController() {
   }
 
   function openLanguageModal() {
-    const firstOption = languageOptionChoices.find((option) => !availableLanguages.includes(option.code))
-      ?? languageOptionChoices[0];
+    const firstOption =
+      languageOptionChoices.find(
+        (option) => !availableLanguages.includes(option.code),
+      ) ?? languageOptionChoices[0];
     setLanguageModalSelection(firstOption.code);
     setLanguageModalOpen(true);
   }
@@ -1754,7 +2042,9 @@ export function useComposerController() {
       return;
     }
     if (availableLanguages.includes(languageModalSelection)) {
-      setEditorNotice(`Language ${languageModalSelection.toUpperCase()} already exists for this CV.`);
+      setEditorNotice(
+        `Language ${languageModalSelection.toUpperCase()} already exists for this CV.`,
+      );
       setLanguageModalOpen(false);
       return;
     }
@@ -1775,7 +2065,11 @@ export function useComposerController() {
           aiTranslate: wantsAiTranslation,
         }),
       });
-      const payload = (await response.json()) as { error?: string; cvId?: string; created?: boolean };
+      const payload = (await response.json()) as {
+        error?: string;
+        cvId?: string;
+        created?: boolean;
+      };
       if (!response.ok || payload.error) {
         setEditorNotice(payload.error ?? "Failed to create language variant.");
         return;
@@ -1798,7 +2092,11 @@ export function useComposerController() {
       }
       setPreviewNonce(Date.now());
       setLanguageModalOpen(false);
-      setEditorNotice(payload.created ? "Language variant created." : "Language variant already existed.");
+      setEditorNotice(
+        payload.created
+          ? "Language variant created."
+          : "Language variant already existed.",
+      );
     } catch {
       setEditorNotice("Failed to create language variant.");
     } finally {
@@ -1828,17 +2126,28 @@ export function useComposerController() {
       sectionDraftRef.current,
       yamlDraftRef.current,
     );
-    let parsedYamlVisibility: ReturnType<typeof parseYamlWithVisibilityMarkers> | null = null;
+    let parsedYamlVisibility: ReturnType<
+      typeof parseYamlWithVisibilityMarkers
+    > | null = null;
     if (editorViewRef.current === "yaml") {
       try {
-        parsedYamlVisibility = parseYamlWithVisibilityMarkers(sectionKey, yamlDraftRef.current);
-        parsedSection = coerceSectionDraftForEditorPath(sectionKey, parsedYamlVisibility.value);
+        parsedYamlVisibility = parseYamlWithVisibilityMarkers(
+          sectionKey,
+          yamlDraftRef.current,
+        );
+        parsedSection = coerceSectionDraftForEditorPath(
+          sectionKey,
+          parsedYamlVisibility.value,
+        );
       } catch {
         return false;
       }
     }
 
-    let updated = setByPath(cv, sectionKey, parsedSection) as Record<string, unknown>;
+    let updated = setByPath(cv, sectionKey, parsedSection) as Record<
+      string,
+      unknown
+    >;
     const visibility = parsedYamlVisibility
       ? mergeYamlVisibility(readTemplateVisibility(cv), parsedYamlVisibility)
       : readTemplateVisibility(cv);
@@ -1853,7 +2162,12 @@ export function useComposerController() {
     });
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
-      setEditorNotice(payload.error ?? (uiIsBg(uiLanguageRef.current) ? "Грешка при запис." : "Save failed."));
+      setEditorNotice(
+        payload.error ??
+          (uiIsBg(uiLanguageRef.current)
+            ? "Грешка при запис."
+            : "Save failed."),
+      );
       return false;
     }
     setEditorCv(updated);
@@ -1862,7 +2176,9 @@ export function useComposerController() {
     return true;
   }
 
-  async function runPendingEditorFieldTranslations(generation: number): Promise<void> {
+  async function runPendingEditorFieldTranslations(
+    generation: number,
+  ): Promise<void> {
     const pending = pendingTextFieldAutosaveRef.current;
     if (!pending || editorViewRef.current !== "form") {
       return;
@@ -1886,7 +2202,9 @@ export function useComposerController() {
         }
         return { code, variantId };
       })
-      .filter((entry): entry is { code: string; variantId: string } => entry !== null);
+      .filter(
+        (entry): entry is { code: string; variantId: string } => entry !== null,
+      );
 
     if (jobs.length === 0) {
       return;
@@ -1933,7 +2251,9 @@ export function useComposerController() {
         failedCount += 1;
         console.error(
           `[translate-field] ${job.code} failed:`,
-          result.reason instanceof Error ? result.reason.message : result.reason,
+          result.reason instanceof Error
+            ? result.reason.message
+            : result.reason,
         );
         continue;
       }
@@ -1941,7 +2261,8 @@ export function useComposerController() {
         continue;
       }
       const label =
-        LANGUAGE_OPTIONS.find((entry) => entry.code === job.code)?.label ?? job.code.toUpperCase();
+        LANGUAGE_OPTIONS.find((entry) => entry.code === job.code)?.label ??
+        job.code.toUpperCase();
       completedLabels.push(label);
     }
 
@@ -1955,7 +2276,9 @@ export function useComposerController() {
     } else if (failedCount > 0) {
       const firstError = results.find((entry) => entry.status === "rejected");
       const detail =
-        firstError && firstError.status === "rejected" && firstError.reason instanceof Error
+        firstError &&
+        firstError.status === "rejected" &&
+        firstError.reason instanceof Error
           ? firstError.reason.message
           : null;
       showComposerToast(
@@ -2046,7 +2369,11 @@ export function useComposerController() {
         if (defs && last in defs) {
           const nextDefs = { ...defs };
           delete nextDefs[last];
-          next = setAtPath(next, [...parentPath, CUSTOM_FIELD_DEFS_KEY], nextDefs);
+          next = setAtPath(
+            next,
+            [...parentPath, CUSTOM_FIELD_DEFS_KEY],
+            nextDefs,
+          );
         }
       }
       setYamlDraft(stringifyYaml(next ?? {}));
@@ -2092,7 +2419,11 @@ export function useComposerController() {
           };
 
     apply((current: unknown) => {
-      let next = setAtPath(current, [...target.path, payload.key], payload.value);
+      let next = setAtPath(
+        current,
+        [...target.path, payload.key],
+        payload.value,
+      );
       const parent = asRecord(getAtPath(next, target.path));
       const defs = asRecord(parent?.[CUSTOM_FIELD_DEFS_KEY]) ?? {};
       next = setAtPath(next, [...target.path, CUSTOM_FIELD_DEFS_KEY], {
@@ -2108,7 +2439,10 @@ export function useComposerController() {
   }
 
   function addCustomArrayEntry(path: PathSegment[]) {
-    const value = window.prompt(uiIsBg(uiLanguage) ? "Стойност за нов запис" : "Value for new entry", "");
+    const value = window.prompt(
+      uiIsBg(uiLanguage) ? "Стойност за нов запис" : "Value for new entry",
+      "",
+    );
     if (value === null) return;
     setSectionDraft((current: unknown) => {
       const next = appendToArrayAtPath(current, path, value);
@@ -2138,8 +2472,13 @@ export function useComposerController() {
     scheduleCompanyMetadataAutosave();
   }
 
-  function applyCompanyMetadataFieldText(path: PathSegment[], value: string): void {
-    const current = String(getAtPath(companyMetadataDraftRef.current, path) ?? "");
+  function applyCompanyMetadataFieldText(
+    path: PathSegment[],
+    value: string,
+  ): void {
+    const current = String(
+      getAtPath(companyMetadataDraftRef.current, path) ?? "",
+    );
     if (value === current) {
       return;
     }
@@ -2157,7 +2496,11 @@ export function useComposerController() {
         if (defs && last in defs) {
           const nextDefs = { ...defs };
           delete nextDefs[last];
-          next = setAtPath(next, [...parentPath, CUSTOM_FIELD_DEFS_KEY], nextDefs);
+          next = setAtPath(
+            next,
+            [...parentPath, CUSTOM_FIELD_DEFS_KEY],
+            nextDefs,
+          );
         }
       }
       setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
@@ -2166,9 +2509,17 @@ export function useComposerController() {
     scheduleCompanyMetadataAutosave();
   }
 
-  function addCompanyMetadataArrayEntry(path: PathSegment[], pathLabel: string, sample: unknown) {
+  function addCompanyMetadataArrayEntry(
+    path: PathSegment[],
+    pathLabel: string,
+    sample: unknown,
+  ) {
     setCompanyMetadataDraft((current: unknown) => {
-      const next = appendToArrayAtPath(current, path, defaultArrayEntry(pathLabel, sample));
+      const next = appendToArrayAtPath(
+        current,
+        path,
+        defaultArrayEntry(pathLabel, sample),
+      );
       setCompanyMetadataYamlDraft(stringifyYaml(next ?? {}));
       return next;
     });
@@ -2195,7 +2546,9 @@ export function useComposerController() {
     [editorCv],
   );
 
-  async function toggleTemplateVisibility(visibilityKey: string): Promise<void> {
+  async function toggleTemplateVisibility(
+    visibilityKey: string,
+  ): Promise<void> {
     if (!editorCv || !selectedCvId) {
       return;
     }
@@ -2211,19 +2564,31 @@ export function useComposerController() {
     setEditorCv(updated);
     setEditorNotice("");
     try {
-      const response = await fetch(`/api/cvs/${encodeURIComponent(selectedCvId)}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ cv: updated }),
-      });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      const response = await fetch(
+        `/api/cvs/${encodeURIComponent(selectedCvId)}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ cv: updated }),
+        },
+      );
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
       if (!response.ok) {
-        setEditorNotice(payload.error ?? (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."));
+        setEditorNotice(
+          payload.error ??
+            (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."),
+        );
         return;
       }
       setPreviewNonce(Date.now());
     } catch {
-      setEditorNotice(uiIsBg(uiLanguage) ? "Грешка при запис на видимост." : "Failed to save visibility.");
+      setEditorNotice(
+        uiIsBg(uiLanguage)
+          ? "Грешка при запис на видимост."
+          : "Failed to save visibility.",
+      );
     }
   }
 
@@ -2294,9 +2659,12 @@ export function useComposerController() {
           body: JSON.stringify({ document: parsedDocument }),
         },
       );
-      const payload = (await response.json()) as CompanyMetadataDocumentResponse;
+      const payload =
+        (await response.json()) as CompanyMetadataDocumentResponse;
       if (!response.ok || !payload.ok) {
-        setCompanyMetadataNotice(payload.error ?? "Failed to save company metadata.");
+        setCompanyMetadataNotice(
+          payload.error ?? "Failed to save company metadata.",
+        );
         return false;
       }
       const document = payload.document ?? { companies: [] };
@@ -2351,7 +2719,11 @@ export function useComposerController() {
       const response = await fetch("/api/research/catalog/import-metadata", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ source: "both", skipExisting: true, importJobs: true }),
+        body: JSON.stringify({
+          source: "both",
+          skipExisting: true,
+          importJobs: true,
+        }),
       });
       const payload = (await response.json()) as {
         error?: string;
@@ -2376,7 +2748,9 @@ export function useComposerController() {
           : `Imported +${payload.companies_added ?? 0} companies, +${payload.jobs_added ?? 0} jobs (skipped ${payload.companies_skipped ?? 0} existing).`,
       );
     } catch {
-      setResearchNotice(uiIsBg(uiLanguage) ? "Импортът не успя." : "Import failed.");
+      setResearchNotice(
+        uiIsBg(uiLanguage) ? "Импортът не успя." : "Import failed.",
+      );
     } finally {
       setResearchCatalogLoading(false);
     }
@@ -2387,14 +2761,28 @@ export function useComposerController() {
       return;
     }
 
-    let parsedSection = resolveSectionDraftForForm(editorPath, sectionDraft, yamlDraft);
-    let parsedYamlVisibility: ReturnType<typeof parseYamlWithVisibilityMarkers> | null = null;
+    let parsedSection = resolveSectionDraftForForm(
+      editorPath,
+      sectionDraft,
+      yamlDraft,
+    );
+    let parsedYamlVisibility: ReturnType<
+      typeof parseYamlWithVisibilityMarkers
+    > | null = null;
     if (editorView === "yaml") {
       try {
-        parsedYamlVisibility = parseYamlWithVisibilityMarkers(editorPath, yamlDraft);
-        parsedSection = coerceSectionDraftForEditorPath(editorPath, parsedYamlVisibility.value);
+        parsedYamlVisibility = parseYamlWithVisibilityMarkers(
+          editorPath,
+          yamlDraft,
+        );
+        parsedSection = coerceSectionDraftForEditorPath(
+          editorPath,
+          parsedYamlVisibility.value,
+        );
       } catch {
-        setEditorNotice(uiIsBg(uiLanguage) ? "Невалиден YAML." : "Invalid YAML.");
+        setEditorNotice(
+          uiIsBg(uiLanguage) ? "Невалиден YAML." : "Invalid YAML.",
+        );
         return;
       }
     }
@@ -2402,29 +2790,46 @@ export function useComposerController() {
     setEditorSaving(true);
     setEditorNotice("");
     try {
-      let updated = setByPath(editorCv, editorPath, parsedSection) as Record<string, unknown>;
+      let updated = setByPath(editorCv, editorPath, parsedSection) as Record<
+        string,
+        unknown
+      >;
       const visibility = parsedYamlVisibility
-        ? mergeYamlVisibility(readTemplateVisibility(editorCv), parsedYamlVisibility)
+        ? mergeYamlVisibility(
+            readTemplateVisibility(editorCv),
+            parsedYamlVisibility,
+          )
         : readTemplateVisibility(editorCv);
       if (Object.keys(visibility).length > 0) {
         updated = writeTemplateVisibility(updated, visibility);
       }
-      const response = await fetch(`/api/cvs/${encodeURIComponent(selectedCvId)}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ cv: updated }),
-      });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      const response = await fetch(
+        `/api/cvs/${encodeURIComponent(selectedCvId)}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ cv: updated }),
+        },
+      );
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
       if (!response.ok) {
-        setEditorNotice(payload.error ?? (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."));
+        setEditorNotice(
+          payload.error ??
+            (uiIsBg(uiLanguage) ? "Грешка при запис." : "Save failed."),
+        );
         return;
       }
       setEditorCv(updated);
       setPreviewNonce(Date.now());
       syncEditorSavedFingerprintFromDraft();
-      const savedMessage =
-        uiIsBg(uiLanguage) ? "Шаблонът на CV е запазен." : "CV template saved.";
-      setEditorNotice(uiIsBg(uiLanguage) ? "Секцията е запазена." : "Section saved.");
+      const savedMessage = uiIsBg(uiLanguage)
+        ? "Шаблонът на CV е запазен."
+        : "CV template saved.";
+      setEditorNotice(
+        uiIsBg(uiLanguage) ? "Секцията е запазена." : "Section saved.",
+      );
       showComposerToast(savedMessage);
       const generation = textFieldAutosaveGenerationRef.current + 1;
       textFieldAutosaveGenerationRef.current = generation;
@@ -2434,10 +2839,12 @@ export function useComposerController() {
     }
   }
 
-  async function persistCvTargeting(next: {
-    company_id?: string;
-    job_id?: string;
-  } | null): Promise<void> {
+  async function persistCvTargeting(
+    next: {
+      company_id?: string;
+      job_id?: string;
+    } | null,
+  ): Promise<void> {
     if (!editorCv || !selectedCvId) {
       return;
     }
@@ -2459,7 +2866,9 @@ export function useComposerController() {
     setSelectedResearchCompanyId(companyId);
     setSelectedResearchJobPositionId("");
     // D1: no longer maps Research catalog ids into legacy metadata multi-select
-    void persistCvTargeting(companyId ? { company_id: companyId, job_id: "" } : null);
+    void persistCvTargeting(
+      companyId ? { company_id: companyId, job_id: "" } : null,
+    );
   }
 
   function selectResearchJob(jobId: string) {
@@ -2483,14 +2892,22 @@ export function useComposerController() {
     setResearchSidebarTab(tab);
   }
 
-  async function persistResearchCompany(company: ResearchedCompany): Promise<boolean> {
+  async function persistResearchCompany(
+    company: ResearchedCompany,
+  ): Promise<boolean> {
     try {
-      const response = await fetch(`/api/research/companies/${encodeURIComponent(company.id)}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ company }),
-      });
-      const body = (await response.json()) as { error?: string; companies?: ResearchedCompany[] };
+      const response = await fetch(
+        `/api/research/companies/${encodeURIComponent(company.id)}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ company }),
+        },
+      );
+      const body = (await response.json()) as {
+        error?: string;
+        companies?: ResearchedCompany[];
+      };
       if (!response.ok) {
         setResearchNotice(body.error ?? "Could not save company.");
         return false;
@@ -2507,13 +2924,18 @@ export function useComposerController() {
     }
   }
 
-  async function persistResearchJob(job: ResearchedJobPosition): Promise<boolean> {
+  async function persistResearchJob(
+    job: ResearchedJobPosition,
+  ): Promise<boolean> {
     try {
-      const response = await fetch(`/api/research/job-positions/${encodeURIComponent(job.id)}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ job_position: job }),
-      });
+      const response = await fetch(
+        `/api/research/job-positions/${encodeURIComponent(job.id)}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ job_position: job }),
+        },
+      );
       const body = (await response.json()) as {
         error?: string;
         job_positions?: ResearchedJobPosition[];
@@ -2561,13 +2983,17 @@ export function useComposerController() {
     }
   }
 
-  async function saveResearchCompany(company: ResearchedCompany): Promise<void> {
+  async function saveResearchCompany(
+    company: ResearchedCompany,
+  ): Promise<void> {
     setSavingResearch(true);
     setResearchNotice("");
     try {
       const saved = await persistResearchCompany(company);
       if (saved) {
-        showComposerToast(uiIsBg(uiLanguage) ? "Компанията е запазена." : "Company saved.");
+        showComposerToast(
+          uiIsBg(uiLanguage) ? "Компанията е запазена." : "Company saved.",
+        );
       }
     } finally {
       setSavingResearch(false);
@@ -2580,7 +3006,9 @@ export function useComposerController() {
     try {
       const saved = await persistResearchJob(job);
       if (saved) {
-        showComposerToast(uiIsBg(uiLanguage) ? "Позицията е запазена." : "Job position saved.");
+        showComposerToast(
+          uiIsBg(uiLanguage) ? "Позицията е запазена." : "Job position saved.",
+        );
       }
     } finally {
       setSavingResearch(false);
@@ -2697,7 +3125,9 @@ export function useComposerController() {
           : `Researched job “${body.job_position.title}”.`,
       );
       showComposerToast(
-        uiIsBg(uiLanguage) ? "Позицията е проучена." : "Job position researched.",
+        uiIsBg(uiLanguage)
+          ? "Позицията е проучена."
+          : "Job position researched.",
       );
     } catch {
       setResearchNotice("Job position research failed.");
@@ -2718,7 +3148,9 @@ export function useComposerController() {
       if (selectedResearchCompanyId === companyId) {
         selectResearchCompany("");
       }
-      showComposerToast(uiIsBg(uiLanguage) ? "Компанията е изтрита." : "Company deleted.");
+      showComposerToast(
+        uiIsBg(uiLanguage) ? "Компанията е изтрита." : "Company deleted.",
+      );
     } catch {
       setResearchNotice("Could not delete company.");
     }
@@ -2736,7 +3168,9 @@ export function useComposerController() {
       if (selectedResearchJobPositionId === jobId) {
         setSelectedResearchJobPositionId("");
       }
-      showComposerToast(uiIsBg(uiLanguage) ? "Позицията е изтрита." : "Job position deleted.");
+      showComposerToast(
+        uiIsBg(uiLanguage) ? "Позицията е изтрита." : "Job position deleted.",
+      );
     } catch {
       setResearchNotice("Could not delete job position.");
     }
@@ -2772,7 +3206,8 @@ export function useComposerController() {
       const lines = [
         `ATS score ${payload.report.score} (pass ${payload.report.summary.pass} · warn ${payload.report.summary.warn} · fail ${payload.report.summary.fail})`,
         ...payload.report.items.map(
-          (item) => `[${item.severity.toUpperCase()}] ${item.title}: ${item.detail}`,
+          (item) =>
+            `[${item.severity.toUpperCase()}] ${item.title}: ${item.detail}`,
         ),
       ];
       setAtsCheckText(lines.join("\n"));
@@ -2792,13 +3227,22 @@ export function useComposerController() {
       const response = await fetch("/api/analysis/ai-detection", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ cvId: selectedCvId, templateId: selectedTemplateId }),
+        body: JSON.stringify({
+          cvId: selectedCvId,
+          templateId: selectedTemplateId,
+        }),
       });
-      const payload = (await response.json()) as { report?: AiDetectionReport; error?: string };
-      if (!response.ok || !payload.report) throw new Error(payload.error ?? "AI detection failed.");
+      const payload = (await response.json()) as {
+        report?: AiDetectionReport;
+        error?: string;
+      };
+      if (!response.ok || !payload.report)
+        throw new Error(payload.error ?? "AI detection failed.");
       setAiDetectionReport(payload.report);
     } catch (error) {
-      setAiDetectionError(error instanceof Error ? error.message : "AI detection failed.");
+      setAiDetectionError(
+        error instanceof Error ? error.message : "AI detection failed.",
+      );
     } finally {
       setAiDetectionLoading(false);
     }
@@ -2836,7 +3280,9 @@ export function useComposerController() {
         setAnalysisData(payload.analysis as SectionAnalysis | FullAnalysis);
         return;
       }
-      setAnalysisText(JSON.stringify(payload.analysis ?? payload.raw ?? {}, null, 2));
+      setAnalysisText(
+        JSON.stringify(payload.analysis ?? payload.raw ?? {}, null, 2),
+      );
     } finally {
       setAnalysisLoading(false);
     }
@@ -2857,7 +3303,9 @@ export function useComposerController() {
       });
       const payload = (await response.json()) as SyncStatusResponse;
       if (!response.ok || payload.error) {
-        setEditorNotice(payload.error ?? "Failed to load sync language status.");
+        setEditorNotice(
+          payload.error ?? "Failed to load sync language status.",
+        );
         return;
       }
       const languageRows = payload.languages ?? [];
@@ -2866,10 +3314,12 @@ export function useComposerController() {
         return;
       }
       setSyncStatus(payload);
-      const defaultSource = languageRows.find((item) => item.language === selectedLanguage)?.language
-        ?? languageRows[0].language;
-      const defaultTarget = languageRows.find((item) => item.language !== defaultSource)?.language
-        ?? "";
+      const defaultSource =
+        languageRows.find((item) => item.language === selectedLanguage)
+          ?.language ?? languageRows[0].language;
+      const defaultTarget =
+        languageRows.find((item) => item.language !== defaultSource)
+          ?.language ?? "";
       setSyncSourceSelection(defaultSource);
       setSyncTargetSelection(defaultTarget);
       setSyncModalOpen(true);
@@ -2907,15 +3357,24 @@ export function useComposerController() {
         return;
       }
 
-      setEditorNotice(payload.message ?? (payload.changed ? "SYNC completed." : "No missing fields to sync."));
+      setEditorNotice(
+        payload.message ??
+          (payload.changed ? "SYNC completed." : "No missing fields to sync."),
+      );
       setSyncReport({
         open: true,
-        direction: payload.direction ?? `${syncSourceSelection.toUpperCase()} -> ${syncTargetSelection.toUpperCase()}`,
+        direction:
+          payload.direction ??
+          `${syncSourceSelection.toUpperCase()} -> ${syncTargetSelection.toUpperCase()}`,
         sourceCvId: payload.sourceCvId ?? selectedCvId,
         targetCvId: payload.targetCvId ?? "",
         changed: Boolean(payload.changed),
         changes: payload.changes ?? [],
-        message: payload.message ?? (payload.changed ? "Missing fields synced and translated." : "No missing fields found."),
+        message:
+          payload.message ??
+          (payload.changed
+            ? "Missing fields synced and translated."
+            : "No missing fields found."),
       });
 
       if (payload.changed) {
@@ -2932,8 +3391,6 @@ export function useComposerController() {
       setSyncing(false);
     }
   }
-
-
 
   function refreshPreview() {
     setPreviewNonce(Date.now());
@@ -2966,7 +3423,9 @@ export function useComposerController() {
         setCompanyMetadataYamlLintIssues([]);
         return;
       }
-      setCompanyMetadataYamlLintIssues(extractYamlLintIssuesFromDocument(companyMetadataYamlDraft));
+      setCompanyMetadataYamlLintIssues(
+        extractYamlLintIssuesFromDocument(companyMetadataYamlDraft),
+      );
     }, 800);
     return () => window.clearTimeout(handle);
   }, [companyMetadataEditorView, companyMetadataYamlDraft]);
@@ -2994,14 +3453,21 @@ export function useComposerController() {
       setPrintTweakRemovePhoto(enabled);
     } else if (tweakId === "removePageCount") {
       setPrintTweakRemovePageCount(enabled);
-    } else {
+    } else if (tweakId === "moveSkillsLeft") {
       setPrintTweakMoveSkillsLeft(enabled);
+    } else {
+      setPrintTweakNoPageMargins(enabled);
     }
     setPreviewNonce(Date.now());
   }
 
   function setPrintPaginationMode(mode: "normal" | "aggressive"): void {
     setPrintTweakIntelligentPaginationMode(mode);
+  }
+
+  function setPrintTweakNoMargins(enabled: boolean): void {
+    setPrintTweakNoPageMargins(enabled);
+    setPreviewNonce(Date.now());
   }
 
   function setPrintTextScaleEnabled(
@@ -3016,7 +3482,10 @@ export function useComposerController() {
     setPreviewNonce(Date.now());
   }
 
-  function setPrintTextScaleValue(target: "sidebar" | "content", value: number): void {
+  function setPrintTextScaleValue(
+    target: "sidebar" | "content",
+    value: number,
+  ): void {
     const clamped = clampPrintTextScale(value);
     if (target === "sidebar") {
       setPrintTweakSidebarTextScale(clamped);
@@ -3031,64 +3500,88 @@ export function useComposerController() {
     direction: -1 | 1,
   ): void {
     if (target === "sidebar") {
-      setPrintTweakSidebarTextScale((current) => stepPrintTextScale(current, direction));
+      setPrintTweakSidebarTextScale((current) =>
+        stepPrintTextScale(current, direction),
+      );
     } else {
-      setPrintTweakContentTextScale((current) => stepPrintTextScale(current, direction));
+      setPrintTweakContentTextScale((current) =>
+        stepPrintTextScale(current, direction),
+      );
     }
     setPreviewNonce(Date.now());
   }
 
-  const addPhotoBoothFiles = useCallback(async (files: FileList | File[]): Promise<void> => {
-    const accepted = Array.from(files).filter((file) => file.type.startsWith("image/"));
-    if (accepted.length === 0) {
-      setPhotoBoothNotice("No image files detected.");
-      return;
-    }
-    const form = new FormData();
-    for (const file of accepted) {
-      form.append("files", file);
-    }
-    const response = await fetch("/api/photos", {
-      method: "POST",
-      body: form,
-    });
-    const payload = (await response.json()) as PhotoBoothListResponse;
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error ?? "Could not upload images.");
-    }
-    await loadPhotoBoothGallery();
-    setPhotoBoothNotice(`Added ${accepted.length} image${accepted.length > 1 ? "s" : ""} to Photo Booth.`);
-    setPreviewNonce(Date.now());
-  }, [loadPhotoBoothGallery]);
+  const addPhotoBoothFiles = useCallback(
+    async (files: FileList | File[]): Promise<void> => {
+      const accepted = Array.from(files).filter((file) =>
+        file.type.startsWith("image/"),
+      );
+      if (accepted.length === 0) {
+        setPhotoBoothNotice("No image files detected.");
+        return;
+      }
+      const form = new FormData();
+      for (const file of accepted) {
+        form.append("files", file);
+      }
+      const response = await fetch("/api/photos", {
+        method: "POST",
+        body: form,
+      });
+      const payload = (await response.json()) as PhotoBoothListResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Could not upload images.");
+      }
+      await loadPhotoBoothGallery();
+      setPhotoBoothNotice(
+        `Added ${accepted.length} image${accepted.length > 1 ? "s" : ""} to Photo Booth.`,
+      );
+      setPreviewNonce(Date.now());
+    },
+    [loadPhotoBoothGallery],
+  );
 
-  async function handlePhotoBoothInput(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+  async function handlePhotoBoothInput(
+    event: ChangeEvent<HTMLInputElement>,
+  ): Promise<void> {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     try {
       await addPhotoBoothFiles(files);
     } catch (error) {
-      setPhotoBoothNotice(error instanceof Error ? error.message : "Could not import image.");
+      setPhotoBoothNotice(
+        error instanceof Error ? error.message : "Could not import image.",
+      );
     } finally {
       event.currentTarget.value = "";
     }
   }
 
-  const addPhotoBoothFromClipboard = useCallback(async (clipboardData: DataTransfer | null): Promise<void> => {
-    if (!clipboardData) return;
-    const files = Array.from(clipboardData.items ?? [])
-      .filter((item) => item.type.startsWith("image/"))
-      .map((item) => item.getAsFile())
-      .filter((file): file is File => file instanceof File);
-    if (files.length === 0) {
-      return;
-    }
-    try {
-      await addPhotoBoothFiles(files);
-      setPhotoBoothNotice(`Pasted ${files.length} image${files.length > 1 ? "s" : ""} from clipboard.`);
-    } catch (error) {
-      setPhotoBoothNotice(error instanceof Error ? error.message : "Could not paste image from clipboard.");
-    }
-  }, [addPhotoBoothFiles]);
+  const addPhotoBoothFromClipboard = useCallback(
+    async (clipboardData: DataTransfer | null): Promise<void> => {
+      if (!clipboardData) return;
+      const files = Array.from(clipboardData.items ?? [])
+        .filter((item) => item.type.startsWith("image/"))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file instanceof File);
+      if (files.length === 0) {
+        return;
+      }
+      try {
+        await addPhotoBoothFiles(files);
+        setPhotoBoothNotice(
+          `Pasted ${files.length} image${files.length > 1 ? "s" : ""} from clipboard.`,
+        );
+      } catch (error) {
+        setPhotoBoothNotice(
+          error instanceof Error
+            ? error.message
+            : "Could not paste image from clipboard.",
+        );
+      }
+    },
+    [addPhotoBoothFiles],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -3124,7 +3617,9 @@ export function useComposerController() {
       if (cancelled || filesToUpload.length === 0) return;
       try {
         await addPhotoBoothFiles(filesToUpload);
-        setPhotoBoothNotice(`Migrated ${migratedCount} legacy photo${migratedCount > 1 ? "s" : ""} into /photos.`);
+        setPhotoBoothNotice(
+          `Migrated ${migratedCount} legacy photo${migratedCount > 1 ? "s" : ""} into /photos.`,
+        );
       } catch {
         // keep silent to avoid noisy startup failures
       }
@@ -3183,7 +3678,9 @@ export function useComposerController() {
     if (photoBoothAnalysisFocusId === id) {
       setPhotoBoothAnalysisFocusId("");
     }
-    setPhotoBoothCompareIds((current) => current.filter((entry) => entry !== id));
+    setPhotoBoothCompareIds((current) =>
+      current.filter((entry) => entry !== id),
+    );
     setPhotoBoothComparison(null);
     setPhotoBoothComparisonHistory([]);
     setPhotoBoothNotice("Photo deleted from /photos.");
@@ -3198,7 +3695,9 @@ export function useComposerController() {
     });
   }
 
-  async function resolvePhotoDataUrl(id: string): Promise<{ dataUrl: string; name: string }> {
+  async function resolvePhotoDataUrl(
+    id: string,
+  ): Promise<{ dataUrl: string; name: string }> {
     const response = await fetch(`/api/photos?id=${encodeURIComponent(id)}`);
     const payload = (await response.json()) as PhotoBoothListResponse & {
       item?: PhotoBoothItem;
@@ -3208,9 +3707,13 @@ export function useComposerController() {
     }
     const item =
       payload.item ??
-      (Array.isArray(payload.items) ? payload.items.find((entry) => entry.id === id) : undefined);
+      (Array.isArray(payload.items)
+        ? payload.items.find((entry) => entry.id === id)
+        : undefined);
     if (!item?.dataUrl?.startsWith("data:image/")) {
-      throw new Error("Selected photo no longer exists. Please reselect an image.");
+      throw new Error(
+        "Selected photo no longer exists. Please reselect an image.",
+      );
     }
     return { dataUrl: item.dataUrl, name: item.name };
   }
@@ -3241,17 +3744,22 @@ export function useComposerController() {
       }
       const nextAnalysis: PhotoBoothAnalysis = {
         score: Number.isFinite(Number(payload.analysis.score))
-          ? Math.max(0, Math.min(100, Math.round(Number(payload.analysis.score))))
+          ? Math.max(
+              0,
+              Math.min(100, Math.round(Number(payload.analysis.score))),
+            )
           : 60,
         verdict:
           payload.analysis.verdict ??
           classifyVerdict(Number(payload.analysis.score ?? 0)),
         notes:
-          Array.isArray(payload.analysis.notes) && payload.analysis.notes.length > 0
+          Array.isArray(payload.analysis.notes) &&
+          payload.analysis.notes.length > 0
             ? payload.analysis.notes
             : ["Image analyzed with multimodal model."],
         clothingProposals:
-          Array.isArray(payload.analysis.clothingProposals) && payload.analysis.clothingProposals.length > 0
+          Array.isArray(payload.analysis.clothingProposals) &&
+          payload.analysis.clothingProposals.length > 0
             ? payload.analysis.clothingProposals
             : [],
         analyzedAt: payload.analysis.analyzedAt ?? new Date().toISOString(),
@@ -3263,12 +3771,22 @@ export function useComposerController() {
               score: Number.isFinite(Number(entry.score))
                 ? Math.max(0, Math.min(100, Math.round(Number(entry.score))))
                 : 60,
-              verdict: entry.verdict ?? classifyVerdict(Number(entry.score ?? 0)),
-              notes: Array.isArray(entry.notes) ? entry.notes.map((note) => String(note ?? "").trim()).filter(Boolean) : [],
-              clothingProposals: Array.isArray(entry.clothingProposals)
-                ? entry.clothingProposals.map((note) => String(note ?? "").trim()).filter(Boolean)
+              verdict:
+                entry.verdict ?? classifyVerdict(Number(entry.score ?? 0)),
+              notes: Array.isArray(entry.notes)
+                ? entry.notes
+                    .map((note) => String(note ?? "").trim())
+                    .filter(Boolean)
                 : [],
-              analyzedAt: typeof entry.analyzedAt === "string" ? entry.analyzedAt : new Date().toISOString(),
+              clothingProposals: Array.isArray(entry.clothingProposals)
+                ? entry.clothingProposals
+                    .map((note) => String(note ?? "").trim())
+                    .filter(Boolean)
+                : [],
+              analyzedAt:
+                typeof entry.analyzedAt === "string"
+                  ? entry.analyzedAt
+                  : new Date().toISOString(),
               model: entry.model,
             }))
             .slice(0, 50)
@@ -3286,7 +3804,9 @@ export function useComposerController() {
       );
       setPhotoBoothNotice("AI photo analysis completed.");
     } catch (error) {
-      setPhotoBoothNotice(error instanceof Error ? error.message : "Photo analysis failed.");
+      setPhotoBoothNotice(
+        error instanceof Error ? error.message : "Photo analysis failed.",
+      );
     } finally {
       setPhotoBoothAnalyzingId("");
     }
@@ -3303,7 +3823,9 @@ export function useComposerController() {
         }),
       );
       if (selectedItems.length < 2) {
-        throw new Error("At least 2 selected photos are required for comparison.");
+        throw new Error(
+          "At least 2 selected photos are required for comparison.",
+        );
       }
       const response = await fetch("/api/analysis/photo/compare", {
         method: "POST",
@@ -3327,18 +3849,18 @@ export function useComposerController() {
         throw new Error(message);
       }
       setPhotoBoothComparison(payload.comparison);
-      setPhotoBoothComparisonHistory(Array.isArray(payload.history) ? payload.history : [payload.comparison]);
+      setPhotoBoothComparisonHistory(
+        Array.isArray(payload.history) ? payload.history : [payload.comparison],
+      );
       setPhotoBoothNotice("AI comparison completed.");
     } catch (error) {
-      setPhotoBoothNotice(error instanceof Error ? error.message : "Photo comparison failed.");
+      setPhotoBoothNotice(
+        error instanceof Error ? error.message : "Photo comparison failed.",
+      );
     } finally {
       setPhotoBoothCompareLoading(false);
     }
   }
-
-
-
-
 
   return {
     activePanel,
@@ -3362,12 +3884,14 @@ export function useComposerController() {
     printTweakRemovePhoto,
     printTweakRemovePageCount,
     printTweakMoveSkillsLeft,
+    printTweakNoPageMargins,
     printTweakSidebarTextScaleEnabled,
     printTweakSidebarTextScale,
     printTweakContentTextScaleEnabled,
     printTweakContentTextScale,
     setPrintTweakEnabled,
     setPrintPaginationMode,
+    setPrintTweakNoMargins,
     setPrintTextScaleEnabled,
     setPrintTextScaleValue,
     adjustPrintTextScale,

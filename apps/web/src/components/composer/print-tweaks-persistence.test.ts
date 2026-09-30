@@ -50,7 +50,11 @@ describe("print-tweaks-persistence", () => {
 
   it("requires cv and template before persisting", () => {
     expect(
-      isPrintTweaksScopeReady({ cvId: "", templateId: "harvard-v1", language: "en" }),
+      isPrintTweaksScopeReady({
+        cvId: "",
+        templateId: "harvard-v1",
+        language: "en",
+      }),
     ).toBe(false);
     expect(
       isPrintTweaksScopeReady({
@@ -67,6 +71,7 @@ describe("print-tweaks-persistence", () => {
       removePhoto: true,
       removePageCount: true,
       moveSkillsLeft: "1",
+      noPageMargins: true,
       sidebarTextScaleEnabled: false,
       sidebarTextScale: 999,
       contentTextScaleEnabled: true,
@@ -78,6 +83,7 @@ describe("print-tweaks-persistence", () => {
       removePhoto: true,
       removePageCount: true,
       moveSkillsLeft: true,
+      noPageMargins: true,
       sidebarTextScaleEnabled: false,
       sidebarTextScale: 200,
       contentTextScaleEnabled: true,
@@ -138,6 +144,7 @@ describe("print-tweaks-persistence", () => {
       {
         ...DEFAULT_PRINT_TWEAKS_STATE,
         moveSkillsLeft: true,
+        noPageMargins: true,
         sidebarTextScaleEnabled: true,
         sidebarTextScale: 110,
       },
@@ -153,6 +160,7 @@ describe("print-tweaks-persistence", () => {
     expect(readPrintTweaksForScope(scopeB, storage)).toEqual({
       ...DEFAULT_PRINT_TWEAKS_STATE,
       moveSkillsLeft: true,
+      noPageMargins: true,
       sidebarTextScaleEnabled: true,
       sidebarTextScale: 110,
     });
