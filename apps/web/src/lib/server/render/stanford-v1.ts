@@ -2,6 +2,7 @@ import type { CvDocument } from "../cvStore";
 import { languageLevelLabel } from "./cambridge-v1";
 import { toPublicationLinks } from "./profile-links";
 import { toProductLines } from "./europass-v1";
+import { renderIcon } from "./icons";
 import type { StanfordThemePalette, TemplateFile } from "./types";
 import {
   asRecord,
@@ -188,9 +189,12 @@ export function renderStanford(
 
     .profile { text-align: left; margin-bottom: 7.2mm; min-height: 44mm; display: flex; align-items: center; justify-content: center; }
     .profile.profile-original { align-items: flex-end; }
-    .avatar-wrap { width: 41mm; height: 41mm; margin: 0 auto; border-radius: 50%; overflow: hidden; border: 0.7mm solid rgba(255,255,255,0.85); box-shadow: 0 2px 10px rgba(0,0,0,0.22); }
-    .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .avatar-fallback { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; font-size: 13mm; color: ${theme.sidebarMuted}; background: rgba(0,0,0,0.2); }
+    .avatar-wrap { width: 41mm; height: 41mm; margin: 0 auto; border-radius: 50%; overflow: hidden; border: 0.7mm solid rgba(255,255,255,0.85); box-shadow: 0 2px 10px rgba(0,0,0,0.22); background: rgba(0,0,0,0.2); }
+        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* The tint belongs on the clipping circle, not on this child: the renderer
+           sizes a flex child to its glyph box rather than to the circle, which left
+           the shade as a small rectangle behind the icon instead of filling it. */
+        .avatar-fallback { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; font-size: 13mm; color: ${theme.sidebarMuted}; background: transparent; }
     .avatar-wrap.photo-force-circle { border-radius: 999px; }
     .avatar-wrap.photo-force-square { border-radius: 0; }
     .avatar-wrap.photo-force-original { height: auto; border-radius: 0; }
@@ -285,8 +289,8 @@ export function renderStanford(
           ${
             photoUrl
               ? `<img src="${escapeHtml(photoUrl)}" alt="Profile photo" />`
-              : `<div class="avatar-fallback">👤</div>`
-          }
+              : `<div class="avatar-fallback">${renderIcon("fa-user")}</div>`
+                        }
         </div>
       </div>`
           : ""

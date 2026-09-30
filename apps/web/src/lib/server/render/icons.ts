@@ -29,6 +29,10 @@ const ICON_GLYPHS: Record<string, string> = {
  * The family is set inline because the class-based binding lived in the CDN
  * stylesheet the renderer ignores. An unmapped class yields an empty string so
  * no blank gap is left in the layout.
+ *
+ * The weight has to be set too. The vendored Font Awesome face is declared at
+ * `font-weight: 900`, so an icon that inherits its parent's weight matches no
+ * face at all and the renderer falls back to a system font.
  */
 export function renderIcon(iconClass: string): string {
   const glyph = ICON_GLYPHS[iconClass];
@@ -38,7 +42,13 @@ export function renderIcon(iconClass: string): string {
   // `font-synthesis: none` matters: the icon font ships no italic or bold face,
   // and without this the renderer shears the glyph to fake one, which reads as a
   // backslanted icon. Icons are never meant to be slanted.
-  return `<i class="fa-solid ${iconClass}" style="font-family: '${FONT_AWESOME_FAMILY}'; font-synthesis: none; font-style: normal;">${glyph}</i>`;
+  const style = [
+    `font-family: '${FONT_AWESOME_FAMILY}'`,
+    "font-weight: 900",
+    "font-synthesis: none",
+    "font-style: normal",
+  ].join("; ");
+  return `<i class="fa-solid ${iconClass}" style="${style}">${glyph}</i>`;
 }
 
 /** Class names this module can draw. */

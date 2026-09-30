@@ -23,6 +23,22 @@ type PdfFontFamily = {
 
 const FAMILIES = manifest.families as PdfFontFamily[];
 
+/**
+ * The code points a face is allowed to supply.
+ *
+ * Font Awesome draws its glyphs from the Private Use Area (U+E000-F8FF), which no
+ * fontsource subset covers, so the face was registered with the latin range only.
+ * The renderer then found no face for an icon code point and fell back to a
+ * system font, printing the icon as Times or Arial. Give the icon family its
+ * real range alongside the subset it ships with.
+ */
+const ICON_PRIVATE_USE_RANGE = "U+E000-F8FF";
+
+function unicodeRangeFor(family: PdfFontFamily, face: PdfFontFace): string {
+  const range = manifest.unicodeRanges[face.subset];
+  return /Awesome/i.test(family.css) ? `${range}, ${ICON_PRIVATE_USE_RANGE}` : range;
+}
+
 // Resolve the font directory at runtime. The path is built from
 // `process.cwd()` on purpose: webpack statically analyses `new URL("...",
 // import.meta.url)` and fails to resolve a bare directory reference, which broke
@@ -59,7 +75,7 @@ export async function buildPdfFontFaceCss(): Promise<string> {
   for (const family of FAMILIES) {
     for (const face of family.faces) {
       const bytes = await readFile(`${fontDir}/${face.file}`);
-      const range = manifest.unicodeRanges[face.subset];
+      const range = unicodeRangeFor(family, face);
       rules.push(
         [
           "@font-face {",
