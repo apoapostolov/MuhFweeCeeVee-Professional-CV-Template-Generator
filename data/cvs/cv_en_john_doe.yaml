@@ -30,12 +30,16 @@ person:
 positioning:
   headline: Product-minded Senior Software Engineer
   profile_summary:
-    - Senior engineer with 10+ years of experience delivering scalable web applications and internal tools.
-    - Strong focus on developer productivity, user-facing quality, and measurable business impact.
+    - Senior engineer with 10+ years of experience delivering scalable web
+      applications and internal tools.
+    - Strong focus on developer productivity, user-facing quality, and
+      measurable business impact.
   transition_narrative:
-    - Open to senior individual contributor and technical lead roles in product-focused teams.
+    - Open to senior individual contributor and technical lead roles in
+      product-focused teams.
   role_applicability:
-    - Builds reliable systems and clear delivery workflows across cross-functional teams.
+    - Builds reliable systems and clear delivery workflows across
+      cross-functional teams.
 experience:
   - id: exp_exampletech_senior_engineer
     employer: ExampleTech Inc.
@@ -52,7 +56,8 @@ experience:
     industry: SaaS
     parallel_role: false
     responsibilities:
-      - Led development of customer-facing analytics modules used by enterprise clients.
+      - Led development of customer-facing analytics modules used by enterprise
+        clients.
       - Improved API latency and reliability with targeted backend optimizations.
       - Mentored engineers and supported architecture decisions for new services.
     products:
@@ -157,16 +162,53 @@ optional_sections:
     - Agile delivery
 metadata:
   internal_name: Public Example CV
-  internal_version: "1.0.0"
+  internal_version: 1.0.0
   authoring_note: Fictional public sample profile for repository distribution.
   created_at: 2026-03-06
-  updated_at: 2026-03-06
-  last_edited_at: 2026-03-06T12:00:00Z
+  updated_at: 2026-09-30T15:49:27.567Z
+  last_edited_at: 2026-09-30T15:49:27.567Z
   status: published_sample
   language: en
   variant:
     cv_id: cv_en_john_doe
-    iteration: sample
+    iteration: null
     target: john_doe
+    family_id: john_doe
+    release_id: default
     language: en
+  ats_scores:
+    - label: ApplyCove
+      score: ""
+    - label: CVParserPro
+      score: ""
+    - label: Local ATS Resume Checker
+      score: ""
+  detector_scores:
+    - label: Sapling
+      score: ""
+      section_scores: []
+    - label: QuillBot
+      score: ""
+      section_scores: []
+    - label: GPTZero
+      score: ""
+      section_scores: []
+    - label: Local AI Writing Detector
+      score: ""
+      section_scores: []
+  print_tweaks:
+    version: 1
+    scopes:
+      stanford-v1:
+        en:
+          intelligentPagination: true
+          intelligentPaginationMode: normal
+          removePhoto: false
+          removePageCount: false
+          moveSkillsLeft: false
+          sidebarTextScaleEnabled: false
+          sidebarTextScale: 100
+          contentTextScaleEnabled: true
+          contentTextScale: 85
+  updated_on: 2026-09-30
 id: cv_en_john_doe
