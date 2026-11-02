@@ -32,7 +32,7 @@ ENV NODE_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y dumb-init gosu \
+    && apt-get install --no-install-recommends -y dumb-init \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system mfcv \
     && useradd --system --gid mfcv --create-home mfcv \
@@ -40,11 +40,16 @@ RUN apt-get update \
     && chown -R mfcv:mfcv /app /ms-playwright
 
 COPY deploy/docker/entrypoint.sh /usr/local/bin/mfcv-entrypoint
+COPY THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
+COPY third-party-licenses/LGPL-3.0.txt /app/third-party-licenses/LGPL-3.0.txt
+COPY --from=build /app/node_modules/sharp/LICENSE /app/third-party-licenses/sharp/LICENSE
+COPY third-party-licenses/sharp-libvips/README.md /app/third-party-licenses/sharp-libvips/README.md
 RUN chmod 0755 /usr/local/bin/mfcv-entrypoint
+
+USER mfcv
 
 EXPOSE 3000
 
-# The entrypoint starts as root only long enough to repair mounted-volume
-# ownership, then uses dumb-init to run the application as the mfcv user.
+# The image and its mutable volume mount points are owned by mfcv.
 ENTRYPOINT ["/usr/local/bin/mfcv-entrypoint"]
 CMD ["npm", "run", "start"]

@@ -17,6 +17,21 @@ documentation changes. User-facing summaries belong in `CHANGELOG.md`.
 
 ## Recent Entries
 
+### 2026-11-03 - Publish security patch 1.5.1
+
+- Context: Release the accumulated dependency, React rendering, and Docker
+  runtime security fixes after approval.
+- Files changed: Bumped the root and web package versions to 1.5.1, moved the
+  security summary into the 1.5.1 changelog section, and committed the paired
+  code, lockfile, and third-party license notice updates.
+- Validation: `npm run bootstrap`, `npm run check` (50 existing lint warnings,
+  no errors), `npm run lint:md`, and `npm run build` passed. The build required
+  moving stale `.next/dev/types` output from September 30 out of the workspace;
+  those generated files are preserved under the system temporary directory.
+- Follow-up risk: Docker CLI is unavailable here, so the container image build
+  could not be validated locally. Bind-mounted runtime directories need write
+  permission for the `mfcv` user.
+
 ### 2026-08-24 - Detector scope provenance
 
 - Context: Distinguish whole-CV detector results from separately tested or

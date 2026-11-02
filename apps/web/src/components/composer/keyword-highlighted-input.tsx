@@ -4,7 +4,12 @@ import { useMemo, type ChangeEvent, type JSX } from "react";
 
 import { EDITOR_COMPACT_INNER_TEXT_CONTROL_CLASS } from "./editor-compact-form-layout";
 import { WRAPPING_TEXT_CONTROL_CLASS } from "./form-path-utils";
-import { highlightEditorKeywordsHtml } from "@/lib/research/keyword-highlight";
+import {
+  atsKeywordTone,
+  findEditorKeywordHighlightSpans,
+  KEYWORD_WEIGHT_UNDERLINE_CLASS,
+  keywordWeightTone,
+} from "@/lib/research/keyword-highlight";
 import type { WeightedKeyword } from "@/lib/research/types";
 
 export type KeywordHighlightedFieldProps = {
@@ -64,14 +69,34 @@ export function KeywordHighlightedField({
   innerControl = false,
   inputClassName = "",
 }: KeywordHighlightedFieldProps): JSX.Element {
-  const highlightHtml = useMemo(
-    () =>
-      highlightEditorKeywordsHtml(
-        value.length > 0 ? value : "\u00a0",
-        weightedKeywords,
-        atsKeywords,
-        resolvedTheme,
-      ),
+  const highlightSegments = useMemo(
+    () => {
+      const text = value.length > 0 ? value : "\u00a0";
+      const spans = findEditorKeywordHighlightSpans(text, weightedKeywords, atsKeywords);
+      const segments: Array<{ text: string; className?: string }> = [];
+      let cursor = 0;
+
+      for (const span of spans) {
+        if (span.start < cursor) {
+          continue;
+        }
+        if (span.start > cursor) {
+          segments.push({ text: text.slice(cursor, span.start) });
+        }
+        const tone =
+          span.kind === "ats" ? atsKeywordTone(resolvedTheme) : keywordWeightTone(resolvedTheme, span.weight);
+        segments.push({
+          text: text.slice(span.start, span.end),
+          className: `font-bold ${KEYWORD_WEIGHT_UNDERLINE_CLASS} ${tone} bg-transparent`,
+        });
+        cursor = span.end;
+      }
+
+      if (cursor < text.length || segments.length === 0) {
+        segments.push({ text: text.slice(cursor) });
+      }
+      return segments;
+    },
     [value, weightedKeywords, atsKeywords, resolvedTheme],
   );
 
@@ -85,11 +110,17 @@ export function KeywordHighlightedField({
 
   return (
     <div className={`relative w-full min-w-0 ${className}`.trim()}>
-      <div
-        aria-hidden
-        className={`${overlayClass} z-0`}
-        dangerouslySetInnerHTML={{ __html: highlightHtml }}
-      />
+      <div aria-hidden className={`${overlayClass} z-0`}>
+        {highlightSegments.map((segment, index) =>
+          segment.className ? (
+            <mark key={index} className={segment.className}>
+              {segment.text}
+            </mark>
+          ) : (
+            <span key={index}>{segment.text}</span>
+          ),
+        )}
+      </div>
       {multiline ? (
         <textarea
           className={innerControl ? textareaInnerClass : textareaOuterClass}

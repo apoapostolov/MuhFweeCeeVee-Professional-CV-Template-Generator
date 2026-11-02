@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-03
+
+### Security
+
+- **Dependency security fixes** — upgraded Next.js to 16.4.4 for the
+  Windows-hosted remote code execution issue (CVE-2026-75604), PostCSS to
+  8.5.23 for crafted CSS file disclosure and denial of service, and
+  `proxy-addr` to 2.0.8 to prevent spoofed client IPs through malformed
+  IPv4-mapped IPv6 trust subnets. Updated `@modelcontextprotocol/sdk` to
+  1.32.2 to isolate task access by session (GHSA-22jm-h49p-29qw), and
+  `ip-address` to 10.7.5 to prevent inconsistent parsing of leading-zero
+  IPv4 addresses from bypassing SSRF checks (CVE-2026-69192). Keyword
+  highlights now render as escaped React text instead of injected HTML. Updated
+  `baseline-browser-mapping` to 2.11.35 to prevent input-triggered process
+  termination (CVE-2026-45819), and `fast-uri` to 3.1.9 to ensure Unicode
+  hostnames are canonicalized consistently (CVE-2026-13676). Updated `nanoid`
+  to 3.3.18 to prevent infinite loops on zero-sized IDs (CVE-2026-67213), and
+  `qs` to 6.17.1 to prevent a stringify denial of service (CVE-2026-82417).
+  Updated `source-map-js` to 1.2.2 to prevent denial of service from malformed
+  indexed source maps (CVE-2026-93749), and Hono to 4.13.16 to prevent
+  credentialed CORS requests from reflecting arbitrary origins (CVE-2026-54290).
+- Updated `@hono/node-server` to 1.19.15 to block Windows static-file path
+  traversal through encoded backslashes (GHSA-frvp-7c67-39w9).
+- **Docker runtime hardening** — application containers now run as the
+  unprivileged `mfcv` user. The image includes license notices for sharp and
+  its bundled libvips dependencies.
+
 ## [1.5.0] - 2026-09-30
 
 PDF export no longer launches a browser. Print Room renders through a native engine instead of Playwright, which makes exporting noticeably faster, produces a smaller file, and tags the output so screen readers and stricter parsers get more from it.

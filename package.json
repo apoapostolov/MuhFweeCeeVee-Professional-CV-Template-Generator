@@ -1,6 +1,6 @@
 {
   "name": "muhfweeceevee",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "private": true,
   "allowScripts": {
     "esbuild@0.27.7": true,
@@ -39,7 +39,8 @@
     "vitest": "^3.2.4"
   },
   "overrides": {
-    "nanoid": "3.3.12",
-    "postcss": "8.5.15"
+    "nanoid": "3.3.18",
+    "postcss": "8.5.23",
+    "proxy-addr": "2.0.8"
   }
 }
